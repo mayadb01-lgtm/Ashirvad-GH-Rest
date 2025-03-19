@@ -49,7 +49,7 @@ const Home = () => {
         )}
       </Stack>
       <Typography variant="body1" color="text.secondary">
-        Welcome to the TGT Business Management System. Choose a service to
+        Welcome to the Ashirvad Business Management System. Choose a service to
         manage your operations efficiently.
       </Typography>
 

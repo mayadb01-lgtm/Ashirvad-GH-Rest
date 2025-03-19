@@ -95,15 +95,15 @@ const Navbar = () => {
   const navbarHeading = () => {
     switch (location.pathname) {
       case "/admin/restaurant":
-        return "TGT Restaurant - Admin";
+        return "Ashirvad Restaurant - Admin";
       case "/restaurant":
-        return "TGT Restaurant";
+        return "Ashirvad Restaurant";
       case "/admin/hotel":
-        return "TGT Hotel - Admin";
+        return "Ashirvad Hotel - Admin";
       case "/hotel":
-        return "TGT Hotel";
+        return "Ashirvad Hotel";
       default:
-        return "TGT Business";
+        return "Ashirvad Business";
     }
   };
 
