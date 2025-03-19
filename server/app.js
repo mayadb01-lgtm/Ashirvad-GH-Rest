@@ -11,7 +11,7 @@ app.use(
     origin: [
       process.env.CLIENT_URL,
       "http://localhost:5173",
-      "https://guesthouse-seven.vercel.app",
+      "https://ashirwad-business.vercel.app",
     ],
     credentials: true,
   })
