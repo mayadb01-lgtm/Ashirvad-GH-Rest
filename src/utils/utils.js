@@ -26,17 +26,41 @@ export const processEntriesByPaymentMode = (data, mode) => {
 };
 
 export const roomCosts = {
-  1: 1800,
-  2: 1800,
-  3: 1800,
-  4: 1800,
-  5: 1800,
-  6: 2200,
-  7: 2200,
-  8: 1800,
-  9: 1500,
-  10: 1500,
-  11: 1500,
+  1: 1200,
+  2: 1500,
+  3: 1500,
+  4: 1500,
+  5: 1500,
+  6: 1200,
+  7: 1200,
+  8: 1200,
+  9: 1400,
+  10: 1400,
+  11: 1400,
+  12: 1400,
+  13: 1200,
+  14: 1200,
+  15: 1200,
+  16: 1200,
+};
+
+export const type = {
+  1: "2 Bed",
+  2: "3 Bed",
+  3: "3 Bed",
+  4: "Deluxe",
+  5: "Deluxe",
+  6: "2 Bed",
+  7: "2 Bed",
+  8: "2 Bed",
+  9: "3 Bed",
+  10: "3 Bed",
+  11: "3 Bed",
+  12: "3 Bed",
+  13: "2 Bed",
+  14: "2 Bed",
+  15: "2 Bed",
+  16: "2 Bed",
 };
 
 export const initializePendingJamaRows = () => {

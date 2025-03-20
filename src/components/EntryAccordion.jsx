@@ -43,7 +43,7 @@ const EntryAccordion = ({ title, period, roomCosts, onSubmit, bgColor }) => {
           <TableComponent
             period={period}
             title={`${title} Table`}
-            rowsLength={11}
+            rowsLength={16}
             roomCosts={roomCosts}
             onSubmit={onSubmit}
           />
