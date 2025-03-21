@@ -48,6 +48,8 @@ const GHDashboard = () => {
       { field: "id", headerName: "ID", width: 70 },
       { field: "roomNo", headerName: "Room No", width: 130 },
       { field: "cost", headerName: "Price", width: 100 },
+      { field: "roomType", headerName: "Room Type", width: 100 },
+      { field: "type", headerName: "Type", width: 100 },
       { field: "rate", headerName: "Rate", width: 100 },
       { field: "noOfPeople", headerName: "People", width: 100 },
       { field: "type", headerName: "Type", width: 120 },

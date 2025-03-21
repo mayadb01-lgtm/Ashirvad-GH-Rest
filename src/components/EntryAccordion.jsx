@@ -11,7 +11,14 @@ import React, { Suspense } from "react";
 
 const TableComponent = React.lazy(() => import("./TableComponent"));
 
-const EntryAccordion = ({ title, period, roomCosts, onSubmit, bgColor }) => {
+const EntryAccordion = ({
+  title,
+  period,
+  roomCosts,
+  roomType,
+  onSubmit,
+  bgColor,
+}) => {
   return (
     <Accordion style={{ boxShadow: "none" }}>
       <AccordionSummary
@@ -45,6 +52,7 @@ const EntryAccordion = ({ title, period, roomCosts, onSubmit, bgColor }) => {
             title={`${title} Table`}
             rowsLength={16}
             roomCosts={roomCosts}
+            roomType={roomType}
             onSubmit={onSubmit}
           />
         </Suspense>

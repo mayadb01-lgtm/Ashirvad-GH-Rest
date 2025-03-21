@@ -5,6 +5,7 @@ const entrySchemaObj = new Schema(
     id: { type: String, required: true },
     roomNo: { type: Number, required: true },
     cost: { type: Number },
+    roomType: { type: String, required: true },
     rate: { type: Number, required: true },
     noOfPeople: { type: Number },
     type: {

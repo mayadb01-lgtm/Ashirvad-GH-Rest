@@ -32,6 +32,7 @@ import {
   processUpdateEntries,
   currentDateTime,
   roomCosts,
+  roomType,
 } from "../utils/utils";
 import PendingJamaTable from "../components/PendingJamaTable";
 import ModernLoader, { AccordionSection, PaymentSummary } from "../utils/util";
@@ -589,6 +590,7 @@ const EntryPage = () => {
                 title="Day Entries"
                 period="Day"
                 roomCosts={roomCosts}
+                roomType={roomType}
                 onSubmit={setDayData}
                 bgColor="#FAC172"
               />
@@ -596,6 +598,7 @@ const EntryPage = () => {
                 title="Night Entries"
                 period="Night"
                 roomCosts={roomCosts}
+                roomType={roomType}
                 onSubmit={setNightData}
                 bgColor="#89D5C9"
               />
@@ -620,6 +623,7 @@ const EntryPage = () => {
                     title="Extra Day Entries"
                     period="extraDay"
                     roomCosts={roomCosts}
+                    roomType={roomType}
                     onSubmit={setExtraDayData}
                     bgColor="#FAC172"
                   />
@@ -627,6 +631,7 @@ const EntryPage = () => {
                     title="Extra Night Entries"
                     period="extraNight"
                     roomCosts={roomCosts}
+                    roomType={roomType}
                     onSubmit={setExtraNightData}
                     bgColor="#89D5C9"
                   />

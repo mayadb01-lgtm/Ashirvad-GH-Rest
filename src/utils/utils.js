@@ -44,7 +44,7 @@ export const roomCosts = {
   16: 1200,
 };
 
-export const type = {
+export const roomType = {
   1: "2 Bed",
   2: "3 Bed",
   3: "3 Bed",
@@ -133,11 +133,12 @@ export const processUpdateEntries = (data, period, selectedDate) => {
 
 // Table Component
 
-export const initializeRows = (period, rowsLength, roomCosts) => {
+export const initializeRows = (period, rowsLength, roomCosts, roomType) => {
   return Array.from({ length: rowsLength }, (_, i) => ({
     id: `${period} - ${i + 1}`,
     roomNo: i + 1,
     cost: roomCosts[i + 1] || 0,
+    roomType: roomType[i + 1] || "",
     rate: 0,
     noOfPeople: 0,
     type: "",

@@ -21,18 +21,24 @@ import {
 } from "@mui/material";
 import "./TableComponent.css";
 
-const TableComponent = ({ period, rowsLength, roomCosts, onSubmit }) => {
+const TableComponent = ({
+  period,
+  rowsLength,
+  roomCosts,
+  roomType,
+  onSubmit,
+}) => {
   const { entries } = useAppSelector((state) => state.entry);
 
   const [rows, setRows] = useState([]);
 
   useEffect(() => {
     if (entries && entries.length === 0) {
-      setRows(initializeRows(period, rowsLength, roomCosts));
+      setRows(initializeRows(period, rowsLength, roomCosts, roomType));
     }
     if (entries && entries.length > 0) {
       // Reset rows to initial state before updating
-      let initialRows = initializeRows(period, rowsLength, roomCosts);
+      let initialRows = initializeRows(period, rowsLength, roomCosts, roomType);
 
       const dayEntries = entries.filter((entry) => entry?.period === "day");
       const nightEntries = entries.filter((entry) => entry?.period === "night");
@@ -51,6 +57,7 @@ const TableComponent = ({ period, rowsLength, roomCosts, onSubmit }) => {
                 ...row,
                 id: entry.id,
                 cost: entry.cost,
+                roomType: entry.roomType,
                 rate: entry.rate,
                 noOfPeople: entry.noOfPeople,
                 type: entry.type,
@@ -86,6 +93,7 @@ const TableComponent = ({ period, rowsLength, roomCosts, onSubmit }) => {
       id: `${period}-totals`,
       roomNo: "Totals",
       cost: "",
+      roomType: "",
       rate: rows.reduce(
         (sum, row) => sum + (isNaN(row.rate) ? 0 : Number(row.rate)),
         0
@@ -124,6 +132,7 @@ const TableComponent = ({ period, rowsLength, roomCosts, onSubmit }) => {
   const tableComponentColumns = [
     "Room",
     "Price",
+    "Room Type",
     "Rate",
     "People",
     "Check In",
@@ -230,7 +239,7 @@ const TableComponent = ({ period, rowsLength, roomCosts, onSubmit }) => {
                   />
                 </TableCell>
                 <TableCell
-                  width={"8%"}
+                  width={"7%"}
                   className="cell-white"
                   sx={{
                     backgroundColor: updateRowHighlight(row) && "#e1e1e1",
@@ -249,6 +258,24 @@ const TableComponent = ({ period, rowsLength, roomCosts, onSubmit }) => {
                 </TableCell>
                 <TableCell
                   width={"8%"}
+                  className="cell-white"
+                  sx={{
+                    backgroundColor: updateRowHighlight(row) && "#e1e1e1",
+                  }}
+                >
+                  <TextField
+                    type="text"
+                    value={row.roomType}
+                    sx={{
+                      "& .MuiInputBase-input": {
+                        textAlign: "center",
+                        fontSize: "12px",
+                      },
+                    }}
+                  />
+                </TableCell>
+                <TableCell
+                  width={"7%"}
                   className={
                     period?.includes("Day") || period?.includes("extraDay")
                       ? "orange"
@@ -276,7 +303,7 @@ const TableComponent = ({ period, rowsLength, roomCosts, onSubmit }) => {
                   />
                 </TableCell>
                 <TableCell
-                  width={"8%"}
+                  width={"6%"}
                   className={
                     period?.includes("Day") || period?.includes("extraDay")
                       ? "orange"
@@ -304,7 +331,7 @@ const TableComponent = ({ period, rowsLength, roomCosts, onSubmit }) => {
                   />
                 </TableCell>
                 <TableCell
-                  width={"12%"}
+                  width={"11%"}
                   className={
                     period?.includes("Day") || period?.includes("extraDay")
                       ? "light-orange"
@@ -350,7 +377,7 @@ const TableComponent = ({ period, rowsLength, roomCosts, onSubmit }) => {
                   </LocalizationProvider>
                 </TableCell>
                 <TableCell
-                  width={"12%"}
+                  width={"11%"}
                   className={
                     period?.includes("Day") || period?.includes("extraDay")
                       ? "light-orange"
@@ -396,7 +423,7 @@ const TableComponent = ({ period, rowsLength, roomCosts, onSubmit }) => {
                   </LocalizationProvider>
                 </TableCell>
                 <TableCell
-                  width={"10%"}
+                  width={"9%"}
                   className={
                     period?.includes("Day") || period?.includes("extraDay")
                       ? "orange"
@@ -453,7 +480,7 @@ const TableComponent = ({ period, rowsLength, roomCosts, onSubmit }) => {
                   </Select>
                 </TableCell>
                 <TableCell
-                  width={"10%"}
+                  width={"9%"}
                   className={
                     period?.includes("Day") || period?.includes("extraDay")
                       ? "orange"
