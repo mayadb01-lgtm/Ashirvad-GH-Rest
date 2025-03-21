@@ -149,7 +149,11 @@ const TableComponent = ({
       row.type &&
       row.cost &&
       row.rate &&
-      row.noOfPeople
+      row.noOfPeople &&
+      row.checkInTime &&
+      row.checkOutTime &&
+      row.fullname &&
+      row.mobileNumber
     ) {
       return true;
     } else {
@@ -221,10 +225,9 @@ const TableComponent = ({
               >
                 <TableCell
                   width={"5%"}
-                  className={"cell - whites"}
-                  sx={{
-                    backgroundColor: updateRowHighlight(row) && "#e1e1e1",
-                  }}
+                  className={
+                    updateRowHighlight(row) ? "highlight" : "cell-white"
+                  }
                 >
                   <TextField
                     type="number"
@@ -240,10 +243,9 @@ const TableComponent = ({
                 </TableCell>
                 <TableCell
                   width={"7%"}
-                  className="cell-white"
-                  sx={{
-                    backgroundColor: updateRowHighlight(row) && "#e1e1e1",
-                  }}
+                  className={
+                    updateRowHighlight(row) ? "highlight" : "cell-white"
+                  }
                 >
                   <TextField
                     type="number"
@@ -258,10 +260,9 @@ const TableComponent = ({
                 </TableCell>
                 <TableCell
                   width={"8%"}
-                  className="cell-white"
-                  sx={{
-                    backgroundColor: updateRowHighlight(row) && "#e1e1e1",
-                  }}
+                  className={
+                    updateRowHighlight(row) ? "highlight" : "cell-white"
+                  }
                 >
                   <TextField
                     type="text"
@@ -277,13 +278,12 @@ const TableComponent = ({
                 <TableCell
                   width={"7%"}
                   className={
-                    period?.includes("Day") || period?.includes("extraDay")
-                      ? "orange"
-                      : "green"
+                    updateRowHighlight(row)
+                      ? "highlight"
+                      : period?.includes("Day") || period?.includes("extraDay")
+                        ? "orange"
+                        : "green"
                   }
-                  sx={{
-                    backgroundColor: updateRowHighlight(row) && "#e1e1e1",
-                  }}
                 >
                   <TextField
                     type="number"
@@ -305,13 +305,12 @@ const TableComponent = ({
                 <TableCell
                   width={"6%"}
                   className={
-                    period?.includes("Day") || period?.includes("extraDay")
-                      ? "orange"
-                      : "green"
+                    updateRowHighlight(row)
+                      ? "highlight"
+                      : period?.includes("Day") || period?.includes("extraDay")
+                        ? "orange"
+                        : "green"
                   }
-                  sx={{
-                    backgroundColor: updateRowHighlight(row) && "#e1e1e1",
-                  }}
                 >
                   <TextField
                     type="number"
@@ -333,13 +332,12 @@ const TableComponent = ({
                 <TableCell
                   width={"11%"}
                   className={
-                    period?.includes("Day") || period?.includes("extraDay")
-                      ? "light-orange"
-                      : "light-green"
+                    updateRowHighlight(row)
+                      ? "highlight"
+                      : period?.includes("Day") || period?.includes("extraDay")
+                        ? "light-orange"
+                        : "light-green"
                   }
-                  sx={{
-                    backgroundColor: updateRowHighlight(row) && "#e1e1e1",
-                  }}
                 >
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <MobileTimePicker
@@ -379,13 +377,12 @@ const TableComponent = ({
                 <TableCell
                   width={"11%"}
                   className={
-                    period?.includes("Day") || period?.includes("extraDay")
-                      ? "light-orange"
-                      : "light-green"
+                    updateRowHighlight(row)
+                      ? "highlight"
+                      : period?.includes("Day") || period?.includes("extraDay")
+                        ? "light-orange"
+                        : "light-green"
                   }
-                  sx={{
-                    backgroundColor: updateRowHighlight(row) && "#e1e1e1",
-                  }}
                 >
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <MobileTimePicker
@@ -429,9 +426,6 @@ const TableComponent = ({
                       ? "orange"
                       : "green"
                   }
-                  sx={{
-                    backgroundColor: updateRowHighlight(row) && "#e1e1e1",
-                  }}
                 >
                   <Select
                     value={row.type ? row.type : "Select"}
@@ -486,9 +480,6 @@ const TableComponent = ({
                       ? "orange"
                       : "green"
                   }
-                  sx={{
-                    backgroundColor: updateRowHighlight(row) && "#e1e1e1",
-                  }}
                 >
                   <Select
                     value={row.modeOfPayment ? row.modeOfPayment : "Select"}
@@ -534,13 +525,12 @@ const TableComponent = ({
                 <TableCell
                   width={"15%"}
                   className={
-                    period?.includes("Day") || period?.includes("extraDay")
-                      ? "light-orange"
-                      : "light-green"
+                    updateRowHighlight(row)
+                      ? "highlight"
+                      : period?.includes("Day") || period?.includes("extraDay")
+                        ? "light-orange"
+                        : "light-green"
                   }
-                  sx={{
-                    backgroundColor: updateRowHighlight(row) && "#e1e1e1",
-                  }}
                 >
                   <TextField
                     type="text"
@@ -560,13 +550,12 @@ const TableComponent = ({
                 <TableCell
                   width={"12%"}
                   className={
-                    period?.includes("Day") || period?.includes("extraDay")
-                      ? "light-orange"
-                      : "light-green"
+                    updateRowHighlight(row)
+                      ? "highlight"
+                      : period?.includes("Day") || period?.includes("extraDay")
+                        ? "light-orange"
+                        : "light-green"
                   }
-                  sx={{
-                    backgroundColor: updateRowHighlight(row) && "#e1e1e1",
-                  }}
                 >
                   <TextField
                     type="number"
