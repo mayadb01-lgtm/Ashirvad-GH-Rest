@@ -12,12 +12,12 @@ const Home = () => {
   const services = [
     {
       path: isAdminAuthenticated ? "/admin/hotel" : "/hotel",
-      title: "Hotel Management",
+      title: "GH Management",
       bg: "#fec86a",
     },
     {
       path: isAdminAuthenticated ? "/admin/restaurant" : "/restaurant",
-      title: "Restaurant Management",
+      title: "RT Management",
       bg: "#ff6a6a",
     },
     // Add more services as needed
