@@ -76,6 +76,17 @@ const RestStaffDashboard = () => {
   );
 
   const columns = [
+    {
+      field: "index",
+      headerName: "Index",
+      width: 100,
+      renderCell: (params) => {
+        console.log(params);
+        return (
+          <>{params.api.getRowIndexRelativeToVisibleRows(params.id) + 1}</>
+        );
+      },
+    },
     { field: "_id", headerName: "ID", width: 300 },
     { field: "fullname", headerName: "Full Name", width: 200 },
     { field: "mobileNumber", headerName: "Mobile Number", width: 200 },
