@@ -114,8 +114,10 @@ router.put("/update-entry/:date", async (req, res) => {
 // Get Entries by Date Range
 router.get("/get-entries/:startDate/:endDate", async (req, res) => {
   try {
-    const startDate = req.params.startDate;
-    const endDate = req.params.endDate;
+    const startDate = parseDateString(req.params.startDate);
+    const endDate = parseDateString(req.params.endDate);
+    endDate.setHours(23, 59, 59, 999); // Ensure full-day inclusion
+
     const entries = await RestEntry.find({
       createDate: { $gte: startDate, $lte: endDate },
     });
@@ -135,10 +137,12 @@ router.get("/get-entries/:startDate/:endDate", async (req, res) => {
 // Get Upad Entries by Date Range
 router.get("/get-upad-entries/:startDate/:endDate", async (req, res) => {
   try {
-    const startDate = req.params.startDate;
-    const endDate = req.params.endDate;
+    const startDate = parseDateString(req.params.startDate);
+    const endDate = parseDateString(req.params.endDate);
+    endDate.setHours(23, 59, 59, 999); // Ensure full-day inclusion
+
     const entries = await RestEntry.find({
-      createDate: { $gte: startDate, $lte: endDate },
+      createdAt: { $gte: startDate, $lte: endDate },
     });
 
     const upadEntries = entries.flatMap((entry) => entry.upad);
@@ -155,13 +159,23 @@ router.get("/get-upad-entries/:startDate/:endDate", async (req, res) => {
   }
 });
 
+// Helper function to convert "DD-MM-YYYY" to "YYYY-MM-DD"
+const parseDateString = (dateString) => {
+  const [day, month, year] = dateString.split("-");
+  return new Date(`${year}-${month}-${day}`); // Converts to "YYYY-MM-DD"
+};
+
 // Get Expenses Entries by Date Range
 router.get("/get-expenses-entries/:startDate/:endDate", async (req, res) => {
   try {
-    const startDate = req.params.startDate;
-    const endDate = req.params.endDate;
+    // Parse dates using JavaScript's Date object
+    const startDate = parseDateString(req.params.startDate);
+    const endDate = parseDateString(req.params.endDate);
+    endDate.setHours(23, 59, 59, 999); // Ensure full-day inclusion
+
+    // Fetch entries within the date range
     const entries = await RestEntry.find({
-      createDate: { $gte: startDate, $lte: endDate },
+      createdAt: { $gte: startDate, $lte: endDate },
     });
 
     const expensesEntries = entries.flatMap((entry) => entry.expenses);
@@ -182,8 +196,8 @@ router.get(
   "/get-entries-by-payment-method/:startDate/:endDate",
   async (req, res) => {
     try {
-      const startDate = req.params.startDate;
-      const endDate = req.params.endDate;
+      const startDate = parseDateString(req.params.startDate);
+      const endDate = parseDateString(req.params.endDate);
       const entries = await RestEntry.find(
         {
           createDate: { $gte: startDate, $lte: endDate },

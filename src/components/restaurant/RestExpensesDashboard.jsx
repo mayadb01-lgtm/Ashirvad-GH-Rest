@@ -41,15 +41,45 @@ const RestExpensesDashboard = () => {
   }, [dispatch, startDate, endDate]);
 
   const columns = [
-    { field: "id", headerName: "Index", width: 150 },
-    { field: "createDate", headerName: "Date", width: 150 },
-    { field: "expenseName", headerName: "Expense Name", width: 150 },
-    { field: "categoryName", headerName: "Category Name", width: 150 },
-    { field: "amount", headerName: "Amount", width: 150 },
+    {
+      field: "id",
+      headerName: "Index",
+      width: 150,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "createDate",
+      headerName: "Date",
+      width: 150,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "expenseName",
+      headerName: "Expense Name",
+      width: 150,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "categoryName",
+      headerName: "Category Name",
+      width: 150,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "amount",
+      headerName: "Amount",
+      width: 150,
+      headerAlign: "center",
+      align: "center",
+    },
   ];
 
   const selectedStaffEntries = restEntries.filter(
-    (entry) => entry.selectedCategory === selectedCategory
+    (entry) => entry.categoryName === selectedCategory
   );
 
   const preparedEntries = useMemo(() => {
@@ -57,7 +87,7 @@ const RestExpensesDashboard = () => {
       id: "Total",
       createDate: "",
       expenseName: "",
-      categoryName: "Total",
+      categoryName: "",
       amount: selectedStaffEntries
         .map((entry) => entry.amount)
         .reduce((a, b) => a + b, 0),
@@ -84,6 +114,17 @@ const RestExpensesDashboard = () => {
       .concat(totalRow);
   }, [restEntries, selectedCategory, selectedStaffEntries]);
 
+  // Select Category - Options - Unique Categories
+
+  const optionsForCategory = useMemo(() => {
+    const uniqueCategories = new Set(
+      restEntries.map((entry) => entry.categoryName)
+    );
+    return Array.from(uniqueCategories);
+  }, [restEntries]);
+
+  console.log("optionsForCategory", optionsForCategory);
+
   return (
     <Box
       sx={{
@@ -101,7 +142,7 @@ const RestExpensesDashboard = () => {
         }}
       >
         <Typography variant="h5" fontWeight={600} color="text.primary">
-          Restaurant Upaad Dashboard
+          Restaurant Expense Report
         </Typography>
       </Box>
       <Stack direction="row" spacing={2} alignItems="center">
@@ -129,8 +170,8 @@ const RestExpensesDashboard = () => {
         <Autocomplete
           disablePortal
           id="category"
-          options={restEntries}
-          getOptionLabel={(option) => option.categoryName}
+          options={optionsForCategory}
+          getOptionLabel={(option) => option}
           style={{ width: 300 }}
           renderInput={(params) => (
             <TextField {...params} label="Select Category" />
