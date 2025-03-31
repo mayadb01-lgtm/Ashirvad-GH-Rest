@@ -20,7 +20,7 @@ const EntryAccordion = ({
   bgColor,
 }) => {
   return (
-    <Accordion style={{ boxShadow: "none" }}>
+    <Accordion style={{ boxShadow: "none" }} expanded={true}>
       <AccordionSummary
         expandIcon={<ExpandMoreIcon />}
         style={{
