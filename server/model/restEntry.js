@@ -40,11 +40,26 @@ const expensesEntrySchemaObj = new Schema(
   { timestamps: true }
 );
 
+const pendingUsersSchema = new Schema(
+  {
+    fullname: { type: String, required: true },
+    mobileNumber: { type: Number, required: true },
+    amount: { type: Number },
+    createDate: { type: String },
+    updatedDateTime: { type: Date, default: Date.now() },
+    createdAt: { type: Date, default: Date.now() },
+  },
+  {
+    timestamps: true,
+  }
+);
+
 const restEntrySchema = new Schema(
   {
     upad: [upadEntrySchemaObj],
     pending: [pendingEntrySchemaObj],
     expenses: [expensesEntrySchemaObj],
+    pendingUsers: [pendingUsersSchema],
     extraAmount: { type: Number, default: 0 },
     totalUpad: { type: Number, default: 0 },
     totalPending: { type: Number, default: 0 },

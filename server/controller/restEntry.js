@@ -10,11 +10,13 @@ router.post("/create-entry", async (req, res) => {
     const upad = JSON.parse(reqBody.upad);
     const pending = JSON.parse(reqBody.pending);
     const expenses = JSON.parse(reqBody.expenses);
+    const pendingUsers = JSON.parse(reqBody.pendingUsers);
 
     const entry = await RestEntry.create({
       upad,
       pending,
       expenses,
+      pendingUsers,
       extraAmount: reqBody.extraAmount,
       totalUpad: reqBody.totalUpad,
       totalPending: reqBody.totalPending,
@@ -212,26 +214,6 @@ router.get(
           createDate: 1,
         }
       );
-
-      // const entriesByPaymentMethod = entries.map((entry) => {
-      //   return {
-      //     Card: entry.totalCard,
-      //     PP: entry.totalPP,
-      //     Cash: entry.totalCash,
-      //     grandTotal: entry.grandTotal,
-      //     computerAmount: entry.computerAmount,
-      //     createDate: entry.createDate,
-      //   };
-      // });
-
-      // const entriesByPaymentMethod = {
-      //   Card: entries.map((entry) => entry.totalCard),
-      //   PP: entries.map((entry) => entry.totalPP),
-      //   Cash: entries.map((entry) => entry.totalCash),
-      //   grandTotal: entries.map((entry) => entry.grandTotal),
-      //   computerAmount: entries.map((entry) => entry.computerAmount),
-      //   createDate: entries.map((entry) => entry.createDate),
-      // };
 
       const entriesByPaymentMethod = entries.map((entry) => ({
         Card: entry.totalCard,

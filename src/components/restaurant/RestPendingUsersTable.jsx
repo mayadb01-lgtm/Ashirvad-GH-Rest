@@ -16,8 +16,8 @@ import { useAppSelector } from "../../redux/hooks";
 
 const TABLE_COLUMNS = ["ID", "Amount", "Name", "Remove"];
 
-const RestPendingTable = ({ restPendingData, setRestPendingData }) => {
-  const { restPendingNameOptions } = useAppSelector((state) => state.restEntry);
+const RestPendingUsersTable = ({ restPendingData, setRestPendingData }) => {
+  const { restPending } = useAppSelector((state) => state.restPending);
 
   const handleAddRow = () => {
     setRestPendingData((prevData) => [
@@ -85,7 +85,7 @@ const RestPendingTable = ({ restPendingData, setRestPendingData }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {restPendingData && restPendingData?.length === 0 && (
+            {restPendingData?.length === 0 && (
               <TableRow>
                 <TableCell colSpan={3} align="center">
                   No Pending data available
@@ -97,7 +97,7 @@ const RestPendingTable = ({ restPendingData, setRestPendingData }) => {
                 sx={{ bgcolor: row.amount && row.fullname ? "#f5f5f5" : "" }}
                 key={row.id}
               >
-                <TableCell sx={{ width: "10%" }}>{row.id}</TableCell>
+                <TableCell sx={{ width: "10%" }}>{index+1}</TableCell>
                 <TableCell sx={{ width: "25%" }}>
                   <TextField
                     variant="outlined"
@@ -110,12 +110,7 @@ const RestPendingTable = ({ restPendingData, setRestPendingData }) => {
                   />
                 </TableCell>
                 <TableCell sx={{ width: "40%" }}>
-                  {renderAutocompleteCell(
-                    restPendingNameOptions,
-                    row,
-                    index,
-                    "fullname"
-                  )}
+                  {renderAutocompleteCell(restPending, row, index, "fullname")}
                 </TableCell>
                 <TableCell sx={{ width: "5%" }}>
                   <Button size="small" onClick={() => handleRemoveRow(row.id)}>
@@ -140,7 +135,7 @@ const RestPendingTable = ({ restPendingData, setRestPendingData }) => {
   );
 };
 
-RestPendingTable.propTypes = {
+RestPendingUsersTable.propTypes = {
   restPendingData: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.number.isRequired,
@@ -152,4 +147,4 @@ RestPendingTable.propTypes = {
   setRestPendingData: PropTypes.func.isRequired,
 };
 
-export default RestPendingTable;
+export default RestPendingUsersTable;

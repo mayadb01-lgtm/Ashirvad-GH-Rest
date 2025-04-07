@@ -23,6 +23,7 @@ import CreditScoreIcon from "@mui/icons-material/CreditScore";
 import RestExpensesDashboard from "../components/restaurant/RestExpensesDashboard";
 import { BookOutlined } from "@mui/icons-material";
 import BankBooksDashboard from "../components/restaurant/RestBankBookEntry";
+import RestPendingUsersDashboard from "../components/restaurant/RestPendingUsersDashboard";
 dayjs.locale("en-gb");
 
 const NAVIGATION = [
@@ -88,6 +89,11 @@ const NAVIGATION = [
     title: "Categories & Expenses",
     icon: <CategoryIcon />,
   },
+  {
+    segment: "pending-users",
+    title: "Pending Users",
+    icon: <BadgeIcon />,
+  },
 ];
 
 // Theme setup
@@ -149,6 +155,8 @@ const DashboardPage = () => {
         return <RestStaffDashboard />;
       case "categories-expenses":
         return <RestCategoryExpensesDashboard />;
+      case "pending-users":
+        return <RestPendingUsersDashboard />;
       default:
         return <HomeDashboard />;
     }
@@ -160,7 +168,7 @@ const DashboardPage = () => {
         // defaultSidebarCollapsed
         slots={{
           appTitle: () => (
-            <Typography variant="h6">Ashirvad Admin Dashboard</Typography>
+            <Typography variant="h6">TGT Admin Dashboard</Typography>
           ),
         }}
         sidebarExpandedWidth={260}

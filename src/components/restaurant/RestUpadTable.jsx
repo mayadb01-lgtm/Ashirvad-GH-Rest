@@ -58,6 +58,7 @@ const EditableRow = ({
           renderInput={(params) => (
             <TextField {...params} variant="outlined" size="small" fullWidth />
           )}
+          disabled={!row.amount}
         />
       </TableCell>
       <TableCell sx={{ width: "5%" }}>

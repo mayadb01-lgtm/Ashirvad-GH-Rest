@@ -12,40 +12,40 @@ import {
 } from "@mui/material";
 import { Add, Edit, Delete } from "@mui/icons-material";
 import {
-  getRestStaff,
-  createRestStaff,
-  updateRestStaff,
-  removeRestStaff,
-} from "../../redux/actions/restStaffAction";
+  createPendingUser,
+  getPendingUser,
+  removePendingUser,
+  updatePendingUser,
+} from "../../redux/actions/restPendingAction";
 
-const RestStaffDashboard = () => {
+const RestPendingUsersDashboard = () => {
   const dispatch = useAppDispatch();
-  const { loading, restStaff } = useAppSelector((state) => state.restStaff);
+  const { loading, restPending } = useAppSelector((state) => state.restPending);
 
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [staffData, setStaffData] = useState({
+  const [pendingUserData, setPendingUserData] = useState({
     fullname: "",
     mobileNumber: "",
   });
   const [selectedId, setSelectedId] = useState(null);
 
   useEffect(() => {
-    dispatch(getRestStaff());
+    dispatch(getPendingUser());
   }, [dispatch]);
 
   const handleOpen = (staff = null) => {
     if (staff) {
       setEditMode(true);
-      setStaffData({
+      setPendingUserData({
         fullname: staff.fullname,
         mobileNumber: staff.mobileNumber,
       });
       setSelectedId(staff._id);
     } else {
       setEditMode(false);
-      setStaffData({ fullname: "", mobileNumber: "" });
+      setPendingUserData({ fullname: "", mobileNumber: "" });
       setSelectedId(null);
     }
     setOpen(true);
@@ -53,23 +53,25 @@ const RestStaffDashboard = () => {
 
   const handleClose = () => setOpen(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (editMode) {
-      dispatch(updateRestStaff(selectedId, staffData));
+      await dispatch(updatePendingUser(selectedId, pendingUserData));
     } else {
-      dispatch(createRestStaff(staffData));
+      await dispatch(createPendingUser(pendingUserData));
     }
+    dispatch(getPendingUser());
     handleClose();
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this staff member?")) {
-      dispatch(removeRestStaff(id));
+      await dispatch(removePendingUser(id));
+      dispatch(getPendingUser());
     }
   };
 
   // ** Filtered Staff List based on Search Query **
-  const filteredStaff = restStaff.filter(
+  const filteredStaff = restPending.filter(
     (staff) =>
       staff.fullname.toLowerCase().includes(search.toLowerCase()) ||
       String(staff.mobileNumber).includes(search)
@@ -79,7 +81,7 @@ const RestStaffDashboard = () => {
     {
       field: "index",
       headerName: "Index",
-      width: 150,
+      width: 100,
       headerAlign: "center",
       align: "center",
       renderCell: (params) => (
@@ -96,14 +98,14 @@ const RestStaffDashboard = () => {
     {
       field: "fullname",
       headerName: "Full Name",
-      width: 300,
+      width: 200,
       headerAlign: "center",
       align: "center",
     },
     {
       field: "mobileNumber",
       headerName: "Mobile Number",
-      width: 300,
+      width: 200,
       headerAlign: "center",
       align: "center",
     },
@@ -143,12 +145,12 @@ const RestStaffDashboard = () => {
         }}
       >
         <Typography variant="h5" fontWeight={600} color="text.primary">
-          Staff Management
+          Restaurant Pending Users
         </Typography>
       </Box>
       {/* Search Bar */}
       <TextField
-        label="Search Staff"
+        label="Search Pending User"
         variant="outlined"
         size="small"
         value={search}
@@ -182,7 +184,7 @@ const RestStaffDashboard = () => {
             onClick={() => handleOpen()}
             sx={{ mt: 2 }}
           >
-            Create Staff
+            Create Pending User
           </Button>
         </>
       )}
@@ -200,23 +202,29 @@ const RestStaffDashboard = () => {
           }}
         >
           <Typography variant="h6" mb={2}>
-            {editMode ? "Edit Staff" : "Create Staff"}
+            {editMode ? "Edit Pending User" : "Create Pending User"}
           </Typography>
           <TextField
             fullWidth
             label="Full Name"
-            value={staffData.fullname}
+            value={pendingUserData.fullname}
             onChange={(e) =>
-              setStaffData({ ...staffData, fullname: e.target.value })
+              setPendingUserData({
+                ...pendingUserData,
+                fullname: e.target.value,
+              })
             }
             sx={{ mb: 2 }}
           />
           <TextField
             fullWidth
             label="Mobile Number"
-            value={staffData.mobileNumber}
+            value={pendingUserData.mobileNumber}
             onChange={(e) =>
-              setStaffData({ ...staffData, mobileNumber: e.target.value })
+              setPendingUserData({
+                ...pendingUserData,
+                mobileNumber: e.target.value,
+              })
             }
             sx={{ mb: 2 }}
           />
@@ -234,4 +242,4 @@ const RestStaffDashboard = () => {
   );
 };
 
-export default RestStaffDashboard;
+export default RestPendingUsersDashboard;

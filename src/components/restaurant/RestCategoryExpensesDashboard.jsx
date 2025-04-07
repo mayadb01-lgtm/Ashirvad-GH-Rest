@@ -204,6 +204,16 @@ const CategoriesExpensesDashboard = () => {
         width: "100%",
       }}
     >
+      <Box
+        sx={{
+          alignItems: "center",
+          py: 3,
+        }}
+      >
+        <Typography variant="h5" fontWeight={600} color="text.primary">
+          Categories and Expense Management
+        </Typography>
+      </Box>
       <TextField
         label="Search Categories"
         variant="outlined"

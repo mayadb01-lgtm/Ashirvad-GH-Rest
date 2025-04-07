@@ -5,6 +5,7 @@ import entryReducer from "./reducers/entryReducer";
 import restEntryReducer from "./reducers/restEntryReducer";
 import restStaffReducer from "./reducers/restStaffReducer";
 import restCategoryReducer from "./reducers/restCategory";
+import restPendingReducer from "./reducers/restPendingReducer";
 
 const Store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ const Store = configureStore({
     restEntry: restEntryReducer,
     restStaff: restStaffReducer,
     restCategory: restCategoryReducer,
+    restPending: restPendingReducer,
   },
 });
 
