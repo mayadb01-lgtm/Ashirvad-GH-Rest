@@ -113,6 +113,24 @@ router.put("/update-entry/:date", async (req, res) => {
   }
 });
 
+// Delete Entry
+router.delete("/delete-entry/:date", async (req, res) => {
+  try {
+    const createDate = req.params.date;
+    const entry = await RestEntry.findOneAndDelete({ createDate });
+
+    res.status(200).json({
+      success: true,
+      data: entry,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
 // Get Entries by Date Range
 router.get("/get-entries/:startDate/:endDate", async (req, res) => {
   try {

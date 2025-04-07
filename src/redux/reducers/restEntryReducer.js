@@ -33,6 +33,20 @@ const restEntryReducer = createReducer(initialState, (builder) => {
       state.error = action.payload;
       state.restEntries = [];
     })
+    // Delete Entry By Date
+    .addCase("DeleteRestEntryRequest", (state) => {
+      state.loading = true;
+    })
+    .addCase("DeleteRestEntrySuccess", (state, action) => {
+      state.loading = false;
+      state.restEntries = state.restEntries.filter(
+        (entry) => entry._id !== action.payload
+      );
+    })
+    .addCase("DeleteRestEntryFailure", (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+    })
     // Get Entries By Date Range
     .addCase("GetRestEntriesByDateRangeRequest", (state) => {
       state.loading = true;

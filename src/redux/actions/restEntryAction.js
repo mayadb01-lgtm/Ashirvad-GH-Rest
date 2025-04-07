@@ -49,6 +49,26 @@ export const getRestEntryByDate = (date) => async (dispatch) => {
   }
 };
 
+// Delete Restaurant Entry by Date
+export const deleteRestEntryByDate = (date) => async (dispatch) => {
+  try {
+    dispatch({ type: "DeleteRestEntryRequest" });
+    const { data } = await axios.delete(
+      `${import.meta.env.VITE_REACT_APP_SERVER_URL}/restEntry/delete-entry/${date}`
+    );
+    console.log("Restaurant Entry deleted successfully", data);
+    dispatch({ type: "DeleteRestEntrySuccess", payload: data.data });
+    toast.success("Restaurant Entry deleted successfully");
+  } catch (error) {
+    dispatch({
+      type: "DeleteRestEntryFailure",
+      payload: error?.response?.data?.message,
+    });
+    toast.error(error?.response?.data?.message);
+    console.log("Error Catch", error?.response?.data?.message);
+  }
+};
+
 // Get Restaurant Entry by Date Range
 export const getRestEntriesByDateRange =
   (startDate, endDate) => async (dispatch) => {

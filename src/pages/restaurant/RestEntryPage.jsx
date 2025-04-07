@@ -19,6 +19,7 @@ import RestPendingTable from "../../components/restaurant/RestPendingTable";
 import toast from "react-hot-toast";
 import {
   createRestEntry,
+  deleteRestEntryByDate,
   getRestEntryByDate,
   getRestStaffGHLastSevenDays,
   updateRestEntryByDate,
@@ -340,6 +341,23 @@ const RestEntryPage = () => {
     }
   };
 
+  const handleDeleteRestEntry = async () => {
+    try {
+      const confirmSubmit = window.confirm(
+        `Are you sure you want to delete entries for ${selectedDate}?`
+      );
+      if (!confirmSubmit) return;
+      dispatch(deleteRestEntryByDate(selectedDate));
+      setSelectedDate(today);
+      resetForm();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ||
+          "An error occurred while deleting the entry."
+      );
+    }
+  };
+
   const handleEditRestEntry = async () => {
     try {
       if (restEntries.grandTotal === 0) {
@@ -567,22 +585,35 @@ const RestEntryPage = () => {
                     Reset
                   </Button>
                   {restEntries && restEntries.grandTotal > 0 ? (
-                    <Button
-                      variant="contained"
-                      color="secondary"
-                      sx={{
-                        mx: 1,
-                        "&:hover": { backgroundColor: "secondary" },
-                      }}
-                      onClick={handleEditRestEntry}
-                    >
-                      Edit
-                    </Button>
+                    <>
+                      <Button
+                        variant="contained"
+                        color="secondary"
+                        sx={{
+                          mx: 1,
+                          "&:hover": { backgroundColor: "secondary" },
+                        }}
+                        onClick={handleEditRestEntry}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        sx={{ mx: 1 }}
+                        onClick={handleDeleteRestEntry}
+                      >
+                        Delete
+                      </Button>
+                    </>
                   ) : (
                     <Button
                       variant="contained"
                       color="primary"
-                      sx={{ mx: 1, "&:hover": { backgroundColor: "#64b5f6" } }}
+                      sx={{
+                        mx: 1,
+                        "&:hover": { backgroundColor: "#64b5f6" },
+                      }}
                       onClick={handleCreateRestEntry}
                     >
                       Submit
