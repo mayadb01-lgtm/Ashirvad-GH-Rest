@@ -25,6 +25,7 @@ import { BookOutlined } from "@mui/icons-material";
 import BankBooksDashboard from "../components/restaurant/RestBankBookEntry";
 import RestPendingUsersDashboard from "../components/restaurant/RestPendingUsersDashboard";
 import GHSalesDashboardRange from "../components/guest-house/GHDashboardRange";
+import GHHome from "../components/guest-house/GHHome";
 dayjs.locale("en-gb");
 
 const NAVIGATION = [
@@ -34,6 +35,7 @@ const NAVIGATION = [
     icon: <DashboardIcon />,
   },
   { kind: "header", title: "Guest House" },
+  { segment: "guest-house", title: "Guest House", icon: <HotelIcon /> },
   {
     segment: "gh-dashboard",
     title: "GH-Dashboard",
@@ -136,6 +138,8 @@ const DashboardPage = () => {
     switch (segments[0]) {
       case "gh-dashboard":
         return <GHDashboard />;
+      case "guest-house":
+        return <GHHome />;
       case "gh-dashboard-range":
         return <GHSalesDashboardRange />;
       case "gh-reports":
