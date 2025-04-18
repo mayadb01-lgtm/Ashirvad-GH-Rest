@@ -45,20 +45,97 @@ const GHDashboard = () => {
   // Memoized table columns
   const columns = useMemo(
     () => [
-      { field: "id", headerName: "ID", width: 70 },
-      { field: "roomNo", headerName: "Room No", width: 130 },
-      { field: "cost", headerName: "Price", width: 100 },
-      { field: "roomType", headerName: "Room Type", width: 100 },
-      { field: "type", headerName: "Type", width: 100 },
-      { field: "rate", headerName: "Rate", width: 100 },
-      { field: "noOfPeople", headerName: "People", width: 100 },
-      { field: "type", headerName: "Type", width: 120 },
-      { field: "modeOfPayment", headerName: "Payment Mode", width: 140 },
-      { field: "checkInTime", headerName: "Check In", width: 130 },
-      { field: "checkOutTime", headerName: "Check Out", width: 130 },
-      { field: "date", headerName: "Date", width: 130 },
-      { field: "period", headerName: "Period", width: 110 },
-      { field: "createDate", headerName: "Created At", width: 140 },
+      {
+        field: "id",
+        headerName: "ID",
+        width: 70,
+        headerAlign: "center",
+        align: "center",
+      },
+      {
+        field: "roomNo",
+        headerName: "Room No",
+        width: 130,
+        headerAlign: "center",
+        align: "center",
+      },
+      {
+        field: "cost",
+        headerName: "Price",
+        width: 100,
+        headerAlign: "center",
+        align: "center",
+      },
+      {
+        field: "roomType",
+        headerName: "Room Type",
+        width: 130,
+        headerAlign: "center",
+        align: "center",
+      },
+      {
+        field: "rate",
+        headerName: "Rate",
+        width: 100,
+        headerAlign: "center",
+        align: "center",
+      },
+      {
+        field: "noOfPeople",
+        headerName: "People",
+        width: 100,
+        headerAlign: "center",
+        align: "center",
+      },
+      {
+        field: "type",
+        headerName: "Type",
+        width: 120,
+        headerAlign: "center",
+        align: "center",
+      },
+      {
+        field: "modeOfPayment",
+        headerName: "Payment Mode",
+        width: 140,
+        headerAlign: "center",
+        align: "center",
+      },
+      {
+        field: "checkInTime",
+        headerName: "Check In",
+        width: 130,
+        headerAlign: "center",
+        align: "center",
+      },
+      {
+        field: "checkOutTime",
+        headerName: "Check Out",
+        width: 130,
+        headerAlign: "center",
+        align: "center",
+      },
+      {
+        field: "date",
+        headerName: "Date",
+        width: 130,
+        headerAlign: "center",
+        align: "center",
+      },
+      {
+        field: "period",
+        headerName: "Period",
+        width: 110,
+        headerAlign: "center",
+        align: "center",
+      },
+      {
+        field: "createDate",
+        headerName: "Created At",
+        width: 140,
+        headerAlign: "center",
+        align: "center",
+      },
     ],
     []
   );
@@ -102,7 +179,14 @@ const GHDashboard = () => {
           rows={entries}
           columns={columns}
           pageSize={5}
-          sx={{ mt: 2, height: 400, width: "100%" }}
+          sx={{
+            mt: 2,
+            height: 400,
+            width: "95%",
+            "& .MuiDataGrid-columnHeaderTitle": {
+              fontWeight: "bold",
+            },
+          }}
           disableSelectionOnClick
           getRowId={(row) => row._id}
         />

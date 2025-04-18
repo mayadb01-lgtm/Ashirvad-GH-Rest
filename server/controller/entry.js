@@ -138,14 +138,21 @@ router.get("/get-entry/:date", async (req, res) => {
   }
 });
 
+// Helper function to convert "DD-MM-YYYY" to "YYYY-MM-DD"
+const parseDateString = (dateString) => {
+  const [day, month, year] = dateString.split("-");
+  return new Date(`${year}-${month}-${day}`); // Converts to "YYYY-MM-DD"
+};
+
 // Get Entries by Date Range
 router.get("/get-entries/:startDate/:endDate", async (req, res) => {
   try {
-    const startDate = req.params.startDate;
-    const endDate = req.params.endDate;
+    const startDate = parseDateString(req.params.startDate);
+    const endDate = parseDateString(req.params.endDate);
+    endDate.setHours(23, 59, 59, 999); // Ensure full-day inclusion
 
     const entries = await Entry.find({
-      date: {
+      createdAt: {
         $gte: startDate,
         $lte: endDate,
       },
@@ -223,6 +230,36 @@ router.put("/update-entry/:date", async (req, res) => {
       success: true,
       message: "Entry updated successfully.",
       data: updatedEntry,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// Delete Entry by Date
+router.delete("/delete-entry/:date", async (req, res) => {
+  try {
+    const date = req.params.date;
+    // Find the Entry by date and authenticated user's ID
+    const entry = await Entry.findOneAndDelete({
+      date,
+      // user: req.user._id,
+    });
+
+    if (!entry) {
+      return res.status(404).json({
+        success: false,
+        message: "Entry not found.",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Entry deleted successfully.",
+      data: entry,
     });
   } catch (error) {
     res.status(500).json({

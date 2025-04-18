@@ -24,6 +24,7 @@ import RestExpensesDashboard from "../components/restaurant/RestExpensesDashboar
 import { BookOutlined } from "@mui/icons-material";
 import BankBooksDashboard from "../components/restaurant/RestBankBookEntry";
 import RestPendingUsersDashboard from "../components/restaurant/RestPendingUsersDashboard";
+import GHSalesDashboardRange from "../components/guest-house/GHDashboardRange";
 dayjs.locale("en-gb");
 
 const NAVIGATION = [
@@ -33,6 +34,16 @@ const NAVIGATION = [
     icon: <DashboardIcon />,
   },
   { kind: "header", title: "Guest House" },
+  {
+    segment: "gh-dashboard",
+    title: "GH-Dashboard",
+    icon: <HotelIcon />,
+  },
+  {
+    segment: "gh-dashboard-range",
+    title: "GH-Dashboard-Range",
+    icon: <HotelIcon />,
+  },
   {
     segment: "gh-reports",
     title: "Reports",
@@ -45,12 +56,12 @@ const NAVIGATION = [
       },
     ],
   },
-  {
-    segment: "gh-dashboard",
-    title: "GH-Dashboard",
-    icon: <HotelIcon />,
-  },
   { kind: "header", title: "Restaurant" },
+  {
+    segment: "res-dashboard",
+    title: "Res-Dashboard",
+    icon: <RestaurantIcon />,
+  },
   {
     segment: "res-reports",
     title: "Reports",
@@ -77,11 +88,6 @@ const NAVIGATION = [
         icon: <BookOutlined />,
       },
     ],
-  },
-  {
-    segment: "res-dashboard",
-    title: "Res-Dashboard",
-    icon: <RestaurantIcon />,
   },
   { segment: "manage-staff", title: "Manage Staff", icon: <BadgeIcon /> },
   {
@@ -130,6 +136,8 @@ const DashboardPage = () => {
     switch (segments[0]) {
       case "gh-dashboard":
         return <GHDashboard />;
+      case "gh-dashboard-range":
+        return <GHSalesDashboardRange />;
       case "gh-reports":
         if (segments[1] === "sales-report") {
           return <GHSalesDashboard />;

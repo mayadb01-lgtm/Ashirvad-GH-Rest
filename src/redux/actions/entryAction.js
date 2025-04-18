@@ -92,6 +92,26 @@ export const updateEntryByDate = (date, entryData) => async (dispatch) => {
   }
 };
 
+// Delete Entry by Date
+export const deleteEntryByDate = (date) => async (dispatch) => {
+  try {
+    dispatch({ type: "DeleteEntryRequest" });
+    const { data } = await axios.delete(
+      `${import.meta.env.VITE_REACT_APP_SERVER_URL}/entry/delete-entry/${date}`
+    );
+    console.log("Entry deleted successfully", data);
+    dispatch({ type: "DeleteEntrySuccess", payload: data.data });
+    toast.success("Entry deleted successfully");
+  } catch (error) {
+    dispatch({
+      type: "DeleteEntryFailure",
+      payload: error?.response?.data?.message,
+    });
+    toast.error(error?.response?.data?.message);
+    console.log("Error Catch", error?.response?.data?.message);
+  }
+};
+
 // Get UnPaid Entries
 export const getUnPaidEntries = () => async (dispatch) => {
   try {
