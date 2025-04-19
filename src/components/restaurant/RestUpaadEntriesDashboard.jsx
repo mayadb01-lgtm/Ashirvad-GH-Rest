@@ -47,18 +47,20 @@ const RestUpaadEntriesDashboard = () => {
     { field: "amount", headerName: "Amount", width: 150 },
   ];
 
-  const selectedStaffEntries = restEntries.filter(
-    (entry) => entry.fullname === selectedStaff?.fullname
-  );
+  const selectedStaffEntries =
+    restEntries &&
+    restEntries.filter((entry) => entry.fullname === selectedStaff?.fullname);
 
   const preparedEntries = useMemo(() => {
     const totalRow = {
       id: "Total",
       createDate: "",
       fullname: "Total",
-      amount: selectedStaffEntries
-        .map((entry) => entry.amount)
-        .reduce((a, b) => a + b, 0),
+      amount: selectedStaff
+        ? selectedStaffEntries
+            .map((entry) => entry.amount)
+            .reduce((a, b) => a + b, 0)
+        : restEntries.map((entry) => entry.amount).reduce((a, b) => a + b, 0),
     };
     if (selectedStaff) {
       return selectedStaffEntries
@@ -143,7 +145,13 @@ const RestUpaadEntriesDashboard = () => {
           rows={preparedEntries}
           columns={columns}
           pageSize={5}
-          sx={{ mt: 2, height: 400 }}
+          sx={{
+            mt: 2,
+            height: 400,
+            "& .MuiDataGrid-columnHeaderTitle": {
+              fontWeight: "bold",
+            },
+          }}
         />
       )}
     </Box>

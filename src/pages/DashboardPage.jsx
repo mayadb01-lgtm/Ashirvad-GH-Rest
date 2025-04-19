@@ -26,6 +26,7 @@ import BankBooksDashboard from "../components/restaurant/RestBankBookEntry";
 import RestPendingUsersDashboard from "../components/restaurant/RestPendingUsersDashboard";
 import GHSalesDashboardRange from "../components/guest-house/GHDashboardRange";
 import GHHome from "../components/guest-house/GHHome";
+import RestHome from "../components/restaurant/RestHome";
 dayjs.locale("en-gb");
 
 const NAVIGATION = [
@@ -59,6 +60,7 @@ const NAVIGATION = [
     ],
   },
   { kind: "header", title: "Restaurant" },
+  { segment: "restaurant", title: "Restaurant", icon: <HotelIcon /> },
   {
     segment: "res-dashboard",
     title: "Res-Dashboard",
@@ -147,6 +149,8 @@ const DashboardPage = () => {
           return <GHSalesDashboard />;
         }
         return <Typography>Reports Overview</Typography>;
+      case "restaurant":
+        return <RestHome />;
       case "res-reports":
         if (segments[1] === "sales-report") {
           return <RestSalesDashboard />;

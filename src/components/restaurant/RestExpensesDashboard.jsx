@@ -78,9 +78,9 @@ const RestExpensesDashboard = () => {
     },
   ];
 
-  const selectedStaffEntries = restEntries.filter(
-    (entry) => entry.categoryName === selectedCategory
-  );
+  const selectedStaffEntries =
+    restEntries &&
+    restEntries.filter((entry) => entry.categoryName === selectedCategory);
 
   const preparedEntries = useMemo(() => {
     const totalRow = {
@@ -88,9 +88,9 @@ const RestExpensesDashboard = () => {
       createDate: "",
       expenseName: "",
       categoryName: "",
-      amount: selectedStaffEntries
-        .map((entry) => entry.amount)
-        .reduce((a, b) => a + b, 0),
+      amount: selectedCategory
+        ? selectedStaffEntries.reduce((a, b) => a + b.amount, 0)
+        : restEntries.reduce((a, b) => a + b.amount, 0),
     };
     if (selectedCategory) {
       return selectedStaffEntries
@@ -118,7 +118,7 @@ const RestExpensesDashboard = () => {
 
   const optionsForCategory = useMemo(() => {
     const uniqueCategories = new Set(
-      restEntries.map((entry) => entry.categoryName)
+      restEntries && restEntries.map((entry) => entry.categoryName)
     );
     return Array.from(uniqueCategories);
   }, [restEntries]);
@@ -188,7 +188,13 @@ const RestExpensesDashboard = () => {
           rows={preparedEntries}
           columns={columns}
           pageSize={5}
-          sx={{ mt: 2, height: 400 }}
+          sx={{
+            mt: 2,
+            height: 400,
+            "& .MuiDataGrid-columnHeaderTitle": {
+              fontWeight: "bold",
+            },
+          }}
         />
       )}
     </Box>

@@ -78,21 +78,25 @@ const BankBooksDashboard = () => {
     };
 
     if (selectedMethod) {
-      const rows = restEntries.map((entry, index) => ({
-        id: index + 1,
-        createDate: entry.createDate,
-        [selectedMethod]: entry[selectedMethod],
-      }));
+      const rows =
+        restEntries &&
+        restEntries.map((entry, index) => ({
+          id: index + 1,
+          createDate: entry.createDate,
+          [selectedMethod]: entry[selectedMethod],
+        }));
       return [...rows, totalRow];
     } else {
-      const rows = restEntries.map((entry, index) => ({
-        id: index + 1,
-        createDate: entry.createDate,
-        Cash: entry.Cash,
-        Card: entry.Card,
-        PP: entry.PP,
-        grandTotal: entry.grandTotal,
-      }));
+      const rows =
+        restEntries &&
+        restEntries.map((entry, index) => ({
+          id: index + 1,
+          createDate: entry.createDate,
+          Cash: entry.Cash,
+          Card: entry.Card,
+          PP: entry.PP,
+          grandTotal: entry.grandTotal,
+        }));
       return [...rows, totalRow];
     }
   }, [restEntries, selectedMethod]);
@@ -157,7 +161,13 @@ const BankBooksDashboard = () => {
           rows={preparedEntries}
           columns={columns}
           pageSize={5}
-          sx={{ mt: 2, height: 400 }}
+          sx={{
+            mt: 2,
+            height: 400,
+            "& .MuiDataGrid-columnHeaderTitle": {
+              fontWeight: "bold",
+            },
+          }}
         />
       )}
     </Box>

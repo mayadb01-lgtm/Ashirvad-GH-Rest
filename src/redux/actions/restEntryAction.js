@@ -183,23 +183,24 @@ export const getRestStaffGHLastSevenDays = () => async (dispatch) => {
 };
 
 // Get Entry by Payment Method - Date Range
-export const getRestEntryByPaymentMethod = (dateRange) => async (dispatch) => {
-  try {
-    dispatch({ type: "GetRestEntryByPaymentMethodRequest" });
-    const { data } = await axios.get(
-      `${import.meta.env.VITE_REACT_APP_SERVER_URL}/restEntry/get-entries-by-payment-method/${dateRange[0]}/${dateRange[1]}`
-    );
-    console.log("Entry by Payment Method fetched successfully", data);
-    dispatch({
-      type: "GetRestEntryByPaymentMethodSuccess",
-      payload: data.data,
-    });
-  } catch (error) {
-    dispatch({
-      type: "GetRestEntryByPaymentMethodFailure",
-      payload: error?.response?.data?.message,
-    });
-    toast.error(error?.response?.data?.message);
-    console.log("Error Catch", error?.response?.data?.message);
-  }
-};
+export const getRestEntryByPaymentMethod =
+  (startDate, endDate) => async (dispatch) => {
+    try {
+      dispatch({ type: "GetRestEntryByPaymentMethodRequest" });
+      const { data } = await axios.get(
+        `${import.meta.env.VITE_REACT_APP_SERVER_URL}/restEntry/get-entries-by-payment-method/${startDate}/${endDate}`
+      );
+      console.log("Entry by Payment Method fetched successfully", data);
+      dispatch({
+        type: "GetRestEntryByPaymentMethodSuccess",
+        payload: data.data,
+      });
+    } catch (error) {
+      dispatch({
+        type: "GetRestEntryByPaymentMethodFailure",
+        payload: error?.response?.data?.message,
+      });
+      toast.error(error?.response?.data?.message);
+      console.log("Error Catch", error?.response?.data?.message);
+    }
+  };

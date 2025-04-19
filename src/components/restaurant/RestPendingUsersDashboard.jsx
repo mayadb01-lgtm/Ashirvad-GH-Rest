@@ -171,7 +171,6 @@ const RestPendingUsersDashboard = () => {
             sx={{
               mt: 2,
               height: 400,
-              width: "90%",
               "& .MuiDataGrid-columnHeaderTitle": {
                 fontWeight: "bold",
               },

@@ -47,7 +47,9 @@ const RestSalesDashboard = () => {
   const totalRow = {
     id: "Total",
     date: "Total",
-    total: restEntries.reduce((total, entry) => total + entry.grandTotal, 0),
+    total:
+      restEntries &&
+      restEntries.reduce((total, entry) => total + entry.grandTotal, 0),
   };
 
   const preparedEntries = restEntries
@@ -144,7 +146,13 @@ const RestSalesDashboard = () => {
           rows={preparedEntries}
           columns={columns}
           pageSize={5}
-          sx={{ mt: 2, height: 400 }}
+          sx={{
+            mt: 2,
+            height: 400,
+            "& .MuiDataGrid-columnHeaderTitle": {
+              fontWeight: "bold",
+            },
+          }}
         />
       )}
     </Box>

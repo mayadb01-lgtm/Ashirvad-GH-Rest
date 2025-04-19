@@ -139,7 +139,7 @@ router.get("/get-entries/:startDate/:endDate", async (req, res) => {
     endDate.setHours(23, 59, 59, 999); // Ensure full-day inclusion
 
     const entries = await RestEntry.find({
-      createDate: { $gte: startDate, $lte: endDate },
+      createdAt: { $gte: startDate, $lte: endDate },
     });
 
     res.status(200).json({
@@ -220,7 +220,7 @@ router.get(
       const endDate = parseDateString(req.params.endDate);
       const entries = await RestEntry.find(
         {
-          createDate: { $gte: startDate, $lte: endDate },
+          createdAt: { $gte: startDate, $lte: endDate },
         },
         {
           _id: 1,

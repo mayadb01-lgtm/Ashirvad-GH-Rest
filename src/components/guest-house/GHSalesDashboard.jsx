@@ -119,7 +119,13 @@ const GHSalesDashboard = () => {
           rows={preparedEntries}
           columns={columns}
           pageSize={5}
-          sx={{ mt: 2, height: 400 }}
+          sx={{
+            mt: 2,
+            height: 400,
+            "& .MuiDataGrid-columnHeaderTitle": {
+              fontWeight: "bold",
+            },
+          }}
         />
       )}
     </Box>
