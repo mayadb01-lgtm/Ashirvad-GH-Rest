@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAppSelector, useAppDispatch } from "../../redux/hooks";
-// DayJs
 import { DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -16,16 +15,18 @@ import {
   Typography,
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
-import { LineChart, BarChart, PieChart } from "@mui/x-charts";
 import { getRestEntriesByDateRange } from "../../redux/actions/restEntryAction";
+import { formatChartData } from "../charts/chartUtils";
+import LineChartComponent from "../charts/LineChartComponent";
+import PieChartComponent from "../charts/PieChartComponent";
 
 const RestHome = () => {
   const dispatch = useAppDispatch();
-  const [isFullScreen, setIsFullScreen] = useState(false);
   const { loading, restEntries } = useAppSelector((state) => state.restEntry);
+
   const [startDate, setStartDate] = useState(dayjs().startOf("month"));
   const [endDate, setEndDate] = useState(dayjs());
-  const [showPercentage, setShowPercentage] = useState(true);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const [showDetails, setShowDetails] = useState(true);
 
   useEffect(() => {
@@ -35,111 +36,78 @@ const RestHome = () => {
         endDate.format("DD-MM-YYYY")
       )
     );
-  }, [dispatch, endDate, startDate]);
+  }, [dispatch, startDate, endDate]);
 
-  const handleStartDateChange = useCallback((newDate) => {
-    if (newDate) setStartDate(newDate);
-  }, []);
+  const handleStartDateChange = useCallback(
+    (newDate) => newDate && setStartDate(newDate),
+    []
+  );
+  const handleEndDateChange = useCallback(
+    (newDate) => newDate && setEndDate(newDate),
+    []
+  );
 
-  const handleEndDateChange = useCallback((newDate) => {
-    if (newDate) setEndDate(newDate);
-  }, []);
+  // Prepare - Chart 1 data = Expenses by category
+  const pieChartExpensesCategoryData = useMemo(
+    () =>
+      restEntries?.length
+        ? formatChartData(restEntries, "categoryExpenses")
+        : [],
+    [restEntries]
+  );
+
+  const totalExpensesAmount = pieChartExpensesCategoryData.reduce(
+    (sum, entry) => sum + entry.value,
+    0
+  );
+
+  // Prepare - Chart 2 data = Expenses by payment method
+  const upaadLineChartData = useMemo(
+    () => (restEntries?.length ? formatChartData(restEntries, "upaad") : []),
+    [restEntries]
+  );
+
+  const totalUpaadAmount = upaadLineChartData.reduce(
+    (sum, entry) => sum + entry.amount,
+    0
+  );
+
+  // Prepare - Chart 3 data = Expenses by payment method
+  const paymentMethodLineChartData = useMemo(
+    () =>
+      restEntries?.length ? formatChartData(restEntries, "paymentMethods") : [],
+    [restEntries]
+  );
+
+  const totalPaymentMethodAmount = paymentMethodLineChartData.reduce(
+    (sum, entry) => sum + entry.value,
+    0
+  );
+
+  // Prepare - Chart 4 data = Sales Per Day
+  const salesPerDayLineChartData = useMemo(
+    () =>
+      restEntries?.length ? formatChartData(restEntries, "salesPerDay") : [],
+    [restEntries]
+  );
+
+  const totalSalesPerDayAmount = salesPerDayLineChartData.reduce(
+    (sum, entry) => sum + entry.amount,
+    0
+  );
 
   const chartBoxStyle = {
     width: "100%",
-    height: "100%",
+    height: isFullScreen ? "80vh" : { xs: "320px", sm: "550px" },
     bgcolor: "#fff",
     borderRadius: 3,
     boxShadow: 3,
     p: 3,
   };
 
-  // Chart 1: Expenses Report
-
-  const pieChartExpensesCategoryData = useMemo(() => {
-    if (!Array.isArray(restEntries) || restEntries.length === 0) return [];
-
-    const categoryTotals = {};
-
-    restEntries.forEach((entry) => {
-      entry?.expenses?.forEach((expense) => {
-        const { categoryName, amount = 0 } = expense || {};
-        if (!categoryName) return;
-
-        if (categoryTotals[categoryName]) {
-          categoryTotals[categoryName] += amount;
-        } else {
-          categoryTotals[categoryName] = amount;
-        }
-      });
-    });
-
-    const totalAmount = Object.values(categoryTotals).reduce(
-      (sum, amount) => sum + amount,
-      0
-    );
-
-    return Object.entries(categoryTotals).map(([categoryName, amount]) => ({
-      id: categoryName,
-      label: categoryName,
-      value: amount,
-      percentage:
-        totalAmount > 0 ? ((amount / totalAmount) * 100).toFixed(2) : "0.00",
-    }));
-  }, [restEntries]);
-
-  const totalExpensesAmount = useMemo(() => {
-    return pieChartExpensesCategoryData.reduce(
-      (sum, item) => sum + item.value,
-      0
-    );
-  }, [pieChartExpensesCategoryData]);
-
-  // Chart 2: Payment Method Pie Chart
-
-  const pieChartPaymentMethodData = useMemo(() => {
-    if (!Array.isArray(restEntries) || restEntries.length === 0) return [];
-
-    const paymentTotals = {
-      Card: 0,
-      Cash: 0,
-      PP: 0,
-    };
-
-    restEntries.forEach((entry) => {
-      const { totalCard, totalCash, totalPP, grandTotal } = entry;
-
-      if (totalCard) paymentTotals.Card += totalCard;
-      if (totalCash) paymentTotals.Cash += totalCash;
-      if (totalPP) paymentTotals.PP += totalPP;
-    });
-
-    const totalAmount =
-      paymentTotals.Card + paymentTotals.Cash + paymentTotals.PP;
-
-    return Object.entries(paymentTotals).map(([method, amount]) => ({
-      id: method,
-      label: method,
-      value: amount,
-      percentage:
-        totalAmount > 0 ? ((amount / totalAmount) * 100).toFixed(2) : "0.00",
-    }));
-  }, [restEntries]);
-
-  const totalPaymentAmount = useMemo(() => {
-    return pieChartPaymentMethodData.reduce((sum, item) => sum + item.value, 0);
-  }, [pieChartPaymentMethodData]);
-
   return (
-    <Box
-      sx={{
-        px: { xs: 2, md: 2 },
-        py: 2,
-        bgcolor: "#f5f5f5",
-        minHeight: "100vh",
-      }}
-    >
-      <Typography variant="h5" fontWeight={700} textAlign="center" mb={2}>
+    <Box sx={{ px: 2, py: 2, bgcolor: "#f5f5f5", minHeight: "100vh" }}>
+      <Typography variant="h5" fontWeight={700} textAlign="center" mb={3}>
         🍽️ Restaurant Dashboard
       </Typography>
 
@@ -147,8 +115,7 @@ const RestHome = () => {
         direction={{ xs: "column", sm: "row" }}
         spacing={2}
         justifyContent="center"
-        mb={2}
-        width={"100%"}
+        mb={3}
       >
         <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en-gb">
           <DatePicker
@@ -175,33 +142,14 @@ const RestHome = () => {
           }
           label="Full Screen Graph"
         />
-
-        {/* Toggle Percentage / Amount */}
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={showPercentage}
-              onChange={() => setShowPercentage((prev) => !prev)}
-              color="primary"
-            />
-          }
-          label="Show Percentage"
-          sx={{
-            ".MuiFormControlLabel-label": { fontWeight: 500 },
-          }}
-        />
         <FormControlLabel
           control={
             <Checkbox
               checked={showDetails}
               onChange={() => setShowDetails((prev) => !prev)}
-              color="primary"
             />
           }
           label="Detailed View"
-          sx={{
-            ".MuiFormControlLabel-label": { fontWeight: 500 },
-          }}
         />
       </Stack>
 
@@ -223,22 +171,22 @@ const RestHome = () => {
           }}
           width={"100%"}
         >
-          {/* Chart 1 - Pie Chart = Expenses Report*/}
           <Stack
             direction={isFullScreen ? "column" : "row"}
             spacing={2}
-            alignItems="flex-start"
+            alignItems="center"
             mb={2}
             display="flex"
             width={"100%"}
           >
+            {/* Pie Chart - Expenses */}
             <Grid item xs={12} md={12} sx={chartBoxStyle}>
-              <Box>
+              <Box width="100%" height="100%">
                 <Stack
                   direction="row"
                   spacing={2}
                   alignItems="center"
-                  justifyContent={"space-between"}
+                  justifyContent="space-between"
                 >
                   <Typography
                     variant="subtitle1"
@@ -257,61 +205,25 @@ const RestHome = () => {
                     Total Spent: ₹{totalExpensesAmount.toFixed(2)}
                   </Typography>
                 </Stack>
-                {/* Pie Chart */}
-                <PieChart
-                  height={isFullScreen ? 500 : 300}
-                  width={isFullScreen ? 1000 : 600}
-                  series={[
-                    {
-                      data: pieChartExpensesCategoryData.map((item, index) => ({
-                        ...item,
-                        color: `hsl(${(index * 45) % 360}, 70%, 50%)`,
-                      })),
-                      arcLabel: (item) =>
-                        showPercentage
-                          ? `${item.percentage}%`
-                          : `₹${item.value.toFixed(0)}`,
-                    },
-                  ]}
-                />
-                <Stack
-                  direction="column"
-                  spacing={1}
-                  mt={2}
-                  display={showDetails ? "block" : "none"}
-                >
-                  {pieChartExpensesCategoryData.map((item, index) => (
-                    <Box
-                      key={item.id}
-                      display="flex"
-                      alignItems="center"
-                      gap={1}
-                    >
-                      <Box
-                        sx={{
-                          width: 16,
-                          height: 16,
-                          borderRadius: "50%",
-                          backgroundColor: `hsl(${(index * 45) % 360}, 70%, 50%)`,
-                        }}
-                      />
-                      <Typography variant="body2">
-                        {item.label}: ₹{item.value.toFixed(2)} (
-                        {item.percentage}%)
-                      </Typography>
-                    </Box>
-                  ))}
-                </Stack>
+                {pieChartExpensesCategoryData.length === 0 ? (
+                  <Typography>No expense data available</Typography>
+                ) : (
+                  <PieChartComponent
+                    data={pieChartExpensesCategoryData}
+                    isFullScreen={isFullScreen}
+                  />
+                )}
               </Box>
             </Grid>
 
+            {/* Line Chart - Upaad */}
             <Grid item xs={12} md={12} sx={chartBoxStyle}>
-              <Box>
+              <Box width="100%" height="100%">
                 <Stack
                   direction="row"
                   spacing={2}
                   alignItems="center"
-                  justifyContent={"space-between"}
+                  justifyContent="space-between"
                 >
                   <Typography
                     variant="subtitle1"
@@ -319,7 +231,7 @@ const RestHome = () => {
                     gutterBottom
                     color="primary"
                   >
-                    💳 Payment Method Distribution
+                    📈 Upaad Report
                   </Typography>
                   <Typography
                     variant="subtitle1"
@@ -327,84 +239,101 @@ const RestHome = () => {
                     gutterBottom
                     color="primary"
                   >
-                    {/* totalPaymentAmount */}
-                    Total Payment: ₹{totalPaymentAmount.toFixed(2)}
+                    Total Spent: ₹{totalUpaadAmount.toFixed(2)}
                   </Typography>
                 </Stack>
+
+                {upaadLineChartData.length === 0 ? (
+                  <Typography>No upaad data available</Typography>
+                ) : (
+                  <LineChartComponent
+                    data={upaadLineChartData}
+                    isFullScreen={isFullScreen}
+                  />
+                )}
               </Box>
-              <PieChart
-                height={isFullScreen ? 500 : 300}
-                width={isFullScreen ? 1000 : 600}
-                series={[
-                  {
-                    data: pieChartPaymentMethodData.map((item, index) => ({
-                      ...item,
-                      color: `hsl(${(index * 45) % 360}, 70%, 50%)`,
-                    })),
-                    arcLabel: (item) =>
-                      showPercentage
-                        ? `${item.percentage}%`
-                        : `₹${item.value.toFixed(0)}`,
-                  },
-                ]}
-              />
-              <Stack
-                direction="column"
-                spacing={1}
-                mt={2}
-                display={showDetails ? "block" : "none"}
-              >
-                {pieChartPaymentMethodData.map((item, index) => (
-                  <Box key={item.id} display="flex" alignItems="center" gap={1}>
-                    <Box
-                      sx={{
-                        width: 16,
-                        height: 16,
-                        borderRadius: "50%",
-                        backgroundColor: `hsl(${(index * 45) % 360}, 70%, 50%)`,
-                      }}
-                    />
-                    <Typography variant="body2">
-                      {item.label}: ₹{item.value.toFixed(2)} ({item.percentage}
-                      %)
-                    </Typography>
-                  </Box>
-                ))}
-              </Stack>
             </Grid>
           </Stack>
           <Stack
             direction={isFullScreen ? "column" : "row"}
-            spacing={isFullScreen ? 4 : 2}
+            spacing={2}
             alignItems="center"
-            mb={isFullScreen ? 4 : 2}
+            mb={2}
             display="flex"
             width={"100%"}
           >
+            {/* Pie Chart - Payment Method */}
             <Grid item xs={12} md={12} sx={chartBoxStyle}>
-              <Box>
-                <Typography
-                  variant="subtitle1"
-                  fontWeight={600}
-                  gutterBottom
-                  color="primary"
-                  marginBlock={2}
+              <Box width="100%" height="100%">
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  alignItems="center"
+                  justifyContent="space-between"
                 >
-                  Upaad 
-                </Typography>
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={600}
+                    gutterBottom
+                    color="primary"
+                  >
+                    💳 Payment Method
+                  </Typography>
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={600}
+                    gutterBottom
+                    color="primary"
+                  >
+                    Total Spent: ₹{totalPaymentMethodAmount.toFixed(2)}
+                  </Typography>
+                </Stack>
+                {pieChartExpensesCategoryData.length === 0 ? (
+                  <Typography>No expense data available</Typography>
+                ) : (
+                  <PieChartComponent
+                    data={paymentMethodLineChartData}
+                    isFullScreen={isFullScreen}
+                  />
+                )}
               </Box>
             </Grid>
 
+            {/* Line Chart - Sales */}
             <Grid item xs={12} md={12} sx={chartBoxStyle}>
-              <Box>
-                <Typography
-                  variant="subtitle1"
-                  fontWeight={600}
-                  gutterBottom
-                  color="primary"
+              <Box width="100%" height="100%">
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  alignItems="center"
+                  justifyContent="space-between"
                 >
-                  Sales
-                </Typography>
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={600}
+                    gutterBottom
+                    color="primary"
+                  >
+                    💰 Sales Report
+                  </Typography>
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={600}
+                    gutterBottom
+                    color="primary"
+                  >
+                    Total Spent: ₹{totalSalesPerDayAmount.toFixed(2)}
+                  </Typography>
+                </Stack>
+
+                {upaadLineChartData.length === 0 ? (
+                  <Typography>No sales data available</Typography>
+                ) : (
+                  <LineChartComponent
+                    data={salesPerDayLineChartData}
+                    isFullScreen={isFullScreen}
+                  />
+                )}
               </Box>
             </Grid>
           </Stack>
