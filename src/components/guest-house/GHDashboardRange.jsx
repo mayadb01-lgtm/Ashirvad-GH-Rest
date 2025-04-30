@@ -25,8 +25,34 @@ import dayjs from "dayjs";
 // import EditIcon from "@mui/icons-material/Edit";
 // import DeleteIcon from "@mui/icons-material/Delete";
 import toast from "react-hot-toast";
+import * as XLSX from "xlsx";
 
 dayjs.locale("en-gb");
+
+const headerMap = {
+  roomNo: "Room Number",
+  cost: "Cost",
+  rate: "Rate",
+  noOfPeople: "No. of People",
+  modeOfPayment: "Payment Mode",
+  fullname: "Full Name",
+  mobileNumber: "Mobile Number",
+  checkInTime: "Check-In Time",
+  checkOutTime: "Check-Out Time",
+  advancePayment: "Advance Payment",
+  advancePaymentDate: "Advance Payment Date",
+  reservationId: "Reservation ID",
+  date: "Booking Date",
+  createDate: "Created Date",
+  updatedDateTime: "Last Updated",
+  period: "Stay Period",
+  createdAt: "Created At",
+  paidDate: "Paid Date",
+  _id: "Entry ID",
+  isPaid: "Is Paid?",
+  updatedAt: "Updated At",
+  roomType: "Room Type",
+};
 
 const GHSalesDashboardRange = () => {
   const dispatch = useAppDispatch();
@@ -82,130 +108,115 @@ const GHSalesDashboardRange = () => {
   // };
 
   // Column definitions for DataGrid
+  const baseColumns = [
+    {
+      field: "id",
+      headerName: "ID",
+      width: 70,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "roomNo",
+      headerName: "Room No",
+      width: 130,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "cost",
+      headerName: "Price",
+      width: 100,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "roomType",
+      headerName: "Room Type",
+      width: 130,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "rate",
+      headerName: "Rate",
+      width: 100,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "noOfPeople",
+      headerName: "People",
+      width: 100,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "type",
+      headerName: "Type",
+      width: 120,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "modeOfPayment",
+      headerName: "Payment Mode",
+      width: 140,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "checkInTime",
+      headerName: "Check In",
+      width: 130,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "checkOutTime",
+      headerName: "Check Out",
+      width: 130,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "date",
+      headerName: "Date",
+      width: 130,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "period",
+      headerName: "Period",
+      width: 110,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "createDate",
+      headerName: "Created At",
+      width: 140,
+      headerAlign: "center",
+      align: "center",
+    },
+  ];
+
   const columns = useMemo(
-    () => [
-      {
-        field: "id",
-        headerName: "ID",
-        width: 70,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "roomNo",
-        headerName: "Room No",
-        width: 130,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "cost",
-        headerName: "Price",
-        width: 100,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "roomType",
-        headerName: "Room Type",
-        width: 130,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "rate",
-        headerName: "Rate",
-        width: 100,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "noOfPeople",
-        headerName: "People",
-        width: 100,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "type",
-        headerName: "Type",
-        width: 120,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "modeOfPayment",
-        headerName: "Payment Mode",
-        width: 140,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "checkInTime",
-        headerName: "Check In",
-        width: 130,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "checkOutTime",
-        headerName: "Check Out",
-        width: 130,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "date",
-        headerName: "Date",
-        width: 130,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "period",
-        headerName: "Period",
-        width: 110,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "createDate",
-        headerName: "Created At",
-        width: 140,
-        headerAlign: "center",
-        align: "center",
-      },
-      // {
-      //   field: "actions",
-      //   headerName: "Actions",
-      //   width: 120,
-      //   sortable: false,
-      //   headerAlign: "center",
-      //   align: "center",
-      //   renderCell: (params) => (
-      //     <>
-      //       <Tooltip title="Edit">
-      //         <IconButton
-      //           color="primary"
-      //           onClick={() => handleEdit(params.row)}
-      //         >
-      //           <EditIcon fontSize="small" />
-      //         </IconButton>
-      //       </Tooltip>
-      //       <Tooltip title="Delete">
-      //         <IconButton
-      //           color="error"
-      //           onClick={() =>
-      //             setEntryToDelete(params.row) & setOpenDeleteConfirm(true)
-      //           }
-      //         >
-      //           <DeleteIcon fontSize="small" />
-      //         </IconButton>
-      //       </Tooltip>
-      //     </>
-      //   ),
-      // },
-    ],
+    () =>
+      baseColumns.map((col) => ({
+        ...col,
+        renderCell: (params) => {
+          if (params.row.type === "group") {
+            return col.field === "roomNo" ? (
+              <strong>{params.row.date}</strong>
+            ) : (
+              ""
+            );
+          }
+          return params.value;
+        },
+      })),
     []
   );
 
@@ -222,6 +233,41 @@ const GHSalesDashboardRange = () => {
           : []
       )
     : [];
+
+  console.log("preparedEntries", preparedEntries);
+
+  const getGroupedRows = (entries) => {
+    let idCounter = 1;
+    const grouped = [];
+
+    // Sort entries by date to keep groups ordered
+    const sortedEntries = [...entries].sort((a, b) =>
+      a.date.localeCompare(b.date)
+    );
+
+    const dateMap = {};
+
+    sortedEntries.forEach((entry) => {
+      if (!dateMap[entry.date]) {
+        // Add a group header row
+        dateMap[entry.date] = true;
+        grouped.push({
+          id: `group-${entry.date}`, // unique id
+          date: entry.date,
+          type: "group",
+        });
+      }
+
+      // Add actual entry with unique ID
+      grouped.push({
+        ...entry,
+        id: `entry-${idCounter++}`, // Ensure uniqueness
+        type: "entry",
+      });
+    });
+
+    return grouped;
+  };
 
   // Safely calculate total cost
   const totalCost = Array.isArray(entries)
@@ -245,6 +291,28 @@ const GHSalesDashboardRange = () => {
       type: "",
     });
   }
+
+  const handleExportToExcel = () => {
+    if (!Array.isArray(preparedEntries) || preparedEntries.length === 0) {
+      toast.error("No data available to export for selected date range.");
+      return;
+    }
+    const exportData = preparedEntries
+      .filter((row) => row.type !== "group" && row.id !== "Total")
+      .map(({ id, type, ...item }) => {
+        const transformed = {};
+        Object.keys(headerMap).forEach((key) => {
+          transformed[headerMap[key]] = item[key];
+        });
+        return transformed;
+      });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Guest Entries");
+
+    XLSX.writeFile(workbook, "GuestHouseEntries.xlsx");
+  };
 
   return (
     <Box
@@ -287,6 +355,14 @@ const GHSalesDashboardRange = () => {
             views={["year", "month", "day"]}
           />
         </LocalizationProvider>
+        <Button
+          variant="outlined"
+          color="primary"
+          sx={{ mt: 2 }}
+          onClick={handleExportToExcel}
+        >
+          Export to Excel
+        </Button>
       </Stack>
 
       {/* Loading or DataGrid */}
@@ -294,15 +370,25 @@ const GHSalesDashboardRange = () => {
         <CircularProgress sx={{ mt: 2 }} />
       ) : (
         <DataGrid
-          rows={preparedEntries}
+          rows={getGroupedRows(preparedEntries)}
           columns={columns}
-          pageSize={5}
+          pageSize={100}
+          getRowClassName={(params) =>
+            params.row.type === "group" ? "group-header" : ""
+          }
+          getRowHeight={(params) => (params.model.type === "group" ? 50 : null)}
           sx={{
             mt: 2,
-            height: 400,
+            height: 600,
             width: "95%",
             "& .MuiDataGrid-columnHeaderTitle": {
               fontWeight: "bold",
+            },
+            "& .group-header": {
+              backgroundColor: "#f0f0f0",
+              fontWeight: "bold",
+              fontSize: "1rem",
+              color: "#333",
             },
           }}
         />
