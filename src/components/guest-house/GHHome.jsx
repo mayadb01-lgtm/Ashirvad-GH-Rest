@@ -14,8 +14,10 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { LineChart, BarChart, PieChart } from "@mui/x-charts";
+import { LineChart, BarChart } from "@mui/x-charts";
 import Grid from "@mui/material/Grid2";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { COLORS, renderActiveShape } from "../charts/chartUtils";
 
 dayjs.locale("en-gb");
 
@@ -25,6 +27,8 @@ const GHHome = () => {
   const { loading, entries } = useAppSelector((state) => state.entry);
   const [startDate, setStartDate] = useState(dayjs().startOf("month"));
   const [endDate, setEndDate] = useState(dayjs());
+  const [activeIndex, setActiveIndex] = useState(0);
+  const onPieEnter = useCallback((_, index) => setActiveIndex(index), []);
 
   useEffect(() => {
     dispatch(getEntriesByDateRange(startDate, endDate));
@@ -77,8 +81,7 @@ const GHHome = () => {
     });
 
     return Object.keys(totals).map((key) => ({
-      id: key,
-      label: key,
+      name: key,
       value: totals[key],
     }));
   }, [entries]);
@@ -252,27 +255,54 @@ const GHHome = () => {
           >
             {/* Chart 3 - Pie Chart */}
             <Grid item xs={12} md={12} sx={chartBoxStyle}>
-              <Box>
-                <Typography
-                  variant="subtitle1"
-                  fontWeight={600}
-                  gutterBottom
-                  color="primary"
-                  marginBlock={2}
+              <Box width="100%" height="100%">
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  alignItems="center"
+                  justifyContent="space-between"
                 >
-                  💳 Payment Method Distribution
-                </Typography>
-                <PieChart
-                  height={isFullScreen ? 500 : 300}
-                  width={isFullScreen ? 1000 : 600}
-                  series={[
-                    {
-                      data: modeOfPaymentData,
-                      arcLabel: (params) =>
-                        `${((params.value / modeOfPaymentData.reduce((a, b) => a + b.value, 0)) * 100).toFixed(0)}%`,
-                    },
-                  ]}
-                />
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={600}
+                    gutterBottom
+                    color="primary"
+                  >
+                    💳 Payment Method Distribution
+                  </Typography>
+                </Stack>
+
+                {modeOfPaymentData
+                  .map((item) => item.value)
+                  .reduce((a, b) => a + b) === 0 ? (
+                  <Typography textAlign="center" mt={4}>
+                    No data available for selected range
+                  </Typography>
+                ) : (
+                  <ResponsiveContainer width="100%" height={330}>
+                    <PieChart>
+                      <Pie
+                        activeIndex={activeIndex}
+                        activeShape={renderActiveShape}
+                        data={modeOfPaymentData.filter((d) => d.value > 0)}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={isFullScreen ? 100 : 60}
+                        outerRadius={isFullScreen ? 160 : 100}
+                        onMouseEnter={onPieEnter}
+                      >
+                        {modeOfPaymentData.map((_, index) => (
+                          <Cell
+                            key={index}
+                            fill={COLORS[index % COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
               </Box>
             </Grid>
 

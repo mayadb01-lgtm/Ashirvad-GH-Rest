@@ -24,7 +24,7 @@ const RestHome = () => {
   const dispatch = useAppDispatch();
   const { loading, restEntries } = useAppSelector((state) => state.restEntry);
 
-  const [startDate, setStartDate] = useState(dayjs().startOf("month"));
+  const [startDate, setStartDate] = useState(dayjs());
   const [endDate, setEndDate] = useState(dayjs());
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showDetails, setShowDetails] = useState(true);
