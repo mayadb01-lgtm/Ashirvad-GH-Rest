@@ -63,6 +63,25 @@ export const roomType = {
   16: "2 Bed",
 };
 
+export const roomNumber = {
+  1: 101,
+  2: 102,
+  3: 103,
+  4: 104,
+  5: 105,
+  6: 106,
+  7: 107,
+  8: 108,
+  9: 201,
+  10: 202,
+  11: 203,
+  12: 204,
+  13: 205,
+  14: 206,
+  15: 207,
+  16: 208,
+};
+
 export const initializePendingJamaRows = () => {
   return Array.from({ length: 10 }, (_, idx) => ({
     id: idx + 1,
@@ -133,10 +152,10 @@ export const processUpdateEntries = (data, period, selectedDate) => {
 
 // Table Component
 
-export const initializeRows = (period, rowsLength, roomCosts, roomType) => {
+export const initializeRows = (period, rowsLength) => {
   return Array.from({ length: rowsLength }, (_, i) => ({
     id: `${period} - ${i + 1}`,
-    roomNo: i + 1,
+    roomNo: roomNumber[i + 1] || 0,
     cost: roomCosts[i + 1] || 0,
     roomType: roomType[i + 1] || "",
     rate: 0,

@@ -21,24 +21,18 @@ import {
 } from "@mui/material";
 import "./TableComponent.css";
 
-const TableComponent = ({
-  period,
-  rowsLength,
-  roomCosts,
-  roomType,
-  onSubmit,
-}) => {
+const TableComponent = ({ period, rowsLength, onSubmit }) => {
   const { entries } = useAppSelector((state) => state.entry);
 
   const [rows, setRows] = useState([]);
 
   useEffect(() => {
     if (entries && entries.length === 0) {
-      setRows(initializeRows(period, rowsLength, roomCosts, roomType));
+      setRows(initializeRows(period, rowsLength));
     }
     if (entries && entries.length > 0) {
       // Reset rows to initial state before updating
-      let initialRows = initializeRows(period, rowsLength, roomCosts, roomType);
+      let initialRows = initializeRows(period, rowsLength);
 
       const dayEntries = entries.filter((entry) => entry?.period === "day");
       const nightEntries = entries.filter((entry) => entry?.period === "night");
@@ -56,18 +50,19 @@ const TableComponent = ({
             ? {
                 ...row,
                 id: entry.id,
+                roomNo: entry.roomNo,
                 cost: entry.cost,
                 roomType: entry.roomType,
                 rate: entry.rate,
                 noOfPeople: entry.noOfPeople,
+                checkOutTime: entry.checkOutTime,
+                checkInTime: entry.checkInTime,
                 type: entry.type,
                 modeOfPayment: entry.modeOfPayment,
                 fullname: entry.fullname,
                 mobileNumber: entry.mobileNumber,
-                checkInTime: entry.checkInTime,
-                checkOutTime: entry.checkOutTime,
-                createDate: entry.createDate,
                 period: entry.period,
+                createDate: entry.createDate,
               }
             : row;
         });
@@ -90,7 +85,7 @@ const TableComponent = ({
 
   const totalsRow = useMemo(() => {
     return {
-      id: `${period}-totals`,
+      // id: `${period}-totals`,
       roomNo: "Totals",
       cost: "",
       roomType: "",
@@ -103,14 +98,14 @@ const TableComponent = ({
           sum + (isNaN(row.noOfPeople) ? 0 : Number(row.noOfPeople)),
         0
       ),
+      checkInTime: "",
+      checkOutTime: "",
       type: "",
       modeOfPayment: "",
       fullname: "",
       mobileNumber: "",
-      checkInTime: "",
-      checkOutTime: "",
     };
-  }, [rows, period]);
+  }, [rows]);
 
   useEffect(() => {
     if (onSubmit) {
@@ -602,6 +597,7 @@ const TableComponent = ({
                 {totalsRow.roomNo}
               </TableCell>
               <TableCell>{totalsRow.cost}</TableCell>
+              <TableCell>{totalsRow.roomType}</TableCell>
               <TableCell>
                 <TextField
                   type="number"

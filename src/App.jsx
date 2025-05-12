@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { Suspense, lazy, useLayoutEffect, useRef } from "react";
+import { Suspense, lazy, useLayoutEffect } from "react";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import ProtectedAdminRoute from "./routes/ProtectedAdminRoute";
@@ -34,11 +34,8 @@ const App = () => {
   const dispatch = useAppDispatch();
   const { isAdminAuthenticated } = useAppSelector((state) => state.admin);
   const { isAuthenticated } = useAppSelector((state) => state.user);
-  const hasDispatched = useRef(false);
 
   useLayoutEffect(() => {
-    if (hasDispatched.current) return;
-
     if (!isAuthenticated && !isAdminAuthenticated) {
       dispatch(loadUser());
       dispatch(loadAdmin());
@@ -47,8 +44,6 @@ const App = () => {
     } else if (isAdminAuthenticated && !isAuthenticated) {
       dispatch(loadAdmin());
     }
-
-    hasDispatched.current = true;
   }, [dispatch, isAdminAuthenticated, isAuthenticated]);
 
   return (

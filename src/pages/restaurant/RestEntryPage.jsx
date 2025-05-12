@@ -281,6 +281,7 @@ const RestEntryPage = () => {
       totalPP: totalPP,
       totalCash: totalCash,
       grandTotal: grandTotal,
+      computerAmount: computerAmount,
     };
   }, [
     selectedDate,
@@ -296,6 +297,7 @@ const RestEntryPage = () => {
     totalPP,
     totalCash,
     grandTotal,
+    computerAmount,
   ]);
 
   const resetForm = () => {
@@ -324,6 +326,10 @@ const RestEntryPage = () => {
         toast.error(
           "Extra amount cannot be negative, please check the entries."
         );
+        return;
+      }
+      if (computerAmount < 0 && computerAmount === 0) {
+        toast.error("Please enter the computer amount before submitting.");
         return;
       }
       const confirmSubmit = window.confirm(
@@ -372,6 +378,10 @@ const RestEntryPage = () => {
         toast.error(
           "Extra amount cannot be negative, please check the entries."
         );
+        return;
+      }
+      if (computerAmount < 0 && computerAmount === 0) {
+        toast.error("Please enter the computer amount before submitting.");
         return;
       }
       const confirmSubmit = window.confirm(

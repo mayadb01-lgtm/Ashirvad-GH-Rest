@@ -11,14 +11,7 @@ import React, { Suspense } from "react";
 
 const TableComponent = React.lazy(() => import("./TableComponent"));
 
-const EntryAccordion = ({
-  title,
-  period,
-  roomCosts,
-  roomType,
-  onSubmit,
-  bgColor,
-}) => {
+const EntryAccordion = ({ title, period, onSubmit, bgColor }) => {
   return (
     <Accordion style={{ boxShadow: "none" }} expanded={true}>
       <AccordionSummary
@@ -51,8 +44,6 @@ const EntryAccordion = ({
             period={period}
             title={`${title} Table`}
             rowsLength={16}
-            roomCosts={roomCosts}
-            roomType={roomType}
             onSubmit={onSubmit}
           />
         </Suspense>
