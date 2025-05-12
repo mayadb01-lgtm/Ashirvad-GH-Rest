@@ -18,6 +18,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { useAppDispatch, useAppSelector } from "../redux/hooks";
 import {
   createEntry,
+  deleteEntryByDate,
   getEntriesByDate,
   getUnPaidEntries,
   updateEntryByDate,
@@ -517,6 +518,24 @@ const EntryPage = () => {
     }
   };
 
+  const handleEntryDelete = async () => {
+    try {
+      const confirmDelete = window.confirm(
+        `Are you sure you want to delete entries for ${selectedDate}?`
+      );
+
+      if (!confirmDelete) return;
+
+      dispatch(deleteEntryByDate(selectedDate));
+      resetForm();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ||
+          "An error occurred while deleting the entry."
+      );
+    }
+  };
+
   if (adminLoading || userLoading || entryLoading) {
     return <ModernLoader adminLoading userLoading entryLoading />;
   }
@@ -688,14 +707,27 @@ const EntryPage = () => {
                 (entries?.length > 0 &&
                   selectedDate == today &&
                   isAuthenticated) ? (
-                  <Button
-                    onClick={handleEntryEdit}
-                    variant="contained"
-                    color="secondary"
-                    sx={{ px: 3, "&:hover": { backgroundColor: "secondary" } }}
-                  >
-                    Edit
-                  </Button>
+                  <>
+                    <Button
+                      onClick={handleEntryEdit}
+                      variant="contained"
+                      color="secondary"
+                      sx={{
+                        px: 3,
+                        "&:hover": { backgroundColor: "secondary" },
+                      }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      onClick={handleEntryDelete}
+                      variant="contained"
+                      color="error"
+                      sx={{ px: 3, "&:hover": { backgroundColor: "#e57373" } }}
+                    >
+                      Delete
+                    </Button>
+                  </>
                 ) : (
                   <Button
                     onClick={handleEntrySubmit}
@@ -709,7 +741,7 @@ const EntryPage = () => {
                 <Button
                   onClick={handleCancelClick}
                   variant="contained"
-                  color="error"
+                  color="warning"
                   sx={{ px: 3, "&:hover": { backgroundColor: "#e57373" } }}
                 >
                   Cancel

@@ -20,6 +20,11 @@ const Home = () => {
       title: "RT Management",
       bg: "#ff6a6a",
     },
+    {
+      path: isAdminAuthenticated ? "/admin/office" : "/office",
+      title: "Office Book Daily Entry",
+      bg: "#97c2ff", // a pleasant blue shade
+    },
   ];
 
   return (

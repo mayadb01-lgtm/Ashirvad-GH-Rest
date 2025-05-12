@@ -9,6 +9,7 @@ import { loadAdmin } from "./redux/actions/adminAction.js";
 import "./App.css";
 import ModernLoader from "./utils/util.jsx";
 import { useAppDispatch, useAppSelector } from "./redux/hooks/index.js";
+import OfficeEntryPage from "./pages/office/OfficeEntryPage.jsx";
 
 const EntryPage = lazy(() => import("./pages/EntryPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
@@ -17,15 +18,15 @@ const LoginPage = lazy(() => import("./pages/LoginPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const AdminLoginPage = lazy(() => import("./pages/AdminLoginPage.jsx"));
 const AdminSignupPage = lazy(() => import("./pages/AdminSignupPage.jsx"));
-const AdminResetPasswordPage = lazy(() =>
-  import("./pages/AdminResetPasswordPage.jsx")
+const AdminResetPasswordPage = lazy(
+  () => import("./pages/AdminResetPasswordPage.jsx")
 );
-const UserResetPasswordPage = lazy(() =>
-  import("./pages/UserResetPasswordPage.jsx")
+const UserResetPasswordPage = lazy(
+  () => import("./pages/UserResetPasswordPage.jsx")
 );
 const Home = lazy(() => import("./pages/Home.jsx"));
-const RestEntryPage = lazy(() =>
-  import("./pages/restaurant/RestEntryPage.jsx")
+const RestEntryPage = lazy(
+  () => import("./pages/restaurant/RestEntryPage.jsx")
 );
 
 const App = () => {
@@ -35,6 +36,10 @@ const App = () => {
   useLayoutEffect(() => {
     if (isAuthenticated && !isAdminAuthenticated) dispatch(loadUser());
     if (isAdminAuthenticated && !isAuthenticated) dispatch(loadAdmin());
+    if (!isAuthenticated && !isAdminAuthenticated) {
+      dispatch(loadUser());
+      dispatch(loadAdmin());
+    }
   }, [dispatch, isAdminAuthenticated, isAuthenticated]);
 
   return (
@@ -69,6 +74,15 @@ const App = () => {
             }
           />
           <Route
+            path="/office"
+            element={
+              <ProtectedRoute>
+                <Navbar />
+                <OfficeEntryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/hotel"
             element={
               <ProtectedAdminRoute>
@@ -83,6 +97,15 @@ const App = () => {
               <ProtectedAdminRoute>
                 <Navbar />
                 <RestEntryPage />
+              </ProtectedAdminRoute>
+            }
+          />
+          <Route
+            path="/admin/office"
+            element={
+              <ProtectedAdminRoute>
+                <Navbar />
+                <OfficeEntryPage />
               </ProtectedAdminRoute>
             }
           />
