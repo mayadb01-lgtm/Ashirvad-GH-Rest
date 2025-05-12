@@ -705,29 +705,19 @@ const EntryPage = () => {
               <Stack direction="row" spacing={1}>
                 {(entries?.length > 0 && isAdminAuthenticated) ||
                 (entries?.length > 0 &&
-                  selectedDate == today &&
+                  selectedDate === today &&
                   isAuthenticated) ? (
-                  <>
-                    <Button
-                      onClick={handleEntryEdit}
-                      variant="contained"
-                      color="secondary"
-                      sx={{
-                        px: 3,
-                        "&:hover": { backgroundColor: "secondary" },
-                      }}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      onClick={handleEntryDelete}
-                      variant="contained"
-                      color="error"
-                      sx={{ px: 3, "&:hover": { backgroundColor: "#e57373" } }}
-                    >
-                      Delete
-                    </Button>
-                  </>
+                  <Button
+                    onClick={handleEntryEdit}
+                    variant="contained"
+                    color="secondary"
+                    sx={{
+                      px: 3,
+                      "&:hover": { backgroundColor: "secondary" },
+                    }}
+                  >
+                    Edit
+                  </Button>
                 ) : (
                   <Button
                     onClick={handleEntrySubmit}
@@ -744,8 +734,18 @@ const EntryPage = () => {
                   color="warning"
                   sx={{ px: 3, "&:hover": { backgroundColor: "#e57373" } }}
                 >
-                  Cancel
+                  Reset
                 </Button>
+                {entries?.length > 0 && isAdminAuthenticated && (
+                  <Button
+                    onClick={handleEntryDelete}
+                    variant="contained"
+                    color="error"
+                    sx={{ px: 3, "&:hover": { backgroundColor: "#e57373" } }}
+                  >
+                    Delete
+                  </Button>
+                )}
               </Stack>
             </Box>
           </Grid>
