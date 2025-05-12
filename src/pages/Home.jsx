@@ -39,13 +39,13 @@ const Home = () => {
             Welcome, {isAdminAuthenticated ? admin?.name : user?.name}!
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Glad to have you back in the TGT Business Management System.
+            Glad to have you back in the Ashirvad Business Management System.
           </Typography>
         </>
       ) : (
         <>
           <Typography variant="h5">
-            Welcome to the TGT Business Management System
+            Welcome to the Ashirvad Business Management System
           </Typography>
           <Typography variant="body1" color="text.secondary">
             Please log in to continue.

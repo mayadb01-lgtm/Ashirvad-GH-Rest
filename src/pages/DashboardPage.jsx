@@ -184,7 +184,7 @@ const DashboardPage = () => {
         // defaultSidebarCollapsed
         slots={{
           appTitle: () => (
-            <Typography variant="h6">TGT Admin Dashboard</Typography>
+            <Typography variant="h6">Ashirvad Admin Dashboard</Typography>
           ),
         }}
         sidebarExpandedWidth={260}
