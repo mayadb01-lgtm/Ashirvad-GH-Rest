@@ -39,7 +39,7 @@ export const loginAdmin = (adminData) => async (dispatch) => {
       }
     );
     dispatch({ type: "LoginAdminSuccess", payload: data.admin });
-    toast.success("Admin logged in successfully");
+    // toast.success("Admin logged in successfully");
   } catch (error) {
     dispatch({
       type: "LoginAdminFailure",

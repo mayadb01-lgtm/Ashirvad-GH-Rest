@@ -20,7 +20,6 @@ const Home = () => {
       title: "RT Management",
       bg: "#ff6a6a",
     },
-    // Add more services as needed
   ];
 
   return (
@@ -33,25 +32,26 @@ const Home = () => {
         bgcolor: "#f4f4f9",
       }}
     >
-      {/* Welcome Section */}
-      <Stack
-        direction="row"
-        alignItems="center"
-        spacing={2}
-        sx={{ textAlign: "center" }}
-      >
-        {isAdminAuthenticated || isAuthenticated ? (
+      {(isAdminAuthenticated && admin?.name) ||
+      (isAuthenticated && user?.name) ? (
+        <>
           <Typography variant="h5">
             Welcome, {isAdminAuthenticated ? admin?.name : user?.name}!
           </Typography>
-        ) : (
-          <Typography variant="h5">Welcome!</Typography>
-        )}
-      </Stack>
-      <Typography variant="body1" color="text.secondary">
-        Welcome to the Ashirvad Business Management System. Choose a service to
-        manage your operations efficiently.
-      </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Glad to have you back in the TGT Business Management System.
+          </Typography>
+        </>
+      ) : (
+        <>
+          <Typography variant="h5">
+            Welcome to the TGT Business Management System
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Please log in to continue.
+          </Typography>
+        </>
+      )}
 
       {/* Service Cards */}
       {services.map((service, index) => (

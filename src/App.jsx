@@ -3,12 +3,12 @@ import { Suspense, lazy, useLayoutEffect } from "react";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import ProtectedAdminRoute from "./routes/ProtectedAdminRoute";
-import Store from "./redux/store.js";
 import { loadUser } from "./redux/actions/userAction.js";
 import { Toaster } from "react-hot-toast";
 import { loadAdmin } from "./redux/actions/adminAction.js";
 import "./App.css";
 import ModernLoader from "./utils/util.jsx";
+import { useAppDispatch, useAppSelector } from "./redux/hooks/index.js";
 
 const EntryPage = lazy(() => import("./pages/EntryPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
@@ -17,22 +17,25 @@ const LoginPage = lazy(() => import("./pages/LoginPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const AdminLoginPage = lazy(() => import("./pages/AdminLoginPage.jsx"));
 const AdminSignupPage = lazy(() => import("./pages/AdminSignupPage.jsx"));
-const AdminResetPasswordPage = lazy(
-  () => import("./pages/AdminResetPasswordPage.jsx")
+const AdminResetPasswordPage = lazy(() =>
+  import("./pages/AdminResetPasswordPage.jsx")
 );
-const UserResetPasswordPage = lazy(
-  () => import("./pages/UserResetPasswordPage.jsx")
+const UserResetPasswordPage = lazy(() =>
+  import("./pages/UserResetPasswordPage.jsx")
 );
 const Home = lazy(() => import("./pages/Home.jsx"));
-const RestEntryPage = lazy(
-  () => import("./pages/restaurant/RestEntryPage.jsx")
+const RestEntryPage = lazy(() =>
+  import("./pages/restaurant/RestEntryPage.jsx")
 );
 
 const App = () => {
+  const dispatch = useAppDispatch();
+  const { isAdminAuthenticated } = useAppSelector((state) => state.admin);
+  const { isAuthenticated } = useAppSelector((state) => state.user);
   useLayoutEffect(() => {
-    Store.dispatch(loadUser());
-    Store.dispatch(loadAdmin());
-  }, []);
+    if (isAuthenticated && !isAdminAuthenticated) dispatch(loadUser());
+    if (isAdminAuthenticated && !isAuthenticated) dispatch(loadAdmin());
+  }, [dispatch, isAdminAuthenticated, isAuthenticated]);
 
   return (
     <Router>
