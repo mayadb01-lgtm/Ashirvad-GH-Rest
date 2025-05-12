@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { Suspense, lazy, useLayoutEffect } from "react";
+import { Suspense, lazy, useLayoutEffect, useRef } from "react";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import ProtectedAdminRoute from "./routes/ProtectedAdminRoute";
@@ -10,9 +10,10 @@ import "./App.css";
 import ModernLoader from "./utils/util.jsx";
 import { useAppDispatch, useAppSelector } from "./redux/hooks/index.js";
 import OfficeEntryPage from "./pages/office/OfficeEntryPage.jsx";
+import NotFound from "./pages/NotFound.jsx";
 
 const EntryPage = lazy(() => import("./pages/EntryPage"));
-const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+// const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
@@ -33,13 +34,21 @@ const App = () => {
   const dispatch = useAppDispatch();
   const { isAdminAuthenticated } = useAppSelector((state) => state.admin);
   const { isAuthenticated } = useAppSelector((state) => state.user);
+  const hasDispatched = useRef(false);
+
   useLayoutEffect(() => {
-    if (isAuthenticated && !isAdminAuthenticated) dispatch(loadUser());
-    if (isAdminAuthenticated && !isAuthenticated) dispatch(loadAdmin());
+    if (hasDispatched.current) return;
+
     if (!isAuthenticated && !isAdminAuthenticated) {
       dispatch(loadUser());
       dispatch(loadAdmin());
+    } else if (isAuthenticated && !isAdminAuthenticated) {
+      dispatch(loadUser());
+    } else if (isAdminAuthenticated && !isAuthenticated) {
+      dispatch(loadAdmin());
     }
+
+    hasDispatched.current = true;
   }, [dispatch, isAdminAuthenticated, isAuthenticated]);
 
   return (
@@ -109,7 +118,7 @@ const App = () => {
               </ProtectedAdminRoute>
             }
           />
-          <Route
+          {/* <Route
             path="/dashboard"
             element={
               <ProtectedAdminRoute>
@@ -117,16 +126,7 @@ const App = () => {
                 <DashboardPage />
               </ProtectedAdminRoute>
             }
-          />
-          <Route
-            path="/admin/restaurant/dashboard"
-            element={
-              <ProtectedAdminRoute>
-                <Navbar />
-                <DashboardPage />
-              </ProtectedAdminRoute>
-            }
-          />
+          /> */}
           <Route
             path="/signup"
             element={
@@ -191,6 +191,8 @@ const App = () => {
               </ProtectedRoute>
             }
           />
+          {/* If None of the above */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
       <Toaster position="top-center" reverseOrder={true} />
