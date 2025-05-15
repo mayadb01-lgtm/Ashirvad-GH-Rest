@@ -13,7 +13,7 @@ import OfficeEntryPage from "./pages/office/OfficeEntryPage.jsx";
 import NotFound from "./pages/NotFound.jsx";
 
 const EntryPage = lazy(() => import("./pages/EntryPage"));
-// const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
@@ -113,7 +113,7 @@ const App = () => {
               </ProtectedAdminRoute>
             }
           />
-          {/* <Route
+          <Route
             path="/dashboard"
             element={
               <ProtectedAdminRoute>
@@ -121,7 +121,7 @@ const App = () => {
                 <DashboardPage />
               </ProtectedAdminRoute>
             }
-          /> */}
+          />
           <Route
             path="/signup"
             element={
