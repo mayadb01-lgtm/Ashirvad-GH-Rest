@@ -41,15 +41,22 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
           if (entry) {
             return {
               ...row,
-              id: row.id,
-              date: entry.date,
+              id: entry.id,
               roomNo: entry.roomNo,
+              cost: entry.cost,
+              roomType: entry.roomType,
+              rate: entry.rate,
+              noOfPeople: entry.noOfPeople,
+              checkInTime: entry.checkInTime,
+              checkOutTime: entry.checkOutTime,
+              type: entry.type,
+              modeOfPayment: entry.modeOfPayment,
               fullname: entry.fullname,
               mobileNumber: entry.mobileNumber,
-              rate: entry.rate,
-              modeOfPayment: entry.modeOfPayment,
               createDate: entry.createDate,
               period: entry.period,
+              entryCreateDate: entry.entryCreateDate,
+              date: entry.date,
             };
           }
           return row;

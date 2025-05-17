@@ -393,7 +393,7 @@ const EntryPage = () => {
 
       console.log("Submitting Entries", combinedEntries);
       dispatch(createEntry(entryObj));
-
+      dispatch(getUnPaidEntries());
       resetForm();
     } catch (error) {
       console.error("Error submitting entries:", error);

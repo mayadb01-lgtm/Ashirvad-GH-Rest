@@ -88,6 +88,13 @@ const GHDashboard = () => {
         align: "center",
       },
       {
+        field: "fullname",
+        headerName: "Full Name",
+        width: 150,
+        headerAlign: "center",
+        align: "center",
+      },
+      {
         field: "type",
         headerName: "Type",
         width: 120,
@@ -130,6 +137,13 @@ const GHDashboard = () => {
         align: "center",
       },
       {
+        field: "isPaid",
+        headerName: "Paid",
+        width: 90,
+        headerAlign: "center",
+        align: "center",
+      },
+      {
         field: "createDate",
         headerName: "Created At",
         width: 140,
@@ -151,7 +165,7 @@ const GHDashboard = () => {
       }}
     >
       <Typography variant="h5" fontWeight={600} color="text.primary" mb={2}>
-        Guest House Sales Dashboard
+        Guest House - Detailed Dashboard
       </Typography>
 
       {/* Date Selection */}
