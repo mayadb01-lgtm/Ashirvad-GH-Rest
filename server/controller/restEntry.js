@@ -1,5 +1,6 @@
 import { Router } from "express";
 import RestEntry from "../model/restEntry.js";
+import dayjs from "dayjs";
 const router = Router();
 
 // Create a new Entry
@@ -134,13 +135,15 @@ router.delete("/delete-entry/:date", async (req, res) => {
 // Get Entries by Date Range
 router.get("/get-entries/:startDate/:endDate", async (req, res) => {
   try {
-    const startDate = parseDateString(req.params.startDate);
-    const endDate = parseDateString(req.params.endDate);
-    endDate.setHours(23, 59, 59, 999); // Ensure full-day inclusion
+    const start = dayjs(req.params.startDate, "DD-MM-YYYY");
+    const end = dayjs(req.params.endDate, "DD-MM-YYYY");
 
     const entries = await RestEntry.find({
-      createdAt: { $gte: startDate, $lte: endDate },
-    });
+      entryCreateDate: {
+        $gte: start.startOf("day").toDate(),
+        $lte: end.endOf("day").toDate(),
+      },
+    }).sort({ entryCreateDate: 1 });
 
     res.status(200).json({
       success: true,
@@ -157,12 +160,13 @@ router.get("/get-entries/:startDate/:endDate", async (req, res) => {
 // Get Upad Entries by Date Range
 router.get("/get-upad-entries/:startDate/:endDate", async (req, res) => {
   try {
-    const startDate = parseDateString(req.params.startDate);
-    const endDate = parseDateString(req.params.endDate);
-    endDate.setHours(23, 59, 59, 999); // Ensure full-day inclusion
-
+    const start = dayjs(req.params.startDate, "DD-MM-YYYY");
+    const end = dayjs(req.params.endDate, "DD-MM-YYYY");
     const entries = await RestEntry.find({
-      createdAt: { $gte: startDate, $lte: endDate },
+      entryCreateDate: {
+        $gte: start.startOf("day").toDate(),
+        $lte: end.endOf("day").toDate(),
+      },
     });
 
     const upadEntries = entries.flatMap((entry) => entry.upad);
@@ -179,24 +183,30 @@ router.get("/get-upad-entries/:startDate/:endDate", async (req, res) => {
   }
 });
 
-// Helper function to convert "DD-MM-YYYY" to "YYYY-MM-DD"
-const parseDateString = (dateString) => {
-  const [day, month, year] = dateString.split("-");
-  return new Date(`${year}-${month}-${day}`); // Converts to "YYYY-MM-DD"
-};
-
 // Get Expenses Entries by Date Range
 router.get("/get-expenses-entries/:startDate/:endDate", async (req, res) => {
   try {
-    // Parse dates using JavaScript's Date object
-    const startDate = parseDateString(req.params.startDate);
-    const endDate = parseDateString(req.params.endDate);
-    endDate.setHours(23, 59, 59, 999); // Ensure full-day inclusion
+    const start = dayjs(req.params.startDate, "DD-MM-YYYY");
+    const end = dayjs(req.params.endDate, "DD-MM-YYYY");
+
+    if (!start.isValid() || !end.isValid()) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date format. Please use DD-MM-YYYY.",
+      });
+    }
 
     // Fetch entries within the date range
+    // const entries = await RestEntry.find({
+    //   createdAt: { $gte: startDate, $lte: endDate },
+    // });
+
     const entries = await RestEntry.find({
-      createdAt: { $gte: startDate, $lte: endDate },
-    });
+      entryCreateDate: {
+        $gte: start.startOf("day").toDate(),
+        $lte: end.endOf("day").toDate(),
+      },
+    }).sort({ entryCreateDate: 1 });
 
     const expensesEntries = entries.flatMap((entry) => entry.expenses);
 
@@ -216,11 +226,15 @@ router.get(
   "/get-entries-by-payment-method/:startDate/:endDate",
   async (req, res) => {
     try {
-      const startDate = parseDateString(req.params.startDate);
-      const endDate = parseDateString(req.params.endDate);
+      const start = dayjs(req.params.startDate, "DD-MM-YYYY");
+      const end = dayjs(req.params.endDate, "DD-MM-YYYY");
+
       const entries = await RestEntry.find(
         {
-          createdAt: { $gte: startDate, $lte: endDate },
+          entryCreateDate: {
+            $gte: start.startOf("day").toDate(),
+            $lte: end.endOf("day").toDate(),
+          },
         },
         {
           _id: 1,

@@ -1,4 +1,8 @@
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import { Schema, model } from "mongoose";
+
+dayjs.extend(customParseFormat);
 
 const entrySchemaObj = new Schema(
   {
@@ -28,7 +32,7 @@ const entrySchemaObj = new Schema(
       required: true,
     },
     fullname: { type: String, default: "" },
-    mobileNumber: { type: Number, default: "" },
+    mobileNumber: { type: Number, default: 0 },
     checkInTime: { type: String },
     checkOutTime: { type: String },
     checkInDateTime: { type: String },
@@ -38,14 +42,15 @@ const entrySchemaObj = new Schema(
     reservationId: { type: String, default: "" },
     date: { type: String, required: true },
     createDate: { type: String, required: true },
+    entryCreateDate: { type: Date },
     updatedDateTime: { type: String, default: "" },
     period: { type: String, required: true },
-    createdAt: { type: Date, default: Date.now() },
+    createdAt: { type: Date, default: Date.now },
     paidDate: { type: String, default: "" },
     isPaid: {
       type: Boolean,
       default: function () {
-        return this.modeOfPayment === "UnPaid" ? false : true;
+        return this.modeOfPayment !== "UnPaid";
       },
     },
   },
@@ -55,8 +60,32 @@ const entrySchemaObj = new Schema(
 const entrySchema = new Schema({
   entry: [entrySchemaObj],
   date: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now() },
+  createdAt: { type: Date, default: Date.now },
+  entryCreateDate: { type: Date },
   // user: { type: Schema.Types.ObjectId, ref: "User" },
+});
+
+entrySchema.pre("save", function (next) {
+  const dt = dayjs(this.date, "DD-MM-YYYY");
+  if (!dt.isValid()) {
+    console.warn(`Invalid 'date' in Entry document: ${this.date}`);
+    this.entryCreateDate = undefined;
+  } else {
+    this.entryCreateDate = dt.startOf("day").toDate();
+  }
+  next();
+});
+
+// Ensure 'entryCreateDate' is in IST for individual entries
+entrySchemaObj.pre("save", function (next) {
+  const dt = dayjs(this.createDate, "DD-MM-YYYY");
+  if (!dt.isValid()) {
+    console.warn(`Invalid 'createDate' in entry object: ${this.createDate}`);
+    this.entryCreateDate = undefined;
+  } else {
+    this.entryCreateDate = dt.startOf("day").toDate();
+  }
+  next();
 });
 
 export default model("Entry", entrySchema);

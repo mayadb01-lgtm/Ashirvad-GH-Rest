@@ -1,5 +1,6 @@
 import { Router } from "express";
 import Entry from "../model/entry.js";
+import dayjs from "dayjs";
 // import { isAuthenticated } from "../middleware/auth.js";
 const router = Router();
 
@@ -138,26 +139,25 @@ router.get("/get-entry/:date", async (req, res) => {
   }
 });
 
-// Helper function to convert "DD-MM-YYYY" to "YYYY-MM-DD"
-const parseDateString = (dateString) => {
-  const [day, month, year] = dateString.split("-");
-  return new Date(`${year}-${month}-${day}`); // Converts to "YYYY-MM-DD"
-};
-
 // Get Entries by Date Range
 router.get("/get-entries/:startDate/:endDate", async (req, res) => {
   try {
-    const startDate = parseDateString(req.params.startDate);
-    const endDate = parseDateString(req.params.endDate);
-    endDate.setHours(23, 59, 59, 999); // Ensure full-day inclusion
+    const start = dayjs(req.params.startDate, "DD-MM-YYYY");
+    const end = dayjs(req.params.endDate, "DD-MM-YYYY");
+
+    if (!start.isValid() || !end.isValid()) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date format. Use DD-MM-YYYY",
+      });
+    }
 
     const entries = await Entry.find({
-      createdAt: {
-        $gte: startDate,
-        $lte: endDate,
+      entryCreateDate: {
+        $gte: start.startOf("day").toDate(),
+        $lte: end.endOf("day").toDate(),
       },
-      // user: req.user._id, // Find the Entry by date and authenticated user's ID
-    });
+    }).sort({ entryCreateDate: 1 });
 
     res.status(200).json({
       success: true,
