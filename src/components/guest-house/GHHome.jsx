@@ -31,7 +31,12 @@ const GHHome = () => {
   const onPieEnter = useCallback((_, index) => setActiveIndex(index), []);
 
   useEffect(() => {
-    dispatch(getEntriesByDateRange(startDate, endDate));
+    dispatch(
+      getEntriesByDateRange(
+        startDate.format("DD-MM-YYYY"),
+        endDate.format("DD-MM-YYYY")
+      )
+    );
   }, [dispatch, startDate, endDate]);
 
   const handleStartDateChange = useCallback((newDate) => {
