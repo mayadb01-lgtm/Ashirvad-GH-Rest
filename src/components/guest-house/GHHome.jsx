@@ -49,10 +49,10 @@ const GHHome = () => {
 
   const formattedDatasetL1 = useMemo(() => {
     const sortedEntries = [...entries].sort((a, b) =>
-      dayjs(a.createdAt).diff(dayjs(b.createdAt))
+      dayjs(a.entryCreateDate).diff(dayjs(b.entryCreateDate))
     );
     return sortedEntries.map((entry) => ({
-      x: dayjs(entry.createdAt).format("DD MMM"),
+      x: dayjs(entry.entryCreateDate).format("DD MMM"),
       y: entry.entry
         .map((entry) => entry.noOfPeople)
         .reduce((a, b) => a + b, 0),
@@ -61,13 +61,13 @@ const GHHome = () => {
 
   const dayNightData = useMemo(() => {
     return entries.map((entry) => ({
-      date: dayjs(entry.createdAt).format("DD MMM"),
+      date: dayjs(entry.entryCreateDate).format("DD MMM"),
       day: entry.entry
-        .map((entry) => entry.perios === "day" || entry.period === "extraDay")
+        .map((entry) => entry.period === "day" || entry.period === "extraDay")
         .reduce((a, b) => a + b, 0),
       night: entry.entry
         .map(
-          (entry) => entry.perios === "night" || entry.period === "extraNight"
+          (entry) => entry.period === "night" || entry.period === "extraNight"
         )
         .reduce((a, b) => a + b, 0),
     }));
@@ -93,10 +93,10 @@ const GHHome = () => {
 
   const totalAmountDataSet = useMemo(() => {
     const sortedEntries = [...entries].sort((a, b) =>
-      dayjs(a.createdAt).diff(dayjs(b.createdAt))
+      dayjs(a.entryCreateDate).diff(dayjs(b.entryCreateDate))
     );
     return sortedEntries.map((entry) => ({
-      x: dayjs(entry.createdAt).format("DD MMM"),
+      x: dayjs(entry.entryCreateDate).format("DD MMM"),
       y: entry.entry.map((entry) => entry.rate).reduce((a, b) => a + b, 0),
     }));
   }, [entries]);
@@ -205,6 +205,7 @@ const GHHome = () => {
                   ]}
                   xAxis={[
                     {
+                      label: "Date",
                       scaleType: "band",
                       data: formattedDatasetL1.map((item) => item.x),
                     },
@@ -275,6 +276,18 @@ const GHHome = () => {
                   >
                     💳 Payment Method Distribution
                   </Typography>
+                  {/* Total Amount */}
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={600}
+                    gutterBottom
+                    color="primary"
+                  >
+                    Total Amount:{" "}
+                    {modeOfPaymentData
+                      .map((item) => item.value)
+                      .reduce((a, b) => a + b, 0)}
+                  </Typography>
                 </Stack>
 
                 {modeOfPaymentData
@@ -314,14 +327,33 @@ const GHHome = () => {
             {/* Chart 4 - Total Amount Line Chart */}
             <Grid item xs={12} md={12} sx={chartBoxStyle}>
               <Box>
-                <Typography
-                  variant="subtitle1"
-                  fontWeight={600}
-                  gutterBottom
-                  color="primary"
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  alignItems="center"
+                  justifyContent="space-between"
                 >
-                  💰 Date vs Total Amount
-                </Typography>
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={600}
+                    gutterBottom
+                    color="primary"
+                  >
+                    💰 Date vs Total Amount
+                  </Typography>
+                  {/* Total Amount */}
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={600}
+                    gutterBottom
+                    color="primary"
+                  >
+                    Total Amount:{" "}
+                    {totalAmountDataSet
+                      .map((item) => item.y)
+                      .reduce((a, b) => a + b, 0)}
+                  </Typography>
+                </Stack>
                 <LineChart
                   height={isFullScreen ? 500 : 300}
                   width={isFullScreen ? 1000 : 600}

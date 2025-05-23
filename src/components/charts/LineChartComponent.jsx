@@ -34,8 +34,23 @@ const LineChartComponent = ({ data, isFullScreen }) => (
       fontSize={isFullScreen ? 16 : 12}
       margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
     >
-      <XAxis dataKey="date" />
-      <YAxis />
+      <XAxis
+        dataKey="date"
+        label={{
+          value: "Date",
+          position: "insideBottom",
+          offset: -5,
+          style: { fontWeight: "bold" },
+        }}
+      />
+      <YAxis
+        label={{
+          value: "Amount",
+          angle: -90,
+          position: "insideLeft",
+          style: { fontWeight: "bold" },
+        }}
+      />
       <Tooltip content={<CustomTooltip />} />
       <Line type="monotone" dataKey="amount" stroke="#8884d8" strokeWidth={3} />
     </LineChart>

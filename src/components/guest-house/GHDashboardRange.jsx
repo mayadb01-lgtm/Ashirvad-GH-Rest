@@ -234,8 +234,6 @@ const GHSalesDashboardRange = () => {
       )
     : [];
 
-  console.log("preparedEntries", preparedEntries);
-
   const getGroupedRows = (entries) => {
     let idCounter = 1;
     const grouped = [];

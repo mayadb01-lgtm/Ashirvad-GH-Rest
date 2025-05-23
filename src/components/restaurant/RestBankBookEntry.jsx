@@ -61,44 +61,46 @@ const BankBooksDashboard = () => {
   }, [selectedMethod]);
 
   const preparedEntries = useMemo(() => {
+    if (!Array.isArray(restEntries)) return [];
+
+    const clonedEntries = JSON.parse(JSON.stringify(restEntries));
+
     const totalRow = {
       id: "Total",
-      Cash: restEntries
-        .map((entry) => entry.Cash)
-        .reduce((total, number) => total + number, 0),
-      Card: restEntries
-        .map((entry) => entry.Card)
-        .reduce((total, number) => total + number, 0),
-      PP: restEntries
-        .map((entry) => entry.PP)
-        .reduce((total, number) => total + number, 0),
-      grandTotal: restEntries
-        .map((entry) => entry.grandTotal)
-        .reduce((total, number) => total + number, 0),
+      Cash: clonedEntries.reduce((total, e) => total + e.Cash, 0),
+      Card: clonedEntries.reduce((total, e) => total + e.Card, 0),
+      PP: clonedEntries.reduce((total, e) => total + e.PP, 0),
+      grandTotal: clonedEntries.reduce((total, e) => total + e.grandTotal, 0),
     };
 
-    if (selectedMethod) {
-      const rows =
-        restEntries &&
-        restEntries.map((entry, index) => ({
-          id: index + 1,
-          createDate: entry.createDate,
+    const sortedEntries = clonedEntries.sort((a, b) =>
+      dayjs(a.entryCreateDate).diff(dayjs(b.entryCreateDate))
+    );
+
+    console.log("restEntries", restEntries);
+
+    const rows = sortedEntries.map((entry, index) => {
+      const base = {
+        id: index + 1,
+        createDate: entry.createDate,
+      };
+      if (selectedMethod) {
+        return {
+          ...base,
           [selectedMethod]: entry[selectedMethod],
-        }));
-      return [...rows, totalRow];
-    } else {
-      const rows =
-        restEntries &&
-        restEntries.map((entry, index) => ({
-          id: index + 1,
-          createDate: entry.createDate,
+        };
+      } else {
+        return {
+          ...base,
           Cash: entry.Cash,
           Card: entry.Card,
           PP: entry.PP,
           grandTotal: entry.grandTotal,
-        }));
-      return [...rows, totalRow];
-    }
+        };
+      }
+    });
+
+    return [...rows, totalRow];
   }, [restEntries, selectedMethod]);
 
   return (

@@ -49,7 +49,9 @@ const RestUpaadEntriesDashboard = () => {
 
   const selectedStaffEntries =
     restEntries &&
-    restEntries.filter((entry) => entry.fullname === selectedStaff?.fullname);
+    restEntries
+      .filter((entry) => entry.fullname === selectedStaff?.fullname)
+      .sort((a, b) => dayjs(a.entryCreateDate).diff(dayjs(b.entryCreateDate)));
 
   const preparedEntries = useMemo(() => {
     const totalRow = {
@@ -72,7 +74,11 @@ const RestUpaadEntriesDashboard = () => {
         }))
         .concat(totalRow);
     }
-    return restEntries
+
+    const sortedEntries = [...restEntries].sort((a, b) =>
+      dayjs(a.entryCreateDate).diff(dayjs(b.entryCreateDate))
+    );
+    return sortedEntries
       .map((entry, index) => ({
         id: index + 1,
         createDate: entry.createDate,
@@ -81,6 +87,7 @@ const RestUpaadEntriesDashboard = () => {
       }))
       .concat(totalRow);
   }, [restEntries, selectedStaff, selectedStaffEntries]);
+
   return (
     <Box
       sx={{

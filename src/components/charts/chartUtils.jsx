@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { Sector } from "recharts";
 export const formatChartData = (rawData, type) => {
   if (!Array.isArray(rawData) || rawData.length === 0) return [];
@@ -5,8 +6,8 @@ export const formatChartData = (rawData, type) => {
   switch (type) {
     case "categoryExpenses": {
       const categoryTotals = {};
-      rawData.forEach((entry) =>
-        entry?.expenses?.forEach(({ categoryName, amount = 0 }) => {
+      rawData.map((entry) =>
+        entry?.expenses?.map(({ categoryName, amount = 0 }) => {
           if (!categoryName) return;
           categoryTotals[categoryName] =
             (categoryTotals[categoryName] || 0) + amount;
@@ -37,24 +38,18 @@ export const formatChartData = (rawData, type) => {
 
     case "upaad":
       return [...rawData]
-        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-        .map(({ createdAt, upad }) => ({
-          date: new Date(createdAt).toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-          }),
+        .sort((a, b) => dayjs(a.entryCreateDate).diff(dayjs(b.entryCreateDate)))
+        .map(({ entryCreateDate, upad }) => ({
+          date: dayjs(entryCreateDate).format("DD MMM"),
           amount: upad?.reduce((sum, { amount }) => sum + (amount || 0), 0),
           fullname: upad?.map(({ fullname }) => fullname),
         }));
 
     case "salesPerDay":
       return [...rawData]
-        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+        .sort((a, b) => dayjs(a.entryCreateDate).diff(dayjs(b.entryCreateDate)))
         .map((entry) => ({
-          date: new Date(entry.createdAt).toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-          }),
+          date: dayjs(entry.entryCreateDate).format("DD MMM"),
           amount: entry.grandTotal,
         }));
     default:

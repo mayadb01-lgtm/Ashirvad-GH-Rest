@@ -27,7 +27,6 @@ const RestHome = () => {
   const [startDate, setStartDate] = useState(dayjs().startOf("month"));
   const [endDate, setEndDate] = useState(dayjs());
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [showDetails, setShowDetails] = useState(true);
 
   useEffect(() => {
     dispatch(
@@ -142,15 +141,6 @@ const RestHome = () => {
           }
           label="Full Screen Graph"
         />
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={showDetails}
-              onChange={() => setShowDetails((prev) => !prev)}
-            />
-          }
-          label="Detailed View"
-        />
       </Stack>
 
       {loading ? (
@@ -181,7 +171,7 @@ const RestHome = () => {
           >
             {/* Pie Chart - Expenses */}
             <Grid item xs={12} md={12} sx={chartBoxStyle}>
-              <Box width="100%" height="100%">
+              <Box width="90%" height="90%">
                 <Stack
                   direction="row"
                   spacing={2}
@@ -218,7 +208,7 @@ const RestHome = () => {
 
             {/* Line Chart - Upaad */}
             <Grid item xs={12} md={12} sx={chartBoxStyle}>
-              <Box width="100%" height="100%">
+              <Box width="90%" height="90%">
                 <Stack
                   direction="row"
                   spacing={2}
@@ -264,7 +254,7 @@ const RestHome = () => {
           >
             {/* Pie Chart - Payment Method */}
             <Grid item xs={12} md={12} sx={chartBoxStyle}>
-              <Box width="100%" height="100%">
+              <Box width="90%" height="90%">
                 <Stack
                   direction="row"
                   spacing={2}
@@ -301,7 +291,7 @@ const RestHome = () => {
 
             {/* Line Chart - Sales */}
             <Grid item xs={12} md={12} sx={chartBoxStyle}>
-              <Box width="100%" height="100%">
+              <Box width="90%" height="90%">
                 <Stack
                   direction="row"
                   spacing={2}
