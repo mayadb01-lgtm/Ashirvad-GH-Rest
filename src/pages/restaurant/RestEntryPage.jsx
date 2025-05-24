@@ -165,67 +165,21 @@ const RestEntryPage = () => {
     }
     if (selectedDate && restEntries && restEntries.grandTotal > 0) {
       resetForm();
-      // setRestUpadData((prev) => {
-      //   return prev.map((row, i) => {
-      //     const upad = restEntries.upad[i];
-      //     return upad
-      //       ? {
-      //           ...row,
-      //           _id: upad._id,
-      //           amount: upad.amount,
-      //           fullname: upad.fullname,
-      //           mobileNumber: upad.mobileNumber,
-      //           createDate: upad.createDate,
-      //         }
-      //       : row;
-      //   });
-      // });
-      // setRestPendingData((prev) => {
-      //   return prev.map((row, i) => {
-      //     const pending = restEntries.pending[i];
-      //     return pending
-      //       ? {
-      //           ...row,
-      //           _id: pending._id,
-      //           amount: pending.amount,
-      //           fullname: pending.fullname,
-      //           mobileNumber: pending.mobileNumber,
-      //           createDate: pending.createDate,
-      //         }
-      //       : row;
-      //   });
-      // });
-      // setRestExpensesData((prev) => {
-      //   return prev.map((row, i) => {
-      //     const expenses = restEntries.expenses[i];
-
-      //     return expenses
-      //       ? {
-      //           ...row,
-      //           _id: expenses._id,
-      //           amount: expenses.amount,
-      //           categoryName: expenses.categoryName,
-      //           expenseName: expenses.expenseName,
-      //           createDate: expenses.createDate,
-      //         }
-      //       : row;
-      //   });
-      // });
-      setRestUpadData(restEntries.upad);
-      setRestPendingData(restEntries.pending);
+      restEntries.upad && setRestUpadData(restEntries.upad);
+      restEntries.pending && setRestPendingData(restEntries.pending);
       restEntries.pendingUsers &&
         setRestPendingUsersData(restEntries.pendingUsers);
-      setRestExpensesData(restEntries.expenses);
-      setRestPendingUsersData(restEntries.pendingUsers);
-      setExtraAmount(restEntries.extraAmount);
-      setTotalUpad(restEntries.totalUpad);
-      setTotalPending(restEntries.totalPending);
-      setTotalExpenses(restEntries.totalExpenses);
-      setTotalCard(restEntries.totalCard);
-      setTotalPP(restEntries.totalPP);
-      setTotalCash(restEntries.totalCash);
-      setGrandTotal(restEntries.grandTotal);
-      setComputerAmount(restEntries.computerAmount);
+      restEntries.expenses && setRestExpensesData(restEntries.expenses);
+      restEntries.extraAmount && setExtraAmount(restEntries.extraAmount);
+      restEntries.totalUpad && setTotalUpad(restEntries.totalUpad);
+      restEntries.totalPending && setTotalPending(restEntries.totalPending);
+      restEntries.totalExpenses && setTotalExpenses(restEntries.totalExpenses);
+      restEntries.totalCard && setTotalCard(restEntries.totalCard);
+      restEntries.totalPP && setTotalPP(restEntries.totalPP);
+      restEntries.totalCash && setTotalCash(restEntries.totalCash);
+      restEntries.grandTotal && setGrandTotal(restEntries.grandTotal);
+      restEntries.computerAmount &&
+        setComputerAmount(restEntries.computerAmount);
     }
   }, [selectedDate, restEntries]);
 
@@ -505,15 +459,11 @@ const RestEntryPage = () => {
                 >
                   Levana Baki
                 </Typography>
-                {restPendingData && restPendingData.length === 0 ? (
-                  <CircularProgress sx={{ mt: 2 }} />
-                ) : (
-                  <RestPendingTable
-                    restPendingData={restPendingData}
-                    setRestPendingData={setRestPendingData}
-                    selectedDate={selectedDate}
-                  />
-                )}
+                <RestPendingTable
+                  restPendingData={restPendingData}
+                  setRestPendingData={setRestPendingData}
+                  selectedDate={selectedDate}
+                />
               </Box>
             </Grid>
             {/* Pending Users */}
@@ -533,15 +483,11 @@ const RestEntryPage = () => {
                 >
                   Aapvana Baki
                 </Typography>
-                {restPendingData && restPendingData.length === 0 ? (
-                  <CircularProgress sx={{ mt: 2 }} />
-                ) : (
-                  <RestPendingUsersTable
-                    restPendingData={restPendingUsersData}
-                    setRestPendingData={setRestPendingUsersData}
-                    selectedDate={selectedDate}
-                  />
-                )}
+                <RestPendingUsersTable
+                  restPendingData={restPendingUsersData}
+                  setRestPendingData={setRestPendingUsersData}
+                  selectedDate={selectedDate}
+                />
               </Box>
             </Grid>
           </Grid>
