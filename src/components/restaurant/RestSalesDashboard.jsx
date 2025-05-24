@@ -60,11 +60,6 @@ const RestSalesDashboard = () => {
     }))
     .concat(totalRow);
 
-  //   const setQuickDateRange = (days) => {
-  //     setStartDate(dayjs().subtract(days, "days"));
-  //     setEndDate(dayjs());
-  //   };
-
   return (
     <Box
       sx={{

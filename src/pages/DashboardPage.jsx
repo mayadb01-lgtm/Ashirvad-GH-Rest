@@ -30,19 +30,37 @@ import RestCategoryExpensesDashboard from "../components/restaurant/RestCategory
 import RestPendingUsersDashboard from "../components/restaurant/RestPendingUsersDashboard";
 
 const DashboardHeader = ({ onNavigate }) => {
+  const navigate = useNavigate();
   return (
     <Stack
       direction="row"
       spacing={2}
       alignItems="center"
       justifyContent="space-between"
+      width="100%"
     >
+      {/* Heading */}
       <Typography variant="h6" fontWeight="bold">
         Ashirvad Admin Dashboard
       </Typography>
-      <Button variant="contained" onClick={() => onNavigate("home")}>
-        <HomeIcon /> Home
-      </Button>
+
+      {/* Buttons */}
+      <Stack direction="row" spacing={2} alignItems="center">
+        <Button
+          variant="contained"
+          onClick={() => onNavigate("home")}
+          startIcon={<DashboardIcon />}
+        >
+          Dashboard Home
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => navigate("/")}
+          endIcon={<HomeIcon />}
+        >
+          Go Back To
+        </Button>
+      </Stack>
     </Stack>
   );
 };
