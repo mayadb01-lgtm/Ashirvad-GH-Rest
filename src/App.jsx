@@ -114,7 +114,7 @@ const App = () => {
             }
           />
           <Route
-            path="/dashboard"
+            path="/dashboard/*"
             element={
               <ProtectedAdminRoute>
                 <Navbar />

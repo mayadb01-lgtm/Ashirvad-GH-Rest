@@ -1,33 +1,51 @@
-import { useEffect, useState, useMemo } from "react";
+import { useRoutes, useNavigate, Navigate } from "react-router-dom";
 import { AppProvider } from "@toolpad/core/AppProvider";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import { createTheme } from "@mui/material/styles";
-import { Typography } from "@mui/material";
 import { DashboardLayout } from "@toolpad/core/DashboardLayout";
-import dayjs from "dayjs";
-import RestStaffDashboard from "../components/restaurant/RestStaffDashboard";
-import HomeDashboard from "../components/HomeDashboard";
-import GHDashboard from "../components/guest-house/GHDashboard";
-import RestCategoryExpensesDashboard from "../components/restaurant/RestCategoryExpensesDashboard";
+import { Button, createTheme, Stack, Typography } from "@mui/material";
+import DashboardIcon from "@mui/icons-material/Dashboard";
 import CategoryIcon from "@mui/icons-material/Category";
 import BadgeIcon from "@mui/icons-material/Badge";
 import RestaurantIcon from "@mui/icons-material/Restaurant";
 import HotelIcon from "@mui/icons-material/Hotel";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
-import GHSalesDashboard from "../components/guest-house/GHSalesDashboard";
-import RestSalesDashboard from "../components/restaurant/RestSalesDashboard";
-import RestUpaadEntriesDashboard from "../components/restaurant/RestUpaadEntriesDashboard";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import CreditScoreIcon from "@mui/icons-material/CreditScore";
-import RestExpensesDashboard from "../components/restaurant/RestExpensesDashboard";
 import { BookOutlined } from "@mui/icons-material";
-import BankBooksDashboard from "../components/restaurant/RestBankBookEntry";
-import RestPendingUsersDashboard from "../components/restaurant/RestPendingUsersDashboard";
+import HomeIcon from "@mui/icons-material/Home";
+
+// Components
+import HomeDashboard from "../components/HomeDashboard";
+import GHDashboard from "../components/guest-house/GHDashboard";
+import GHSalesDashboard from "../components/guest-house/GHSalesDashboard";
 import GHSalesDashboardRange from "../components/guest-house/GHDashboardRange";
 import GHHome from "../components/guest-house/GHHome";
 import RestHome from "../components/restaurant/RestHome";
-dayjs.locale("en-gb");
+import RestSalesDashboard from "../components/restaurant/RestSalesDashboard";
+import RestUpaadEntriesDashboard from "../components/restaurant/RestUpaadEntriesDashboard";
+import RestExpensesDashboard from "../components/restaurant/RestExpensesDashboard";
+import BankBooksDashboard from "../components/restaurant/RestBankBookEntry";
+import RestStaffDashboard from "../components/restaurant/RestStaffDashboard";
+import RestCategoryExpensesDashboard from "../components/restaurant/RestCategoryExpensesDashboard";
+import RestPendingUsersDashboard from "../components/restaurant/RestPendingUsersDashboard";
+
+const DashboardHeader = ({ onNavigate }) => {
+  return (
+    <Stack
+      direction="row"
+      spacing={2}
+      alignItems="center"
+      justifyContent="space-between"
+    >
+      <Typography variant="h6" fontWeight="bold">
+        TGT Admin Dashboard
+      </Typography>
+      <Button variant="contained" onClick={() => onNavigate("home")}>
+        <HomeIcon /> Home
+      </Button>
+    </Stack>
+  );
+};
 
 const NAVIGATION = [
   {
@@ -37,11 +55,7 @@ const NAVIGATION = [
   },
   { kind: "header", title: "Guest House" },
   { segment: "guest-house", title: "Guest House", icon: <HotelIcon /> },
-  {
-    segment: "gh-dashboard",
-    title: "GH-Dashboard",
-    icon: <HotelIcon />,
-  },
+  { segment: "gh-dashboard", title: "GH-Dashboard", icon: <HotelIcon /> },
   {
     segment: "gh-dashboard-range",
     title: "GH-Dashboard-Range",
@@ -86,11 +100,7 @@ const NAVIGATION = [
         title: "Expenses Report",
         icon: <CreditScoreIcon />,
       },
-      {
-        segment: "bank-books",
-        title: "Bank Books",
-        icon: <BookOutlined />,
-      },
+      { segment: "bank-books", title: "Bank Books", icon: <BookOutlined /> },
     ],
   },
   { segment: "manage-staff", title: "Manage Staff", icon: <BadgeIcon /> },
@@ -99,11 +109,7 @@ const NAVIGATION = [
     title: "Categories & Expenses",
     icon: <CategoryIcon />,
   },
-  {
-    segment: "pending-users",
-    title: "Pending Users",
-    icon: <BadgeIcon />,
-  },
+  { segment: "pending-users", title: "Pending Users", icon: <BadgeIcon /> },
 ];
 
 // Theme setup
@@ -116,81 +122,60 @@ const demoTheme = createTheme({
 });
 
 const DashboardPage = () => {
-  const [pathname, setPathname] = useState("/dashboard");
-  const [segments, setSegments] = useState([]);
+  const navigate = useNavigate();
 
-  const router = useMemo(() => {
-    return {
-      pathname,
-      searchParams: new URLSearchParams(),
-      navigate: (path) => {
-        setPathname(path);
-        setSegments(path.replace("/dashboard", "").split("/").filter(Boolean));
-      },
-    };
-  }, [pathname]);
+  const basePath = "/dashboard";
 
-  useEffect(() => {
-    setSegments(pathname.replace("/dashboard", "").split("/").filter(Boolean));
-  }, [pathname]);
-
-  const renderPageContent = () => {
-    if (segments.length === 0) return <HomeDashboard />;
-
-    switch (segments[0]) {
-      case "gh-dashboard":
-        return <GHDashboard />;
-      case "guest-house":
-        return <GHHome />;
-      case "gh-dashboard-range":
-        return <GHSalesDashboardRange />;
-      case "gh-reports":
-        if (segments[1] === "sales-report") {
-          return <GHSalesDashboard />;
-        }
-        return <Typography>Reports Overview</Typography>;
-      case "restaurant":
-        return <RestHome />;
-      case "res-reports":
-        if (segments[1] === "sales-report") {
-          return <RestSalesDashboard />;
-        }
-        if (segments[1] === "upaad-report") {
-          return <RestUpaadEntriesDashboard />;
-        }
-        if (segments[1] === "expenses-report") {
-          return <RestExpensesDashboard />;
-        }
-        if (segments[1] === "bank-books") {
-          return <BankBooksDashboard />;
-        }
-        return <Typography>Reports Overview</Typography>;
-      case "res-dashboard":
-        return <Typography>Restaurant Dashboard</Typography>;
-      case "manage-staff":
-        return <RestStaffDashboard />;
-      case "categories-expenses":
-        return <RestCategoryExpensesDashboard />;
-      case "pending-users":
-        return <RestPendingUsersDashboard />;
-      default:
-        return <HomeDashboard />;
-    }
+  const router = {
+    navigate: (path) => {
+      const cleanPath = path.startsWith("/") ? path.slice(1) : path;
+      navigate(`${basePath}/${cleanPath}`);
+    },
+    pathname: window.location.pathname.replace(basePath, ""),
+    searchParams: new URLSearchParams(window.location.search),
   };
+
+  const routes = useRoutes([
+    // Redirect /dashboard to /dashboard/home
+    { path: "", element: <Navigate to="home" replace /> },
+    {
+      path: "home",
+      element: (
+        <HomeDashboard navigation={NAVIGATION} onNavigate={router.navigate} />
+      ),
+    },
+    { path: "gh-dashboard", element: <GHDashboard /> },
+    { path: "gh-dashboard-range", element: <GHSalesDashboardRange /> },
+    { path: "guest-house", element: <GHHome /> },
+    { path: "gh-reports/sales-report", element: <GHSalesDashboard /> },
+    { path: "restaurant", element: <RestHome /> },
+    {
+      path: "res-dashboard",
+      element: <Typography>Restaurant Dashboard</Typography>,
+    },
+    { path: "res-reports/sales-report", element: <RestSalesDashboard /> },
+    {
+      path: "res-reports/upaad-report",
+      element: <RestUpaadEntriesDashboard />,
+    },
+    { path: "res-reports/expenses-report", element: <RestExpensesDashboard /> },
+    { path: "res-reports/bank-books", element: <BankBooksDashboard /> },
+    { path: "manage-staff", element: <RestStaffDashboard /> },
+    { path: "categories-expenses", element: <RestCategoryExpensesDashboard /> },
+    { path: "pending-users", element: <RestPendingUsersDashboard /> },
+    { path: "*", element: <Typography>404: Page Not Found</Typography> },
+  ]);
 
   return (
     <AppProvider navigation={NAVIGATION} router={router} theme={demoTheme}>
       <DashboardLayout
-        // defaultSidebarCollapsed
         slots={{
-          appTitle: () => (
-            <Typography variant="h6">Ashirvad Admin Dashboard</Typography>
-          ),
+          appTitle: () => <DashboardHeader onNavigate={router.navigate} />,
         }}
         sidebarExpandedWidth={260}
         navigation={NAVIGATION}
       >
-        {renderPageContent()}
+        {routes}
       </DashboardLayout>
     </AppProvider>
   );
