@@ -30,6 +30,7 @@ router.post("/create-entry", async (req, res) => {
       date: reqBody.date,
       createDate: reqBody.createDate,
       updatedDateTime: reqBody.updatedDateTime,
+      entryCreateDate: reqBody.entryCreateDate,
     });
 
     res.status(200).json({
@@ -98,6 +99,7 @@ router.put("/update-entry/:date", async (req, res) => {
         date: reqBody.date,
         createDate: reqBody.createDate,
         updatedDateTime: reqBody.updatedDateTime,
+        entryCreateDate: reqBody.entryCreateDate,
       },
       { new: true }
     );
@@ -196,11 +198,6 @@ router.get("/get-expenses-entries/:startDate/:endDate", async (req, res) => {
       });
     }
 
-    // Fetch entries within the date range
-    // const entries = await RestEntry.find({
-    //   createdAt: { $gte: startDate, $lte: endDate },
-    // });
-
     const entries = await RestEntry.find({
       entryCreateDate: {
         $gte: start.startOf("day").toDate(),
@@ -244,6 +241,7 @@ router.get(
           grandTotal: 1,
           computerAmount: 1,
           createDate: 1,
+          entryCreateDate: 1,
         }
       );
 
@@ -255,6 +253,7 @@ router.get(
         computerAmount: entry.computerAmount,
         createDate: entry.createDate,
         _id: entry._id,
+        entryCreateDate: entry.entryCreateDate,
       }));
 
       res.status(200).json({

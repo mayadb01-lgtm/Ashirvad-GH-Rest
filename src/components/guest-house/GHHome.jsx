@@ -48,14 +48,17 @@ const GHHome = () => {
   }, []);
 
   const formattedDatasetL1 = useMemo(() => {
+    if (!Array.isArray(entries)) return [];
+
     const sortedEntries = [...entries].sort((a, b) =>
       dayjs(a.entryCreateDate).diff(dayjs(b.entryCreateDate))
     );
+
     return sortedEntries.map((entry) => ({
       x: dayjs(entry.entryCreateDate).format("DD MMM"),
-      y: entry.entry
-        .map((entry) => entry.noOfPeople)
-        .reduce((a, b) => a + b, 0),
+      y: Array.isArray(entry.entry)
+        ? entry.entry.map((e) => e.noOfPeople).reduce((a, b) => a + b, 0)
+        : 0,
     }));
   }, [entries]);
 

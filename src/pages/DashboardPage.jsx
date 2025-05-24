@@ -38,7 +38,7 @@ const DashboardHeader = ({ onNavigate }) => {
       justifyContent="space-between"
     >
       <Typography variant="h6" fontWeight="bold">
-        TGT Admin Dashboard
+        Ashirvad Admin Dashboard
       </Typography>
       <Button variant="contained" onClick={() => onNavigate("home")}>
         <HomeIcon /> Home

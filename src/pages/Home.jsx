@@ -1,9 +1,10 @@
 import { Stack, Typography, Paper } from "@mui/material";
 import toast from "react-hot-toast";
 import { useAppSelector } from "../redux/hooks";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Home = () => {
+  const navigate = useNavigate();
   const { isAdminAuthenticated, admin } = useAppSelector(
     (state) => state.admin
   );
@@ -82,6 +83,7 @@ const Home = () => {
               );
             } else {
               toast.error("Please login to access the services.");
+              navigate("/login");
             }
           }}
         >

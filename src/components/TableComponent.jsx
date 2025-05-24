@@ -21,7 +21,11 @@ import {
 } from "@mui/material";
 import "./TableComponent.css";
 
-const TableComponent = ({ period, rowsLength, onSubmit }) => {
+const TableComponent = ({
+  period,
+  rowsLength,
+  onSubmit,
+}) => {
   const { entries } = useAppSelector((state) => state.entry);
 
   const [rows, setRows] = useState([]);
@@ -55,14 +59,14 @@ const TableComponent = ({ period, rowsLength, onSubmit }) => {
                 roomType: entry.roomType,
                 rate: entry.rate,
                 noOfPeople: entry.noOfPeople,
-                checkOutTime: entry.checkOutTime,
                 checkInTime: entry.checkInTime,
+                checkOutTime: entry.checkOutTime,
                 type: entry.type,
                 modeOfPayment: entry.modeOfPayment,
                 fullname: entry.fullname,
                 mobileNumber: entry.mobileNumber,
-                period: entry.period,
                 createDate: entry.createDate,
+                period: entry.period,
               }
             : row;
         });

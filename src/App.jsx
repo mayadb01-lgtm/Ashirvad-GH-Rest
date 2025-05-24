@@ -1,4 +1,8 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+} from "react-router-dom";
 import { Suspense, lazy, useLayoutEffect } from "react";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";

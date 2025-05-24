@@ -5,6 +5,9 @@ import {
   CircularProgress,
   Stack,
   TextField,
+  FormGroup,
+  FormControlLabel,
+  Checkbox,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
@@ -24,6 +27,8 @@ const GHDashboard = () => {
     dayjs().format("DD-MM-YYYY")
   );
 
+  const [selectedExtras, setSelectedExtras] = useState([]);
+
   // Handle Date Change
   const handleDateChange = useCallback(
     (newDate) => {
@@ -42,117 +47,83 @@ const GHDashboard = () => {
     dispatch(getEntriesByDate(selectedDate));
   }, [dispatch, selectedDate]);
 
-  // Memoized table columns
-  const columns = useMemo(
+  const defaultFields = useMemo(
     () => [
-      {
-        field: "id",
-        headerName: "ID",
-        width: 70,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "roomNo",
-        headerName: "Room No",
-        width: 130,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "cost",
-        headerName: "Price",
-        width: 100,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "roomType",
-        headerName: "Room Type",
-        width: 130,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "rate",
-        headerName: "Rate",
-        width: 100,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "noOfPeople",
-        headerName: "People",
-        width: 100,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "fullname",
-        headerName: "Full Name",
-        width: 150,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "type",
-        headerName: "Type",
-        width: 120,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "modeOfPayment",
-        headerName: "Payment Mode",
-        width: 140,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "checkInTime",
-        headerName: "Check In",
-        width: 130,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "checkOutTime",
-        headerName: "Check Out",
-        width: 130,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "date",
-        headerName: "Date",
-        width: 130,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "period",
-        headerName: "Period",
-        width: 110,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "isPaid",
-        headerName: "Paid",
-        width: 90,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "createDate",
-        headerName: "Created At",
-        width: 140,
-        headerAlign: "center",
-        align: "center",
-      },
+      { field: "id", headerName: "ID", width: 70 },
+      { field: "period", headerName: "D/N/UnPaid", width: 110 },
+      { field: "roomNo", headerName: "Room No", width: 130 },
+      { field: "cost", headerName: "Price", width: 100 },
+      { field: "roomType", headerName: "Room Type", width: 130 },
+      { field: "rate", headerName: "Rate", width: 100 },
+      { field: "noOfPeople", headerName: "People", width: 100 },
+      { field: "fullname", headerName: "Full Name", width: 150 },
+      { field: "type", headerName: "Type", width: 120 },
+      { field: "modeOfPayment", headerName: "Payment Mode", width: 140 },
+      { field: "date", headerName: "Date", width: 130 },
+      { field: "isPaid", headerName: "Paid", width: 90 },
+      { field: "createDate", headerName: "Created At", width: 140 },
     ],
     []
   );
+
+  const extraFields = useMemo(
+    () => ({
+      mobileNumber: { field: "mobileNumber", headerName: "Mobile", width: 130 },
+      advancePayment: {
+        field: "advancePayment",
+        headerName: "Advance",
+        width: 120,
+      },
+      // advancePaymentDate: {
+      //   field: "advancePaymentDate",
+      //   headerName: "Advance Date",
+      //   width: 140,
+      // },
+      // reservationId: {
+      //   field: "reservationId",
+      //   headerName: "Reservation ID",
+      //   width: 160,
+      // },
+      paidDate: {
+        field: "paidDate",
+        headerName: "Paid Date",
+        width: 130,
+      },
+      updatedDateTime: {
+        field: "updatedDateTime",
+        headerName: "Updated At",
+        width: 150,
+      },
+      checkInTime: {
+        field: "checkInTime",
+        headerName: "Check In",
+        width: 130,
+      },
+      checkOutTime: {
+        field: "checkOutTime",
+        headerName: "Check Out",
+        width: 130,
+      },
+    }),
+    []
+  );
+
+  const columns = useMemo(() => {
+    const extras = selectedExtras.map((key) => extraFields[key]);
+    return [...defaultFields, ...extras].map((col) => ({
+      ...col,
+      headerAlign: "center",
+      align: "center",
+    }));
+  }, [defaultFields, extraFields, selectedExtras]);
+
+  const handleExtraToggle = (field) => {
+    setSelectedExtras((prev) =>
+      prev.includes(field)
+        ? prev.filter((item) => item !== field)
+        : [...prev, field]
+    );
+  };
 
   return (
     <Box
@@ -183,6 +154,22 @@ const GHDashboard = () => {
             )}
           />
         </LocalizationProvider>
+
+        {/* Extra Fields Checkboxes */}
+        <FormGroup row sx={{ ml: 2 }}>
+          {Object.keys(extraFields).map((key) => (
+            <FormControlLabel
+              key={key}
+              control={
+                <Checkbox
+                  checked={selectedExtras.includes(key)}
+                  onChange={() => handleExtraToggle(key)}
+                />
+              }
+              label={extraFields[key].headerName}
+            />
+          ))}
+        </FormGroup>
       </Stack>
 
       {/* Table & Loading State */}
