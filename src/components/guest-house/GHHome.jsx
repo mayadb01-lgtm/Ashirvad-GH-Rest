@@ -100,7 +100,10 @@ const GHHome = () => {
     );
     return sortedEntries.map((entry) => ({
       x: dayjs(entry.entryCreateDate).format("DD MMM"),
-      y: entry.entry.map((entry) => entry.rate).reduce((a, b) => a + b, 0),
+      y: entry.entry
+        ?.filter((item) => item.isPaid === true)
+        .map((entry) => entry.rate)
+        .reduce((a, b) => a + b, 0),
     }));
   }, [entries]);
 

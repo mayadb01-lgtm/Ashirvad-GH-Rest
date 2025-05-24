@@ -52,7 +52,10 @@ const GHSalesDashboard = () => {
       entries.length > 0 &&
       entries
         ?.map((entry) =>
-          entry?.entry?.map((item) => item.rate).reduce((a, b) => a + b, 0)
+          entry?.entry
+            ?.filter((item) => item.isPaid === true)
+            .map((item) => item.rate)
+            .reduce((a, b) => a + b, 0)
         )
         .reduce((a, b) => a + b, 0),
   };
@@ -65,6 +68,7 @@ const GHSalesDashboard = () => {
         id: index + 1,
         date: entry.date,
         total: entry?.entry
+          ?.filter((item) => item.isPaid === true)
           ?.map((item) => item.rate)
           .reduce((a, b) => a + b, 0),
       }))

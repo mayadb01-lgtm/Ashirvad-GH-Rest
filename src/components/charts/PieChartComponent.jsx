@@ -111,7 +111,7 @@ const PieChartComponent = ({ data, isFullScreen }) => {
   const onPieEnter = useCallback((_, index) => setActiveIndex(index), []);
 
   return (
-    <ResponsiveContainer>
+    <ResponsiveContainer aspect={isFullScreen ? 2 : 1.25}>
       <PieChart>
         <Pie
           activeIndex={activeIndex}
