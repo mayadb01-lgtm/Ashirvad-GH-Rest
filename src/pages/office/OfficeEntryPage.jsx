@@ -213,168 +213,179 @@ const OfficeEntryPage = () => {
       <>
         <Grid
           container
-          direction="row"
-          display="flex"
+          spacing={1}
           justifyContent="space-between"
-          alignItems="start"
-          padding={"8px 32px"}
+          alignItems="flex-start"
+          padding="8px 32px"
+          sx={{ width: "100%" }}
         >
-          <Grid size={{ xs: 12, sm: 12, md: 12, lg: 12, xl: 12 }}>
-            <Box style={{ margin: "0", padding: "0" }}>
-              {/* Date Picker */}
-              <Stack
-                direction="row"
-                spacing={1}
-                style={{ margin: "0", padding: "0", alignItems: "center" }}
-              >
-                {/* Office Book Entry - Heading */}
-                <Typography
-                  variant="h6"
-                  fontWeight="bold"
-                  style={{ margin: 0 }}
+          {/* Right Column: Date Picker + Buttons */}
+          <Grid item xs={12} md={6}>
+            <Grid container spacing={3}>
+              {/* Date Picker Section */}
+              <Grid item xs={12}>
+                <Grid
+                  container
+                  spacing={2}
+                  alignItems="center"
+                  sx={{ flexWrap: "wrap", gap: 1 }}
                 >
-                  Office Book Entry
-                </Typography>
-                <LocalizationProvider
-                  dateAdapter={AdapterDayjs}
-                  adapterLocale="en-gb"
-                >
-                  <DatePicker
-                    format="DD-MM-YYYY"
-                    views={["year", "month", "day"]}
-                    value={
-                      selectedDate
-                        ? dayjs(selectedDate, "DD-MM-YYYY")
-                        : dayjs(today, "DD-MM-YYYY")
-                    }
-                    onChange={(newDate) => handleDateChange(newDate)}
-                    slots={{
-                      textField: (params) => (
-                        <TextField
-                          {...params}
-                          variant="outlined"
-                          size="small"
-                          error={false}
-                          helperText={null}
-                        />
-                      ),
-                    }}
+                  <Grid item>
+                    <Typography
+                      variant="h6"
+                      fontWeight="bold"
+                      sx={{ minWidth: "160px" }}
+                    >
+                      Office Book Entry
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm="auto">
+                    <LocalizationProvider
+                      dateAdapter={AdapterDayjs}
+                      adapterLocale="en-gb"
+                    >
+                      <DatePicker
+                        format="DD-MM-YYYY"
+                        views={["year", "month", "day"]}
+                        value={
+                          selectedDate
+                            ? dayjs(selectedDate, "DD-MM-YYYY")
+                            : dayjs(today, "DD-MM-YYYY")
+                        }
+                        onChange={(newDate) => handleDateChange(newDate)}
+                        slots={{
+                          textField: (params) => (
+                            <TextField
+                              {...params}
+                              variant="outlined"
+                              size="small"
+                              error={false}
+                              helperText={null}
+                              fullWidth
+                            />
+                          ),
+                        }}
+                        sx={{
+                          "& .MuiInputBase-input": {
+                            padding: "8.5px 14px", // better vertical alignment
+                          },
+                        }}
+                        disableFuture={!isAdminAuthenticated}
+                        disablePast={!isAdminAuthenticated}
+                      />
+                    </LocalizationProvider>
+                  </Grid>
+                </Grid>
+              </Grid>
+
+              {/* Action Buttons Section */}
+              <Grid item xs={12}>
+                <Grid container spacing={2}>
+                  <Grid item>
+                    <Button
+                      variant="contained"
+                      color="error"
+                      sx={{ "&:hover": { backgroundColor: "#e57373" } }}
+                      onClick={resetForm}
+                    >
+                      Reset
+                    </Button>
+                  </Grid>
+
+                  {officeBook &&
+                  (officeBook.officeIn || officeBook.officeOut) ? (
+                    <>
+                      <Grid item>
+                        <Button
+                          variant="contained"
+                          color="secondary"
+                          onClick={handleUpdateOfficeSubmit}
+                          disabled={isEditDisabled}
+                          sx={{
+                            "&:hover": { backgroundColor: "#ab47bc" }, // Better hover color
+                            "&:disabled": { backgroundColor: "#b39ddb" },
+                          }}
+                        >
+                          Edit
+                        </Button>
+                      </Grid>
+                      <Grid item>
+                        <Button
+                          variant="contained"
+                          color="error"
+                          onClick={handleDeleteOfficeSubmit}
+                        >
+                          Delete
+                        </Button>
+                      </Grid>
+                    </>
+                  ) : (
+                    <Grid item>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleOfficeSubmit}
+                        sx={{ "&:hover": { backgroundColor: "#64b5f6" } }}
+                      >
+                        Submit
+                      </Button>
+                    </Grid>
+                  )}
+                </Grid>
+              </Grid>
+            </Grid>
+          </Grid>
+          {/* Left Column: Office In & Out */}
+          <Grid item xs={12} md={6}>
+            <Grid container spacing={2}>
+              {/* Office In */}
+              <Grid item xs={12}>
+                <Box>
+                  <Typography
+                    variant="subtitle1"
                     sx={{
-                      "& .MuiInputBase-input": {
-                        padding: 1,
-                      },
+                      fontWeight: 500,
+                      fontSize: "18px",
+                      backgroundColor: "#e8e2fd",
+                      padding: "4px 16px",
+                      borderRadius: "4px",
+                      width: "fit-content",
                     }}
-                    disableFuture={!isAdminAuthenticated}
-                    disablePast={!isAdminAuthenticated}
+                  >
+                    Office In
+                  </Typography>
+                  <OfficeBookTable
+                    categoryOptions={categoryOptions}
+                    officeData={officeInData}
+                    setOfficeData={setOfficeInData}
                   />
-                </LocalizationProvider>
-              </Stack>
-            </Box>
-          </Grid>
-          {/* Office In */}
-          <Grid size={{ xs: 12, sm: 12, md: 12, lg: 5.95, xl: 5.95 }}>
-            <Grid size={{ xs: 12, sm: 12, md: 12, lg: 12, xl: 12 }}>
-              <Box>
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    fontWeight: 500,
-                    fontSize: "18px",
-                    backgroundColor: "#e8e2fd",
-                    padding: "4px 16px",
-                    borderRadius: "4px",
-                    width: "fit-content",
-                  }}
-                >
-                  Office In
-                </Typography>
-                <OfficeBookTable
-                  categoryOptions={categoryOptions}
-                  officeData={officeInData}
-                  setOfficeData={setOfficeInData}
-                />
-              </Box>
-            </Grid>
-          </Grid>
-          {/* Office Out */}
-          <Grid size={{ xs: 12, sm: 12, md: 12, lg: 5.95, xl: 5.95 }}>
-            <Grid size={{ xs: 12, sm: 12, md: 12, lg: 12, xl: 12 }}>
-              <Box>
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    fontWeight: 500,
-                    fontSize: "18px",
-                    backgroundColor: "#fee1ff",
-                    padding: "4px 16px",
-                    borderRadius: "4px",
-                    width: "fit-content",
-                  }}
-                >
-                  Office Out
-                </Typography>
-                <OfficeBookTable
-                  categoryOptions={categoryOptions}
-                  officeData={officeOutData}
-                  setOfficeData={setOfficeOutData}
-                />
-              </Box>
-            </Grid>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 12, md: 12, lg: 12, xl: 12 }}>
-            <Box
-              style={{
-                display: "flex",
-                justifyContent: "flex-start",
-                marginTop: "16px",
-              }}
-            >
-              <Button
-                variant="contained"
-                color="error"
-                sx={{ mx: 1, "&:hover": { backgroundColor: "#e57373" } }}
-                onClick={resetForm}
-              >
-                Reset
-              </Button>
-              {officeBook && (officeBook.officeIn || officeBook.officeOut) ? (
-                <>
-                  <Button
-                    variant="contained"
-                    color="secondary"
+                </Box>
+              </Grid>
+
+              {/* Office Out */}
+              <Grid item xs={12}>
+                <Box>
+                  <Typography
+                    variant="subtitle1"
                     sx={{
-                      mx: 1,
-                      "&:hover": { backgroundColor: "secondary" },
-                      "&:disabled": { backgroundColor: "secondary" },
+                      fontWeight: 500,
+                      fontSize: "18px",
+                      backgroundColor: "#fee1ff",
+                      padding: "4px 16px",
+                      borderRadius: "4px",
+                      width: "fit-content",
                     }}
-                    onClick={handleUpdateOfficeSubmit}
-                    disabled={isEditDisabled ? true : false}
                   >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="contained"
-                    color="error"
-                    sx={{ mx: 1 }}
-                    onClick={handleDeleteOfficeSubmit}
-                  >
-                    Delete
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  variant="contained"
-                  color="primary"
-                  sx={{
-                    mx: 1,
-                    "&:hover": { backgroundColor: "#64b5f6" },
-                  }}
-                  onClick={handleOfficeSubmit}
-                >
-                  Submit
-                </Button>
-              )}
-            </Box>
+                    Office Out
+                  </Typography>
+                  <OfficeBookTable
+                    categoryOptions={categoryOptions}
+                    officeData={officeOutData}
+                    setOfficeData={setOfficeOutData}
+                  />
+                </Box>
+              </Grid>
+            </Grid>
           </Grid>
         </Grid>
       </>
