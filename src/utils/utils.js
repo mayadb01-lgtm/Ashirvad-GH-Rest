@@ -235,3 +235,7 @@ export const initializeReservationData = () => {
     period: "reservation",
   }));
 };
+
+export const MODE_OF_PAYMENT_OPTIONS = ["Cash", "Card", "PPS", "PPC", "UnPaid"];
+
+export const DATE_FORMAT = "DD-MM-YYYY";

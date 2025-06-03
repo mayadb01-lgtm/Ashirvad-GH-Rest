@@ -381,6 +381,7 @@ const RestEntryPage = () => {
                     adapterLocale="en-gb"
                   >
                     <DatePicker
+                      format="DD-MM-YYYY"
                       views={["year", "month", "day"]}
                       value={
                         selectedDate

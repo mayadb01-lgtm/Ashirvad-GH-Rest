@@ -6,6 +6,7 @@ import restEntryReducer from "./reducers/restEntryReducer";
 import restStaffReducer from "./reducers/restStaffReducer";
 import restCategoryReducer from "./reducers/restCategory";
 import restPendingReducer from "./reducers/restPendingReducer";
+import officeBookReducer from "./reducers/officeBookReducer";
 
 const Store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ const Store = configureStore({
     restStaff: restStaffReducer,
     restCategory: restCategoryReducer,
     restPending: restPendingReducer,
+    officeBook: officeBookReducer,
   },
 });
 

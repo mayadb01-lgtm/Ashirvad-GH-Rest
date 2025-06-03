@@ -9,7 +9,6 @@ import { loadAdmin } from "./redux/actions/adminAction.js";
 import "./App.css";
 import ModernLoader from "./utils/util.jsx";
 import { useAppDispatch, useAppSelector } from "./redux/hooks/index.js";
-import OfficeEntryPage from "./pages/office/OfficeEntryPage.jsx";
 import NotFound from "./pages/NotFound.jsx";
 
 const EntryPage = lazy(() => import("./pages/EntryPage"));
@@ -28,6 +27,9 @@ const UserResetPasswordPage = lazy(
 const Home = lazy(() => import("./pages/Home.jsx"));
 const RestEntryPage = lazy(
   () => import("./pages/restaurant/RestEntryPage.jsx")
+);
+const OfficeEntryPage = lazy(
+  () => import("./pages/office/OfficeEntryPage.jsx")
 );
 
 const App = () => {
