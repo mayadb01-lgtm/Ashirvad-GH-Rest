@@ -26,60 +26,45 @@ export const processEntriesByPaymentMode = (data, mode) => {
 };
 
 export const roomCosts = {
-  1: 1200,
-  2: 1500,
-  3: 1500,
-  4: 1500,
-  5: 1500,
-  6: 1200,
-  7: 1200,
-  8: 1200,
-  9: 1400,
-  10: 1400,
-  11: 1400,
-  12: 1400,
-  13: 1200,
-  14: 1200,
-  15: 1200,
-  16: 1200,
+  1: 1800,
+  2: 1800,
+  3: 1800,
+  4: 1800,
+  5: 1800,
+  6: 2200,
+  7: 2200,
+  8: 1500,
+  9: 1500,
+  10: 1500,
+  11: 1500,
 };
 
 export const roomType = {
-  1: "2 Bed",
-  2: "3 Bed",
-  3: "3 Bed",
+  1: "Deluxe",
+  2: "Deluxe",
+  3: "Deluxe",
   4: "Deluxe",
   5: "Deluxe",
-  6: "2 Bed",
-  7: "2 Bed",
+  6: "3 Bed",
+  7: "3 Bed",
   8: "2 Bed",
-  9: "3 Bed",
-  10: "3 Bed",
-  11: "3 Bed",
-  12: "3 Bed",
-  13: "2 Bed",
-  14: "2 Bed",
-  15: "2 Bed",
-  16: "2 Bed",
+  9: "2 Bed",
+  10: "2 Bed",
+  11: "2 Bed",
 };
 
 export const roomNumber = {
-  1: 101,
-  2: 102,
-  3: 103,
-  4: 104,
-  5: 105,
-  6: 106,
-  7: 107,
-  8: 108,
-  9: 201,
-  10: 202,
-  11: 203,
-  12: 204,
-  13: 205,
-  14: 206,
-  15: 207,
-  16: 208,
+  1: 1,
+  2: 2,
+  3: 3,
+  4: 4,
+  5: 5,
+  6: 6,
+  7: 7,
+  8: 8,
+  9: 9,
+  10: 10,
+  11: 11,
 };
 
 export const initializePendingJamaRows = () => {
@@ -118,8 +103,8 @@ export const processEntries = (data, period, selectedDate, currentDateTime) => {
     .filter(
       (row) =>
         row.rate !== 0 &&
-        // row.noOfPeople !== 0 &&
-        // row.type !== "" &&
+        row.noOfPeople !== 0 &&
+        row.type !== "" &&
         row.modeOfPayment !== ""
     )
     .map((row) => ({
@@ -137,8 +122,8 @@ export const processUpdateEntries = (data, period, selectedDate) => {
     .filter(
       (row) =>
         row.rate !== 0 &&
-        // row.noOfPeople !== 0 &&
-        // row.type !== "" &&
+        row.noOfPeople !== 0 &&
+        row.type !== "" &&
         row.modeOfPayment !== ""
     )
     .map((row) => ({
@@ -146,13 +131,14 @@ export const processUpdateEntries = (data, period, selectedDate) => {
       period,
       date: selectedDate,
       updatedDateTime: currentDateTime,
+      createDate: row.createDate,
     }))
     .sort((a, b) => a.roomNo - b.roomNo);
 };
 
 // Table Component
 
-export const initializeRows = (period, rowsLength) => {
+export const initializeRows = (period, rowsLength, selectedDate) => {
   return Array.from({ length: rowsLength }, (_, i) => ({
     id: `${period} - ${i + 1}`,
     roomNo: roomNumber[i + 1] || 0,
@@ -167,7 +153,7 @@ export const initializeRows = (period, rowsLength) => {
     checkInTime: "10:00 AM",
     checkOutTime: "10:00 AM",
     period: period,
-    createDate: "",
+    createDate: selectedDate || "",
   }));
 };
 
