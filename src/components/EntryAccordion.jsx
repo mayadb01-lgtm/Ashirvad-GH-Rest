@@ -50,7 +50,7 @@ const EntryAccordion = ({
           <TableComponent
             period={period}
             title={`${title} Table`}
-            rowsLength={11}
+            rowsLength={16}
             onSubmit={onSubmit}
             tableData={tableData}
             selectedDate={selectedDate}
