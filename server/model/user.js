@@ -56,6 +56,10 @@ const userSchema = new Schema({
   },
   resetPasswordToken: String,
   resetPasswordTime: Date,
+  isSuperUser: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 //  Hash password

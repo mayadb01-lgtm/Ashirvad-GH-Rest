@@ -34,8 +34,11 @@ const OfficeEntryPage = lazy(
 
 const App = () => {
   const dispatch = useAppDispatch();
-  const { isAdminAuthenticated } = useAppSelector((state) => state.admin);
-  const { isAuthenticated } = useAppSelector((state) => state.user);
+  const { isAdminAuthenticated, admin } = useAppSelector(
+    (state) => state.admin
+  );
+  const { isAuthenticated, user } = useAppSelector((state) => state.user);
+  const isSuperUserOrAdmin = admin?.isSuperAdmin || user?.isSuperUser || false;
 
   useLayoutEffect(() => {
     if (!isAuthenticated && !isAdminAuthenticated) {
@@ -115,14 +118,16 @@ const App = () => {
               </ProtectedAdminRoute>
             }
           />
-          <Route
-            path="/dashboard/*"
-            element={
-              <ProtectedAdminRoute>
-                <DashboardPage />
-              </ProtectedAdminRoute>
-            }
-          />
+          {isSuperUserOrAdmin && (
+            <Route
+              path="/dashboard/*"
+              element={
+                <ProtectedAdminRoute>
+                  <DashboardPage />
+                </ProtectedAdminRoute>
+              }
+            />
+          )}
           <Route
             path="/signup"
             element={

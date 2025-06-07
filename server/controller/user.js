@@ -6,7 +6,7 @@ import { isAuthenticated } from "../middleware/auth.js";
 import process from "process";
 
 // Sign Up User
-router.post("/create-user", async (req, res, next) => {
+router.post("/create-user", async (req, res) => {
   try {
     const { name, email, password } = req.body;
     console.log(req.body);
@@ -38,7 +38,7 @@ router.post("/create-user", async (req, res, next) => {
 });
 
 // Login User
-router.post("/login-user", async (req, res, next) => {
+router.post("/login-user", async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -80,7 +80,7 @@ router.post("/login-user", async (req, res, next) => {
 });
 
 // Load User
-router.get("/getuser", isAuthenticated, async (req, res, next) => {
+router.get("/getuser", isAuthenticated, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
 
@@ -104,7 +104,7 @@ router.get("/getuser", isAuthenticated, async (req, res, next) => {
 });
 
 // Logout User
-router.get("/logout-user", async (req, res, next) => {
+router.get("/logout-user", async (req, res) => {
   try {
     res.cookie("token", null, {
       expires: new Date(Date.now()),
@@ -125,7 +125,7 @@ router.get("/logout-user", async (req, res, next) => {
 });
 
 // Reset Password - Using one Referral Code Directly - POST
-router.post("/reset-password", async (req, res, next) => {
+router.post("/reset-password", async (req, res) => {
   try {
     const { email, password, referralCode } = req.body;
 

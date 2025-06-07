@@ -6,7 +6,7 @@ import sendAdminToken from "../utils/adminToken.js";
 import process from "process";
 
 // Sign Up Admin
-router.post("/create-admin", async (req, res, next) => {
+router.post("/create-admin", async (req, res) => {
   try {
     const { name, email, password, referralCode } = req.body;
 
@@ -51,7 +51,7 @@ router.post("/create-admin", async (req, res, next) => {
 });
 
 // Login Admin
-router.post("/login-admin", async (req, res, next) => {
+router.post("/login-admin", async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -94,7 +94,7 @@ router.post("/login-admin", async (req, res, next) => {
 });
 
 // Load Admin
-router.get("/getadmin", isAuthenticated, async (req, res, next) => {
+router.get("/getadmin", isAuthenticated, async (req, res) => {
   try {
     const admin = await Admin.findById(req.user.id);
 
@@ -117,7 +117,7 @@ router.get("/getadmin", isAuthenticated, async (req, res, next) => {
 });
 
 // Logout Admin
-router.get("/logout-admin", isAuthenticated, async (req, res, next) => {
+router.get("/logout-admin", isAuthenticated, async (req, res) => {
   try {
     res.cookie("admin_token", null, {
       expires: new Date(Date.now()),
@@ -138,7 +138,7 @@ router.get("/logout-admin", isAuthenticated, async (req, res, next) => {
 });
 
 // Reset Password
-router.post("/reset-password", async (req, res, next) => {
+router.post("/reset-password", async (req, res) => {
   try {
     const { email, password, referralCode } = req.body;
 
