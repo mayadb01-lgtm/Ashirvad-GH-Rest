@@ -14,12 +14,14 @@ import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
 import { useMemo } from "react";
 import { MODE_OF_PAYMENT_OPTIONS } from "../../utils/utils";
 import dayjs from "dayjs";
+import { useAppSelector } from "../../redux/hooks";
 
 const tableColumns = [
   "ID",
   "Amount",
   "Mode",
   "Name",
+  "Expense",
   "Category",
   "Remark",
   "Remove",
@@ -35,6 +37,53 @@ const EditableRow = ({
   const handleInputChange = (key, value) => {
     onUpdateRow(index, key, value);
   };
+
+  const flattenedExpenses = categoryOptions.flatMap((category) =>
+    category.expense.map((exp) => ({
+      _id: exp._id,
+      expenseName: exp.expenseName,
+      categoryName: category.categoryName,
+    }))
+  );
+
+  // Category Name
+  const renderCategoryAutocomplete = (options, rowKey, index, currentValue) => (
+    <Autocomplete
+      disabled
+      options={options}
+      getOptionLabel={(option) => option.categoryName || ""}
+      value={
+        options.find((option) => option.categoryName === currentValue) || ""
+      }
+      onChange={(e, value) => {
+        handleInputChange(rowKey, value?.categoryName);
+        handleInputChange("_id", value ? value._id : "");
+      }}
+      renderInput={(params) => (
+        <TextField {...params} variant="outlined" size="small" />
+      )}
+    />
+  );
+
+  // Expense Name
+  const renderExpenseAutocomplete = (options, rowKey, index, currentValue) => (
+    <Autocomplete
+      options={options}
+      groupBy={(option) => option.categoryName}
+      getOptionLabel={(option) => option.expenseName || ""}
+      value={
+        options.find((option) => option.expenseName === currentValue) || ""
+      }
+      onChange={(_, value) => {
+        handleInputChange(rowKey, value?.expenseName);
+        handleInputChange("_id", value ? value._id : "");
+        handleInputChange("categoryName", value ? value.categoryName : "");
+      }}
+      renderInput={(params) => (
+        <TextField {...params} variant="outlined" size="small" fullWidth />
+      )}
+    />
+  );
 
   return (
     <TableRow
@@ -79,21 +128,20 @@ const EditableRow = ({
         />
       </TableCell>
       <TableCell sx={{ width: "15%" }}>
-        <Autocomplete
-          options={categoryOptions}
-          getOptionLabel={(option) => option.categoryName || ""}
-          value={
-            categoryOptions.find(
-              (option) => option.categoryName === row.category
-            ) || null
-          }
-          onChange={(_, value) =>
-            handleInputChange("category", value?.categoryName || "")
-          }
-          renderInput={(params) => (
-            <TextField {...params} variant="outlined" size="small" fullWidth />
-          )}
-        />
+        {renderExpenseAutocomplete(
+          flattenedExpenses,
+          "expenseName",
+          index,
+          row.expenseName
+        )}
+      </TableCell>
+      <TableCell sx={{ width: "15%" }}>
+        {renderCategoryAutocomplete(
+          categoryOptions,
+          "categoryName",
+          index,
+          row.categoryName
+        )}
       </TableCell>
       <TableCell sx={{ width: "25%" }}>
         <TextField
@@ -113,7 +161,9 @@ const EditableRow = ({
   );
 };
 
-const OfficeBookTable = ({ officeData, setOfficeData, categoryOptions }) => {
+const OfficeBookTable = ({ officeData, setOfficeData }) => {
+  const { restCategory } = useAppSelector((state) => state.restCategory);
+
   const handleAddRow = () => {
     setOfficeData((prevData) => [
       ...prevData,
@@ -176,7 +226,7 @@ const OfficeBookTable = ({ officeData, setOfficeData, categoryOptions }) => {
                 index={index}
                 onUpdateRow={handleUpdateRow}
                 handleRemoveRow={handleRemoveRow}
-                categoryOptions={categoryOptions}
+                categoryOptions={restCategory}
               />
             ))}
           </TableBody>

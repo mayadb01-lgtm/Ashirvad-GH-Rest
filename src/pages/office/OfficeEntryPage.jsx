@@ -20,7 +20,6 @@ dayjs.locale("en-gb");
 const OfficeEntryPage = () => {
   const dispatch = useAppDispatch();
   const { loading, officeBook } = useAppSelector((state) => state.officeBook);
-  const { restCategory } = useAppSelector((state) => state.restCategory);
   const { isAdminAuthenticated } = useAppSelector((state) => state.admin);
   const today = dayjs().format("DD-MM-YYYY");
 
@@ -54,11 +53,6 @@ const OfficeEntryPage = () => {
   useEffect(() => {
     dispatch(getRestCategory());
   }, [dispatch]);
-
-  // Memoized category options
-  const categoryOptions = useMemo(() => {
-    return restCategory?.map(({ categoryName }) => ({ categoryName })) || [];
-  }, [restCategory]);
 
   // Disable Edit when In and Out - Amount Total is 0
   const isEditDisabled = useMemo(() => {
@@ -353,7 +347,6 @@ const OfficeEntryPage = () => {
                     Office In
                   </Typography>
                   <OfficeBookTable
-                    categoryOptions={categoryOptions}
                     officeData={officeInData}
                     setOfficeData={setOfficeInData}
                   />
@@ -377,7 +370,6 @@ const OfficeEntryPage = () => {
                     Office Out
                   </Typography>
                   <OfficeBookTable
-                    categoryOptions={categoryOptions}
                     officeData={officeOutData}
                     setOfficeData={setOfficeOutData}
                   />
