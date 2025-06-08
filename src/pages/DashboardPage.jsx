@@ -5,14 +5,17 @@ import { Button, createTheme, Stack, Typography } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import CategoryIcon from "@mui/icons-material/Category";
 import BadgeIcon from "@mui/icons-material/Badge";
-import RestaurantIcon from "@mui/icons-material/Restaurant";
-import HotelIcon from "@mui/icons-material/Hotel";
+// import RestaurantIcon from "@mui/icons-material/Restaurant";
+// import HotelIcon from "@mui/icons-material/Hotel";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import CreditScoreIcon from "@mui/icons-material/CreditScore";
 import { BookOutlined } from "@mui/icons-material";
+import PieChartIcon from "@mui/icons-material/PieChart";
 import HomeIcon from "@mui/icons-material/Home";
+import LooksOneIcon from "@mui/icons-material/LooksOne";
+import DateRangeIcon from "@mui/icons-material/DateRange";
 
 // Components
 import HomeDashboard from "../components/HomeDashboard";
@@ -29,7 +32,7 @@ import RestStaffDashboard from "../components/restaurant/RestStaffDashboard";
 import RestCategoryExpensesDashboard from "../components/restaurant/RestCategoryExpensesDashboard";
 import RestPendingUsersDashboard from "../components/restaurant/RestPendingUsersDashboard";
 import OfficeBookDashboard from "../components/office/OfficeBookDashboard";
-import OfficeCategoryDashboard from "../components/office/OfficeCategoryDashboard";
+// import OfficeCategoryDashboard from "../components/office/OfficeCategoryDashboard";
 
 const DashboardHeader = ({ onNavigate }) => {
   const navigate = useNavigate();
@@ -60,7 +63,7 @@ const DashboardHeader = ({ onNavigate }) => {
           onClick={() => navigate("/")}
           endIcon={<HomeIcon />}
         >
-          Go Back To
+          Entry Home
         </Button>
       </Stack>
     </Stack>
@@ -74,69 +77,84 @@ const NAVIGATION = [
     icon: <DashboardIcon />,
   },
   { kind: "header", title: "Guest House" },
-  { segment: "guest-house", title: "Guest House", icon: <HotelIcon /> },
-  { segment: "gh-dashboard", title: "GH-Dashboard", icon: <HotelIcon /> },
+  {
+    segment: "guest-house",
+    title: "GH - Graph",
+    icon: <PieChartIcon />,
+  },
+  {
+    segment: "gh-dashboard",
+    title: "GH - One Day View",
+    icon: <LooksOneIcon />,
+  },
   {
     segment: "gh-dashboard-range",
-    title: "GH-Dashboard-Range",
-    icon: <HotelIcon />,
+    title: "GH - Date Range",
+    icon: <DateRangeIcon />,
   },
   {
     segment: "gh-reports",
-    title: "Reports",
+    title: "GH - Reports",
     icon: <BarChartIcon />,
     children: [
       {
         segment: "sales-report",
-        title: "Sales Report",
+        title: "GH - Sales Report",
         icon: <CurrencyRupeeIcon />,
       },
     ],
   },
   { kind: "header", title: "Restaurant" },
-  { segment: "restaurant", title: "Restaurant", icon: <HotelIcon /> },
-  {
-    segment: "res-dashboard",
-    title: "Res-Dashboard",
-    icon: <RestaurantIcon />,
-  },
+  { segment: "restaurant", title: "Rest - Graph", icon: <PieChartIcon /> },
   {
     segment: "res-reports",
-    title: "Reports",
+    title: "Rest - Reports",
     icon: <BarChartIcon />,
     children: [
       {
         segment: "sales-report",
-        title: "Sales Report",
+        title: "Rest - Sales Report",
         icon: <CurrencyRupeeIcon />,
       },
       {
         segment: "upaad-report",
-        title: "Upaad Report",
+        title: "Rest - Upaad Entries",
         icon: <PaymentsIcon />,
       },
       {
         segment: "expenses-report",
-        title: "Expenses Report",
+        title: "Rest - Expenses",
         icon: <CreditScoreIcon />,
       },
-      { segment: "bank-books", title: "Bank Books", icon: <BookOutlined /> },
+      {
+        segment: "bank-books",
+        title: "Rest - Bank Books",
+        icon: <BookOutlined />,
+      },
     ],
   },
-  { segment: "manage-staff", title: "Manage Staff", icon: <BadgeIcon /> },
+  {
+    segment: "manage-staff",
+    title: "Rest - Manage Staff",
+    icon: <BadgeIcon />,
+  },
   {
     segment: "categories-expenses",
     title: "Categories & Expenses",
     icon: <CategoryIcon />,
   },
-  { segment: "pending-users", title: "Pending Users", icon: <BadgeIcon /> },
-  { kind: "header", title: "Office Book" },
-  { segment: "office-book", title: "Office Book", icon: <BadgeIcon /> },
   {
-    segment: "office-category",
-    title: "Office Category",
-    icon: <CategoryIcon />,
+    segment: "pending-users",
+    title: "Rest - Pending Users",
+    icon: <BadgeIcon />,
   },
+  { kind: "header", title: "Office Book" },
+  { segment: "office-book", title: "Office Book", icon: <LooksOneIcon /> },
+  // {
+  //   segment: "office-category",
+  //   title: "Office Category",
+  //   icon: <CategoryIcon />,
+  // },
 ];
 
 // Theme setup
@@ -176,10 +194,6 @@ const DashboardPage = () => {
     { path: "guest-house", element: <GHHome /> },
     { path: "gh-reports/sales-report", element: <GHSalesDashboard /> },
     { path: "restaurant", element: <RestHome /> },
-    {
-      path: "res-dashboard",
-      element: <Typography>Restaurant Dashboard</Typography>,
-    },
     { path: "res-reports/sales-report", element: <RestSalesDashboard /> },
     {
       path: "res-reports/upaad-report",
@@ -191,7 +205,7 @@ const DashboardPage = () => {
     { path: "categories-expenses", element: <RestCategoryExpensesDashboard /> },
     { path: "pending-users", element: <RestPendingUsersDashboard /> },
     { path: "office-book", element: <OfficeBookDashboard /> },
-    { path: "office-category", element: <OfficeCategoryDashboard /> },
+    // { path: "office-category", element: <OfficeCategoryDashboard /> },
     { path: "*", element: <Typography>404: Page Not Found</Typography> },
   ]);
 

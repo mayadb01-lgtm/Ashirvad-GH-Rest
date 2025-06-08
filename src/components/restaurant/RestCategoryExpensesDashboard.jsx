@@ -146,8 +146,21 @@ const CategoriesExpensesDashboard = () => {
   };
   const filteredCategories = useMemo(
     () =>
-      restCategory.filter((category) =>
-        category.categoryName.toLowerCase().includes(search.toLowerCase())
+      restCategory.filter(
+        (category) =>
+          category.categoryName.toLowerCase().includes(search.toLowerCase()) ||
+          category.categoryDescription
+            .toLowerCase()
+            .includes(search.toLowerCase()) ||
+          category.expense.some(
+            (expense) =>
+              expense.expenseName
+                .toLowerCase()
+                .includes(search.toLowerCase()) ||
+              expense.expenseDescription
+                .toLowerCase()
+                .includes(search.toLowerCase())
+          )
       ),
     [restCategory, search]
   );
