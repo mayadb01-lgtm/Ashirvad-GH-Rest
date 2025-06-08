@@ -37,8 +37,8 @@ import {
 } from "../utils/utils";
 import PendingJamaTable from "../components/PendingJamaTable";
 import ModernLoader, { AccordionSection, PaymentSummary } from "../utils/util";
-const PendingJamaGrid = React.lazy(() =>
-  import("../components/PendingJamaGrid")
+const PendingJamaGrid = React.lazy(
+  () => import("../components/PendingJamaGrid")
 );
 // const ReservationTable = React.lazy(
 //   () => import("../components/ReservationTable")
@@ -573,6 +573,7 @@ const EntryPage = () => {
                   adapterLocale="en-gb"
                 >
                   <DatePicker
+                    disabled={!isAdminAuthenticated}
                     views={["year", "month", "day"]}
                     value={
                       selectedDate

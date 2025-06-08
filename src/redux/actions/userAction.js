@@ -65,7 +65,7 @@ export const loadUser = () => async (dispatch) => {
       }
     );
     dispatch({ type: "LoadUserSuccess", payload: data.user });
-    toast.success("User loaded successfully");
+    toast.success("User Login - Success");
   } catch (error) {
     dispatch({
       type: "LoadUserFailure",

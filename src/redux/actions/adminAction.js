@@ -63,7 +63,7 @@ export const loadAdmin = () => async (dispatch) => {
     );
     console.log("Admin loaded successfully", data);
     dispatch({ type: "LoadAdminSuccess", payload: data.admin });
-    toast.success("Admin loaded successfully");
+    toast.success("Admin Login - Success");
   } catch (error) {
     dispatch({
       type: "LoadAdminFailure",

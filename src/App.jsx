@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { Suspense, lazy, useLayoutEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import ProtectedAdminRoute from "./routes/ProtectedAdminRoute";
@@ -34,22 +34,14 @@ const OfficeEntryPage = lazy(
 
 const App = () => {
   const dispatch = useAppDispatch();
-  const { isAdminAuthenticated, admin } = useAppSelector(
-    (state) => state.admin
-  );
-  const { isAuthenticated, user } = useAppSelector((state) => state.user);
+  const { admin } = useAppSelector((state) => state.admin);
+  const { user } = useAppSelector((state) => state.user);
   const isSuperUserOrAdmin = admin?.isSuperAdmin || user?.isSuperUser || false;
 
-  useLayoutEffect(() => {
-    if (!isAuthenticated && !isAdminAuthenticated) {
-      dispatch(loadUser());
-      dispatch(loadAdmin());
-    } else if (isAuthenticated && !isAdminAuthenticated) {
-      dispatch(loadUser());
-    } else if (isAdminAuthenticated && !isAuthenticated) {
-      dispatch(loadAdmin());
-    }
-  }, [dispatch, isAdminAuthenticated, isAuthenticated]);
+  useEffect(() => {
+    dispatch(loadUser());
+    dispatch(loadAdmin());
+  }, [dispatch]);
 
   return (
     <Router>

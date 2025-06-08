@@ -101,7 +101,7 @@ router.get("/getadmin", isAuthenticated, async (req, res) => {
     if (!admin) {
       return res.status(404).json({
         success: false,
-        message: "Admin not found",
+        message: "Admin Login - Failed",
       });
     }
     res.status(200).json({
