@@ -9,6 +9,7 @@ import {
   Modal,
   TextField,
   Typography,
+  Stack,
 } from "@mui/material";
 import { Add, Edit, Delete } from "@mui/icons-material";
 import {
@@ -17,6 +18,8 @@ import {
   removePendingUser,
   updatePendingUser,
 } from "../../redux/actions/restPendingAction";
+import toast from "react-hot-toast";
+import * as XLSX from "xlsx";
 
 const RestPendingUsersDashboard = () => {
   const dispatch = useAppDispatch();
@@ -128,6 +131,34 @@ const RestPendingUsersDashboard = () => {
     },
   ];
 
+  const headerMap = {
+    _id: "ID",
+    fullname: "Full Name",
+    mobileNumber: "Mobile Number",
+  };
+
+  const handleExportToExcel = () => {
+    if (!Array.isArray(filteredStaff) || filteredStaff.length === 0) {
+      toast.error("No data available to export for selected date range.");
+      return;
+    }
+    const exportData = filteredStaff
+      .filter((row) => row.type !== "group" && row.id !== "Total")
+      .map(({ ...item }) => {
+        const transformed = {};
+        Object.keys(headerMap).forEach((key) => {
+          transformed[headerMap[key]] = item[key];
+        });
+        return transformed;
+      });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Guest Entries");
+
+    XLSX.writeFile(workbook, "GuestHouseEntries.xlsx");
+  };
+
   return (
     <Box
       sx={{
@@ -148,16 +179,24 @@ const RestPendingUsersDashboard = () => {
           Restaurant Pending Users
         </Typography>
       </Box>
-      {/* Search Bar */}
-      <TextField
-        label="Search Pending User"
-        variant="outlined"
-        size="small"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        sx={{ mt: 2, width: "50%" }}
-        slot="start"
-      />
+      <Stack direction="row" spacing={2}>
+        <TextField
+          label="Search Pending User"
+          variant="outlined"
+          size="small"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          sx={{ mt: 2 }}
+          slot="start"
+        />
+        <Button
+          variant="outlined"
+          color="primary"
+          onClick={handleExportToExcel}
+        >
+          Export to Excel
+        </Button>
+      </Stack>
 
       {loading ? (
         <CircularProgress sx={{ mt: 2 }} />

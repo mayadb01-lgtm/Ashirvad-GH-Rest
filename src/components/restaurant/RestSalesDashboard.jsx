@@ -5,6 +5,7 @@ import {
   CircularProgress,
   Stack,
   TextField,
+  Button,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
@@ -12,6 +13,8 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import dayjs from "dayjs";
 import { getRestEntriesByDateRange } from "../../redux/actions/restEntryAction";
+import toast from "react-hot-toast";
+import * as XLSX from "xlsx";
 
 dayjs.locale("en-gb");
 
@@ -60,6 +63,35 @@ const RestSalesDashboard = () => {
     }))
     .concat(totalRow);
 
+  // handleExportToExcel
+
+  const headerMap = {
+    date: "Date",
+    total: "Total",
+  };
+
+  const handleExportToExcel = () => {
+    if (!Array.isArray(preparedEntries) || preparedEntries.length === 0) {
+      toast.error("No data available to export for selected date range.");
+      return;
+    }
+    const exportData = preparedEntries
+      .filter((row) => row.type !== "group" && row.id !== "Total")
+      .map(({ ...item }) => {
+        const transformed = {};
+        Object.keys(headerMap).forEach((key) => {
+          transformed[headerMap[key]] = item[key];
+        });
+        return transformed;
+      });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Guest Entries");
+
+    XLSX.writeFile(workbook, "GuestHouseEntries.xlsx");
+  };
+
   return (
     <Box
       sx={{
@@ -102,6 +134,14 @@ const RestSalesDashboard = () => {
             views={["year", "month", "day"]}
           />
         </LocalizationProvider>
+        <Button
+          variant="outlined"
+          color="primary"
+          sx={{ mt: 2 }}
+          onClick={handleExportToExcel}
+        >
+          Export to Excel
+        </Button>
         {/* Quick Date Range Selection */}
         {/* <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
           <Button
@@ -132,7 +172,7 @@ const RestSalesDashboard = () => {
           >
             Last 12 Months
           </Button>
-        </Stack> */}
+      </Stack> */}
       </Stack>
       {loading ? (
         <CircularProgress sx={{ mt: 2 }} />

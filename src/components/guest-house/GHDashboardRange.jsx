@@ -30,7 +30,11 @@ import * as XLSX from "xlsx";
 dayjs.locale("en-gb");
 
 const headerMap = {
+  createDate: "Created Date",
+  _id: "Entry ID",
   roomNo: "Room Number",
+  roomType: "Room Type",
+  period: "Stay Period",
   cost: "Cost",
   rate: "Rate",
   noOfPeople: "No. of People",
@@ -39,19 +43,10 @@ const headerMap = {
   mobileNumber: "Mobile Number",
   checkInTime: "Check-In Time",
   checkOutTime: "Check-Out Time",
-  advancePayment: "Advance Payment",
-  advancePaymentDate: "Advance Payment Date",
-  reservationId: "Reservation ID",
-  date: "Booking Date",
-  createDate: "Created Date",
-  updatedDateTime: "Last Updated",
-  period: "Stay Period",
+  date: "Date",
   createdAt: "Created At",
   paidDate: "Paid Date",
-  _id: "Entry ID",
   isPaid: "Is Paid?",
-  updatedAt: "Updated At",
-  roomType: "Room Type",
 };
 
 const GHSalesDashboardRange = () => {
@@ -297,7 +292,7 @@ const GHSalesDashboardRange = () => {
     }
     const exportData = preparedEntries
       .filter((row) => row.type !== "group" && row.id !== "Total")
-      .map(({ id, type, ...item }) => {
+      .map(({ ...item }) => {
         const transformed = {};
         Object.keys(headerMap).forEach((key) => {
           transformed[headerMap[key]] = item[key];

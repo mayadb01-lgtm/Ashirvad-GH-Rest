@@ -6,6 +6,7 @@ import {
   Stack,
   TextField,
   Autocomplete,
+  Button,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
@@ -13,7 +14,8 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import dayjs from "dayjs";
 import { getUpadByDateRange } from "../../redux/actions/restEntryAction";
-
+import toast from "react-hot-toast";
+import * as XLSX from "xlsx";
 dayjs.locale("en-gb");
 
 const RestUpaadEntriesDashboard = () => {
@@ -88,6 +90,36 @@ const RestUpaadEntriesDashboard = () => {
       .concat(totalRow);
   }, [restEntries, selectedStaff, selectedStaffEntries]);
 
+  // handleExportToExcel
+
+  const headerMap = {
+    createDate: "Date",
+    fullname: "Staff Name",
+    amount: "Amount",
+  };
+
+  const handleExportToExcel = () => {
+    if (!Array.isArray(preparedEntries) || preparedEntries.length === 0) {
+      toast.error("No data available to export for selected date range.");
+      return;
+    }
+    const exportData = preparedEntries
+      .filter((row) => row.type !== "group" && row.id !== "Total")
+      .map(({ ...item }) => {
+        const transformed = {};
+        Object.keys(headerMap).forEach((key) => {
+          transformed[headerMap[key]] = item[key];
+        });
+        return transformed;
+      });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Guest Entries");
+
+    XLSX.writeFile(workbook, "GuestHouseEntries.xlsx");
+  };
+
   return (
     <Box
       sx={{
@@ -144,6 +176,14 @@ const RestUpaadEntriesDashboard = () => {
             setSelectedStaff(newValue);
           }}
         />
+        <Button
+          variant="outlined"
+          color="primary"
+          sx={{ mt: 2 }}
+          onClick={handleExportToExcel}
+        >
+          Export to Excel
+        </Button>
       </Stack>
       {loading ? (
         <CircularProgress sx={{ mt: 2 }} />

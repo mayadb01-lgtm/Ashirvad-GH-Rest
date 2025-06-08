@@ -5,6 +5,7 @@ import {
   CircularProgress,
   Stack,
   TextField,
+  Button,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
@@ -12,6 +13,8 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { getEntriesByDateRange } from "../../redux/actions/entryAction";
 import dayjs from "dayjs";
+import toast from "react-hot-toast";
+import * as XLSX from "xlsx";
 
 dayjs.locale("en-gb");
 
@@ -74,6 +77,34 @@ const GHSalesDashboard = () => {
       }))
       .concat(totalRow);
 
+  const headerMap = {
+    id: "Index",
+    date: "Date",
+    total: "Total",
+  };
+
+  const handleExportToExcel = () => {
+    if (!Array.isArray(preparedEntries) || preparedEntries.length === 0) {
+      toast.error("No data available to export for selected date range.");
+      return;
+    }
+    const exportData = preparedEntries
+      .filter((row) => row.type !== "group" && row.id !== "Total")
+      .map(({ ...item }) => {
+        const transformed = {};
+        Object.keys(headerMap).forEach((key) => {
+          transformed[headerMap[key]] = item[key];
+        });
+        return transformed;
+      });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Guest Entries");
+
+    XLSX.writeFile(workbook, "GuestHouseEntries.xlsx");
+  };
+
   return (
     <Box
       sx={{
@@ -115,6 +146,14 @@ const GHSalesDashboard = () => {
             views={["year", "month", "day"]}
           />
         </LocalizationProvider>
+        <Button
+          variant="outlined"
+          color="primary"
+          sx={{ mt: 2 }}
+          onClick={handleExportToExcel}
+        >
+          Export to Excel
+        </Button>
       </Stack>
       {loading ? (
         <CircularProgress sx={{ mt: 2 }} />

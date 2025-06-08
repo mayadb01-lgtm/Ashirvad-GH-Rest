@@ -5,24 +5,22 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs from "dayjs";
 import Grid from "@mui/material/Grid2";
-import { Box, Button, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, TextField, Typography } from "@mui/material";
 import OfficeBookTable from "../../components/office/OfficeBookTable";
 import {
   createOfficeBook,
   deleteOfficeBookByDate,
-  getOfficeAllCategories,
   getOfficeBookByDate,
   updateOfficeBookByDate,
 } from "../../redux/actions/officeBookAction";
 import ModernLoader from "../../utils/util";
 import toast from "react-hot-toast";
+import { getRestCategory } from "../../redux/actions/restCategoryAction";
 dayjs.locale("en-gb");
-
 const OfficeEntryPage = () => {
   const dispatch = useAppDispatch();
-  const { loading, officeBook, officeCategory } = useAppSelector(
-    (state) => state.officeBook
-  );
+  const { loading, officeBook } = useAppSelector((state) => state.officeBook);
+  const { restCategory } = useAppSelector((state) => state.restCategory);
   const { isAdminAuthenticated } = useAppSelector((state) => state.admin);
   const today = dayjs().format("DD-MM-YYYY");
 
@@ -54,13 +52,13 @@ const OfficeEntryPage = () => {
 
   // Fetch all office categories on mount
   useEffect(() => {
-    dispatch(getOfficeAllCategories());
+    dispatch(getRestCategory());
   }, [dispatch]);
 
   // Memoized category options
   const categoryOptions = useMemo(() => {
-    return officeCategory?.map(({ categoryName }) => ({ categoryName })) || [];
-  }, [officeCategory]);
+    return restCategory?.map(({ categoryName }) => ({ categoryName })) || [];
+  }, [restCategory]);
 
   // Disable Edit when In and Out - Amount Total is 0
   const isEditDisabled = useMemo(() => {
@@ -339,7 +337,7 @@ const OfficeEntryPage = () => {
           <Grid item xs={12} md={6}>
             <Grid container spacing={2}>
               {/* Office In */}
-              <Grid item xs={12}>
+              <Grid item xs={12} width={"100%"}>
                 <Box>
                   <Typography
                     variant="subtitle1"
@@ -363,7 +361,7 @@ const OfficeEntryPage = () => {
               </Grid>
 
               {/* Office Out */}
-              <Grid item xs={12}>
+              <Grid item xs={12} width={"100%"}>
                 <Box>
                   <Typography
                     variant="subtitle1"
