@@ -40,12 +40,11 @@ const Navbar = () => {
   const navLinks =
     isAuthenticated || isAdminAuthenticated ? (
       <>
-        {isAdminAuthenticated &&
-          isSuperUserOrAdmin(
-            <Button color="inherit" component={Link} to="/dashboard">
-              Dashboard
-            </Button>
-          )}
+        {isAdminAuthenticated && isSuperUserOrAdmin && (
+          <Button color="inherit" component={Link} to="/dashboard">
+            Dashboard
+          </Button>
+        )}
         <Button color="inherit" component={Link} to="/" onClick={handleLogout}>
           Logout
         </Button>
