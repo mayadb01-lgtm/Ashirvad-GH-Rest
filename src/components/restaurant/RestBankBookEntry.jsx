@@ -180,7 +180,7 @@ const BankBooksDashboard = () => {
           disablePortal
           id="Method"
           options={optionsForMethod}
-          sx={{ width: 300 }}
+          sx={{ width: 200 }}
           value={selectedMethod}
           onChange={(event, newValue) => {
             setSelectedMethod(newValue);

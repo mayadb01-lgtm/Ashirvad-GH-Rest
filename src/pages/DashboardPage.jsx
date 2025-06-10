@@ -32,7 +32,8 @@ import RestStaffDashboard from "../components/restaurant/RestStaffDashboard";
 import RestCategoryExpensesDashboard from "../components/restaurant/RestCategoryExpensesDashboard";
 import RestPendingUsersDashboard from "../components/restaurant/RestPendingUsersDashboard";
 import OfficeBookDashboard from "../components/office/OfficeBookDashboard";
-// import OfficeCategoryDashboard from "../components/office/OfficeCategoryDashboard";
+import GHBankBooksDashboard from "../components/guest-house/GHBankBooksDashboard";
+import OfficeCategoryDashboard from "../components/office/OfficeCategoryDashboard";
 
 const DashboardHeader = ({ onNavigate }) => {
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ const DashboardHeader = ({ onNavigate }) => {
     >
       {/* Heading */}
       <Typography variant="h6" fontWeight="bold">
-        Ashirvad Admin Dashboard
+        TGT Admin Dashboard
       </Typography>
 
       {/* Buttons */}
@@ -102,6 +103,11 @@ const NAVIGATION = [
         title: "GH - Sales Report",
         icon: <CurrencyRupeeIcon />,
       },
+      {
+        segment: "bank-books",
+        title: "GH - Bank Books",
+        icon: <BookOutlined />,
+      },
     ],
   },
   { kind: "header", title: "Restaurant" },
@@ -150,11 +156,11 @@ const NAVIGATION = [
   },
   { kind: "header", title: "Office Book" },
   { segment: "office-book", title: "Office Book", icon: <LooksOneIcon /> },
-  // {
-  //   segment: "office-category",
-  //   title: "Office Category",
-  //   icon: <CategoryIcon />,
-  // },
+  {
+    segment: "office-category",
+    title: "Office Category",
+    icon: <CategoryIcon />,
+  },
 ];
 
 // Theme setup
@@ -194,7 +200,8 @@ const DashboardPage = () => {
     { path: "guest-house", element: <GHHome /> },
     { path: "gh-reports/sales-report", element: <GHSalesDashboard /> },
     { path: "restaurant", element: <RestHome /> },
-    { path: "res-reports/sales-report", element: <RestSalesDashboard /> },
+    { path: "gh-reports/sales-report", element: <RestSalesDashboard /> },
+    { path: "gh-reports/bank-books", element: <GHBankBooksDashboard /> },
     {
       path: "res-reports/upaad-report",
       element: <RestUpaadEntriesDashboard />,
@@ -205,7 +212,7 @@ const DashboardPage = () => {
     { path: "categories-expenses", element: <RestCategoryExpensesDashboard /> },
     { path: "pending-users", element: <RestPendingUsersDashboard /> },
     { path: "office-book", element: <OfficeBookDashboard /> },
-    // { path: "office-category", element: <OfficeCategoryDashboard /> },
+    { path: "office-category", element: <OfficeCategoryDashboard /> },
     { path: "*", element: <Typography>404: Page Not Found</Typography> },
   ]);
 
