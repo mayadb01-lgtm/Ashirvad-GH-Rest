@@ -199,9 +199,9 @@ const DashboardPage = () => {
     { path: "gh-dashboard-range", element: <GHSalesDashboardRange /> },
     { path: "guest-house", element: <GHHome /> },
     { path: "gh-reports/sales-report", element: <GHSalesDashboard /> },
-    { path: "restaurant", element: <RestHome /> },
-    { path: "gh-reports/sales-report", element: <RestSalesDashboard /> },
     { path: "gh-reports/bank-books", element: <GHBankBooksDashboard /> },
+    { path: "restaurant", element: <RestHome /> },
+    { path: "res-reports/sales-report", element: <RestSalesDashboard /> },
     {
       path: "res-reports/upaad-report",
       element: <RestUpaadEntriesDashboard />,
