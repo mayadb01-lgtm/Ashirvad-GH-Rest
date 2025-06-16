@@ -52,6 +52,26 @@ export const formatChartData = (rawData, type) => {
           date: dayjs(entry.entryCreateDate).format("DD MMM"),
           amount: entry.grandTotal,
         }));
+
+    case "mergedPaymentMode": {
+      const totals = { cash: 0, card: 0, pp: 0, pps: 0, ppc: 0 };
+      rawData.map(({ cash = 0, card = 0, pp = 0, pps = 0, ppc = 0 }) => {
+        totals.cash += cash;
+        totals.card += card;
+        totals.pp += pp;
+        totals.pps += pps;
+        totals.ppc += ppc;
+      });
+      const totalAmount =
+        totals.cash + totals.card + totals.pp + totals.pps + totals.ppc;
+      return Object.entries(totals).map(([name, value]) => ({
+        name,
+        value,
+        percentage: totalAmount
+          ? ((value / totalAmount) * 100).toFixed(2)
+          : "0.00",
+      }));
+    }
     default:
       return [];
   }

@@ -1,5 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import {
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
   Box,
   CircularProgress,
   Button,
@@ -7,11 +10,10 @@ import {
   Modal,
   TextField,
   Typography,
-  Stack,
   Tooltip,
+  Stack,
 } from "@mui/material";
-import Grid from "@mui/material/Grid2";
-import { Add, Edit, Delete } from "@mui/icons-material";
+import { Add, Edit, Delete, ExpandMore } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import {
   createOfficeCategory,
@@ -20,53 +22,79 @@ import {
   updateOfficeCategory,
 } from "../../redux/actions/officeBookAction";
 
-const CategoryCard = ({ category, onEdit, onDelete }) => (
-  <Grid
-    container
-    spacing={1}
+// Accordion item to display category and its expenses
+const CategoryAccordion = ({ key, category, onEdit, onDelete }) => (
+  <Accordion
+    key={key}
     sx={{
-      p: 1,
-      border: "1px solid #e0e0e0",
       borderRadius: 2,
-      bgcolor: "#fff",
-      alignItems: "center",
-      minHeight: 55,
-      display: "flex",
-      justifyContent: "space-between",
+      boxShadow: 2,
+      overflow: "hidden",
+      backgroundColor: "#f9f9f9",
+      margin: "2px",
+      "&:before": { display: "none" },
     }}
   >
-    <Grid xs>
-      <Tooltip title={category.categoryName} arrow placement="top">
-        <Typography fontWeight={600} fontSize="0.9rem" noWrap>
-          {category.categoryName}
-        </Typography>
-      </Tooltip>
-
-      <Tooltip
-        title={category.categoryDescription || "—"}
-        arrow
-        placement="top"
-      >
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          noWrap
-          sx={{ fontSize: "0.75rem", cursor: "default" }}
+    <AccordionSummary
+      expandIcon={<ExpandMore sx={{ color: "primary.main" }} />}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        backgroundColor: "#fff",
+        borderBottom: "1px solid #e0e0e0",
+        "&:hover": { backgroundColor: "#f0f0f0" },
+      }}
+    >
+      <Typography sx={{ fontWeight: "bold", flexGrow: 1 }}>
+        {category.categoryName}
+      </Typography>
+      <Box>
+        <IconButton
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(category);
+          }}
         >
-          {category.categoryDescription || "—"}
+          <Edit sx={{ color: "primary.main" }} />
+        </IconButton>
+        <IconButton
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(category._id);
+          }}
+        >
+          <Delete sx={{ color: "error.main" }} />
+        </IconButton>
+      </Box>
+    </AccordionSummary>
+    <AccordionDetails sx={{ backgroundColor: "#fff" }}>
+      {category.expense?.length > 0 ? (
+        <Stack direction="row" flexWrap="wrap" spacing={1}>
+          {category.expense.map((exp, i) => (
+            <Tooltip key={i} title={exp.expenseDescription}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  backgroundColor: "#f5f5f5",
+                  px: 2,
+                  py: 1,
+                  borderRadius: 2,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {exp.expenseName}
+              </Typography>
+            </Tooltip>
+          ))}
+        </Stack>
+      ) : (
+        <Typography variant="body2" sx={{ color: "text.disabled" }}>
+          No expenses available
         </Typography>
-      </Tooltip>
-    </Grid>
-
-    <Grid xs="auto" display="flex" gap={0.5}>
-      <IconButton onClick={() => onEdit(category)} size="small">
-        <Edit fontSize="small" sx={{ color: "primary.main" }} />
-      </IconButton>
-      <IconButton onClick={() => onDelete(category._id)} size="small">
-        <Delete fontSize="small" sx={{ color: "error.main" }} />
-      </IconButton>
-    </Grid>
-  </Grid>
+      )}
+    </AccordionDetails>
+  </Accordion>
 );
 
 const OfficeCategoryDashboard = () => {
@@ -78,11 +106,13 @@ const OfficeCategoryDashboard = () => {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [selectedId, setSelectedId] = useState(null);
+
   const [categoryData, setCategoryData] = useState({
     categoryName: "",
     categoryDescription: "",
+    expense: [],
   });
-  const [selectedId, setSelectedId] = useState(null);
 
   useEffect(() => {
     dispatch(getOfficeAllCategories());
@@ -91,15 +121,20 @@ const OfficeCategoryDashboard = () => {
   const handleOpen = (category = null) => {
     if (category) {
       setEditMode(true);
+      setSelectedId(category._id);
       setCategoryData({
         categoryName: category.categoryName || "",
         categoryDescription: category.categoryDescription || "",
+        expense: category.expense || [],
       });
-      setSelectedId(category._id);
     } else {
       setEditMode(false);
-      setCategoryData({ categoryName: "", categoryDescription: "" });
       setSelectedId(null);
+      setCategoryData({
+        categoryName: "",
+        categoryDescription: "",
+        expense: [],
+      });
     }
     setOpen(true);
   };
@@ -107,66 +142,101 @@ const OfficeCategoryDashboard = () => {
   const handleClose = () => setOpen(false);
 
   const handleSave = async () => {
-    const trimmedName = categoryData.categoryName.trim();
-    const trimmedDesc = categoryData.categoryDescription.trim();
-    if (!trimmedName || !trimmedDesc) return;
-
-    if (editMode) {
-      await dispatch(
-        updateOfficeCategory(selectedId, {
-          categoryName: trimmedName,
-          categoryDescription: trimmedDesc,
-        })
-      );
-    } else {
-      await dispatch(
-        createOfficeCategory({
-          categoryName: trimmedName,
-          categoryDescription: trimmedDesc,
-        })
-      );
+    if (editMode && selectedId && !isUnsaved) {
+      handleClose();
+      return;
     }
+    const payload = {
+      categoryName: categoryData.categoryName.trim(),
+      categoryDescription: categoryData.categoryDescription.trim(),
+      expense: categoryData.expense.map((e) => ({
+        expenseName: e.expenseName.trim(),
+        expenseDescription: e.expenseDescription.trim(),
+      })),
+    };
 
+    if (editMode && selectedId) {
+      await dispatch(updateOfficeCategory(selectedId, payload));
+    } else {
+      await dispatch(createOfficeCategory(payload));
+    }
     await dispatch(getOfficeAllCategories());
     handleClose();
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this category?")) {
+    if (confirm("Are you sure you want to delete this category?")) {
       await dispatch(deleteOfficeCategory(id));
       await dispatch(getOfficeAllCategories());
     }
   };
 
-  const filteredCategories = useMemo(() => {
-    if (!Array.isArray(officeCategory)) return [];
-    return officeCategory.filter((category) =>
-      category.categoryName?.toLowerCase().includes(search.toLowerCase())
-    );
+  const filtered = useMemo(() => {
+    const list = Array.isArray(officeCategory) ? officeCategory : [];
+    return list.filter((cat) => {
+      const q = search.toLowerCase();
+      const matchCat =
+        cat.categoryName.toLowerCase().includes(q) ||
+        cat.categoryDescription.toLowerCase().includes(q);
+      const matchExp = cat.expense?.some(
+        (e) =>
+          e.expenseName.toLowerCase().includes(q) ||
+          e.expenseDescription.toLowerCase().includes(q)
+      );
+      return matchCat || matchExp;
+    });
   }, [officeCategory, search]);
-  
-  const isCategoryDataChanged = useMemo(() => {
+
+  const leftCategories = filtered.filter((_, i) => i % 2 === 0);
+  const rightCategories = filtered.filter((_, i) => i % 2 === 1);
+
+  const isUnsaved = useMemo(() => {
     if (!editMode || !selectedId) return false;
-    if (!Array.isArray(officeCategory)) return false;
-    const original = officeCategory.find((c) => c._id === selectedId);
+
+    const list = Array.isArray(officeCategory) ? officeCategory : [];
+    const orig = list.find((c) => c._id === selectedId);
+
     return (
-      original &&
-      (categoryData.categoryName !== original.categoryName ||
-        categoryData.categoryDescription !== original.categoryDescription)
+      orig &&
+      (orig.categoryName !== categoryData.categoryName ||
+        orig.categoryDescription !== categoryData.categoryDescription ||
+        JSON.stringify(orig.expense) !== JSON.stringify(categoryData.expense))
     );
-  }, [categoryData, officeCategory, editMode, selectedId]);
+  }, [editMode, selectedId, categoryData, officeCategory]);
+
+  const addExpense = () =>
+    setCategoryData((prev) => ({
+      ...prev,
+      expense: [...prev.expense, { expenseName: "", expenseDescription: "" }],
+    }));
+
+  const updateExpense = (idx, field, val) =>
+    setCategoryData((prev) => ({
+      ...prev,
+      expense: prev.expense.map((e, i) =>
+        i === idx ? { ...e, [field]: val } : e
+      ),
+    }));
+
+  const removeExpense = (idx) =>
+    setCategoryData((prev) => ({
+      ...prev,
+      expense: prev.expense.filter((_, i) => i !== idx),
+    }));
+
+  const hasInvalidExpense = categoryData.expense.some(
+    (e) => !e.expenseName.trim() || !e.expenseDescription.trim()
+  );
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" fontWeight={600} mb={2}>
-        Manage Office Categories
+    <Box p={3}>
+      <Typography variant="h5" mb={2}>
+        Manage Office Categories & Expenses
       </Typography>
-
-      <Stack direction="row" spacing={2} alignItems="center" mb={3}>
+      <Stack direction="row" spacing={2} mb={3}>
         <TextField
-          size="small"
           label="Search"
-          variant="outlined"
+          size="small"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           sx={{ flex: 1 }}
@@ -185,90 +255,157 @@ const OfficeCategoryDashboard = () => {
       ) : (
         <Box
           sx={{
+            mt: 2,
+            width: "90%",
             display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              sm: "repeat(2, 1fr)",
-              md: "repeat(3, 1fr)",
-              lg: "repeat(4, 1fr)",
-              xl: "repeat(5, 1fr)",
-            },
-            gap: 1.5,
+            gridTemplateColumns: "1fr 1fr",
+            gap: 2,
           }}
         >
-          {filteredCategories.map((category) => (
-            <CategoryCard
-              key={category._id}
-              category={category}
-              onEdit={handleOpen}
-              onDelete={handleDelete}
-            />
-          ))}
+          <Box>
+            {leftCategories.map((cat) => (
+              <CategoryAccordion
+                key={cat._id}
+                category={cat}
+                onEdit={handleOpen}
+                onDelete={handleDelete}
+              />
+            ))}
+          </Box>
+          <Box>
+            {rightCategories.map((cat) => (
+              <CategoryAccordion
+                key={cat._id}
+                category={cat}
+                onEdit={handleOpen}
+                onDelete={handleDelete}
+              />
+            ))}
+          </Box>
         </Box>
       )}
 
       <Modal open={open} onClose={handleClose}>
         <Box
           sx={{
-            backgroundColor: "#fff",
+            backgroundColor: "background.paper",
+            boxShadow: 24,
+            borderRadius: 3,
             p: 4,
             mx: "auto",
-            my: "10vh",
-            borderRadius: 3,
-            width: { xs: "90%", sm: "400px" },
-            display: "flex",
-            flexDirection: "column",
-            gap: 2,
+            mt: "10vh",
+            width: { xs: "90%", sm: "500px" },
           }}
         >
-          {isCategoryDataChanged && (
-            <Typography variant="body2" color="error">
-              You have unsaved changes
+          <Stack spacing={2}>
+            {isUnsaved && (
+              <Typography color="error" fontWeight={500}>
+                You have unsaved changes
+              </Typography>
+            )}
+
+            <Typography variant="h6" fontWeight={600}>
+              {editMode ? "Edit Category" : "Create Category"}
             </Typography>
-          )}
 
-          <Typography variant="h6">
-            {editMode ? "Edit Category" : "Create Category"}
-          </Typography>
-
-          <TextField
-            label="Category Name"
-            value={categoryData.categoryName}
-            onChange={(e) =>
-              setCategoryData((prev) => ({
-                ...prev,
-                categoryName: e.target.value,
-              }))
-            }
-            fullWidth
-          />
-          <TextField
-            label="Description"
-            value={categoryData.categoryDescription}
-            onChange={(e) =>
-              setCategoryData((prev) => ({
-                ...prev,
-                categoryDescription: e.target.value,
-              }))
-            }
-            fullWidth
-          />
-
-          <Stack direction="row" spacing={2}>
-            <Button
-              variant="contained"
+            <TextField
+              label="Category Name"
               fullWidth
-              onClick={handleSave}
-              disabled={
-                !categoryData.categoryName.trim() ||
-                !categoryData.categoryDescription.trim()
+              value={categoryData.categoryName}
+              onChange={(e) =>
+                setCategoryData((prev) => ({
+                  ...prev,
+                  categoryName: e.target.value.trimStart(),
+                }))
               }
+            />
+            <TextField
+              label="Description"
+              fullWidth
+              multiline
+              minRows={2}
+              value={categoryData.categoryDescription}
+              onChange={(e) =>
+                setCategoryData((prev) => ({
+                  ...prev,
+                  categoryDescription: e.target.value,
+                }))
+              }
+            />
+
+            <Typography variant="subtitle1" fontWeight={600} mt={2}>
+              Expenses
+            </Typography>
+
+            {categoryData.expense.length === 0 && (
+              <Typography color="text.disabled">
+                No expenses available
+              </Typography>
+            )}
+
+            {categoryData.expense.map((exp, idx) => (
+              <Box
+                key={idx}
+                sx={{
+                  p: 2,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 2,
+                  mb: 1,
+                }}
+              >
+                <Stack direction="row" spacing={1} mb={1}>
+                  <TextField
+                    label="Name"
+                    size="small"
+                    value={exp.expenseName}
+                    onChange={(e) =>
+                      updateExpense(idx, "expenseName", e.target.value)
+                    }
+                    sx={{ flex: 1 }}
+                  />
+                  <TextField
+                    label="Description"
+                    size="small"
+                    value={exp.expenseDescription}
+                    onChange={(e) =>
+                      updateExpense(idx, "expenseDescription", e.target.value)
+                    }
+                    sx={{ flex: 1 }}
+                  />
+                  <IconButton color="error" onClick={() => removeExpense(idx)}>
+                    <Delete />
+                  </IconButton>
+                </Stack>
+              </Box>
+            ))}
+
+            <Button
+              variant="outlined"
+              startIcon={<Add />}
+              onClick={addExpense}
+              sx={{ alignSelf: "flex-start" }}
             >
-              {editMode ? "Update" : "Create"}
+              Add Expense
             </Button>
-            <Button variant="outlined" fullWidth onClick={handleClose}>
-              Cancel
-            </Button>
+
+            <Stack direction="row" spacing={2} mt={3}>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={handleSave}
+                disabled={
+                  !categoryData.categoryName.trim() ||
+                  !categoryData.categoryDescription.trim() ||
+                  hasInvalidExpense
+                }
+              >
+                {editMode ? "Update" : "Create"}
+              </Button>
+              <Button variant="outlined" fullWidth onClick={handleClose}>
+                Cancel
+              </Button>
+            </Stack>
           </Stack>
         </Box>
       </Modal>

@@ -86,12 +86,12 @@ const adminSchema = new mongoose.Schema({
     type: Date,
     default: Date.now(),
   },
-  resetPasswordToken: String,
-  resetPasswordTime: Date,
   isSuperAdmin: {
     type: Boolean,
     default: false,
   },
+  resetPasswordToken: String,
+  resetPasswordTime: Date,
 });
 
 // Hash password

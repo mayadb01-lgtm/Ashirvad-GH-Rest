@@ -10,12 +10,14 @@ import OfficeBookTable from "../../components/office/OfficeBookTable";
 import {
   createOfficeBook,
   deleteOfficeBookByDate,
+  getOfficeAllCategories,
   getOfficeBookByDate,
   updateOfficeBookByDate,
 } from "../../redux/actions/officeBookAction";
 import ModernLoader from "../../utils/util";
 import toast from "react-hot-toast";
 import { getRestCategory } from "../../redux/actions/restCategoryAction";
+import { getRestStaff } from "../../redux/actions/restStaffAction";
 dayjs.locale("en-gb");
 const OfficeEntryPage = () => {
   const dispatch = useAppDispatch();
@@ -28,11 +30,12 @@ const OfficeEntryPage = () => {
       id: i + 1,
       amount: 0,
       modeOfPayment: "",
+      categoryName: "",
+      expenseName: "",
       fullname: "",
-      category: "",
       remark: "",
       createDate: date,
-      entryCreateDate: dayjs(date).startOf("day").toDate(),
+      fullname_id: "",
     }));
   const [officeInData, setOfficeInData] = useState(() =>
     makeInitialRows(today)
@@ -52,6 +55,8 @@ const OfficeEntryPage = () => {
   // Fetch all office categories on mount
   useEffect(() => {
     dispatch(getRestCategory());
+    dispatch(getOfficeAllCategories());
+    dispatch(getRestStaff());
   }, [dispatch]);
 
   // Disable Edit when In and Out - Amount Total is 0
@@ -95,11 +100,12 @@ const OfficeEntryPage = () => {
     setOfficeInData(rows);
     setOfficeOutData(rows);
   };
+
   const isRowValid = (row) => {
     return (
       row.amount > 0 &&
-      row.fullname?.trim() &&
-      row.category?.trim() &&
+      row.categoryName?.trim() &&
+      row.expenseName?.trim() &&
       row.modeOfPayment?.trim()
     );
   };
@@ -126,7 +132,6 @@ const OfficeEntryPage = () => {
       officeIn: JSON.stringify(processedOfficeIn),
       officeOut: JSON.stringify(processedOfficeOut),
       createDate: selectedDate,
-      entryCreateDate: dayjs(selectedDate).startOf("day").toDate(),
     };
   }, [officeInData, officeOutData, selectedDate]);
 
@@ -350,6 +355,7 @@ const OfficeEntryPage = () => {
                   <OfficeBookTable
                     officeData={officeInData}
                     setOfficeData={setOfficeInData}
+                    isOfficeIn
                   />
                 </Box>
               </Grid>
@@ -373,6 +379,7 @@ const OfficeEntryPage = () => {
                   <OfficeBookTable
                     officeData={officeOutData}
                     setOfficeData={setOfficeOutData}
+                    isOfficeOut
                   />
                 </Box>
               </Grid>

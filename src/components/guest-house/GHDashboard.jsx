@@ -49,7 +49,7 @@ const GHDashboard = () => {
 
   const defaultFields = useMemo(
     () => [
-      { field: "id", headerName: "ID", width: 70 },
+      { field: "id", headerName: "ID", width: 100 },
       { field: "period", headerName: "D/N/UnPaid", width: 110 },
       { field: "roomNo", headerName: "Room No", width: 130 },
       { field: "cost", headerName: "Price", width: 100 },
@@ -125,6 +125,34 @@ const GHDashboard = () => {
     );
   };
 
+  const totalRow = {
+    id: "Total",
+    _id: "Total",
+    period: "",
+    roomNo: "",
+    cost: "",
+    roomType: "",
+    rate:
+      entries &&
+      entries.length > 0 &&
+      entries?.reduce((sum, row) => Number(sum) + Number(row.rate), 0),
+    noOfPeople: "",
+    fullname: "",
+    type: "",
+    modeOfPayment: "",
+    date: "",
+    isPaid: "",
+    createDate: "",
+    mobileNumber: "",
+    advancePayment: "",
+    // advancePaymentDate: "",
+    // reservationId: "",
+    paidDate: "",
+    updatedDateTime: "",
+    checkInTime: "",
+    checkOutTime: "",
+  };
+
   return (
     <Box
       sx={{
@@ -177,7 +205,7 @@ const GHDashboard = () => {
         <CircularProgress sx={{ mt: 2 }} />
       ) : entries?.length > 0 ? (
         <DataGrid
-          rows={entries}
+          rows={[...entries, totalRow]}
           columns={columns}
           pageSize={5}
           sx={{

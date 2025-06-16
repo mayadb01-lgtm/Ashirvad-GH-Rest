@@ -93,9 +93,6 @@ const PendingJamaGrid = () => {
               textAlign: "center",
               border: "0.5px solid #f0f0f0",
             },
-            "& .MuiDataGrid-footerContainer": {
-              display: "none",
-            },
             "& .total-row": {
               fontWeight: "bold",
             },

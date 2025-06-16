@@ -276,8 +276,8 @@ const TableComponent = ({ period, rowsLength, onSubmit, selectedDate }) => {
                     updateRowHighlight(row)
                       ? "highlight"
                       : period?.includes("Day") || period?.includes("extraDay")
-                      ? "orange"
-                      : "green"
+                        ? "orange"
+                        : "green"
                   }
                 >
                   <TextField
@@ -303,8 +303,8 @@ const TableComponent = ({ period, rowsLength, onSubmit, selectedDate }) => {
                     updateRowHighlight(row)
                       ? "highlight"
                       : period?.includes("Day") || period?.includes("extraDay")
-                      ? "orange"
-                      : "green"
+                        ? "orange"
+                        : "green"
                   }
                 >
                   <TextField
@@ -330,8 +330,8 @@ const TableComponent = ({ period, rowsLength, onSubmit, selectedDate }) => {
                     updateRowHighlight(row)
                       ? "highlight"
                       : period?.includes("Day") || period?.includes("extraDay")
-                      ? "light-orange"
-                      : "light-green"
+                        ? "light-orange"
+                        : "light-green"
                   }
                 >
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -375,8 +375,8 @@ const TableComponent = ({ period, rowsLength, onSubmit, selectedDate }) => {
                     updateRowHighlight(row)
                       ? "highlight"
                       : period?.includes("Day") || period?.includes("extraDay")
-                      ? "light-orange"
-                      : "light-green"
+                        ? "light-orange"
+                        : "light-green"
                   }
                 >
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -523,8 +523,8 @@ const TableComponent = ({ period, rowsLength, onSubmit, selectedDate }) => {
                     updateRowHighlight(row)
                       ? "highlight"
                       : period?.includes("Day") || period?.includes("extraDay")
-                      ? "light-orange"
-                      : "light-green"
+                        ? "light-orange"
+                        : "light-green"
                   }
                 >
                   <TextField
@@ -548,8 +548,8 @@ const TableComponent = ({ period, rowsLength, onSubmit, selectedDate }) => {
                     updateRowHighlight(row)
                       ? "highlight"
                       : period?.includes("Day") || period?.includes("extraDay")
-                      ? "light-orange"
-                      : "light-green"
+                        ? "light-orange"
+                        : "light-green"
                   }
                 >
                   <TextField

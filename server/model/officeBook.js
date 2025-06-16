@@ -9,10 +9,12 @@ const officeBookSchema = new Schema(
     amount: { type: Number, required: true },
     modeOfPayment: { type: String, required: true },
     fullname: { type: String, required: true },
-    category: { type: String, required: true },
-    remark: { type: String, required: true },
+    categoryName: { type: String, required: true },
+    expenseName: { type: String, required: true },
+    remark: { type: String },
     createDate: { type: String, required: true },
     entryCreateDate: { type: Date },
+    fullname_id: { type: String },
     updatedDate: { type: String, default: "" },
     createdAt: { type: Date, default: Date.now() },
     updatedAt: { type: Date, default: Date.now() },
@@ -60,10 +62,16 @@ const officeCategorySchema = new Schema(
   {
     categoryName: { type: String, required: true },
     categoryDescription: { type: String, required: true },
-    createdAt: { type: Date, default: Date.now() },
-    updatedAt: { type: Date, default: Date.now() },
+    expense: [
+      {
+        expenseName: { type: String, required: true },
+        expenseDescription: { type: String, required: true },
+      },
+    ],
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 export const OfficeCategory = model("OfficeCategory", officeCategorySchema);

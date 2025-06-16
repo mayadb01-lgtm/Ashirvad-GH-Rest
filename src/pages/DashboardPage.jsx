@@ -34,6 +34,7 @@ import RestPendingUsersDashboard from "../components/restaurant/RestPendingUsers
 import OfficeBookDashboard from "../components/office/OfficeBookDashboard";
 import GHBankBooksDashboard from "../components/guest-house/GHBankBooksDashboard";
 import OfficeCategoryDashboard from "../components/office/OfficeCategoryDashboard";
+import OfficeMerged from "../components/office/OfficeMerged";
 
 const DashboardHeader = ({ onNavigate }) => {
   const navigate = useNavigate();
@@ -161,6 +162,12 @@ const NAVIGATION = [
     title: "Office Category",
     icon: <CategoryIcon />,
   },
+  { kind: "header", title: "Reports" },
+  {
+    segment: "merged-reports",
+    title: "Merged Reports",
+    icon: <BarChartIcon />,
+  },
 ];
 
 // Theme setup
@@ -213,6 +220,7 @@ const DashboardPage = () => {
     { path: "pending-users", element: <RestPendingUsersDashboard /> },
     { path: "office-book", element: <OfficeBookDashboard /> },
     { path: "office-category", element: <OfficeCategoryDashboard /> },
+    { path: "merged-reports", element: <OfficeMerged /> },
     { path: "*", element: <Typography>404: Page Not Found</Typography> },
   ]);
 
