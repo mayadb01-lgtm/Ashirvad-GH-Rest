@@ -147,7 +147,7 @@ const EditableRow = ({
         />
       </TableCell>
 
-      <TableCell sx={{ width: "15%" }}>
+      <TableCell sx={{ width: "20%" }}>
         {renderExpenseAutocomplete(
           flattenedExpenses,
           "expenseName",
@@ -163,7 +163,7 @@ const EditableRow = ({
         )}
       </TableCell>
 
-      <TableCell sx={{ width: "25%" }}>
+      <TableCell sx={{ width: "20%" }}>
         {row.categoryName.match(/Upad|Upaad|upad|upaad/i) ? (
           renderUpadNameAutocomplete(
             flattenedUpadName,
