@@ -207,14 +207,6 @@ const OfficeMerged = () => {
             align: "center",
           },
           {
-            field: "officeCardOut",
-            headerName: "OfficeCardOut",
-            width: 125,
-            cellClassName: "entry-out",
-            headerAlign: "center",
-            align: "center",
-          },
-          {
             field: "card",
             headerName: "Card",
             width: 100,
@@ -478,17 +470,7 @@ const OfficeMerged = () => {
             0
           ) || 0;
 
-      const OfficeCardOut =
-        officeBook
-          ?.filter((entry) => formatDate(entry.createDate) === dateStr)
-          ?.flatMap((entry) => entry?.officeOut ?? [])
-          ?.reduce(
-            (sum, item) =>
-              sum + (item.modeOfPayment === "Card" ? item.amount : 0),
-            0
-          ) || 0;
-
-      const card = ghCardIn + restCardIn + OfficeCardIn - OfficeCardOut;
+      const card = ghCardIn + restCardIn + OfficeCardIn;
 
       // TODO: PP
       const restPPIn =
@@ -597,7 +579,6 @@ const OfficeMerged = () => {
         ghCardIn,
         restCardIn,
         OfficeCardIn,
-        OfficeCardOut,
         card: card,
         restPPIn,
         OfficePPIn,
@@ -625,7 +606,6 @@ const OfficeMerged = () => {
     "ghCardIn",
     "restCardIn",
     "OfficeCardIn",
-    "OfficeCardOut",
     "card",
     "restPPIn",
     "OfficePPIn",
@@ -670,7 +650,6 @@ const OfficeMerged = () => {
     "ghCardIn",
     "restCardIn",
     "OfficeCardIn",
-    "OfficeCardOut",
     "card",
     "restPPIn",
     "OfficePPIn",
