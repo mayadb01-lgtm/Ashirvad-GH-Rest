@@ -15,6 +15,7 @@ import { getEntriesByDateRange } from "../../redux/actions/entryAction";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
+import { GH_MODE_OF_PAYMENT_OPTIONS } from "../../utils/utils";
 
 dayjs.locale("en-gb");
 
@@ -56,8 +57,8 @@ const GHSalesDashboard = () => {
       entries
         ?.map((entry) =>
           entry?.entry
-            ?.filter(
-              (item) => item.isPaid === true && item.modeOfPayment !== "UnPaid"
+            ?.filter((item) =>
+              GH_MODE_OF_PAYMENT_OPTIONS.includes(item.modeOfPayment)
             )
             .map((item) => item.rate)
             .reduce((a, b) => a + b, 0)
@@ -73,8 +74,8 @@ const GHSalesDashboard = () => {
         id: index + 1,
         date: entry.date,
         total: entry?.entry
-          ?.filter(
-            (item) => item.isPaid === true && item.modeOfPayment !== "UnPaid"
+          ?.filter((item) =>
+            GH_MODE_OF_PAYMENT_OPTIONS.includes(item.modeOfPayment)
           )
           ?.map((item) => item.rate)
           .reduce((a, b) => a + b, 0),

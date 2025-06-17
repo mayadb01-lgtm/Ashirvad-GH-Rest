@@ -246,4 +246,12 @@ export const MODE_OF_PAYMENT_OPTIONS = [
   "UnPaid",
 ];
 
+export const GH_MODE_OF_PAYMENT_OPTIONS = [
+  "Cash",
+  "Card",
+  "PPC",
+  "PPS",
+  "UnPaid",
+];
+
 export const DATE_FORMAT = "DD-MM-YYYY";

@@ -18,6 +18,7 @@ import { LineChart, BarChart } from "@mui/x-charts";
 import Grid from "@mui/material/Grid2";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { COLORS, renderActiveShape } from "../charts/chartUtils";
+import { GH_MODE_OF_PAYMENT_OPTIONS } from "../../utils/utils";
 
 dayjs.locale("en-gb");
 
@@ -101,8 +102,8 @@ const GHHome = () => {
     return sortedEntries.map((entry) => ({
       x: dayjs(entry.entryCreateDate).format("DD MMM"),
       y: entry.entry
-        ?.filter(
-          (item) => item.isPaid === true && item.modeOfPayment !== "UnPaid"
+        ?.filter((item) =>
+          GH_MODE_OF_PAYMENT_OPTIONS.includes(item.modeOfPayment)
         )
         .map((entry) => entry.rate)
         .reduce((a, b) => a + b, 0),

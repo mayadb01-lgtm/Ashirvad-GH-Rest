@@ -48,7 +48,7 @@ const DashboardHeader = ({ onNavigate }) => {
     >
       {/* Heading */}
       <Typography variant="h6" fontWeight="bold">
-        TGT Admin Dashboard
+        {import.meta.env.VITE_REACT_APP_BUSINESS_NAME} Admin Dashboard
       </Typography>
 
       {/* Buttons */}

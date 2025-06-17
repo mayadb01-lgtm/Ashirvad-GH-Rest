@@ -167,14 +167,6 @@ const OfficeMerged = () => {
             headerAlign: "center",
             align: "center",
           },
-          {
-            field: "restCashOut",
-            headerName: "RestCashOut",
-            width: 125,
-            cellClassName: "entry-out",
-            headerAlign: "center",
-            align: "center",
-          },
           { field: "officeCashIn", headerName: "OfficeCashIn", width: 125 },
           { field: "officeCashOut", headerName: "OfficeCashOut", width: 125 },
           {
@@ -436,13 +428,6 @@ const OfficeMerged = () => {
           ?.filter((entry) => formatDate(entry.createDate) === dateStr)
           ?.reduce((sum, entry) => sum + (entry.totalCash || 0), 0) || 0;
 
-      // Rest Expense Cash
-      const restCashOut =
-        restEntries
-          ?.filter((entry) => formatDate(entry.createDate) === dateStr)
-          ?.flatMap((entry) => entry.expenses || [])
-          ?.reduce((sum, item) => sum + item.amount, 0) || 0;
-
       // Office In
       const officeCashIn =
         officeBook
@@ -465,8 +450,7 @@ const OfficeMerged = () => {
             0
           ) || 0;
 
-      const cash =
-        ghCashIn + restCashIn + officeCashIn - restCashOut - officeCashOut;
+      const cash = ghCashIn + restCashIn + officeCashIn - officeCashOut;
 
       // TODO:CARD
       const ghCardIn =
@@ -607,7 +591,6 @@ const OfficeMerged = () => {
         date: dateStr,
         ghCashIn,
         restCashIn,
-        restCashOut,
         officeCashIn,
         officeCashOut,
         cash,
@@ -636,7 +619,6 @@ const OfficeMerged = () => {
   const keys = [
     "ghCashIn",
     "restCashIn",
-    "restCashOut",
     "officeCashIn",
     "officeCashOut",
     "cash",
@@ -682,7 +664,6 @@ const OfficeMerged = () => {
     "date",
     "ghCashIn",
     "restCashIn",
-    "restCashOut",
     "officeCashIn",
     "officeCashOut",
     "cash",
