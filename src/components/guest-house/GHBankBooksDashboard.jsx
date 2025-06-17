@@ -16,6 +16,7 @@ import { getEntriesByDateRange } from "../../redux/actions/entryAction";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
+import { GH_MODE_OF_PAYMENT_OPTIONS } from "../../utils/utils";
 
 dayjs.locale("en-gb");
 
@@ -45,15 +46,15 @@ const GHBankBooksDashboard = () => {
   }, [dispatch, startDate, endDate]);
 
   // Extract distinct payment methods
-  const paymentMethods = useMemo(() => {
-    const methods = new Set();
-    entries?.forEach((entry) =>
-      entry.entry?.forEach((item) => {
-        if (item.isPaid) methods.add(item.modeOfPayment || "Other");
-      })
-    );
-    return Array.from(methods);
-  }, [entries]);
+  // const paymentMethods = useMemo(() => {
+  //   const methods = new Set();
+  //   entries?.forEach((entry) =>
+  //     entry.entry?.forEach((item) => {
+  //       if (item.isPaid) methods.add(item.modeOfPayment || "Other");
+  //     })
+  //   );
+  //   return Array.from(methods);
+  // }, [entries]);
 
   // Prepare rows
   const preparedData = useMemo(() => {
@@ -64,11 +65,11 @@ const GHBankBooksDashboard = () => {
 
       const methodsToInclude = selectedMethod
         ? [selectedMethod]
-        : paymentMethods;
+        : GH_MODE_OF_PAYMENT_OPTIONS;
 
       methodsToInclude.forEach((method) => {
         const totalByMethod = entry.entry
-          .filter((item) => item.isPaid && item.modeOfPayment === method)
+          .filter((item) => item.modeOfPayment === method)
           .reduce((sum, item) => sum + item.rate, 0);
 
         row[method] = totalByMethod;
@@ -80,7 +81,9 @@ const GHBankBooksDashboard = () => {
 
     // Total row
     const totalRow = { id: "Total", date: "Total", total: 0 };
-    const methodsToInclude = selectedMethod ? [selectedMethod] : paymentMethods;
+    const methodsToInclude = selectedMethod
+      ? [selectedMethod]
+      : GH_MODE_OF_PAYMENT_OPTIONS;
 
     methodsToInclude.forEach((method) => {
       totalRow[method] = rows.reduce((sum, row) => sum + (row[method] || 0), 0);
@@ -88,7 +91,7 @@ const GHBankBooksDashboard = () => {
     });
 
     return [...rows, totalRow];
-  }, [entries, paymentMethods, selectedMethod]);
+  }, [entries, selectedMethod]);
 
   const columns = useMemo(() => {
     const base = [
@@ -98,7 +101,7 @@ const GHBankBooksDashboard = () => {
 
     const dynamic = selectedMethod
       ? [{ field: selectedMethod, headerName: selectedMethod, width: 120 }]
-      : paymentMethods.map((method) => ({
+      : GH_MODE_OF_PAYMENT_OPTIONS.map((method) => ({
           field: method,
           headerName: method,
           width: 120,
@@ -106,7 +109,7 @@ const GHBankBooksDashboard = () => {
 
     const total = [{ field: "total", headerName: "Total", width: 120 }];
     return [...base, ...dynamic, ...total];
-  }, [paymentMethods, selectedMethod]);
+  }, [selectedMethod]);
 
   const handleExportToExcel = () => {
     if (!preparedData || preparedData.length === 0) {
@@ -163,7 +166,7 @@ const GHBankBooksDashboard = () => {
         </LocalizationProvider>
         <Autocomplete
           disablePortal
-          options={paymentMethods}
+          options={GH_MODE_OF_PAYMENT_OPTIONS}
           value={selectedMethod}
           onChange={(_, value) => setSelectedMethod(value)}
           sx={{ width: 200 }}
