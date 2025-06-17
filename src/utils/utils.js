@@ -237,6 +237,13 @@ export const initializeReservationData = () => {
   }));
 };
 
-export const MODE_OF_PAYMENT_OPTIONS = ["Cash", "Card", "PPS", "PPC", "UnPaid"];
+export const MODE_OF_PAYMENT_OPTIONS = [
+  "Cash",
+  "Card",
+  "PP",
+  "PPS",
+  "PPC",
+  "UnPaid",
+];
 
 export const DATE_FORMAT = "DD-MM-YYYY";
