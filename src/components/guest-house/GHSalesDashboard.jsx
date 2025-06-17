@@ -57,8 +57,10 @@ const GHSalesDashboard = () => {
       entries
         ?.map((entry) =>
           entry?.entry
-            ?.filter((item) =>
-              GH_MODE_OF_PAYMENT_OPTIONS.includes(item.modeOfPayment)
+            ?.filter(
+              (item) =>
+                GH_MODE_OF_PAYMENT_OPTIONS.includes(item.modeOfPayment) &&
+                item.period !== "UnPaid"
             )
             .map((item) => item.rate)
             .reduce((a, b) => a + b, 0)
@@ -74,8 +76,10 @@ const GHSalesDashboard = () => {
         id: index + 1,
         date: entry.date,
         total: entry?.entry
-          ?.filter((item) =>
-            GH_MODE_OF_PAYMENT_OPTIONS.includes(item.modeOfPayment)
+          ?.filter(
+            (item) =>
+              GH_MODE_OF_PAYMENT_OPTIONS.includes(item.modeOfPayment) &&
+              item.period !== "UnPaid"
           )
           ?.map((item) => item.rate)
           .reduce((a, b) => a + b, 0),
