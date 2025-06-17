@@ -146,6 +146,7 @@ const OfficeMerged = () => {
         width: 100,
         headerAlign: "center",
         align: "center",
+        cellClassName: "entry-bold",
       },
     ];
 
@@ -799,13 +800,16 @@ const OfficeMerged = () => {
             />
           </Box>
 
-          <Box width={{ xs: "100%", md: "50%", marginInline: "auto" }}>
+          <Box
+            width={{ xs: "100%", md: "100%", lg: "100%" }}
+            sx={{ mt: 2, marginInline: "auto" }}
+          >
             {pieChartData.length === 0 ? (
               <Typography variant="h5" fontWeight={600} color="text.primary">
                 No Data Available
               </Typography>
             ) : (
-              <Box width="100%" mt={2}>
+              <Box width="100%" height="100%" mt={2}>
                 <Stack
                   direction={{ xs: "column", md: "row" }}
                   spacing={4}
@@ -813,10 +817,28 @@ const OfficeMerged = () => {
                   justifyContent="center"
                   flexWrap="nowrap"
                 >
-                  <PieChartComponent
-                    data={pieChartData}
-                    isFullScreen={isFullScreen}
-                  />
+                  <Stack
+                    direction="column"
+                    spacing={2}
+                    sx={{
+                      backgroundColor: "#fafafa",
+                      borderRadius: 3,
+                      px: 2,
+                      py: 2,
+                      boxShadow: 2,
+                      minWidth: isFullScreen ? "400px" : "300px",
+                    }}
+                    width={{
+                      xs: "100%",
+                      md: "100%",
+                      lg: "60%",
+                    }}
+                  >
+                    <PieChartComponent
+                      data={pieChartData}
+                      isFullScreen={isFullScreen}
+                    />
+                  </Stack>
                   <Stack
                     direction="column"
                     spacing={2}
