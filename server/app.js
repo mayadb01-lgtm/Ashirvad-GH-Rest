@@ -39,6 +39,7 @@ import restCategory from "./controller/restCategory.js";
 import pendingRestAggregation from "./controller/pendingRestAggregation.js";
 import restPending from "./controller/restPending.js";
 import officeBook from "./controller/officeBook.js";
+import room from "./controller/room.js";
 
 // Use routes
 app.use("/api/v1/user", user);
@@ -50,5 +51,6 @@ app.use("/api/v1/restCategory", restCategory);
 app.use("/api/v1/aggregation", pendingRestAggregation);
 app.use("/api/v1/restPending", restPending);
 app.use("/api/v1/officeBook", officeBook);
+app.use("/api/v1/room", room);
 
 export default app;

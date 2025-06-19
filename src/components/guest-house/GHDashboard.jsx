@@ -60,6 +60,7 @@ const GHDashboard = () => {
       { field: "type", headerName: "Type", width: 120 },
       { field: "modeOfPayment", headerName: "Payment Mode", width: 140 },
       { field: "date", headerName: "Date", width: 130 },
+      { field: "discount", headerName: "Discount", width: 100 },
       { field: "isPaid", headerName: "Paid", width: 90 },
       { field: "createDate", headerName: "Created At", width: 140 },
     ],
@@ -136,6 +137,10 @@ const GHDashboard = () => {
       entries &&
       entries.length > 0 &&
       entries?.reduce((sum, row) => Number(sum) + Number(row.rate), 0),
+    discount:
+      entries &&
+      entries.length > 0 &&
+      entries?.reduce((sum, row) => Number(sum) + Number(row.discount), 0),
     noOfPeople: "",
     fullname: "",
     type: "",

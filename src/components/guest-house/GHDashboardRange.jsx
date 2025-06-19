@@ -37,6 +37,7 @@ const headerMap = {
   period: "Stay Period",
   cost: "Cost",
   rate: "Rate",
+  discount: "Discount",
   noOfPeople: "No. of People",
   modeOfPayment: "Payment Mode",
   fullname: "Full Name",
@@ -135,6 +136,13 @@ const GHSalesDashboardRange = () => {
     {
       field: "rate",
       headerName: "Rate",
+      width: 100,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "discount",
+      headerName: "Discount",
       width: 100,
       headerAlign: "center",
       align: "center",
@@ -273,6 +281,16 @@ const GHSalesDashboardRange = () => {
         .reduce((a, b) => a + b, 0)
     : 0;
 
+  const totalDiscount = Array.isArray(entries)
+    ? entries
+        .flatMap((entry) =>
+          Array.isArray(entry.entry)
+            ? entry.entry.map((item) => item?.discount || 0)
+            : []
+        )
+        .reduce((a, b) => a + b, 0)
+    : 0;
+
   // Add total row if entries exist
   if (preparedEntries.length > 0) {
     preparedEntries.push({
@@ -281,6 +299,7 @@ const GHSalesDashboardRange = () => {
       roomNo: "",
       cost: "",
       rate: totalCost,
+      discount: totalDiscount,
       type: "",
     });
   }

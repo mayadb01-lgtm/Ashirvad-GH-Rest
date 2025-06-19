@@ -45,6 +45,7 @@ const entrySchemaObj = new Schema(
     entryCreateDate: { type: Date },
     updatedDateTime: { type: String, default: "" },
     period: { type: String, required: true },
+    discount: { type: Number, default: 0 },
     createdAt: { type: Date, default: Date.now },
     paidDate: { type: String, default: "" },
     isPaid: {

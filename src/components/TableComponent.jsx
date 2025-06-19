@@ -4,7 +4,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs from "dayjs";
 import { MobileTimePicker } from "@mui/x-date-pickers";
 import { useAppSelector } from "../redux/hooks";
-import { initializeRows, paymentColors, typeColors } from "../utils/utils";
+import { paymentColors, typeColors } from "../utils/utils";
 import {
   TableContainer,
   Paper,
@@ -22,9 +22,38 @@ import {
 import "./TableComponent.css";
 
 const TableComponent = ({ period, rowsLength, onSubmit, selectedDate }) => {
-  const { entries } = useAppSelector((state) => state.entry);
-
+  const { loading: entriesLoading, entries } = useAppSelector(
+    (state) => state.entry
+  );
+  const { loading: roomsLoading, rooms } = useAppSelector(
+    (state) => state.rooms
+  );
   const [rows, setRows] = useState([]);
+  const [roomDetails, setRoomDetails] = useState({
+    roomType: rooms?.map((r) => r.roomType) || [],
+    roomNumber: rooms?.map((r) => r.roomNumber) || [],
+    roomCost: rooms?.map((r) => r.roomCost) || [],
+  });
+
+  const initializeRows = (period, rowsLength, selectedDate) => {
+    return Array.from({ length: rowsLength }, (_, i) => ({
+      id: `${period} - ${i + 1}`,
+      roomNo: roomDetails?.roomNumber[i] || "",
+      cost: roomDetails?.roomCost[i] || 0,
+      roomType: roomDetails?.roomType[i] || "",
+      rate: 0,
+      noOfPeople: 0,
+      type: "",
+      modeOfPayment: "",
+      fullname: "",
+      mobileNumber: 0,
+      checkInTime: "10:00 AM",
+      checkOutTime: "10:00 AM",
+      period: period,
+      createDate: selectedDate || "",
+      discount: 0,
+    }));
+  };
 
   useEffect(() => {
     if (entries && entries.length === 0) {
@@ -63,6 +92,7 @@ const TableComponent = ({ period, rowsLength, onSubmit, selectedDate }) => {
                 mobileNumber: entry.mobileNumber,
                 createDate: entry.createDate,
                 period: entry.period,
+                discount: entry?.discount || 0,
               }
             : row;
         });
@@ -104,6 +134,10 @@ const TableComponent = ({ period, rowsLength, onSubmit, selectedDate }) => {
       modeOfPayment: "",
       fullname: "",
       mobileNumber: "",
+      discount: rows.reduce(
+        (sum, row) => sum + (isNaN(row.discount) ? 0 : Number(row.discount)),
+        0
+      ),
     };
   }, [rows]);
 

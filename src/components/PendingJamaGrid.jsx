@@ -26,6 +26,7 @@ const PendingJamaGrid = () => {
           modeOfPayment: entry.modeOfPayment,
           period: setPeriod[entry.period],
           roomType: entry.roomType,
+          discount: entry?.discount || 0,
         };
       });
       setPendingJamaGridRows(rows);
@@ -62,6 +63,7 @@ const PendingJamaGrid = () => {
             { field: "fullname", headerName: "Full Name", width: 180 },
             { field: "mobileNumber", headerName: "Mobile No", width: 150 },
             { field: "rate", headerName: "Rate", width: 80 },
+            { field: "discount", headerName: "Discount", width: 80 },
             {
               field: "modeOfPayment",
               headerName: "Mode of Payment",

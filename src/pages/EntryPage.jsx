@@ -26,17 +26,15 @@ import {
 import "dayjs/locale/en-gb";
 import {
   paymentColors,
-  processEntriesByPaymentMode,
   modeSummaryColumn,
   finalModeColumns,
   processEntries,
   processUpdateEntries,
   currentDateTime,
-  roomCosts,
-  roomType,
 } from "../utils/utils";
 import PendingJamaTable from "../components/PendingJamaTable";
 import ModernLoader, { AccordionSection, PaymentSummary } from "../utils/util";
+import { getGHRoomsFromSeed } from "../redux/actions/roomAction";
 const PendingJamaGrid = React.lazy(
   () => import("../components/PendingJamaGrid")
 );
@@ -75,8 +73,14 @@ const EntryPage = () => {
   }, [dispatch, selectedDate]);
 
   useEffect(() => {
+    dispatch(getGHRoomsFromSeed());
     dispatch(getUnPaidEntries());
   }, [dispatch]);
+
+  const processEntriesByPaymentMode = (data, mode) => {
+    if (data?.length === 0) return [];
+    return data?.filter((row) => row.modeOfPayment === mode);
+  };
 
   let processedEntries = useMemo(() => {
     // Cash
@@ -447,8 +451,6 @@ const EntryPage = () => {
           period: row.period,
           date: row.date,
         }));
-
-        console.log("Pending Jama Entries", pendingJamaEntries);
       }
 
       const reservationEntryFilteredRows = reservationData.filter(
@@ -609,8 +611,6 @@ const EntryPage = () => {
               <EntryAccordion
                 title="Day Entries"
                 period="Day"
-                roomCosts={roomCosts}
-                roomType={roomType}
                 onSubmit={setDayData}
                 bgColor="#FAC172"
                 selectedDate={selectedDate}
@@ -618,8 +618,6 @@ const EntryPage = () => {
               <EntryAccordion
                 title="Night Entries"
                 period="Night"
-                roomCosts={roomCosts}
-                roomType={roomType}
                 onSubmit={setNightData}
                 bgColor="#89D5C9"
                 selectedDate={selectedDate}
@@ -644,8 +642,6 @@ const EntryPage = () => {
                   <EntryAccordion
                     title="Extra Day Entries"
                     period="extraDay"
-                    roomCosts={roomCosts}
-                    roomType={roomType}
                     onSubmit={setExtraDayData}
                     bgColor="#FAC172"
                     selectedDate={selectedDate}
@@ -653,8 +649,6 @@ const EntryPage = () => {
                   <EntryAccordion
                     title="Extra Night Entries"
                     period="extraNight"
-                    roomCosts={roomCosts}
-                    roomType={roomType}
                     onSubmit={setExtraNightData}
                     bgColor="#89D5C9"
                     selectedDate={selectedDate}

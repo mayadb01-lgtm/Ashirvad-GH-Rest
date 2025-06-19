@@ -57,6 +57,7 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
               period: entry.period,
               entryCreateDate: entry.entryCreateDate,
               date: entry.date,
+              discount: entry?.discount || 0,
             };
           }
           return row;
@@ -110,21 +111,44 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
       .map((entry) => entry.rate);
   };
 
-  const getOtherFields = (date, roomNo, fullname, mobileNumber, rate) => {
-    return unpaidEntries.find(
-      (entry) =>
-        entry.date === date &&
-        entry.roomNo === roomNo &&
-        entry.fullname.toLowerCase() === fullname.toLowerCase() &&
-        entry.mobileNumber === mobileNumber &&
-        entry.rate === rate
+  const getOtherFields = (
+    date,
+    roomNo,
+    fullname,
+    mobileNumber,
+    rate,
+    discount
+  ) => {
+    return unpaidEntries.find((entry) =>
+      entry.date === date &&
+      entry.roomNo === roomNo &&
+      entry.fullname.toLowerCase() === fullname.toLowerCase() &&
+      entry.mobileNumber === mobileNumber &&
+      entry.rate === rate &&
+      entry?.discount === discount
+        ? entry
+        : 0
     );
   };
 
   // Set Other Fields from date, roomNo, fullname, mobileNumber, rate
 
-  const getCreateDate = (date, roomNo, fullname, mobileNumber, rate) => {
-    const entry = getOtherFields(date, roomNo, fullname, mobileNumber, rate);
+  const getCreateDate = (
+    date,
+    roomNo,
+    fullname,
+    mobileNumber,
+    rate,
+    discount
+  ) => {
+    const entry = getOtherFields(
+      date,
+      roomNo,
+      fullname,
+      mobileNumber,
+      rate,
+      discount || 0
+    );
     return entry?.createDate;
   };
 
@@ -157,7 +181,8 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
         row.roomNo,
         row.fullname,
         row.mobileNumber,
-        row.rate
+        row.rate,
+        row?.discount || 0
       );
       // const _id = get_id(
       //   row.date,
@@ -193,6 +218,7 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
               "Full Name",
               "Mobile No",
               "Rate",
+              "Discount",
               "Mode of Payment",
               "Action",
             ].map((header, index) => (
@@ -301,7 +327,7 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
                   ))}
                 </Select>
               </TableCell>
-              <TableCell width={"20%"}>
+              <TableCell width={"15%"}>
                 <Select
                   value={row.fullname ? row.fullname : ""}
                   onChange={(e) =>
@@ -328,7 +354,7 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
                   ))}
                 </Select>
               </TableCell>
-              <TableCell width={"20%"}>
+              <TableCell width={"15%"}>
                 <Select
                   value={row.mobileNumber ? row.mobileNumber : ""}
                   onChange={(e) =>
@@ -389,6 +415,23 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
                   ))}
                 </Select>
               </TableCell>
+              <TableCell width={"10%"}>
+                <TextField
+                  variant="outlined"
+                  type="number"
+                  size="small"
+                  value={row.discount || ""}
+                  onChange={(e) =>
+                    handleRowEdit(row.id, "discount", e.target.value)
+                  }
+                  fullWidth
+                  sx={{
+                    "& .MuiInputBase-input": {
+                      fontSize: "12px",
+                    },
+                  }}
+                />
+              </TableCell>
               <TableCell width={"15%"}>
                 <Select
                   value={row.modeOfPayment ? row.modeOfPayment : "Select"}
@@ -438,6 +481,7 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
                               mobileNumber: "",
                               rate: 0,
                               modeOfPayment: "",
+                              discount: 0,
                             }
                           : prevRow
                       )

@@ -7,9 +7,11 @@ import restStaffReducer from "./reducers/restStaffReducer";
 import restCategoryReducer from "./reducers/restCategory";
 import restPendingReducer from "./reducers/restPendingReducer";
 import officeBookReducer from "./reducers/officeBookReducer";
+import roomReducer from "./reducers/roomReducer";
 
 const Store = configureStore({
   reducer: {
+    rooms: roomReducer,
     user: userReducer,
     admin: adminReducer,
     entry: entryReducer,
