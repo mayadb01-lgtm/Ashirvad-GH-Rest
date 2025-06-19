@@ -59,6 +59,7 @@ const EditableRow = ({
             <TextField {...params} variant="outlined" size="small" fullWidth />
           )}
           disabled={!row.amount}
+          size="small"
         />
       </TableCell>
       <TableCell sx={{ width: "5%" }}>

@@ -6,15 +6,17 @@ import {
   TextField,
   FormGroup,
   Autocomplete,
+  Button,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import dayjs from "dayjs";
-import { getOfficeBookByDate } from "../../redux/actions/officeBookAction";
+import { getOfficeBookByDateRange } from "../../redux/actions/officeBookAction";
 import ModernLoader from "../../utils/util";
 import { MODE_OF_PAYMENT_OPTIONS } from "../../utils/utils";
+import * as XLSX from "xlsx";
 
 // Set locale if needed
 dayjs.locale("en-gb");
@@ -22,26 +24,35 @@ dayjs.locale("en-gb");
 const OfficeBookDashboard = () => {
   const dispatch = useAppDispatch();
   const { loading, officeBook } = useAppSelector((state) => state.officeBook);
-  const today = dayjs().format("DD-MM-YYYY");
-  const [selectedDate, setSelectedDate] = useState(today);
+  const [startDate, setStartDate] = useState(dayjs().startOf("month"));
+  const [endDate, setEndDate] = useState(dayjs());
   const [paymentMethod, setPaymentMethod] = useState("");
   const [officeInOut, setOfficeInOut] = useState("");
 
-  // Handle date change
-  const handleDateChange = useCallback(
-    (newDate) => {
-      if (newDate) {
-        const formatted = newDate.format("DD-MM-YYYY");
-        if (formatted !== selectedDate) setSelectedDate(formatted);
-      }
-    },
-    [selectedDate]
-  );
+  const handleStartDateChange = useCallback((newDate) => {
+    if (newDate) setStartDate(newDate);
+  }, []);
 
-  // Fetch on date change
+  const handleEndDateChange = useCallback((newDate) => {
+    if (newDate) setEndDate(newDate);
+  }, []);
+
   useEffect(() => {
-    dispatch(getOfficeBookByDate(selectedDate));
-  }, [dispatch, selectedDate]);
+    const fetchData = async () => {
+      try {
+        await dispatch(
+          getOfficeBookByDateRange(
+            startDate.format("DD-MM-YYYY"),
+            endDate.format("DD-MM-YYYY")
+          )
+        );
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchData();
+  }, [dispatch, startDate, endDate]);
 
   // Base columns
   const defaultFields = useMemo(
@@ -59,14 +70,11 @@ const OfficeBookDashboard = () => {
 
   const columns = useMemo(() => {
     const indexColumn = {
-      field: "index",
+      field: "id",
       headerName: "No.",
       width: 80,
       headerAlign: "center",
       align: "center",
-      sortable: false,
-      renderCell: (params) =>
-        params.api.getRowIndexRelativeToVisibleRows(params.id) + 1,
     };
 
     return [
@@ -80,24 +88,86 @@ const OfficeBookDashboard = () => {
   }, [defaultFields]);
 
   const filteredOfficeBook = useMemo(() => {
-    const officeIn = officeBook?.officeIn || [];
-    const officeOut = officeBook?.officeOut || [];
+    let rowCounter = 1;
+    const officeIn =
+      officeBook?.flatMap((entry) =>
+        (entry.officeIn || []).map((item) => ({
+          ...item,
+          id: rowCounter++,
+        }))
+      ) || [];
 
+    const officeOut =
+      officeBook?.flatMap((entry) =>
+        (entry.officeOut || []).map((item) => ({
+          ...item,
+          id: rowCounter++,
+        }))
+      ) || [];
     const combined = [...officeIn, ...officeOut];
 
-    return paymentMethod
-      ? (officeInOut === "in"
-          ? officeIn
-          : officeInOut === "out"
-            ? officeOut
-            : combined
-        ).filter((item) => item.modeOfPayment === paymentMethod)
-      : officeInOut === "in"
-        ? officeIn
-        : officeInOut === "out"
-          ? officeOut
-          : combined;
-  }, [officeBook?.officeIn, officeBook?.officeOut, officeInOut, paymentMethod]);
+    let baseData = [];
+    if (officeInOut === "in") {
+      baseData = officeIn;
+    } else if (officeInOut === "out") {
+      baseData = officeOut;
+    } else {
+      baseData = combined;
+    }
+    // Filter by payment method if applicable
+    const filteredData = paymentMethod
+      ? baseData.filter((item) => item.modeOfPayment === paymentMethod)
+      : baseData;
+
+    // Add totals row
+    const totalAmount = filteredData.reduce(
+      (sum, curr) => sum + (curr.amount || 0),
+      0
+    );
+    const totalRow = {
+      id: "Total",
+      amount: totalAmount,
+      modeOfPayment: "",
+      fullname: "",
+      categoryName: "",
+      expenseName: "",
+      remark: "",
+      createDate: "",
+    };
+    return [...filteredData, totalRow];
+  }, [officeBook, officeInOut, paymentMethod]);
+
+  const headerMap = {
+    id: "No.",
+    amount: "Amount",
+    modeOfPayment: "Mode of Payment",
+    fullname: "Full Name",
+    categoryName: "Category",
+    expenseName: "Expense",
+    remark: "Remark",
+    createDate: "Date",
+  };
+
+  const handleExportToExcel = () => {
+    if (!Array.isArray(filteredOfficeBook) || filteredOfficeBook.length === 0) {
+      toast.error("No data available to export for selected date range.");
+      return;
+    }
+
+    const exportData = filteredOfficeBook.map(({ ...item }) => {
+      const transformed = {};
+      Object.keys(headerMap).forEach((key) => {
+        transformed[headerMap[key]] = item[key];
+      });
+      return transformed;
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Guest Entries");
+
+    XLSX.writeFile(workbook, "GuestHouseEntries.xlsx");
+  };
 
   if (loading) {
     return <ModernLoader />;
@@ -129,13 +199,37 @@ const OfficeBookDashboard = () => {
             adapterLocale="en-gb"
           >
             <DatePicker
-              value={dayjs(selectedDate, "DD-MM-YYYY")}
-              onChange={handleDateChange}
+              value={startDate}
+              onChange={handleStartDateChange}
               format="DD-MM-YYYY"
-              slotProps={{ textField: { size: "small", variant: "outlined" } }}
+              slotProps={{
+                textField: {
+                  size: "small",
+                },
+              }}
+              views={["year", "month", "day"]}
+            />
+            <Typography>-</Typography>
+            <DatePicker
+              value={endDate}
+              onChange={handleEndDateChange}
+              format="DD-MM-YYYY"
+              slotProps={{
+                textField: {
+                  size: "small",
+                },
+              }}
+              views={["year", "month", "day"]}
             />
           </LocalizationProvider>
-
+          <Button
+            variant="outlined"
+            color="primary"
+            sx={{ mt: 2 }}
+            onClick={handleExportToExcel}
+          >
+            Export to Excel
+          </Button>
           <FormGroup row sx={{ ml: 2, gap: 2 }}>
             <Autocomplete
               options={MODE_OF_PAYMENT_OPTIONS}
@@ -145,6 +239,7 @@ const OfficeBookDashboard = () => {
               )}
               value={paymentMethod}
               onChange={(e, value) => setPaymentMethod(value)}
+              size="small"
             />
             <Autocomplete
               options={[
@@ -166,11 +261,12 @@ const OfficeBookDashboard = () => {
                   : null
               }
               onChange={(e, newValue) => setOfficeInOut(newValue?.value || "")}
+              size="small"
             />
           </FormGroup>
         </Stack>
 
-        {officeBook?.officeIn || officeBook?.officeOut ? (
+        {officeBook ? (
           <DataGrid
             rows={filteredOfficeBook}
             columns={columns}
@@ -182,7 +278,6 @@ const OfficeBookDashboard = () => {
               "& .MuiDataGrid-columnHeaderTitle": { fontWeight: "bold" },
             }}
             disableSelectionOnClick
-            getRowId={(row) => row._id || row.id}
           />
         ) : (
           <Typography variant="subtitle1" color="text.secondary" mt={2}>

@@ -111,6 +111,7 @@ const ExpensesTable = ({
         renderInput={(params) => (
           <TextField {...params} variant="outlined" size="small" />
         )}
+        size="small"
       />
     ),
     [handleUpdateRow]
@@ -157,6 +158,7 @@ const ExpensesTable = ({
         renderInput={(params) => (
           <TextField {...params} variant="outlined" size="small" fullWidth />
         )}
+        size="small"
       />
     ),
     [handleUpdateRow]

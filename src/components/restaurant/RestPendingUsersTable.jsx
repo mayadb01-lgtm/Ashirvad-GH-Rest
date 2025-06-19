@@ -65,6 +65,7 @@ const RestPendingUsersTable = ({ restPendingData, setRestPendingData }) => {
         <TextField {...params} variant="outlined" size="small" fullWidth />
       )}
       disabled={!row.amount}
+      size="small"
     />
   );
 

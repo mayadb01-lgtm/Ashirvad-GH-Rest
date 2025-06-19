@@ -174,6 +174,7 @@ const GHBankBooksDashboard = () => {
             <TextField {...params} label="Payment Method" />
           )}
           clearOnEscape
+          size="small"
         />
         <Button
           variant="outlined"

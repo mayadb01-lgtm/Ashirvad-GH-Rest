@@ -63,6 +63,7 @@ const EditableRow = ({
       renderInput={(params) => (
         <TextField {...params} variant="outlined" size="small" />
       )}
+      size="small"
     />
   );
 
@@ -88,6 +89,7 @@ const EditableRow = ({
         renderInput={(params) => (
           <TextField {...params} variant="outlined" size="small" />
         )}
+        size="small"
       />
     );
 
@@ -108,6 +110,7 @@ const EditableRow = ({
       renderInput={(params) => (
         <TextField {...params} variant="outlined" size="small" />
       )}
+      size="small"
     />
   );
 
@@ -144,6 +147,7 @@ const EditableRow = ({
           renderInput={(params) => (
             <TextField {...params} variant="outlined" size="small" fullWidth />
           )}
+          size="small"
         />
       </TableCell>
 

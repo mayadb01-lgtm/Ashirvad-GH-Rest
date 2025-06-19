@@ -206,6 +206,7 @@ const RestExpensesDashboard = () => {
           onChange={(event, newValue) => {
             setSelectedCategory(newValue);
           }}
+          size="small"
         />
         <Button
           variant="outlined"

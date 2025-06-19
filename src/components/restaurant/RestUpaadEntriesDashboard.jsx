@@ -175,6 +175,7 @@ const RestUpaadEntriesDashboard = () => {
           onChange={(event, newValue) => {
             setSelectedStaff(newValue);
           }}
+          size="small"
         />
         <Button
           variant="outlined"

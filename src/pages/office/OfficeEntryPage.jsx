@@ -24,6 +24,7 @@ const OfficeEntryPage = () => {
   const { loading, officeBook } = useAppSelector((state) => state.officeBook);
   const { isAdminAuthenticated } = useAppSelector((state) => state.admin);
   const today = dayjs().format("DD-MM-YYYY");
+  const [selectedDate, setSelectedDate] = useState(today);
 
   const makeInitialRows = (date, count = 8) =>
     Array.from({ length: count }, (_, i) => ({
@@ -38,12 +39,11 @@ const OfficeEntryPage = () => {
       fullname_id: "",
     }));
   const [officeInData, setOfficeInData] = useState(() =>
-    makeInitialRows(today)
+    makeInitialRows(selectedDate)
   );
   const [officeOutData, setOfficeOutData] = useState(() =>
-    makeInitialRows(today)
+    makeInitialRows(selectedDate)
   );
-  const [selectedDate, setSelectedDate] = useState(today);
 
   // Fetch office bookings by date
   useEffect(() => {

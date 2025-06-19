@@ -186,6 +186,7 @@ const BankBooksDashboard = () => {
             setSelectedMethod(newValue);
           }}
           renderInput={(params) => <TextField {...params} label="Method" />}
+          size="small"
         />
         <Button
           variant="outlined"
