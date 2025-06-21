@@ -20,82 +20,6 @@ export const typeColors = {
   Other: "rgb(255, 170, 50)",
 };
 
-// export const roomCosts = {
-//   1: 1200,
-//   2: 1500,
-//   3: 1500,
-//   4: 1500,
-//   5: 1500,
-//   6: 1200,
-//   7: 1200,
-//   8: 1200,
-//   9: 1400,
-//   10: 1400,
-//   11: 1400,
-//   12: 1400,
-//   13: 1200,
-//   14: 1200,
-//   15: 1200,
-//   16: 1200,
-// };
-
-// export const roomType = {
-//   1: "2 Bed",
-//   2: "3 Bed",
-//   3: "3 Bed",
-//   4: "Deluxe",
-//   5: "Deluxe",
-//   6: "2 Bed",
-//   7: "2 Bed",
-//   8: "2 Bed",
-//   9: "3 Bed",
-//   10: "3 Bed",
-//   11: "3 Bed",
-//   12: "3 Bed",
-//   13: "2 Bed",
-//   14: "2 Bed",
-//   15: "2 Bed",
-//   16: "2 Bed",
-// };
-
-// export const roomNumber = {
-//   1: 101,
-//   2: 102,
-//   3: 103,
-//   4: 104,
-//   5: 105,
-//   6: 106,
-//   7: 107,
-//   8: 108,
-//   9: 201,
-//   10: 202,
-//   11: 203,
-//   12: 204,
-//   13: 205,
-//   14: 206,
-//   15: 207,
-//   16: 208,
-// };
-
-export const initializePendingJamaRows = () => {
-  return Array.from({ length: 10 }, (_, idx) => ({
-    id: idx + 1,
-    date: "",
-    roomNo: 0,
-    fullname: "",
-    mobileNumber: 0,
-    rate: 0,
-    modeOfPayment: "",
-    period: "UnPaid",
-    createDate: "",
-    cost: 0,
-    checkInTime: "10:00 AM",
-    checkOutTime: "10:00 AM",
-    noOfPeople: 0,
-    discount: 0,
-  }));
-};
-
 // modeSummaryColumn for DataGrid SummaryTable
 export const modeSummaryColumn = [
   { field: "id", headerName: "Day/Night", width: 90 },
@@ -147,7 +71,7 @@ export const processUpdateEntries = (data, period, selectedDate) => {
     .sort((a, b) => a.roomNo - b.roomNo);
 };
 
-
+// Table Component
 
 export const currentDateTime = new Date().toString();
 

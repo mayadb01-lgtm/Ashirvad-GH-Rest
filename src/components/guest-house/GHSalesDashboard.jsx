@@ -43,9 +43,27 @@ const GHSalesDashboard = () => {
   }, [dispatch, startDate, endDate]);
 
   const columns = [
-    { field: "id", headerName: "Index", width: 150 },
-    { field: "date", headerName: "Date", width: 150 },
-    { field: "total", headerName: "Total", width: 150 },
+    {
+      field: "id",
+      headerName: "Index",
+      width: 150,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "date",
+      headerName: "Date",
+      width: 150,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "total",
+      headerName: "Total",
+      width: 150,
+      headerAlign: "center",
+      align: "center",
+    },
   ];
 
   const totalRow = {
@@ -171,11 +189,19 @@ const GHSalesDashboard = () => {
           rows={preparedEntries}
           columns={columns}
           pageSize={5}
+          WebkitFontSmoothing="auto"
+          letterSpacing={"normal"}
           sx={{
             mt: 2,
             height: 400,
             "& .MuiDataGrid-columnHeaderTitle": {
               fontWeight: "bold",
+            },
+            "& .MuiDataGrid-cell:hover": {
+              color: "primary.main",
+            },
+            "& .MuiDataGrid-columnHeader, .MuiDataGrid-cell": {
+              border: "1px solid #f0f0f0",
             },
           }}
         />

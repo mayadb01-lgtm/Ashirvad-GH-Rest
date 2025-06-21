@@ -20,21 +20,11 @@ import { GH_MODE_OF_PAYMENT_OPTIONS } from "../../utils/utils";
 
 dayjs.locale("en-gb");
 
-const GHBankBooksDashboard = () => {
+const GHUpaidEntriesDashboard = () => {
   const dispatch = useAppDispatch();
   const { loading, entries } = useAppSelector((state) => state.entry);
   const [startDate, setStartDate] = useState(dayjs().startOf("month"));
   const [endDate, setEndDate] = useState(dayjs());
-
-  const [selectedMethod, setSelectedMethod] = useState(null);
-
-  const handleStartDateChange = useCallback((newDate) => {
-    if (newDate) setStartDate(newDate);
-  }, []);
-
-  const handleEndDateChange = useCallback((newDate) => {
-    if (newDate) setEndDate(newDate);
-  }, []);
 
   useEffect(() => {
     dispatch(
@@ -45,90 +35,95 @@ const GHBankBooksDashboard = () => {
     );
   }, [dispatch, startDate, endDate]);
 
+  const handleStartDateChange = useCallback((newDate) => {
+    if (newDate) setStartDate(newDate);
+  }, []);
+
+  const handleEndDateChange = useCallback((newDate) => {
+    if (newDate) setEndDate(newDate);
+  }, []);
+
+  const columns = useMemo(() => {
+    return [
+      {
+        field: "id",
+        headerName: "Index",
+        width: 150,
+        headerAlign: "center",
+        align: "center",
+        flex: 1,
+      },
+      {
+        field: "date",
+        headerName: "Date",
+        flex: 1,
+        minWidth: 200,
+        headerAlign: "center",
+        align: "center",
+        flex: 1,
+      },
+      {
+        field: "UnPaid",
+        headerName: "UnPaid",
+        flex: 1,
+        minWidth: 150,
+        headerAlign: "center",
+        align: "center",
+        flex: 1,
+      },
+      {
+        field: "Paid",
+        headerName: "Paid",
+        flex: 1,
+        minWidth: 150,
+        headerAlign: "center",
+        align: "center",
+        flex: 1,
+      },
+      {
+        field: "total",
+        headerName: "Total",
+        flex: 1,
+        minWidth: 150,
+        headerAlign: "center",
+        align: "center",
+        flex: 1,
+      },
+    ];
+  }, []);
+
   // Prepare rows
   const preparedData = useMemo(() => {
     if (!entries) return [];
 
     const rows = entries.map((entry, index) => {
-      const row = { id: index + 1, date: entry.date, total: 0 };
+      const unpaidTotal = entry.entry
+        .filter((item) => !item.isPaid || item.modeOfPayment === "UnPaid")
+        .reduce((sum, item) => sum + item.rate, 0);
 
-      const methodsToInclude = selectedMethod
-        ? [selectedMethod]
-        : GH_MODE_OF_PAYMENT_OPTIONS;
+      const paidTotal = entry.entry
+        .filter((item) => item.isPaid && item.period === "UnPaid")
+        .reduce((sum, item) => sum + item.rate, 0);
 
-      methodsToInclude.forEach((method) => {
-        const totalByMethod = entry.entry
-          .filter((item) => item.modeOfPayment === method)
-          .reduce((sum, item) => sum + item.rate, 0);
-
-        row[method] = totalByMethod;
-        row.total += totalByMethod;
-      });
-
-      return row;
+      return {
+        id: index + 1,
+        date: entry.date,
+        UnPaid: unpaidTotal,
+        Paid: paidTotal,
+        total: unpaidTotal,
+      };
     });
 
     // Total row
-    const totalRow = { id: "Total", date: "Total", total: 0 };
-    const methodsToInclude = selectedMethod
-      ? [selectedMethod]
-      : GH_MODE_OF_PAYMENT_OPTIONS;
-
-    methodsToInclude.forEach((method) => {
-      totalRow[method] = rows.reduce((sum, row) => sum + (row[method] || 0), 0);
-      totalRow.total += totalRow[method];
-    });
-
+    const totalRow = {
+      id: "Total",
+      date: "Total",
+      UnPaid: rows.reduce((sum, row) => sum + row.UnPaid, 0),
+      Paid: rows.reduce((sum, row) => sum + row.Paid, 0),
+      total: rows.reduce((sum, row) => sum + row.total, 0),
+    };
     return [...rows, totalRow];
-  }, [entries, selectedMethod]);
-
-  const columns = useMemo(() => {
-    const base = [
-      {
-        field: "id",
-        headerName: "Index",
-        width: 100,
-        headerAlign: "center",
-        align: "center",
-      },
-      {
-        field: "date",
-        headerName: "Date",
-        width: 150,
-        headerAlign: "center",
-        align: "center",
-      },
-    ];
-
-    const dynamic = selectedMethod
-      ? [
-          {
-            field: selectedMethod,
-            headerName: selectedMethod,
-            width: 120,
-            headerAlign: "center",
-            align: "center",
-          },
-        ]
-      : GH_MODE_OF_PAYMENT_OPTIONS.map((method) => ({
-          field: method,
-          headerName: method,
-          width: 120,
-          headerAlign: "center",
-          align: "center",
-        }));
-
-    const total = [
-      {
-        field: "total",
-        headerName: "Total",
-        width: 120,
-        headerAlign: "center",
-        align: "center",
-      },
-    ];
-    return [...base, ...dynamic, ...total];
-  }, [selectedMethod]);
+  }, [entries]);
 
   const handleExportToExcel = () => {
     if (!preparedData || preparedData.length === 0) {
@@ -159,7 +154,7 @@ const GHBankBooksDashboard = () => {
         }}
       >
         <Typography variant="h5" fontWeight={600} color="text.primary">
-          Guest House - Bank Book
+          Guest House - Unpaid Report
         </Typography>
       </Box>
       <Stack direction="row" spacing={2} alignItems="center">
@@ -183,18 +178,6 @@ const GHBankBooksDashboard = () => {
             views={["year", "month", "day"]}
           />
         </LocalizationProvider>
-        <Autocomplete
-          disablePortal
-          options={GH_MODE_OF_PAYMENT_OPTIONS}
-          value={selectedMethod}
-          onChange={(_, value) => setSelectedMethod(value)}
-          sx={{ width: 200 }}
-          renderInput={(params) => (
-            <TextField {...params} label="Payment Method" />
-          )}
-          clearOnEscape
-          size="small"
-        />
         <Button
           variant="outlined"
           color="primary"
@@ -232,4 +215,4 @@ const GHBankBooksDashboard = () => {
   );
 };
 
-export default GHBankBooksDashboard;
+export default GHUpaidEntriesDashboard;

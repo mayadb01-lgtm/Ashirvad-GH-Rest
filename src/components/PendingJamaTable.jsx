@@ -26,6 +26,29 @@ dayjs.locale("en-gb");
 const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
   const { entries, unpaidEntries } = useAppSelector((state) => state.entry);
 
+  const initializePendingJamaRows = () => {
+    return Array.from({ length: 10 }, (_, idx) => ({
+      id: idx + 1,
+      date: "",
+      roomNo: 0,
+      fullname: "",
+      mobileNumber: 0,
+      rate: 0,
+      modeOfPayment: "",
+      period: "UnPaid",
+      createDate: "",
+      cost: 0,
+      roomType: "",
+      type: "",
+      checkInTime: "10:00 AM",
+      checkOutTime: "10:00 AM",
+      noOfPeople: 0,
+      discount: 0,
+      paidDate: "",
+      isPaid: false,
+    }));
+  };
+
   useEffect(() => {
     if (entries && entries.length === 0) {
       setPendingJamaRows(initializePendingJamaRows());
@@ -58,6 +81,8 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
               entryCreateDate: entry.entryCreateDate,
               date: entry.date,
               discount: entry?.discount || 0,
+              paidDate: entry?.paidDate,
+              isPaid: entry?.isPaid,
             };
           }
           return row;
@@ -111,23 +136,14 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
       .map((entry) => entry.rate);
   };
 
-  const getOtherFields = (
-    date,
-    roomNo,
-    fullname,
-    mobileNumber,
-    rate,
-    discount
-  ) => {
-    return unpaidEntries.find((entry) =>
-      entry.date === date &&
-      entry.roomNo === roomNo &&
-      entry.fullname.toLowerCase() === fullname.toLowerCase() &&
-      entry.mobileNumber === mobileNumber &&
-      entry.rate === rate &&
-      entry?.discount === discount
-        ? entry
-        : 0
+  const getOtherFields = (date, roomNo, fullname, mobileNumber, rate) => {
+    return unpaidEntries.find(
+      (entry) =>
+        entry.date === date &&
+        entry.roomNo === roomNo &&
+        entry.fullname.toLowerCase() === fullname.toLowerCase() &&
+        entry.mobileNumber === mobileNumber &&
+        entry.rate === rate
     );
   };
 
@@ -152,10 +168,6 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
     return entry?.createDate;
   };
 
-  // const get_id = (date, roomNo, fullname, mobileNumber, rate) => {
-  //   const entry = getOtherFields(date, roomNo, fullname, mobileNumber, rate);
-  //   return entry?._id;
-  // };
   const handleRowEdit = (id, field, value) => {
     setPendingJamaRows((prevRows) =>
       prevRows.map((row) =>
@@ -184,13 +196,6 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
         row.rate,
         row?.discount || 0
       );
-      // const _id = get_id(
-      //   row.date,
-      //   row.roomNo,
-      //   row.fullname,
-      //   row.mobileNumber,
-      //   row.rate
-      // );
       setPendingJamaRows((prevRows) =>
         prevRows.map((prevRow) =>
           prevRow.id === id

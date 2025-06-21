@@ -35,6 +35,7 @@ import OfficeBookDashboard from "../components/office/OfficeBookDashboard";
 import GHBankBooksDashboard from "../components/guest-house/GHBankBooksDashboard";
 import OfficeCategoryDashboard from "../components/office/OfficeCategoryDashboard";
 import OfficeMerged from "../components/office/OfficeMerged";
+import GHUpaidEntriesDashboard from "../components/guest-house/GHUpaidEntriesDashboard";
 
 const DashboardHeader = ({ onNavigate }) => {
   const navigate = useNavigate();
@@ -108,6 +109,11 @@ const NAVIGATION = [
         segment: "bank-books",
         title: "GH - Bank Books",
         icon: <BookOutlined />,
+      },
+      {
+        segment: "upaid-report",
+        title: "GH - Upaid",
+        icon: <PaymentsIcon />,
       },
     ],
   },
@@ -207,6 +213,7 @@ const DashboardPage = () => {
     { path: "guest-house", element: <GHHome /> },
     { path: "gh-reports/sales-report", element: <GHSalesDashboard /> },
     { path: "gh-reports/bank-books", element: <GHBankBooksDashboard /> },
+    { path: "gh-reports/upaid-report", element: <GHUpaidEntriesDashboard /> },
     { path: "restaurant", element: <RestHome /> },
     { path: "res-reports/sales-report", element: <RestSalesDashboard /> },
     {
