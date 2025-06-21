@@ -19,7 +19,7 @@ import { useAppSelector } from "../redux/hooks";
 import { DeleteOutline } from "@mui/icons-material";
 import toast from "react-hot-toast";
 import { useEffect, useMemo } from "react";
-import { initializePendingJamaRows, paymentColors } from "../utils/utils";
+import { paymentColors } from "../utils/utils";
 
 dayjs.locale("en-gb");
 
