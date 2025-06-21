@@ -99,7 +99,7 @@ const OfficeEntryPage = () => {
     const isEmptyOut = !officeBook.officeOut?.length;
 
     if (isEmptyIn && isEmptyOut) {
-      // resetForm();
+      resetForm();
       return;
     }
 
@@ -121,7 +121,9 @@ const OfficeEntryPage = () => {
     const rows = makeInitialRows(selectedDate);
     setOfficeInData(rows);
     setOfficeOutData(rows);
-    // ✅ Also clear session on reset
+  };
+
+  const resetSession = () => {
     sessionStorage.removeItem("officeEntryDate");
     sessionStorage.removeItem("officeInData");
     sessionStorage.removeItem("officeOutData");
@@ -175,6 +177,7 @@ const OfficeEntryPage = () => {
       dispatch(createOfficeBook(officeBookData));
       setSelectedDate(today);
       resetForm();
+      resetSession();
     } catch (error) {
       toast.error(
         error?.response?.data?.message ??
@@ -200,6 +203,7 @@ const OfficeEntryPage = () => {
       await dispatch(getOfficeBookByDate(today));
       setSelectedDate(today);
       resetForm();
+      resetSession();
     } catch (error) {
       toast.error(
         error?.response?.data?.message ??
@@ -220,6 +224,7 @@ const OfficeEntryPage = () => {
       await dispatch(getOfficeBookByDate(today));
       setSelectedDate(today);
       resetForm();
+      resetSession();
     } catch (error) {
       toast.error(
         error?.response?.data?.message ??
@@ -310,7 +315,10 @@ const OfficeEntryPage = () => {
                       variant="contained"
                       color="error"
                       sx={{ "&:hover": { backgroundColor: "#e57373" } }}
-                      onClick={resetForm}
+                      onClick={() => {
+                        resetForm();
+                        resetSession();
+                      }}
                     >
                       Reset
                     </Button>
