@@ -17,7 +17,7 @@ import { useAppSelector } from "../../redux/hooks";
 const TABLE_COLUMNS = ["ID", "Amount", "Name", "Remove"];
 
 const RestPendingTable = ({ restPendingData, setRestPendingData }) => {
-  const { restPendingNameOptions } = useAppSelector((state) => state.restEntry);
+  const { restPending } = useAppSelector((state) => state.restPending);
 
   const handleAddRow = () => {
     setRestPendingData((prevData) => [
@@ -111,12 +111,7 @@ const RestPendingTable = ({ restPendingData, setRestPendingData }) => {
                   />
                 </TableCell>
                 <TableCell sx={{ width: "40%" }}>
-                  {renderAutocompleteCell(
-                    restPendingNameOptions,
-                    row,
-                    index,
-                    "fullname"
-                  )}
+                  {renderAutocompleteCell(restPending, row, index, "fullname")}
                 </TableCell>
                 <TableCell sx={{ width: "5%" }}>
                   <Button size="small" onClick={() => handleRemoveRow(row.id)}>

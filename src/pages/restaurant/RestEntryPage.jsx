@@ -107,12 +107,18 @@ const RestEntryPage = () => {
     setTotalUpad(total);
   }, [restUpadData]);
 
+  console.log("restPendingData", restPendingData);
+  console.log("restPendingUsersData", restPendingUsersData);
+
   useMemo(() => {
-    const total = restPendingData.reduce((acc, row) => {
+    const restPendingTotal = restPendingData.reduce((acc, row) => {
+      return acc + Number(row.amount);
+    });
+    const restPendingUsersTotal = restPendingUsersData.reduce((acc, row) => {
       return acc + Number(row.amount);
     }, 0);
-    setTotalPending(total);
-  }, [restPendingData]);
+    setTotalPending(restPendingTotal + restPendingUsersTotal);
+  }, [restPendingData, restPendingUsersData]);
 
   useMemo(() => {
     const total = restExpensesData.reduce((acc, row) => {
