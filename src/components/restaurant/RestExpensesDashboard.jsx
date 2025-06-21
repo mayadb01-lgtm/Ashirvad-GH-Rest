@@ -24,6 +24,7 @@ const RestExpensesDashboard = () => {
   const [startDate, setStartDate] = useState(dayjs().startOf("month"));
   const [endDate, setEndDate] = useState(dayjs());
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedExpense, setSelectedExpense] = useState(null);
 
   const handleStartDateChange = useCallback((newDate) => {
     if (newDate) setStartDate(newDate);
@@ -80,50 +81,55 @@ const RestExpensesDashboard = () => {
     },
   ];
 
-  const selectedStaffEntries =
-    restEntries &&
-    restEntries.filter((entry) => entry.categoryName === selectedCategory);
+  // Prepare options
+  const optionsForCategory = useMemo(
+    () => Array.from(new Set(restEntries?.map((entry) => entry.categoryName))),
+    [restEntries]
+  );
+
+  const optionsForExpense = useMemo(
+    () => Array.from(new Set(restEntries?.map((entry) => entry.expenseName))),
+    [restEntries]
+  );
 
   const preparedEntries = useMemo(() => {
+    const filteredData =
+      restEntries?.filter((entry) => {
+        const matchesCategory = selectedCategory
+          ? entry.categoryName === selectedCategory
+          : true;
+        const matchesExpense = selectedExpense
+          ? entry.expenseName === selectedExpense
+          : true;
+        return matchesCategory && matchesExpense;
+      }) || [];
+
+    const totalAmount = filteredData.reduce(
+      (sum, curr) => sum + (curr.amount || 0),
+      0
+    );
+
     const totalRow = {
       id: "Total",
       createDate: "",
       expenseName: "",
       categoryName: "",
-      amount: selectedCategory
-        ? selectedStaffEntries.reduce((a, b) => a + b.amount, 0)
-        : restEntries.reduce((a, b) => a + b.amount, 0),
+      amount: totalAmount,
     };
-    if (selectedCategory) {
-      return selectedStaffEntries
-        .map((entry, index) => ({
-          id: index + 1,
-          createDate: entry.createDate,
-          expenseName: entry.expenseName,
-          categoryName: entry.categoryName,
-          amount: entry.amount,
-        }))
-        .concat(totalRow);
-    }
-    return restEntries
-      .map((entry, index) => ({
+
+    return [
+      ...filteredData.map((entry, index) => ({
         id: index + 1,
         createDate: entry.createDate,
         expenseName: entry.expenseName,
         categoryName: entry.categoryName,
         amount: entry.amount,
-      }))
-      .concat(totalRow);
-  }, [restEntries, selectedCategory, selectedStaffEntries]);
+      })),
+      totalRow,
+    ];
+  }, [restEntries, selectedCategory, selectedExpense]);
 
   // Select Category - Options - Unique Categories
-
-  const optionsForCategory = useMemo(() => {
-    const uniqueCategories = new Set(
-      restEntries && restEntries.map((entry) => entry.categoryName)
-    );
-    return Array.from(uniqueCategories);
-  }, [restEntries]);
 
   const headerMap = {
     createDate: "Date",
@@ -152,6 +158,7 @@ const RestExpensesDashboard = () => {
 
     XLSX.writeFile(workbook, "GuestHouseEntries.xlsx");
   };
+
   return (
     <Box
       sx={{
@@ -182,7 +189,7 @@ const RestExpensesDashboard = () => {
             value={startDate}
             onChange={handleStartDateChange}
             format="DD-MM-YYYY"
-            renderInput={(params) => <TextField {...params} size="small" />}
+            textField={(params) => <TextField {...params} size="small" />}
             views={["year", "month", "day"]}
           />
           <Typography>-</Typography>
@@ -190,7 +197,7 @@ const RestExpensesDashboard = () => {
             value={endDate}
             onChange={handleEndDateChange}
             format="DD-MM-YYYY"
-            renderInput={(params) => <TextField {...params} size="small" />}
+            textField={(params) => <TextField {...params} size="small" />}
             views={["year", "month", "day"]}
           />
         </LocalizationProvider>
@@ -198,15 +205,23 @@ const RestExpensesDashboard = () => {
           disablePortal
           id="category"
           options={optionsForCategory}
-          getOptionLabel={(option) => option}
-          style={{ width: 300 }}
+          value={selectedCategory}
+          onChange={(e, newValue) => setSelectedCategory(newValue)}
+          style={{ width: 200 }}
           renderInput={(params) => (
-            <TextField {...params} label="Select Category" />
+            <TextField {...params} label="Select Category" size="small" />
           )}
-          onChange={(event, newValue) => {
-            setSelectedCategory(newValue);
-          }}
-          size="small"
+        />
+        <Autocomplete
+          disablePortal
+          id="expense"
+          options={optionsForExpense}
+          value={selectedExpense}
+          onChange={(e, newValue) => setSelectedExpense(newValue)}
+          style={{ width: 200 }}
+          renderInput={(params) => (
+            <TextField {...params} label="Select Expense" size="small" />
+          )}
         />
         <Button
           variant="outlined"
