@@ -29,6 +29,7 @@ const OfficeBookDashboard = () => {
   const [paymentMethod, setPaymentMethod] = useState("");
   const [officeInOut, setOfficeInOut] = useState("");
   const [category, setCategory] = useState("");
+  const [expenss, setExpense] = useState("");
 
   const handleStartDateChange = useCallback((newDate) => {
     if (newDate) setStartDate(newDate);
@@ -63,7 +64,18 @@ const OfficeBookDashboard = () => {
       ]) || [];
     return Array.from(
       new Set(allData.map((item) => item.categoryName).filter(Boolean))
-    );
+    ).sort();
+  }, [officeBook]);
+
+  const expenssOptions = useMemo(() => {
+    const allData =
+      officeBook?.flatMap((entry) => [
+        ...(entry.officeIn || []),
+        ...(entry.officeOut || []),
+      ]) || [];
+    return Array.from(
+      new Set(allData.map((item) => item.expenseName).filter(Boolean))
+    ).sort();
   }, [officeBook]);
 
   // Base columns
@@ -104,42 +116,33 @@ const OfficeBookDashboard = () => {
 
     const officeIn =
       officeBook?.flatMap((entry) =>
-        (entry.officeIn || []).map((item) => ({
-          ...item,
-          id: rowCounter++,
-        }))
+        (entry.officeIn || []).map((item) => ({ ...item, id: rowCounter++ }))
       ) || [];
 
     const officeOut =
       officeBook?.flatMap((entry) =>
-        (entry.officeOut || []).map((item) => ({
-          ...item,
-          id: rowCounter++,
-        }))
+        (entry.officeOut || []).map((item) => ({ ...item, id: rowCounter++ }))
       ) || [];
 
     const combined = [...officeIn, ...officeOut];
 
-    // Pick correct base data
+    // Get the correct base data
     let baseData = combined;
-    if (officeInOut === "in") {
-      baseData = officeIn;
-    } else if (officeInOut === "out") {
-      baseData = officeOut;
-    }
+    if (officeInOut === "in") baseData = officeIn;
+    if (officeInOut === "out") baseData = officeOut;
 
-    // Filter by Payment Method
-    const filteredByPayment = paymentMethod
-      ? baseData.filter((item) => item.modeOfPayment === paymentMethod)
-      : baseData;
+    // ✅ Single filter pass for all criteria
+    const filteredData = baseData.filter((item) => {
+      const matchesPayment = paymentMethod
+        ? item.modeOfPayment === paymentMethod
+        : true;
+      const matchesCategory = category ? item.categoryName === category : true;
+      const matchesExpense = expenss ? item.expenseName === expenss : true;
+      return matchesPayment && matchesCategory && matchesExpense;
+    });
 
-    // Filter by Category
-    const filteredByCategory = category
-      ? filteredByPayment.filter((item) => item.categoryName === category)
-      : filteredByPayment;
-
-    // Total Row
-    const totalAmount = filteredByCategory.reduce(
+    // ✅ Compute total
+    const totalAmount = filteredData.reduce(
       (sum, curr) => sum + (curr.amount || 0),
       0
     );
@@ -154,8 +157,9 @@ const OfficeBookDashboard = () => {
       remark: "",
       createDate: "",
     };
-    return [...filteredByCategory, totalRow]; // ✅ return the filtered list
-  }, [officeBook, officeInOut, paymentMethod, category]);
+
+    return [...filteredData, totalRow];
+  }, [officeBook, officeInOut, paymentMethod, category, expenss]);
 
   const headerMap = {
     id: "No.",
@@ -291,6 +295,16 @@ const OfficeBookDashboard = () => {
               size="small"
               renderInput={(params) => (
                 <TextField {...params} label="Category" placeholder="All" />
+              )}
+            />
+            <Autocomplete
+              options={expenssOptions}
+              sx={{ width: 200 }}
+              value={expenss || null}
+              onChange={(e, newValue) => setExpense(newValue || "")}
+              size="small"
+              renderInput={(params) => (
+                <TextField {...params} label="Expense" placeholder="All" />
               )}
             />
           </FormGroup>

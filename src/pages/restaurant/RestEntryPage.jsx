@@ -107,9 +107,6 @@ const RestEntryPage = () => {
     setTotalUpad(total);
   }, [restUpadData]);
 
-  console.log("restPendingData", restPendingData);
-  console.log("restPendingUsersData", restPendingUsersData);
-
   useMemo(() => {
     const restPendingTotal = restPendingData.reduce((acc, row) => {
       return acc + Number(row.amount);
