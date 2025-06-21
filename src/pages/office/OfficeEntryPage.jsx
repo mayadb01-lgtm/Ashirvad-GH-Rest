@@ -45,6 +45,28 @@ const OfficeEntryPage = () => {
     makeInitialRows(selectedDate)
   );
 
+  // ✅ Load session data on mount
+  useEffect(() => {
+    if (window.location.pathname.includes("/office")) {
+      const savedDate = sessionStorage.getItem("officeEntryDate");
+      const savedIn = sessionStorage.getItem("officeInData");
+      const savedOut = sessionStorage.getItem("officeOutData");
+
+      if (savedDate) setSelectedDate(savedDate);
+      if (savedIn) setOfficeInData(JSON.parse(savedIn));
+      if (savedOut) setOfficeOutData(JSON.parse(savedOut));
+    }
+  }, []);
+
+  // ✅ Save session data whenever data changes
+  useEffect(() => {
+    if (window.location.pathname.includes("/office")) {
+      sessionStorage.setItem("officeEntryDate", selectedDate);
+      sessionStorage.setItem("officeInData", JSON.stringify(officeInData));
+      sessionStorage.setItem("officeOutData", JSON.stringify(officeOutData));
+    }
+  }, [selectedDate, officeInData, officeOutData]);
+
   // Fetch office bookings by date
   useEffect(() => {
     if (selectedDate) {
@@ -77,7 +99,7 @@ const OfficeEntryPage = () => {
     const isEmptyOut = !officeBook.officeOut?.length;
 
     if (isEmptyIn && isEmptyOut) {
-      resetForm();
+      // resetForm();
       return;
     }
 
@@ -99,6 +121,10 @@ const OfficeEntryPage = () => {
     const rows = makeInitialRows(selectedDate);
     setOfficeInData(rows);
     setOfficeOutData(rows);
+    // ✅ Also clear session on reset
+    sessionStorage.removeItem("officeEntryDate");
+    sessionStorage.removeItem("officeInData");
+    sessionStorage.removeItem("officeOutData");
   };
 
   const isRowValid = (row) => {
