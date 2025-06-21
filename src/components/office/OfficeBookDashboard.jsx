@@ -28,6 +28,7 @@ const OfficeBookDashboard = () => {
   const [endDate, setEndDate] = useState(dayjs());
   const [paymentMethod, setPaymentMethod] = useState("");
   const [officeInOut, setOfficeInOut] = useState("");
+  const [category, setCategory] = useState("");
 
   const handleStartDateChange = useCallback((newDate) => {
     if (newDate) setStartDate(newDate);
@@ -53,6 +54,17 @@ const OfficeBookDashboard = () => {
 
     fetchData();
   }, [dispatch, startDate, endDate]);
+
+  const categoryOptions = useMemo(() => {
+    const allData =
+      officeBook?.flatMap((entry) => [
+        ...(entry.officeIn || []),
+        ...(entry.officeOut || []),
+      ]) || [];
+    return Array.from(
+      new Set(allData.map((item) => item.categoryName).filter(Boolean))
+    );
+  }, [officeBook]);
 
   // Base columns
   const defaultFields = useMemo(
@@ -89,6 +101,7 @@ const OfficeBookDashboard = () => {
 
   const filteredOfficeBook = useMemo(() => {
     let rowCounter = 1;
+
     const officeIn =
       officeBook?.flatMap((entry) =>
         (entry.officeIn || []).map((item) => ({
@@ -104,26 +117,33 @@ const OfficeBookDashboard = () => {
           id: rowCounter++,
         }))
       ) || [];
+
     const combined = [...officeIn, ...officeOut];
 
-    let baseData = [];
+    // Pick correct base data
+    let baseData = combined;
     if (officeInOut === "in") {
       baseData = officeIn;
     } else if (officeInOut === "out") {
       baseData = officeOut;
-    } else {
-      baseData = combined;
     }
-    // Filter by payment method if applicable
-    const filteredData = paymentMethod
+
+    // Filter by Payment Method
+    const filteredByPayment = paymentMethod
       ? baseData.filter((item) => item.modeOfPayment === paymentMethod)
       : baseData;
 
-    // Add totals row
-    const totalAmount = filteredData.reduce(
+    // Filter by Category
+    const filteredByCategory = category
+      ? filteredByPayment.filter((item) => item.categoryName === category)
+      : filteredByPayment;
+
+    // Total Row
+    const totalAmount = filteredByCategory.reduce(
       (sum, curr) => sum + (curr.amount || 0),
       0
     );
+
     const totalRow = {
       id: "Total",
       amount: totalAmount,
@@ -134,8 +154,8 @@ const OfficeBookDashboard = () => {
       remark: "",
       createDate: "",
     };
-    return [...filteredData, totalRow];
-  }, [officeBook, officeInOut, paymentMethod]);
+    return [...filteredByCategory, totalRow]; // ✅ return the filtered list
+  }, [officeBook, officeInOut, paymentMethod, category]);
 
   const headerMap = {
     id: "No.",
@@ -234,12 +254,12 @@ const OfficeBookDashboard = () => {
             <Autocomplete
               options={MODE_OF_PAYMENT_OPTIONS}
               sx={{ width: 200 }}
-              renderInput={(params) => (
-                <TextField {...params} label="Payment Method" />
-              )}
               value={paymentMethod}
               onChange={(e, value) => setPaymentMethod(value)}
               size="small"
+              renderInput={(params) => (
+                <TextField {...params} label="Payment Method" />
+              )}
             />
             <Autocomplete
               options={[
@@ -247,11 +267,8 @@ const OfficeBookDashboard = () => {
                 { label: "Office Out", value: "out" },
               ]}
               getOptionLabel={(option) => option.label}
-              isOptionEqualToValue={(opt, val) => opt.value === val.value}
+              isOptionEqualToValue={(opt, val) => opt.value === val?.value}
               sx={{ width: 200 }}
-              renderInput={(params) => (
-                <TextField {...params} label="Office In/Out" />
-              )}
               value={
                 ["in", "out"].includes(officeInOut)
                   ? {
@@ -262,6 +279,19 @@ const OfficeBookDashboard = () => {
               }
               onChange={(e, newValue) => setOfficeInOut(newValue?.value || "")}
               size="small"
+              renderInput={(params) => (
+                <TextField {...params} label="Office In/Out" />
+              )}
+            />
+            <Autocomplete
+              options={categoryOptions}
+              sx={{ width: 200 }}
+              value={category || null}
+              onChange={(e, newValue) => setCategory(newValue || "")}
+              size="small"
+              renderInput={(params) => (
+                <TextField {...params} label="Category" placeholder="All" />
+              )}
             />
           </FormGroup>
         </Stack>
