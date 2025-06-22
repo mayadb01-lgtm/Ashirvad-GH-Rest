@@ -46,18 +46,72 @@ const BankBooksDashboard = () => {
   const columns = useMemo(() => {
     if (selectedMethod) {
       return [
-        { field: "id", headerName: "Index", width: 150 },
-        { field: "createDate", headerName: "Date", width: 150 },
-        { field: selectedMethod, headerName: selectedMethod, width: 150 },
+        {
+          field: "id",
+          headerName: "Index",
+          width: 150,
+          headerAlign: "center",
+          align: "center",
+        },
+        {
+          field: "createDate",
+          headerName: "Date",
+          width: 150,
+          headerAlign: "center",
+          align: "center",
+        },
+        {
+          field: selectedMethod,
+          headerName: selectedMethod,
+          width: 150,
+          headerAlign: "center",
+          align: "center",
+        },
       ];
     } else {
       return [
-        { field: "id", headerName: "Index", width: 150 },
-        { field: "createDate", headerName: "Date", width: 150 },
-        { field: "Cash", headerName: "Cash", width: 150 },
-        { field: "Card", headerName: "Card", width: 150 },
-        { field: "PP", headerName: "PP", width: 150 },
-        { field: "grandTotal", headerName: "Grand Total", width: 150 },
+        {
+          field: "id",
+          headerName: "Index",
+          width: 150,
+          headerAlign: "center",
+          align: "center",
+        },
+        {
+          field: "createDate",
+          headerName: "Date",
+          width: 150,
+          headerAlign: "center",
+          align: "center",
+        },
+        {
+          field: "Cash",
+          headerName: "Cash",
+          width: 150,
+          headerAlign: "center",
+          align: "center",
+        },
+        {
+          field: "Card",
+          headerName: "Card",
+          width: 150,
+          headerAlign: "center",
+          align: "center",
+        },
+        {
+          field: "PP",
+          headerName: "PP",
+          width: 150,
+          headerAlign: "center",
+          align: "center",
+        },
+        {
+          field: "grandTotal",
+          headerName: "Grand Total",
+          width: 150,
+          headerAlign: "center",
+          align: "center",
+        },
       ];
     }
   }, [selectedMethod]);
@@ -152,7 +206,7 @@ const BankBooksDashboard = () => {
         }}
       >
         <Typography variant="h5" fontWeight={600} color="text.primary">
-          Bank Book
+          Restaurant Bank Book
         </Typography>
       </Box>
       <Stack direction="row" spacing={2} alignItems="center">
@@ -204,10 +258,21 @@ const BankBooksDashboard = () => {
           rows={preparedEntries}
           columns={columns}
           pageSize={5}
+          WebkitFontSmoothing="auto"
+          letterSpacing={"normal"}
           sx={{
             mt: 2,
             height: 400,
             "& .MuiDataGrid-columnHeaderTitle": {
+              fontWeight: "bold",
+            },
+            "& .MuiDataGrid-cell:hover": {
+              color: "primary.main",
+            },
+            "& .MuiDataGrid-columnHeader, .MuiDataGrid-cell": {
+              border: "1px solid #f0f0f0",
+            },
+            "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
               fontWeight: "bold",
             },
           }}

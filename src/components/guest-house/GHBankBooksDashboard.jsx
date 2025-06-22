@@ -58,7 +58,9 @@ const GHBankBooksDashboard = () => {
 
       methodsToInclude.forEach((method) => {
         const totalByMethod = entry.entry
-          .filter((item) => item.modeOfPayment === method)
+          .filter(
+            (item) => item.modeOfPayment === method && item.period !== "UnPaid"
+          )
           .reduce((sum, item) => sum + item.rate, 0);
 
         row[method] = totalByMethod;
@@ -69,7 +71,7 @@ const GHBankBooksDashboard = () => {
     });
 
     // Total row
-    const totalRow = { id: "Total", date: "Total", total: 0 };
+    const totalRow = { id: "Total", date: "", total: 0 };
     const methodsToInclude = selectedMethod
       ? [selectedMethod]
       : GH_MODE_OF_PAYMENT_OPTIONS;
@@ -105,7 +107,7 @@ const GHBankBooksDashboard = () => {
           {
             field: selectedMethod,
             headerName: selectedMethod,
-            width: 120,
+            width: 100,
             headerAlign: "center",
             align: "center",
           },
@@ -113,7 +115,7 @@ const GHBankBooksDashboard = () => {
       : GH_MODE_OF_PAYMENT_OPTIONS.map((method) => ({
           field: method,
           headerName: method,
-          width: 120,
+          width: 100,
           headerAlign: "center",
           align: "center",
         }));
@@ -122,7 +124,7 @@ const GHBankBooksDashboard = () => {
       {
         field: "total",
         headerName: "Total",
-        width: 120,
+        width: 100,
         headerAlign: "center",
         align: "center",
       },
@@ -224,6 +226,9 @@ const GHBankBooksDashboard = () => {
             },
             "& .MuiDataGrid-columnHeader, .MuiDataGrid-cell": {
               border: "1px solid #f0f0f0",
+            },
+            "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
+              fontWeight: "bold",
             },
           }}
         />

@@ -23,6 +23,7 @@ import {
   getUnPaidEntries,
   updateEntryByDate,
 } from "../redux/actions/entryAction";
+import { getGHRoomsFromSeed } from "../redux/actions/roomAction";
 import "dayjs/locale/en-gb";
 import {
   paymentColors,
@@ -34,7 +35,6 @@ import {
 } from "../utils/utils";
 import PendingJamaTable from "../components/PendingJamaTable";
 import ModernLoader, { AccordionSection, PaymentSummary } from "../utils/util";
-import { getGHRoomsFromSeed } from "../redux/actions/roomAction";
 const PendingJamaGrid = React.lazy(
   () => import("../components/PendingJamaGrid")
 );

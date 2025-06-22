@@ -36,6 +36,7 @@ import GHBankBooksDashboard from "../components/guest-house/GHBankBooksDashboard
 import OfficeCategoryDashboard from "../components/office/OfficeCategoryDashboard";
 import OfficeMerged from "../components/office/OfficeMerged";
 import GHUpaidEntriesDashboard from "../components/guest-house/GHUpaidEntriesDashboard";
+import OfficeHome from "../components/office/OfficeHome";
 
 const DashboardHeader = ({ onNavigate }) => {
   const navigate = useNavigate();
@@ -131,7 +132,7 @@ const NAVIGATION = [
       },
       {
         segment: "upaad-report",
-        title: "Rest - Upaad Entries",
+        title: "Rest - Upaad Report",
         icon: <PaymentsIcon />,
       },
       {
@@ -162,6 +163,7 @@ const NAVIGATION = [
     icon: <BadgeIcon />,
   },
   { kind: "header", title: "Office Book" },
+  { segment: "office", title: "Office Graph", icon: <PieChartIcon /> },
   { segment: "office-book", title: "Office Book", icon: <LooksOneIcon /> },
   {
     segment: "office-category",
@@ -225,6 +227,7 @@ const DashboardPage = () => {
     { path: "manage-staff", element: <RestStaffDashboard /> },
     { path: "categories-expenses", element: <RestCategoryExpensesDashboard /> },
     { path: "pending-users", element: <RestPendingUsersDashboard /> },
+    { path: "office", element: <OfficeHome /> },
     { path: "office-book", element: <OfficeBookDashboard /> },
     { path: "office-category", element: <OfficeCategoryDashboard /> },
     { path: "merged-reports", element: <OfficeMerged /> },

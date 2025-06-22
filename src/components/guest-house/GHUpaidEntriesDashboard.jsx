@@ -110,7 +110,7 @@ const GHUpaidEntriesDashboard = () => {
         date: entry.date,
         UnPaid: unpaidTotal,
         Paid: paidTotal,
-        total: unpaidTotal,
+        total: unpaidTotal - paidTotal,
       };
     });
 
@@ -154,7 +154,7 @@ const GHUpaidEntriesDashboard = () => {
         }}
       >
         <Typography variant="h5" fontWeight={600} color="text.primary">
-          Guest House - Unpaid Report
+          Guest House - UnPaid Report
         </Typography>
       </Box>
       <Stack direction="row" spacing={2} alignItems="center">
@@ -207,6 +207,9 @@ const GHUpaidEntriesDashboard = () => {
             },
             "& .MuiDataGrid-columnHeader, .MuiDataGrid-cell": {
               border: "1px solid #f0f0f0",
+            },
+            "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
+              fontWeight: "bold",
             },
           }}
         />

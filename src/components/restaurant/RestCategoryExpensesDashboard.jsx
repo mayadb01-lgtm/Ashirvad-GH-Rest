@@ -227,14 +227,31 @@ const CategoriesExpensesDashboard = () => {
           Categories and Expense Management
         </Typography>
       </Box>
-      <TextField
-        label="Search Categories"
-        variant="outlined"
-        size="small"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        sx={{ mt: 2, width: "50%" }}
-      />
+      <Stack
+        direction="row"
+        spacing={2}
+        alignItems="center"
+        justifyContent="center"
+        width="100%"
+      >
+        <TextField
+          label="Search Categories"
+          variant="outlined"
+          size="small"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          sx={{ mt: 2, width: "50%" }}
+        />
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<Add />}
+          onClick={() => handleOpen()}
+          sx={{ mt: 2 }}
+        >
+          Create Category
+        </Button>
+      </Stack>
       {loading ? (
         <CircularProgress sx={{ mt: 2 }} />
       ) : (
@@ -269,15 +286,6 @@ const CategoriesExpensesDashboard = () => {
           </Box>
         </Box>
       )}
-      <Button
-        variant="contained"
-        color="primary"
-        startIcon={<Add />}
-        onClick={() => handleOpen()}
-        sx={{ mt: 2 }}
-      >
-        Create Category
-      </Button>
       <Modal
         open={open}
         onClose={handleClose}

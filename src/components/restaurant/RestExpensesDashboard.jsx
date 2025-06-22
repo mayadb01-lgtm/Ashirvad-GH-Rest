@@ -47,7 +47,7 @@ const RestExpensesDashboard = () => {
     {
       field: "id",
       headerName: "Index",
-      width: 150,
+      width: 100,
       headerAlign: "center",
       align: "center",
     },
@@ -61,14 +61,14 @@ const RestExpensesDashboard = () => {
     {
       field: "expenseName",
       headerName: "Expense Name",
-      width: 150,
+      width: 250,
       headerAlign: "center",
       align: "center",
     },
     {
       field: "categoryName",
       headerName: "Category Name",
-      width: 150,
+      width: 250,
       headerAlign: "center",
       align: "center",
     },
@@ -238,11 +238,21 @@ const RestExpensesDashboard = () => {
         <DataGrid
           rows={preparedEntries}
           columns={columns}
-          pageSize={5}
+          WebkitFontSmoothing="auto"
+          letterSpacing={"normal"}
           sx={{
             mt: 2,
             height: 400,
             "& .MuiDataGrid-columnHeaderTitle": {
+              fontWeight: "bold",
+            },
+            "& .MuiDataGrid-cell:hover": {
+              color: "primary.main",
+            },
+            "& .MuiDataGrid-columnHeader, .MuiDataGrid-cell": {
+              border: "1px solid #f0f0f0",
+            },
+            "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
               fontWeight: "bold",
             },
           }}

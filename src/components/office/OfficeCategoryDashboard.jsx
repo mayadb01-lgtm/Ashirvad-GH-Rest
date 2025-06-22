@@ -229,22 +229,47 @@ const OfficeCategoryDashboard = () => {
   );
 
   return (
-    <Box p={3}>
-      <Typography variant="h5" mb={2}>
-        Manage Office Categories & Expenses
-      </Typography>
-      <Stack direction="row" spacing={2} mb={3}>
+    <Box
+      sx={{
+        py: 2,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        width: "100%",
+      }}
+    >
+      <Box
+        sx={{
+          alignItems: "center",
+          py: 3,
+        }}
+      >
+        <Typography variant="h5" fontWeight={600} color="text.primary">
+          Manage Office Categories & Expenses
+        </Typography>
+      </Box>
+
+      <Stack
+        direction="row"
+        spacing={2}
+        alignItems="center"
+        justifyContent="center"
+        width="100%"
+      >
         <TextField
           label="Search"
+          variant="outlined"
           size="small"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          sx={{ flex: 1 }}
+          sx={{ mt: 2, width: "50%" }}
         />
         <Button
           variant="contained"
           startIcon={<Add />}
           onClick={() => handleOpen()}
+          color="primary"
+          sx={{ mt: 2 }}
         >
           Create
         </Button>

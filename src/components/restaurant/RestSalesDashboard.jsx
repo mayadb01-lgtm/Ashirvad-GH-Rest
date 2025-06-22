@@ -42,14 +42,32 @@ const RestSalesDashboard = () => {
   }, [dispatch, startDate, endDate]);
 
   const columns = [
-    { field: "id", headerName: "Index", width: 150 },
-    { field: "date", headerName: "Date", width: 150 },
-    { field: "total", headerName: "Total", width: 150 },
+    {
+      field: "id",
+      headerName: "Index",
+      width: 100,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "date",
+      headerName: "Date",
+      width: 150,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "total",
+      headerName: "Total",
+      width: 150,
+      headerAlign: "center",
+      align: "center",
+    },
   ];
 
   const totalRow = {
     id: "Total",
-    date: "Total",
+    date: "",
     total:
       restEntries &&
       restEntries.reduce((total, entry) => total + entry.grandTotal, 0),
@@ -109,7 +127,7 @@ const RestSalesDashboard = () => {
         }}
       >
         <Typography variant="h5" fontWeight={600} color="text.primary">
-          Restaurant Sales Dashboard
+          Restaurant Sales Report
         </Typography>
       </Box>
       <Stack direction="row" spacing={2} alignItems="center">
@@ -122,7 +140,7 @@ const RestSalesDashboard = () => {
             value={startDate}
             onChange={handleStartDateChange}
             format="DD-MM-YYYY"
-            renderInput={(params) => <TextField {...params} size="small" />}
+            textField={(params) => <TextField {...params} size="small" />}
             views={["year", "month", "day"]}
           />
           <Typography>-</Typography>
@@ -130,7 +148,7 @@ const RestSalesDashboard = () => {
             value={endDate}
             onChange={handleEndDateChange}
             format="DD-MM-YYYY"
-            renderInput={(params) => <TextField {...params} size="small" />}
+            textField={(params) => <TextField {...params} size="small" />}
             views={["year", "month", "day"]}
           />
         </LocalizationProvider>
@@ -142,37 +160,6 @@ const RestSalesDashboard = () => {
         >
           Export to Excel
         </Button>
-        {/* Quick Date Range Selection */}
-        {/* <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => setQuickDateRange(7)}
-          >
-            Last 7 Days
-          </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => setQuickDateRange(30)}
-          >
-            Last 30 Days
-          </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => setQuickDateRange(90)}
-          >
-            Last 90 Days
-          </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => setQuickDateRange(365)}
-          >
-            Last 12 Months
-          </Button>
-      </Stack> */}
       </Stack>
       {loading ? (
         <CircularProgress sx={{ mt: 2 }} />
@@ -185,6 +172,15 @@ const RestSalesDashboard = () => {
             mt: 2,
             height: 400,
             "& .MuiDataGrid-columnHeaderTitle": {
+              fontWeight: "bold",
+            },
+            "& .MuiDataGrid-cell:hover": {
+              color: "primary.main",
+            },
+            "& .MuiDataGrid-columnHeader, .MuiDataGrid-cell": {
+              border: "1px solid #f0f0f0",
+            },
+            "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
               fontWeight: "bold",
             },
           }}

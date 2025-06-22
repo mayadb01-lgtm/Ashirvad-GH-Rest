@@ -229,6 +229,9 @@ const GHDashboard = () => {
             "& .MuiDataGrid-columnHeader, .MuiDataGrid-cell": {
               border: "1px solid #f0f0f0",
             },
+            "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
+              fontWeight: "bold",
+            },
           }}
           getRowId={(row) => row._id}
         />

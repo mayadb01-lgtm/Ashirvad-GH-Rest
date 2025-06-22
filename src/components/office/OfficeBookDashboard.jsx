@@ -81,6 +81,7 @@ const OfficeBookDashboard = () => {
   // Base columns
   const defaultFields = useMemo(
     () => [
+      { field: "inOrOut", headerName: "In/Out", width: 100 },
       { field: "amount", headerName: "Amount", width: 120 },
       { field: "modeOfPayment", headerName: "Mode", width: 120 },
       { field: "fullname", headerName: "Full Name", width: 180 },
@@ -116,12 +117,12 @@ const OfficeBookDashboard = () => {
 
     const officeIn =
       officeBook?.flatMap((entry) =>
-        (entry.officeIn || []).map((item) => ({ ...item, id: rowCounter++ }))
+        (entry.officeIn || []).map((item) => ({ ...item, id: rowCounter++, inOrOut: "IN" }))
       ) || [];
 
     const officeOut =
       officeBook?.flatMap((entry) =>
-        (entry.officeOut || []).map((item) => ({ ...item, id: rowCounter++ }))
+        (entry.officeOut || []).map((item) => ({ ...item, id: rowCounter++, inOrOut: "OUT" }))
       ) || [];
 
     const combined = [...officeIn, ...officeOut];
@@ -149,6 +150,7 @@ const OfficeBookDashboard = () => {
 
     const totalRow = {
       id: "Total",
+      inOrOut: officeInOut,
       amount: totalAmount,
       modeOfPayment: "",
       fullname: "",
@@ -163,6 +165,7 @@ const OfficeBookDashboard = () => {
 
   const headerMap = {
     id: "No.",
+    inOrOut: "In/Out",
     amount: "Amount",
     modeOfPayment: "Mode of Payment",
     fullname: "Full Name",
@@ -315,13 +318,25 @@ const OfficeBookDashboard = () => {
             rows={filteredOfficeBook}
             columns={columns}
             pageSize={5}
+            WebkitFontSmoothing="auto"
+            letterSpacing={"normal"}
             sx={{
               mt: 2,
-              height: 420,
+              height: 400,
               width: "cover",
-              "& .MuiDataGrid-columnHeaderTitle": { fontWeight: "bold" },
+              "& .MuiDataGrid-columnHeaderTitle": {
+                fontWeight: "bold",
+              },
+              "& .MuiDataGrid-cell:hover": {
+                color: "primary.main",
+              },
+              "& .MuiDataGrid-columnHeader, .MuiDataGrid-cell": {
+                border: "1px solid #f0f0f0",
+              },
+              "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
+                fontWeight: "bold",
+              },
             }}
-            disableSelectionOnClick
           />
         ) : (
           <Typography variant="subtitle1" color="text.secondary" mt={2}>

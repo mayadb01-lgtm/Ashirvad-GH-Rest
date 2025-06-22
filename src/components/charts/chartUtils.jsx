@@ -72,6 +72,44 @@ export const formatChartData = (rawData, type) => {
           : "0.00",
       }));
     }
+    case "officeCategoryExpenses": {
+      const categoryTotals = {};
+      rawData.map((entry) =>
+        entry?.officeIn?.map(({ categoryName, amount = 0 }) => {
+          if (!categoryName) return;
+          categoryTotals[categoryName] =
+            (categoryTotals[categoryName] || 0) + amount;
+        })
+      );
+      rawData.map((entry) =>
+        entry?.officeOut?.map(({ categoryName, amount = 0 }) => {
+          if (!categoryName) return;
+          categoryTotals[categoryName] =
+            (categoryTotals[categoryName] || 0) + amount;
+        })
+      );
+      return Object.entries(categoryTotals).map(([name, value]) => ({
+        name,
+        value,
+      }));
+    }
+    case "officeInOut": {
+      const officeInOut = {};
+      rawData.map((entry) =>
+        entry?.officeIn?.map(({ amount = 0 }) => {
+          officeInOut.IN = (officeInOut.in || 0) + amount;
+        })
+      );
+      rawData.map((entry) =>
+        entry?.officeOut?.map(({ amount = 0 }) => {
+          officeInOut.OUT = (officeInOut.out || 0) + amount;
+        })
+      );
+      return Object.entries(officeInOut).map(([name, value]) => ({
+        name,
+        value,
+      }));
+    }
     default:
       return [];
   }

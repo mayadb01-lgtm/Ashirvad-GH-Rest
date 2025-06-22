@@ -43,10 +43,34 @@ const RestUpaadEntriesDashboard = () => {
   }, [dispatch, startDate, endDate]);
 
   const columns = [
-    { field: "id", headerName: "Index", width: 150 },
-    { field: "createDate", headerName: "Date", width: 150 },
-    { field: "fullname", headerName: "Staff Name", width: 150 },
-    { field: "amount", headerName: "Amount", width: 150 },
+    {
+      field: "id",
+      headerName: "Index",
+      width: 100,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "createDate",
+      headerName: "Date",
+      width: 150,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "fullname",
+      headerName: "Staff Name",
+      width: 300,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "amount",
+      headerName: "Amount",
+      width: 150,
+      headerAlign: "center",
+      align: "center",
+    },
   ];
 
   const selectedStaffEntries =
@@ -59,7 +83,7 @@ const RestUpaadEntriesDashboard = () => {
     const totalRow = {
       id: "Total",
       createDate: "",
-      fullname: "Total",
+      fullname: "",
       amount: selectedStaff
         ? selectedStaffEntries
             .map((entry) => entry.amount)
@@ -137,7 +161,7 @@ const RestUpaadEntriesDashboard = () => {
         }}
       >
         <Typography variant="h5" fontWeight={600} color="text.primary">
-          Restaurant Upaad Dashboard
+          Restaurant Upaad Report
         </Typography>
       </Box>
       <Stack direction="row" spacing={2} alignItems="center">
@@ -150,7 +174,7 @@ const RestUpaadEntriesDashboard = () => {
             value={startDate}
             onChange={handleStartDateChange}
             format="DD-MM-YYYY"
-            renderInput={(params) => <TextField {...params} size="small" />}
+            textField={(params) => <TextField {...params} size="small" />}
             views={["year", "month", "day"]}
           />
           <Typography>-</Typography>
@@ -158,7 +182,7 @@ const RestUpaadEntriesDashboard = () => {
             value={endDate}
             onChange={handleEndDateChange}
             format="DD-MM-YYYY"
-            renderInput={(params) => <TextField {...params} size="small" />}
+            textField={(params) => <TextField {...params} size="small" />}
             views={["year", "month", "day"]}
           />
         </LocalizationProvider>
@@ -197,6 +221,15 @@ const RestUpaadEntriesDashboard = () => {
             mt: 2,
             height: 400,
             "& .MuiDataGrid-columnHeaderTitle": {
+              fontWeight: "bold",
+            },
+            "& .MuiDataGrid-cell:hover": {
+              color: "primary.main",
+            },
+            "& .MuiDataGrid-columnHeader, .MuiDataGrid-cell": {
+              border: "1px solid #f0f0f0",
+            },
+            "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
               fontWeight: "bold",
             },
           }}

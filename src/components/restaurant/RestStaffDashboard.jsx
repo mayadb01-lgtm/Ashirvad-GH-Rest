@@ -9,6 +9,7 @@ import {
   Modal,
   TextField,
   Typography,
+  Stack,
 } from "@mui/material";
 import { Add, Edit, Delete } from "@mui/icons-material";
 import {
@@ -79,7 +80,7 @@ const RestStaffDashboard = () => {
     {
       field: "index",
       headerName: "Index",
-      width: 150,
+      width: 100,
       headerAlign: "center",
       align: "center",
       renderCell: (params) => (
@@ -96,14 +97,14 @@ const RestStaffDashboard = () => {
     {
       field: "fullname",
       headerName: "Full Name",
-      width: 300,
+      width: 250,
       headerAlign: "center",
       align: "center",
     },
     {
       field: "mobileNumber",
       headerName: "Mobile Number",
-      width: 300,
+      width: 250,
       headerAlign: "center",
       align: "center",
     },
@@ -147,15 +148,32 @@ const RestStaffDashboard = () => {
         </Typography>
       </Box>
       {/* Search Bar */}
-      <TextField
-        label="Search Staff"
-        variant="outlined"
-        size="small"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        sx={{ mt: 2, width: "50%" }}
-        slot="start"
-      />
+      <Stack
+        direction="row"
+        spacing={2}
+        alignItems="center"
+        justifyContent="center"
+        width="100%"
+      >
+        <TextField
+          label="Search Staff"
+          variant="outlined"
+          size="small"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          sx={{ mt: 2, width: "50%" }}
+          slot="start"
+        />
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<Add />}
+          onClick={() => handleOpen()}
+          sx={{ mt: 2 }}
+        >
+          Create Staff
+        </Button>
+      </Stack>
 
       {loading ? (
         <CircularProgress sx={{ mt: 2 }} />
@@ -166,23 +184,25 @@ const RestStaffDashboard = () => {
             columns={columns}
             pageSize={5}
             getRowId={(row) => row._id}
+            WebkitFontSmoothing="auto"
+            letterSpacing={"normal"}
             sx={{
               mt: 2,
               height: 400,
               "& .MuiDataGrid-columnHeaderTitle": {
                 fontWeight: "bold",
               },
+              "& .MuiDataGrid-cell:hover": {
+                color: "primary.main",
+              },
+              "& .MuiDataGrid-columnHeader, .MuiDataGrid-cell": {
+                border: "1px solid #f0f0f0",
+              },
+              "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
+                fontWeight: "bold",
+              },
             }}
           />
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<Add />}
-            onClick={() => handleOpen()}
-            sx={{ mt: 2 }}
-          >
-            Create Staff
-          </Button>
         </>
       )}
 

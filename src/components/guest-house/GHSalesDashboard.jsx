@@ -68,7 +68,7 @@ const GHSalesDashboard = () => {
 
   const totalRow = {
     id: "Total",
-    date: "Total",
+    date: "",
     total:
       entries &&
       entries.length > 0 &&
@@ -149,7 +149,7 @@ const GHSalesDashboard = () => {
         }}
       >
         <Typography variant="h5" fontWeight={600} color="text.primary">
-          Guest House Sales Dashboard
+          Guest House Sales Report
         </Typography>
       </Box>
       <Stack direction="row" spacing={2} alignItems="center">
@@ -161,7 +161,7 @@ const GHSalesDashboard = () => {
             value={startDate}
             onChange={handleStartDateChange}
             format="DD-MM-YYYY"
-            renderInput={(params) => <TextField {...params} size="small" />}
+            textField={(params) => <TextField {...params} size="small" />}
             views={["year", "month", "day"]}
           />
           <Typography>-</Typography>
@@ -169,7 +169,7 @@ const GHSalesDashboard = () => {
             value={endDate}
             onChange={handleEndDateChange}
             format="DD-MM-YYYY"
-            renderInput={(params) => <TextField {...params} size="small" />}
+            textField={(params) => <TextField {...params} size="small" />}
             views={["year", "month", "day"]}
           />
         </LocalizationProvider>
@@ -202,6 +202,9 @@ const GHSalesDashboard = () => {
             },
             "& .MuiDataGrid-columnHeader, .MuiDataGrid-cell": {
               border: "1px solid #f0f0f0",
+            },
+            "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
+              fontWeight: "bold",
             },
           }}
         />

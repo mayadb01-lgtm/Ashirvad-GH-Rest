@@ -179,20 +179,27 @@ const RestPendingUsersDashboard = () => {
           Restaurant Pending Users
         </Typography>
       </Box>
-      <Stack direction="row" spacing={2}>
+      <Stack
+        direction="row"
+        spacing={2}
+        alignItems="center"
+        justifyContent="center"
+        width="100%"
+      >
         <TextField
           label="Search Pending User"
           variant="outlined"
           size="small"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          sx={{ mt: 2 }}
+          sx={{ mt: 2, width: "50%" }}
           slot="start"
         />
         <Button
-          variant="outlined"
+          variant="contained"
           color="primary"
           onClick={handleExportToExcel}
+          sx={{ mt: 2 }}
         >
           Export to Excel
         </Button>
@@ -211,6 +218,15 @@ const RestPendingUsersDashboard = () => {
               mt: 2,
               height: 400,
               "& .MuiDataGrid-columnHeaderTitle": {
+                fontWeight: "bold",
+              },
+              "& .MuiDataGrid-cell:hover": {
+                color: "primary.main",
+              },
+              "& .MuiDataGrid-columnHeader, .MuiDataGrid-cell": {
+                border: "1px solid #f0f0f0",
+              },
+              "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
                 fontWeight: "bold",
               },
             }}
