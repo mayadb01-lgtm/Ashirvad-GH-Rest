@@ -100,6 +100,7 @@ const RestEntryPage = () => {
   const [grandTotal, setGrandTotal] = useState(0);
   const [computerAmount, setComputerAmount] = useState(0);
   const [extraAmount, setExtraAmount] = useState(0);
+
   useMemo(() => {
     const total = restUpadData.reduce((acc, row) => {
       return acc + Number(row.amount);
@@ -110,7 +111,7 @@ const RestEntryPage = () => {
   useMemo(() => {
     const restPendingTotal = restPendingData.reduce((acc, row) => {
       return acc + Number(row.amount);
-    });
+    }, 0);
     const restPendingUsersTotal = restPendingUsersData.reduce((acc, row) => {
       return acc + Number(row.amount);
     }, 0);

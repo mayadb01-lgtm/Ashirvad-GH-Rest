@@ -185,6 +185,58 @@ router.get("/get-upad-entries/:startDate/:endDate", async (req, res) => {
   }
 });
 
+// Get Aapvana Entries by Date Range
+router.get("/get-aapvana-entries/:startDate/:endDate", async (req, res) => {
+  try {
+    const start = dayjs(req.params.startDate, "DD-MM-YYYY");
+    const end = dayjs(req.params.endDate, "DD-MM-YYYY");
+    const entries = await RestEntry.find({
+      entryCreateDate: {
+        $gte: start.startOf("day").toDate(),
+        $lte: end.endOf("day").toDate(),
+      },
+    });
+
+    const aapvanaEntries = entries.flatMap((entry) => entry.pending);
+
+    res.status(200).json({
+      success: true,
+      data: aapvanaEntries,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// Get Levana Entries by Date Range
+router.get("/get-levana-entries/:startDate/:endDate", async (req, res) => {
+  try {
+    const start = dayjs(req.params.startDate, "DD-MM-YYYY");
+    const end = dayjs(req.params.endDate, "DD-MM-YYYY");
+    const entries = await RestEntry.find({
+      entryCreateDate: {
+        $gte: start.startOf("day").toDate(),
+        $lte: end.endOf("day").toDate(),
+      },
+    });
+
+    const levanaEntries = entries.flatMap((entry) => entry.pendingUsers);
+
+    res.status(200).json({
+      success: true,
+      data: levanaEntries,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
 // Get Expenses Entries by Date Range
 router.get("/get-expenses-entries/:startDate/:endDate", async (req, res) => {
   try {

@@ -72,40 +72,30 @@ export const formatChartData = (rawData, type) => {
           : "0.00",
       }));
     }
-    case "officeCategoryExpenses": {
-      const categoryTotals = {};
+    case "officeCategoryExpensesIn": {
+      const categoryOfficeInTotals = {};
       rawData.map((entry) =>
         entry?.officeIn?.map(({ categoryName, amount = 0 }) => {
           if (!categoryName) return;
-          categoryTotals[categoryName] =
-            (categoryTotals[categoryName] || 0) + amount;
+          categoryOfficeInTotals[categoryName] =
+            (categoryOfficeInTotals[categoryName] || 0) + amount;
         })
       );
-      rawData.map((entry) =>
-        entry?.officeOut?.map(({ categoryName, amount = 0 }) => {
-          if (!categoryName) return;
-          categoryTotals[categoryName] =
-            (categoryTotals[categoryName] || 0) + amount;
-        })
-      );
-      return Object.entries(categoryTotals).map(([name, value]) => ({
+      return Object.entries(categoryOfficeInTotals).map(([name, value]) => ({
         name,
         value,
       }));
     }
-    case "officeInOut": {
-      const officeInOut = {};
+    case "officeCategoryExpensesOut": {
+      const categoryOfficeOutTotals = {};
       rawData.map((entry) =>
-        entry?.officeIn?.map(({ amount = 0 }) => {
-          officeInOut.IN = (officeInOut.in || 0) + amount;
+        entry?.officeOut?.map(({ categoryName, amount = 0 }) => {
+          if (!categoryName) return;
+          categoryOfficeOutTotals[categoryName] =
+            (categoryOfficeOutTotals[categoryName] || 0) + amount;
         })
       );
-      rawData.map((entry) =>
-        entry?.officeOut?.map(({ amount = 0 }) => {
-          officeInOut.OUT = (officeInOut.out || 0) + amount;
-        })
-      );
-      return Object.entries(officeInOut).map(([name, value]) => ({
+      return Object.entries(categoryOfficeOutTotals).map(([name, value]) => ({
         name,
         value,
       }));

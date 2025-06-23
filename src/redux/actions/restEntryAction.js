@@ -140,6 +140,46 @@ export const getUpadByDateRange = (startDate, endDate) => async (dispatch) => {
   }
 };
 
+// Get Aapvana By Date Range
+export const getAapvanaByDateRange =
+  (startDate, endDate) => async (dispatch) => {
+    try {
+      dispatch({ type: "GetAapvanaByDateRangeRequest" });
+      const { data } = await axios.get(
+        `${import.meta.env.VITE_REACT_APP_SERVER_URL}/restEntry/get-aapvana-entries/${startDate}/${endDate}`
+      );
+      console.log("Aapvana fetched successfully", data);
+      dispatch({ type: "GetAapvanaByDateRangeSuccess", payload: data.data });
+    } catch (error) {
+      dispatch({
+        type: "GetAapvanaByDateRangeFailure",
+        payload: error?.response?.data?.message,
+      });
+      toast.error(error?.response?.data?.message);
+      console.log("Error Catch", error?.response?.data?.message);
+    }
+  };
+
+// Get Levana by Date Range
+export const getLevanaByDateRange =
+  (startDate, endDate) => async (dispatch) => {
+    try {
+      dispatch({ type: "GetLevanaByDateRangeRequest" });
+      const { data } = await axios.get(
+        `${import.meta.env.VITE_REACT_APP_SERVER_URL}/restEntry/get-levana-entries/${startDate}/${endDate}`
+      );
+      console.log("Levana fetched successfully", data);
+      dispatch({ type: "GetLevanaByDateRangeSuccess", payload: data.data });
+    } catch (error) {
+      dispatch({
+        type: "GetLevanaByDateRangeFailure",
+        payload: error?.response?.data?.message,
+      });
+      toast.error(error?.response?.data?.message);
+      console.log("Error Catch", error?.response?.data?.message);
+    }
+  };
+
 // Get Expenses by Date Range
 export const getExpensesByDateRange =
   (startDate, endDate) => async (dispatch) => {

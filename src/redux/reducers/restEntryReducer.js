@@ -85,6 +85,32 @@ const restEntryReducer = createReducer(initialState, (builder) => {
       state.error = action.payload;
       state.restEntries = [];
     })
+    // Get Aapvana Entry By Date Range
+    .addCase("GetAapvanaByDateRangeRequest", (state) => {
+      state.loading = true;
+    })
+    .addCase("GetAapvanaByDateRangeSuccess", (state, action) => {
+      state.loading = false;
+      state.restEntries = action.payload;
+    })
+    .addCase("GetAapvanaByDateRangeFailure", (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+      state.restEntries = [];
+    })
+    // Get Levana Entry By Date Range
+    .addCase("GetLevanaByDateRangeRequest", (state) => {
+      state.loading = true;
+    })
+    .addCase("GetLevanaByDateRangeSuccess", (state, action) => {
+      state.loading = false;
+      state.restEntries = action.payload;
+    })
+    .addCase("GetLevanaByDateRangeFailure", (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+      state.restEntries = [];
+    })
     // Get Expense Entry By Date
     .addCase("GetExpensesByDateRangeRequest", (state) => {
       state.loading = true;
