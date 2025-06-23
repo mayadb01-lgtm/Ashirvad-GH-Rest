@@ -108,7 +108,7 @@ const OfficeMergedGraph = () => {
   const officeSalesTotal =
     (officeSalesEntries &&
       officeSalesEntries
-        ?.filter((entry) => entry.categoryName !== "Banquet")
+        ?.filter((entry) => entry.categoryName !== "Pending")
         ?.reduce((sum, entry) => sum + entry.amount, 0)) ||
     0;
   const officeBanquetTotal =

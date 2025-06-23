@@ -61,11 +61,11 @@ officeBookSchema.pre("save", function (next) {
 const officeCategorySchema = new Schema(
   {
     categoryName: { type: String, required: true },
-    categoryDescription: { type: String, required: true },
+    categoryDescription: { type: String },
     expense: [
       {
-        expenseName: { type: String, required: true },
-        expenseDescription: { type: String, required: true },
+        expenseName: { type: String },
+        expenseDescription: { type: String },
       },
     ],
   },
@@ -73,6 +73,25 @@ const officeCategorySchema = new Schema(
     timestamps: true,
   }
 );
+
+officeCategorySchema.pre("save", async function (next) {
+  const category = await OfficeCategory.findOne({ categoryName: "Pending" });
+  const pendingUsers = await RestPending.find({});
+  if (!category) {
+    const newCategory = new OfficeCategory({
+      categoryName: "Pending",
+      categoryDescription: "Pending",
+      expense: [
+        ...pendingUsers.map((user) => ({
+          expenseName: user.fullname,
+          expenseDescription: user.fullname,
+        })),
+      ],
+    });
+    await newCategory.save();
+  }
+  next();
+});
 
 export const OfficeCategory = model("OfficeCategory", officeCategorySchema);
 

@@ -19,13 +19,13 @@ import { useAppSelector } from "../redux/hooks";
 import { DeleteOutline } from "@mui/icons-material";
 import toast from "react-hot-toast";
 import { useEffect, useMemo } from "react";
-import { paymentColors } from "../utils/utils";
+import { DATE_FORMAT, paymentColors } from "../utils/utils";
 
 dayjs.locale("en-gb");
 
 const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
   const { entries, unpaidEntries } = useAppSelector((state) => state.entry);
-
+  // Helper to build empty rows
   const initializePendingJamaRows = () => {
     return Array.from({ length: 10 }, (_, idx) => ({
       id: idx + 1,
@@ -45,55 +45,51 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
       noOfPeople: 0,
       discount: 0,
       paidDate: "",
-      isPaid: false,
+      isPaid: true,
     }));
   };
 
+  // Sync pendingJamaRows when entries change
   useEffect(() => {
-    if (entries && entries.length === 0) {
+    if (!entries || entries.length === 0) {
       setPendingJamaRows(initializePendingJamaRows());
+      return;
     }
-    if (entries && entries.length > 0) {
-      let initialRows = initializePendingJamaRows();
-      const filteredEntries = entries.filter(
-        (entry) => entry?.period && entry.period === "UnPaid"
-      );
-      const updateRowsWithEntries = (rows, entries) => {
-        return rows.map((row) => {
-          const entry = entries.find((entry) => entry.id == row.id);
-          if (entry) {
-            return {
-              ...row,
-              id: entry.id,
-              roomNo: entry.roomNo,
-              cost: entry.cost,
-              roomType: entry.roomType,
-              rate: entry.rate,
-              noOfPeople: entry.noOfPeople,
-              checkInTime: entry.checkInTime,
-              checkOutTime: entry.checkOutTime,
-              type: entry.type,
-              modeOfPayment: entry.modeOfPayment,
-              fullname: entry.fullname,
-              mobileNumber: entry.mobileNumber,
-              createDate: entry.createDate,
-              period: entry.period,
-              entryCreateDate: entry.entryCreateDate,
-              date: entry.date,
-              discount: entry?.discount || 0,
-              paidDate: entry?.paidDate,
-              isPaid: entry?.isPaid,
-            };
-          }
-          return row;
-        });
-      };
-      let updatedRows = initialRows;
-      if (filteredEntries.length > 0) {
-        updatedRows = updateRowsWithEntries(initialRows, filteredEntries);
+
+    const initialRows = initializePendingJamaRows();
+    const filteredEntries = entries.filter(
+      (entry) => entry?.period === "UnPaid"
+    );
+
+    const updatedRows = initialRows.map((row) => {
+      const entry = filteredEntries.find((e) => e.id === String(row.id));
+      if (entry) {
+        return {
+          ...row,
+          id: entry.id,
+          date: entry.date,
+          roomNo: String(entry.roomNo),
+          fullname: entry.fullname,
+          mobileNumber: String(entry.mobileNumber),
+          rate: String(entry.rate),
+          modeOfPayment: entry.modeOfPayment,
+          period: entry.period,
+          createDate: entry.createDate,
+          cost: entry.cost,
+          roomType: entry.roomType,
+          type: entry.type,
+          paidDate: entry.paidDate,
+          noOfPeople: entry.noOfPeople,
+          discount: entry.discount || 0,
+          isPaid: entry.isPaid,
+          checkInTime: entry.checkInTime,
+          checkOutTime: entry.checkOutTime,
+        };
       }
-      setPendingJamaRows(updatedRows);
-    }
+      return row;
+    });
+
+    setPendingJamaRows(updatedRows);
   }, [entries, setPendingJamaRows]);
 
   const getRoomNoList = useMemo(() => {
@@ -102,114 +98,88 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
       if (!map.has(entry.date)) {
         map.set(entry.date, new Set());
       }
-      map.get(entry.date).add(entry.roomNo);
+      map.get(entry.date).add(String(entry.roomNo));
     });
     return map;
   }, [unpaidEntries]);
 
-  const getFullNameList = (date, roomNo) => {
-    return unpaidEntries
-      .filter((entry) => entry.date === date && entry.roomNo === roomNo)
+  const getFullNameList = (date, roomNo) =>
+    unpaidEntries
+      .filter(
+        (entry) =>
+          entry.date === date && String(entry.roomNo) === String(roomNo)
+      )
       .map((entry) => entry.fullname);
-  };
 
-  const getMobileNumberList = (date, roomNo, fullname) => {
-    return unpaidEntries
+  const getMobileNumberList = (date, roomNo, fullname) =>
+    unpaidEntries
       .filter(
         (entry) =>
           entry.date === date &&
-          entry.roomNo === roomNo &&
-          entry.fullname.toLowerCase() === fullname.toLowerCase()
+          String(entry.roomNo) === String(roomNo) &&
+          entry.fullname?.toLowerCase() === fullname?.toLowerCase()
       )
-      .map((entry) => entry.mobileNumber);
-  };
+      .map((entry) => String(entry.mobileNumber));
 
-  const getRateList = (date, roomNo, fullname, mobileNumber) => {
-    return unpaidEntries
+  const getRateList = (date, roomNo, fullname, mobileNumber) =>
+    unpaidEntries
       .filter(
         (entry) =>
           entry.date === date &&
-          entry.roomNo === roomNo &&
-          entry.fullname.toLowerCase() === fullname.toLowerCase() &&
-          entry.mobileNumber === mobileNumber
+          String(entry.roomNo) === String(roomNo) &&
+          entry.fullname?.toLowerCase() === fullname?.toLowerCase() &&
+          String(entry.mobileNumber) === String(mobileNumber)
       )
-      .map((entry) => entry.rate);
-  };
+      .map((entry) => String(entry.rate));
 
   const getOtherFields = (date, roomNo, fullname, mobileNumber, rate) => {
     return unpaidEntries.find(
       (entry) =>
         entry.date === date &&
-        entry.roomNo === roomNo &&
-        entry.fullname.toLowerCase() === fullname.toLowerCase() &&
-        entry.mobileNumber === mobileNumber &&
-        entry.rate === rate
+        String(entry.roomNo) === String(roomNo) &&
+        entry.fullname?.toLowerCase() === fullname?.toLowerCase() &&
+        String(entry.mobileNumber) === String(mobileNumber) &&
+        String(entry.rate) === String(rate)
     );
-  };
-
-  // Set Other Fields from date, roomNo, fullname, mobileNumber, rate
-
-  const getCreateDate = (
-    date,
-    roomNo,
-    fullname,
-    mobileNumber,
-    rate,
-    discount
-  ) => {
-    const entry = getOtherFields(
-      date,
-      roomNo,
-      fullname,
-      mobileNumber,
-      rate,
-      discount || 0
-    );
-    return entry?.createDate;
   };
 
   const handleRowEdit = (id, field, value) => {
     setPendingJamaRows((prevRows) =>
-      prevRows.map((row) =>
-        row.id === id
-          ? {
-              ...row,
-              [field]: value,
-            }
-          : row
-      )
+      prevRows.map((row) => {
+        if (row.id !== id) return row;
+        const updatedRow = { ...row, [field]: value };
+        const { date, roomNo, fullname, mobileNumber, rate } = updatedRow;
+
+        if (date && roomNo && fullname && mobileNumber && rate) {
+          const details = getOtherFields(
+            date,
+            roomNo,
+            fullname,
+            mobileNumber,
+            rate
+          );
+          if (details) {
+            return {
+              ...updatedRow,
+              cost: details.cost,
+              roomType: details.roomType,
+              type: details.type,
+              paidDate: dayjs().format(DATE_FORMAT),
+              noOfPeople: details.noOfPeople,
+              discount: details.discount,
+              date: details.date,
+              entryCreateDate: details.entryCreateDate,
+              createDate: details.createDate,
+            };
+          }
+        }
+
+        return updatedRow;
+      })
     );
-    const row = pendingJamaRows.find((row) => row.id === id);
-    if (
-      entries.length === 0 &&
-      row.date &&
-      row.roomNo &&
-      row.fullname &&
-      row.mobileNumber &&
-      row.rate
-    ) {
-      const createDateFound = getCreateDate(
-        row.date,
-        row.roomNo,
-        row.fullname,
-        row.mobileNumber,
-        row.rate,
-        row?.discount || 0
-      );
-      setPendingJamaRows((prevRows) =>
-        prevRows.map((prevRow) =>
-          prevRow.id === id
-            ? {
-                ...prevRow,
-                createDate: prevRow.createDate
-                  ? prevRow.createDate
-                  : createDateFound,
-              }
-            : prevRow
-        )
-      );
-    }
   };
+
+  console.log("Pending Jama Rows:", pendingJamaRows);
 
   return (
     <TableContainer component={Paper} sx={{ maxHeight: 600, boxShadow: 3 }}>
@@ -308,7 +278,7 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
                     handleRowEdit(row.id, "roomNo", e.target.value)
                   }
                   fullWidth
-                  renderValue={(value) => value}
+                  renderValue={(value) => value || "Select"}
                   sx={{
                     "& .MuiTableCell-root": {
                       // padding: "0px",
@@ -339,7 +309,7 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
                     handleRowEdit(row.id, "fullname", e.target.value)
                   }
                   fullWidth
-                  renderValue={(value) => value}
+                  renderValue={(value) => value || "Select"}
                   sx={{
                     "& .MuiInputBase-input": {
                       fontSize: "12px",
@@ -366,7 +336,7 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
                     handleRowEdit(row.id, "mobileNumber", e.target.value)
                   }
                   fullWidth
-                  renderValue={(value) => value}
+                  renderValue={(value) => value || "Select"}
                   sx={{
                     "& .MuiInputBase-input": {
                       fontSize: "12px",
@@ -487,6 +457,15 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
                               rate: 0,
                               modeOfPayment: "",
                               discount: 0,
+                              period: "UnPaid",
+                              createDate: "",
+                              cost: 0,
+                              roomType: "",
+                              type: "",
+                              checkInTime: "10:00 AM",
+                              checkOutTime: "10:00 AM",
+                              noOfPeople: 0,
+                              paidDate: "",
                             }
                           : prevRow
                       )
