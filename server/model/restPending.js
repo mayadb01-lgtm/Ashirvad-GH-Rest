@@ -2,10 +2,11 @@ import { Schema, model } from "mongoose";
 
 const pendingUsersSchema = new Schema(
   {
+    id: { type: String, required: true },
     fullname: { type: String, required: true },
     mobileNumber: { type: Number, required: true },
-    amount: { type: Number },
-    createDate: { type: String },
+    amount: { type: Number, required: true },
+    createDate: { type: String, required: true },
     updatedDateTime: { type: Date, default: Date.now() },
     createdAt: { type: Date, default: Date.now() },
   },

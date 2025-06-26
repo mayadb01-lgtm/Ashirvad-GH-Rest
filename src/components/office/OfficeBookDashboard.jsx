@@ -117,12 +117,20 @@ const OfficeBookDashboard = () => {
 
     const officeIn =
       officeBook?.flatMap((entry) =>
-        (entry.officeIn || []).map((item) => ({ ...item, id: rowCounter++, inOrOut: "IN" }))
+        (entry.officeIn || []).map((item) => ({
+          ...item,
+          id: rowCounter++,
+          inOrOut: "IN",
+        }))
       ) || [];
 
     const officeOut =
       officeBook?.flatMap((entry) =>
-        (entry.officeOut || []).map((item) => ({ ...item, id: rowCounter++, inOrOut: "OUT" }))
+        (entry.officeOut || []).map((item) => ({
+          ...item,
+          id: rowCounter++,
+          inOrOut: "OUT",
+        }))
       ) || [];
 
     const combined = [...officeIn, ...officeOut];

@@ -13,17 +13,17 @@ const Home = () => {
   const services = [
     {
       path: isAdminAuthenticated ? "/admin/hotel" : "/hotel",
-      title: "GH Management",
+      title: "Guest House",
       bg: "#fec86a",
     },
     {
       path: isAdminAuthenticated ? "/admin/restaurant" : "/restaurant",
-      title: "RT Management",
+      title: "Restaurant",
       bg: "#ff6a6a",
     },
     {
       path: isAdminAuthenticated ? "/admin/office" : "/office",
-      title: "Office Book Daily Entry",
+      title: "Office Book",
       bg: "#97c2ff", // a pleasant blue shade
     },
   ];

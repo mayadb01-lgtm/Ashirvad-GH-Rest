@@ -40,6 +40,7 @@ import OfficeHome from "../components/office/OfficeHome";
 import OfficeMergedGraph from "../components/office/OfficeMergedGraph";
 import RestAapvanaDashboard from "../components/restaurant/RestAapvanaDashboard";
 import RestLevanaDashboard from "../components/restaurant/RestLevanaDashboard";
+import AapvanaLevanaBalance from "../components/restaurant/RestAapvanaLevana";
 
 const DashboardHeader = ({ onNavigate }) => {
   const navigate = useNavigate();
@@ -149,13 +150,18 @@ const NAVIGATION = [
         icon: <BookOutlined />,
       },
       {
+        segment: "levana-report",
+        title: "Rest - Levana",
+        icon: <CurrencyRupeeIcon />,
+      },
+      {
         segment: "aapvana-report",
         title: "Rest - Aapvana",
         icon: <CurrencyRupeeIcon />,
       },
       {
-        segment: "levana-report",
-        title: "Rest - Levana",
+        segment: "aapvana-levana-balance",
+        title: "Pending Balance",
         icon: <CurrencyRupeeIcon />,
       },
     ],
@@ -249,6 +255,10 @@ const DashboardPage = () => {
     {
       path: "res-reports/levana-report",
       element: <RestLevanaDashboard />,
+    },
+    {
+      path: "res-reports/aapvana-levana-balance",
+      element: <AapvanaLevanaBalance />,
     },
     { path: "manage-staff", element: <RestStaffDashboard /> },
     { path: "categories-expenses", element: <RestCategoryExpensesDashboard /> },

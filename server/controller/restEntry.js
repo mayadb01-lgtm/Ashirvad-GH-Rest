@@ -80,6 +80,7 @@ router.put("/update-entry/:date", async (req, res) => {
 
     const upad = JSON.parse(reqBody.upad);
     const pending = JSON.parse(reqBody.pending);
+    const pendingUsers = JSON.parse(reqBody.pendingUsers);
     const expenses = JSON.parse(reqBody.expenses);
 
     const entry = await RestEntry.findOneAndUpdate(
@@ -87,6 +88,7 @@ router.put("/update-entry/:date", async (req, res) => {
       {
         upad,
         pending,
+        pendingUsers,
         expenses,
         extraAmount: reqBody.extraAmount,
         totalUpad: reqBody.totalUpad,

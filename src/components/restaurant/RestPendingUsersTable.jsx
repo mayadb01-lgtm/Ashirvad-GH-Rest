@@ -16,18 +16,26 @@ import { useAppSelector } from "../../redux/hooks";
 
 const TABLE_COLUMNS = ["ID", "Amount", "Name", "Remove"];
 
-const RestPendingUsersTable = ({ restPendingData, setRestPendingData }) => {
+const RestPendingUsersTable = ({
+  selectedDate,
+  restPendingData,
+  setRestPendingData,
+}) => {
   const { restPending } = useAppSelector((state) => state.restPending);
 
+  let idCounter = restPendingData.length;
+
   const handleAddRow = () => {
+    idCounter += 1;
     setRestPendingData((prevData) => [
       ...prevData,
       {
-        id: prevData.length + 1,
+        id: idCounter,
         _id: "",
         fullname: "",
         mobileNumber: 0,
         amount: 0,
+        createDate: selectedDate,
       },
     ]);
   };
@@ -41,11 +49,7 @@ const RestPendingUsersTable = ({ restPendingData, setRestPendingData }) => {
   };
 
   const handleRemoveRow = (id) => {
-    setRestPendingData((prevData) =>
-      prevData
-        .filter((row) => row.id !== id)
-        .map((row, index) => ({ ...row, id: index + 1 }))
-    );
+    setRestPendingData((prevData) => prevData.filter((row) => row.id !== id));
   };
 
   const renderAutocompleteCell = (options, row, index, fieldKey) => (
@@ -98,7 +102,7 @@ const RestPendingUsersTable = ({ restPendingData, setRestPendingData }) => {
                 sx={{ bgcolor: row.amount && row.fullname ? "#f5f5f5" : "" }}
                 key={row.id}
               >
-                <TableCell sx={{ width: "10%" }}>{index+1}</TableCell>
+                <TableCell sx={{ width: "10%" }}>{index + 1}</TableCell>
                 <TableCell sx={{ width: "25%" }}>
                   <TextField
                     variant="outlined"
@@ -143,6 +147,8 @@ RestPendingUsersTable.propTypes = {
       fullname: PropTypes.string,
       mobileNumber: PropTypes.number,
       amount: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      _id: PropTypes.string,
+      createDate: PropTypes.string,
     })
   ).isRequired,
   setRestPendingData: PropTypes.func.isRequired,

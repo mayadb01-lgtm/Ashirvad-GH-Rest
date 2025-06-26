@@ -49,6 +49,7 @@ const expensesEntrySchemaObj = new Schema(
 
 const pendingUsersSchema = new Schema(
   {
+    id: { type: String, required: true },
     fullname: { type: String, required: true },
     mobileNumber: { type: Number, required: true },
     amount: { type: Number },

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -7,6 +7,8 @@ import {
   TextField,
   Autocomplete,
   Button,
+  FormControlLabel,
+  Switch,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
@@ -14,9 +16,9 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import dayjs from "dayjs";
 import { getLevanaByDateRange } from "../../redux/actions/restEntryAction";
+import { getPendingUser } from "../../redux/actions/restPendingAction";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
-import { getPendingUser } from "../../redux/actions/restPendingAction";
 dayjs.locale("en-gb");
 
 const RestLevanaDashboard = () => {
@@ -24,21 +26,14 @@ const RestLevanaDashboard = () => {
   const { loading, restEntries } = useAppSelector((state) => state.restEntry);
   const { restPending } = useAppSelector((state) => state.restPending);
 
-  useEffect(() => {
-    dispatch(getPendingUser());
-  }, [dispatch]);
-
   const [startDate, setStartDate] = useState(dayjs().startOf("month"));
   const [endDate, setEndDate] = useState(dayjs());
   const [selectedStaff, setSelectedStaff] = useState(null);
+  const [isCombinedView, setIsCombinedView] = useState(false);
 
-  const handleStartDateChange = useCallback((newDate) => {
-    if (newDate) setStartDate(newDate);
-  }, []);
-
-  const handleEndDateChange = useCallback((newDate) => {
-    if (newDate) setEndDate(newDate);
-  }, []);
+  useEffect(() => {
+    dispatch(getPendingUser());
+  }, [dispatch]);
 
   useEffect(() => {
     dispatch(
@@ -80,25 +75,53 @@ const RestLevanaDashboard = () => {
     },
   ];
 
-  const selectedStaffEntries =
-    restEntries &&
-    restEntries
-      .filter((entry) => entry.fullname === selectedStaff?.fullname)
-      .sort((a, b) => dayjs(a.entryCreateDate).diff(dayjs(b.entryCreateDate)));
+  const safeRestEntries = Array.isArray(restEntries) ? restEntries : [];
+
+  const sortedEntries = useMemo(
+    () =>
+      [...safeRestEntries].sort((a, b) =>
+        dayjs(a.entryCreateDate).diff(dayjs(b.entryCreateDate))
+      ),
+    [safeRestEntries]
+  );
+
+  const filteredEntries = selectedStaff
+    ? sortedEntries.filter((entry) => entry.fullname === selectedStaff.fullname)
+    : sortedEntries;
 
   const preparedEntries = useMemo(() => {
-    const totalRow = {
-      id: "Total",
-      createDate: "",
-      fullname: "",
-      amount: selectedStaff
-        ? selectedStaffEntries
-            .map((entry) => entry.amount)
-            .reduce((a, b) => a + b, 0)
-        : restEntries.map((entry) => entry.amount).reduce((a, b) => a + b, 0),
-    };
-    if (selectedStaff) {
-      return selectedStaffEntries
+    if (isCombinedView) {
+      // Group by date + fullname
+      const grouped = filteredEntries.reduce((acc, entry) => {
+        const key = `${entry.createDate}-${entry.fullname}`;
+        acc[key] = acc[key] || {
+          createDate: entry.createDate,
+          fullname: entry.fullname,
+          amount: 0,
+        };
+        acc[key].amount += entry.amount;
+        return acc;
+      }, {});
+      const combinedArray = Object.values(grouped).map((entry, index) => ({
+        id: index + 1,
+        createDate: entry.createDate,
+        fullname: entry.fullname,
+        amount: entry.amount,
+      }));
+      const totalAmount = combinedArray.reduce((sum, e) => sum + e.amount, 0);
+      return [
+        ...combinedArray,
+        { id: "Total", createDate: "", fullname: "", amount: totalAmount },
+      ];
+    } else {
+      // Original behavior
+      const totalRow = {
+        id: "Total",
+        createDate: "",
+        fullname: "",
+        amount: filteredEntries.reduce((sum, e) => sum + e.amount, 0),
+      };
+      return filteredEntries
         .map((entry, index) => ({
           id: index + 1,
           createDate: entry.createDate,
@@ -107,47 +130,29 @@ const RestLevanaDashboard = () => {
         }))
         .concat(totalRow);
     }
-
-    const sortedEntries = [...restEntries].sort((a, b) =>
-      dayjs(a.entryCreateDate).diff(dayjs(b.entryCreateDate))
-    );
-    return sortedEntries
-      .map((entry, index) => ({
-        id: index + 1,
-        createDate: entry.createDate,
-        fullname: entry.fullname,
-        amount: entry.amount,
-      }))
-      .concat(totalRow);
-  }, [restEntries, selectedStaff, selectedStaffEntries]);
-
-  // handleExportToExcel
+  }, [filteredEntries, isCombinedView]);
 
   const headerMap = {
     createDate: "Date",
     fullname: "Staff Name",
     amount: "Amount",
   };
-
   const handleExportToExcel = () => {
-    if (!Array.isArray(preparedEntries) || preparedEntries.length === 0) {
+    if (preparedEntries.length <= 1) {
       toast.error("No data available to export for selected date range.");
       return;
     }
     const exportData = preparedEntries
-      .filter((row) => row.type !== "group" && row.id !== "Total")
-      .map(({ ...item }) => {
-        const transformed = {};
-        Object.keys(headerMap).forEach((key) => {
-          transformed[headerMap[key]] = item[key];
-        });
-        return transformed;
-      });
-
+      .filter((row) => row.id !== "Total")
+      .map((row) =>
+        Object.keys(headerMap).reduce((obj, key) => {
+          obj[headerMap[key]] = row[key];
+          return obj;
+        }, {})
+      );
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Guest Entries");
-
     XLSX.writeFile(workbook, "GuestHouseEntries.xlsx");
   };
 
@@ -161,25 +166,19 @@ const RestLevanaDashboard = () => {
         width: "100%",
       }}
     >
-      <Box
-        sx={{
-          alignItems: "center",
-          py: 3,
-        }}
-      >
-        <Typography variant="h5" fontWeight={600} color="text.primary">
+      <Box sx={{ alignItems: "center", py: 3 }}>
+        <Typography variant="h5" fontWeight={600}>
           Restaurant Levana Dashboard
         </Typography>
       </Box>
       <Stack direction="row" spacing={2} alignItems="center">
-        {/* Header */}
-        <Typography variant="subtitle2" fontWeight={500} color="text.secondary">
+        <Typography variant="subtitle2" fontWeight={500}>
           Select Date Range
         </Typography>
         <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en-gb">
           <DatePicker
             value={startDate}
-            onChange={handleStartDateChange}
+            onChange={setStartDate}
             format="DD-MM-YYYY"
             textField={(params) => <TextField {...params} size="small" />}
             views={["year", "month", "day"]}
@@ -187,24 +186,31 @@ const RestLevanaDashboard = () => {
           <Typography>-</Typography>
           <DatePicker
             value={endDate}
-            onChange={handleEndDateChange}
+            onChange={setEndDate}
             format="DD-MM-YYYY"
             textField={(params) => <TextField {...params} size="small" />}
             views={["year", "month", "day"]}
           />
         </LocalizationProvider>
-        {/* fullname selection */}
         <Autocomplete
           disablePortal
           id="fullname"
           options={restPending}
-          getOptionLabel={(option) => option.fullname}
+          getOptionLabel={(opt) => opt.fullname}
           style={{ width: 300 }}
           renderInput={(params) => <TextField {...params} label="Select" />}
-          onChange={(event, newValue) => {
-            setSelectedStaff(newValue);
-          }}
+          onChange={(_, val) => setSelectedStaff(val)}
           size="small"
+        />
+        <FormControlLabel
+          control={
+            <Switch
+              checked={isCombinedView}
+              onChange={(e) => setIsCombinedView(e.target.checked)}
+              color="primary"
+            />
+          }
+          label="Combined View"
         />
         <Button
           variant="outlined"
@@ -219,9 +225,12 @@ const RestLevanaDashboard = () => {
         <CircularProgress sx={{ mt: 2 }} />
       ) : (
         <DataGrid
+          getRowId={(row) => row.id}
           rows={preparedEntries}
           columns={columns}
           pageSize={5}
+          WebkitFontSmoothing="auto"
+          letterSpacing={"normal"}
           sx={{
             mt: 2,
             height: 400,

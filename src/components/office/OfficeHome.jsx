@@ -52,7 +52,7 @@ const OfficeHome = () => {
     []
   );
 
-  // Prepare - Chart 1 data = Expenses by category
+  // Prepare - Chart 1 data
   const pieChartOfficeCategoryExpensesInData = useMemo(
     () =>
       officeBook?.length
@@ -67,7 +67,7 @@ const OfficeHome = () => {
       0
     );
 
-  // // Prepare - Chart 2 data = Office In & Office Out
+  // // Prepare - Chart 2 data
   const pieChartOfficeCategoryExpensesOutData = useMemo(
     () =>
       officeBook?.length
@@ -81,41 +81,6 @@ const OfficeHome = () => {
       (sum, entry) => sum + entry.value,
       0
     );
-
-  // // Prepare - Chart 2 data = Expenses by payment method
-  // const upaadLineChartData = useMemo(
-  //   () => (restEntries?.length ? formatChartData(restEntries, "upaad") : []),
-  //   [restEntries]
-  // );
-
-  // const totalUpaadAmount = upaadLineChartData.reduce(
-  //   (sum, entry) => sum + entry.amount,
-  //   0
-  // );
-
-  // // Prepare - Chart 3 data = Expenses by payment method
-  // const paymentMethodLineChartData = useMemo(
-  //   () =>
-  //     restEntries?.length ? formatChartData(restEntries, "paymentMethods") : [],
-  //   [restEntries]
-  // );
-
-  // const totalPaymentMethodAmount = paymentMethodLineChartData.reduce(
-  //   (sum, entry) => sum + entry.value,
-  //   0
-  // );
-
-  // // Prepare - Chart 4 data = Sales Per Day
-  // const salesPerDayLineChartData = useMemo(
-  //   () =>
-  //     restEntries?.length ? formatChartData(restEntries, "salesPerDay") : [],
-  //   [restEntries]
-  // );
-
-  // const totalSalesPerDayAmount = salesPerDayLineChartData.reduce(
-  //   (sum, entry) => sum + entry.amount,
-  //   0
-  // );
 
   const chartBoxStyle = {
     width: "100%",

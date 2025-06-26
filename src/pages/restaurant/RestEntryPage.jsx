@@ -152,7 +152,7 @@ const RestEntryPage = () => {
     dispatch(getRestCategory());
     dispatch(getRestCategoryName());
     dispatch(getRestExpenseName());
-    dispatch(getRestStaffGHLastSevenDays());
+    // dispatch(getRestStaffGHLastSevenDays());
     dispatch(getPendingUser());
   }, []);
 
