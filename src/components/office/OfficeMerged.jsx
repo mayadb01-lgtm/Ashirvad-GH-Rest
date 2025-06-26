@@ -636,6 +636,47 @@ const OfficeMerged = () => {
     });
   }, [uniqueDates, entries, restEntries, officeBook]);
 
+  const preparedRowsWithOpeningBalance = useMemo(() => {
+    let dataRows = preparedRows;
+
+    if (isOpeningBalanceEnabled) {
+      const openingRow = {
+        id: "OpeningBalanceRow",
+        date: "Opening Balance",
+        ghCashIn: 0,
+        restCashIn: 0,
+        officeCashIn: 0,
+        officeCashOut: 0,
+        cash: openingBalanceMap.Cash || 0,
+        ghCardIn: 0,
+        restCardIn: 0,
+        OfficeCardIn: 0,
+        card: openingBalanceMap.Card || 0,
+        restPPIn: 0,
+        OfficePPIn: 0,
+        OfficePPOut: 0,
+        pp: openingBalanceMap.PP || 0,
+        ghPPCIn: 0,
+        officePPCIn: 0,
+        officePPCOut: 0,
+        ppc: openingBalanceMap.PPC || 0,
+        ghPPSIn: 0,
+        officePPSIn: 0,
+        officePPSOut: 0,
+        pps: openingBalanceMap.PPS || 0,
+        total:
+          (openingBalanceMap.Cash || 0) +
+          (openingBalanceMap.Card || 0) +
+          (openingBalanceMap.PP || 0) +
+          (openingBalanceMap.PPC || 0) +
+          (openingBalanceMap.PPS || 0),
+      };
+      dataRows = [openingRow, ...dataRows];
+    }
+
+    return dataRows;
+  }, [preparedRows, openingBalanceMap, isOpeningBalanceEnabled]);
+
   const keys = [
     "ghCashIn",
     "restCashIn",
@@ -686,10 +727,10 @@ const OfficeMerged = () => {
   // Pie Chart Data
   const pieChartData = useMemo(
     () =>
-      preparedRows?.length
-        ? formatChartData(preparedRows, "mergedPaymentMode")
+      preparedRowsWithOpeningBalance.length
+        ? formatChartData(preparedRowsWithOpeningBalance, "mergedPaymentMode")
         : [],
-    [preparedRows]
+    [preparedRowsWithOpeningBalance]
   );
 
   const headerMap = [
