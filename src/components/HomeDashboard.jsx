@@ -104,7 +104,7 @@ const HomeDashboard = ({ navigation, onNavigate }) => {
           flexDirection: { xs: "column", md: "row" },
           gap: 4,
           mt: 2,
-          maxWidth: "80%",
+          maxWidth: "100%",
         }}
       >
         {Object.entries(groups).map(([groupTitle, items]) => {

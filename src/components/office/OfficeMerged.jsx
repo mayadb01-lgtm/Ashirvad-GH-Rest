@@ -7,6 +7,7 @@ import {
   FormControlLabel,
   Switch,
   Button,
+  TextField,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
@@ -48,6 +49,13 @@ const OfficeMerged = () => {
   const [showPPSDetails, setShowPPSDetails] = useState(false);
   const [showPPCDetails, setShowPPCDetails] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isOpeningBalanceEnabled, setIsOpeningBalanceEnabled] = useState(false);
+  const [openingBalances, setOpeningBalances] = useState([
+    { label: "Cash", value: 0 },
+    { label: "PP", value: 0 },
+    { label: "PPC", value: 0 },
+    { label: "PPS", value: 0 },
+  ]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -85,6 +93,14 @@ const OfficeMerged = () => {
   const handleEndDateChange = useCallback((newDate) => {
     if (newDate) setEndDate(newDate);
   }, []);
+
+  const handleBalanceChange = (index, newValue) => {
+    setOpeningBalances((prev) =>
+      prev.map((item, idx) =>
+        idx === index ? { ...item, value: Number(newValue) } : item
+      )
+    );
+  };
 
   const visibleColumns = useMemo(() => {
     const idDate = [
@@ -415,6 +431,14 @@ const OfficeMerged = () => {
         dayjs(a, "DD-MM-YYYY").isAfter(dayjs(b, "DD-MM-YYYY")) ? 1 : -1
     );
   }, [entries, restEntries, officeBook]);
+
+  const openingBalanceMap = useMemo(() => {
+    return openingBalances.reduce((acc, bal) => {
+      acc[bal.label] = Number(bal.value) || 0;
+      return acc;
+    }, {});
+  }, [openingBalances]);
+
   const preparedRows = useMemo(() => {
     return uniqueDates.map((dateStr, idx) => {
       // TODO:CASH
@@ -639,11 +663,25 @@ const OfficeMerged = () => {
 
   const totalsRow = useMemo(() => {
     const totals = keys.reduce((acc, key) => {
-      acc[key] = preparedRows?.reduce((sum, row) => sum + (row[key] || 0), 0);
+      acc[key] = preparedRows.reduce((sum, row) => sum + (row[key] || 0), 0);
       return acc;
     }, {});
+
+    if (isOpeningBalanceEnabled) {
+      totals.cash += openingBalanceMap.Cash || 0;
+      totals.pp += openingBalanceMap.PP || 0;
+      totals.ppc += openingBalanceMap.PPC || 0;
+      totals.pps += openingBalanceMap.PPS || 0;
+      totals.total +=
+        (openingBalanceMap.Cash || 0) +
+        (openingBalanceMap.Card || 0) +
+        (openingBalanceMap.PP || 0) +
+        (openingBalanceMap.PPC || 0) +
+        (openingBalanceMap.PPS || 0);
+    }
+
     return { id: "Total", date: "Total", ...totals };
-  }, [preparedRows]);
+  }, [preparedRows, openingBalanceMap, isOpeningBalanceEnabled]);
 
   // Pie Chart Data
   const pieChartData = useMemo(
@@ -755,8 +793,44 @@ const OfficeMerged = () => {
         >
           Export to Excel
         </Button>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={isOpeningBalanceEnabled}
+              onChange={(e) => setIsOpeningBalanceEnabled(e.target.checked)}
+            />
+          }
+          label="Opening Balance"
+          sx={{
+            border: "1px solid #e0e0e0",
+            borderRadius: "8px",
+            paddingInlineEnd: "8px",
+          }}
+        />
       </Stack>
-      <Stack direction="row" spacing={1} mt={1}>
+      {isOpeningBalanceEnabled && (
+        <Stack direction="row" spacing={2} alignItems="center" mt={2}>
+          <Typography
+            variant="subtitle2"
+            fontWeight={500}
+            color="text.secondary"
+          >
+            Set Opening Balance
+          </Typography>
+          {openingBalances.map((item, idx) => (
+            <TextField
+              key={idx}
+              size="small"
+              variant="outlined"
+              label={item.label || ""}
+              type="number"
+              value={item.value || 0}
+              onChange={(e) => handleBalanceChange(idx, e.target.value)}
+            />
+          ))}
+        </Stack>
+      )}
+      <Stack direction="row" spacing={1} mt={2}>
         {switchConfigs.map((config, idx) => (
           <FormControlLabel
             key={idx}
@@ -772,7 +846,6 @@ const OfficeMerged = () => {
           />
         ))}
       </Stack>
-
       {ghLoading || restLoading || officeLoading ? (
         <CircularProgress sx={{ mt: 2 }} />
       ) : (
