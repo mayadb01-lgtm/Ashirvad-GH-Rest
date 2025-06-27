@@ -26,9 +26,9 @@ dayjs.locale("en-gb");
 const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
   const { entries, unpaidEntries } = useAppSelector((state) => state.entry);
   // Helper to build empty rows
-  const initializePendingJamaRows = () => {
-    return Array.from({ length: 10 }, (_, idx) => ({
-      id: idx + 1,
+  const initializePendingJamaRows = (startId = 1, count = 10) => {
+    return Array.from({ length: count }, (_, idx) => ({
+      id: startId + idx,
       date: "",
       roomNo: 0,
       fullname: "",
@@ -49,6 +49,15 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
     }));
   };
 
+  const handleAddRow = () => {
+    setPendingJamaRows((prevRows) => {
+      const nextId =
+        prevRows.length > 0 ? prevRows[prevRows.length - 1].id + 1 : 1;
+      const newRow = initializePendingJamaRows(nextId, 1)[0];
+      return [...prevRows, newRow];
+    });
+  };
+
   // Sync pendingJamaRows when entries change
   useEffect(() => {
     if (!entries || entries.length === 0) {
@@ -56,10 +65,11 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
       return;
     }
 
-    const initialRows = initializePendingJamaRows();
     const filteredEntries = entries.filter(
       (entry) => entry?.period === "UnPaid"
     );
+    const maxId = Math.max(...filteredEntries.map((e) => Number(e.id)));
+    const initialRows = initializePendingJamaRows(1, maxId);
 
     const updatedRows = initialRows.map((row) => {
       const entry = filteredEntries.find((e) => e.id === String(row.id));
@@ -479,6 +489,17 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
               </TableCell>
             </TableRow>
           ))}
+          <TableRow sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+            <TableCell colSpan={8} align="center" sx={{ fontSize: "12px" }}>
+              <Button
+                variant="contained"
+                onClick={handleAddRow}
+                sx={{ fontSize: "12px" }}
+              >
+                Add Row
+              </Button>
+            </TableCell>
+          </TableRow>
         </TableBody>
       </Table>
     </TableContainer>
