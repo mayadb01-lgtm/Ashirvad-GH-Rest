@@ -8,6 +8,7 @@ router.post("/create-pending-user", async (req, res) => {
     const reqBody = req.body;
 
     const staff = await RestPending.create({
+      id: reqBody.id,
       fullname: reqBody.fullname,
       mobileNumber: reqBody.mobileNumber,
       amount: reqBody.amount,
@@ -69,6 +70,7 @@ router.put("/update-pending-user/:id", async (req, res) => {
     const pendingUser = await RestPending.findByIdAndUpdate(
       req.params.id,
       {
+        id: reqBody.id,
         fullname: reqBody.fullname,
         mobileNumber: reqBody.mobileNumber,
         amount: reqBody.amount,
