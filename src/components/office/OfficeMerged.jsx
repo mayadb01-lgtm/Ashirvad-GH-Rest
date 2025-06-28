@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import {
   Box,
   Typography,
@@ -41,21 +41,96 @@ const OfficeMerged = () => {
     dayjs(date, ["DD-MM-YYYY", "YYYY-MM-DD", "MM-DD-YYYY"]).format(
       "DD-MM-YYYY"
     );
-  const [startDate, setStartDate] = useState(dayjs().startOf("month"));
-  const [endDate, setEndDate] = useState(dayjs());
-  const [showCashDetails, setShowCashDetails] = useState(false);
-  const [showCardDetails, setShowCardDetails] = useState(false);
-  const [showPPDetails, setShowPPDetails] = useState(false);
-  const [showPPSDetails, setShowPPSDetails] = useState(false);
-  const [showPPCDetails, setShowPPCDetails] = useState(false);
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  const [isOpeningBalanceEnabled, setIsOpeningBalanceEnabled] = useState(false);
-  const [openingBalances, setOpeningBalances] = useState([
-    { label: "Cash", value: 0 },
-    { label: "PP", value: 0 },
-    { label: "PPC", value: 0 },
-    { label: "PPS", value: 0 },
+
+  const getStoredBool = (key, defaultVal = false) =>
+    localStorage.getItem(key) !== null
+      ? JSON.parse(localStorage.getItem(key))
+      : defaultVal;
+
+  const getStoredDate = (key, fallback) => {
+    const stored = localStorage.getItem(key);
+    return stored ? dayjs(stored) : fallback;
+  };
+
+  const [startDate, setStartDate] = useState(() =>
+    getStoredDate("startDate", dayjs().startOf("month"))
+  );
+  const [endDate, setEndDate] = useState(() =>
+    getStoredDate("endDate", dayjs())
+  );
+
+  const [showCashDetails, setShowCashDetails] = useState(() =>
+    getStoredBool("showCashDetails")
+  );
+  const [showCardDetails, setShowCardDetails] = useState(() =>
+    getStoredBool("showCardDetails")
+  );
+  const [showPPDetails, setShowPPDetails] = useState(() =>
+    getStoredBool("showPPDetails")
+  );
+  const [showPPCDetails, setShowPPCDetails] = useState(() =>
+    getStoredBool("showPPCDetails")
+  );
+  const [showPPSDetails, setShowPPSDetails] = useState(() =>
+    getStoredBool("showPPSDetails")
+  );
+  const [isFullScreen, setIsFullScreen] = useState(() =>
+    getStoredBool("isFullScreen")
+  );
+  const [isOpeningBalanceEnabled, setIsOpeningBalanceEnabled] = useState(() =>
+    getStoredBool("openingBalanceEnabled")
+  );
+
+  const getInitialOpeningBalances = () => {
+    const stored = localStorage.getItem("openingBalances");
+    return stored
+      ? JSON.parse(stored)
+      : [
+          { label: "Cash", value: 0 },
+          { label: "PP", value: 0 },
+          { label: "PPC", value: 0 },
+          { label: "PPS", value: 0 },
+        ];
+  };
+
+  const [openingBalances, setOpeningBalances] = useState(
+    getInitialOpeningBalances
+  );
+
+  // Avoid overwriting on first render
+  const hasInitialized = useRef(false);
+  useEffect(() => {
+    if (!hasInitialized.current) return;
+
+    localStorage.setItem("startDate", startDate.toISOString());
+    localStorage.setItem("endDate", endDate.toISOString());
+    localStorage.setItem("showCashDetails", JSON.stringify(showCashDetails));
+    localStorage.setItem("showCardDetails", JSON.stringify(showCardDetails));
+    localStorage.setItem("showPPDetails", JSON.stringify(showPPDetails));
+    localStorage.setItem("showPPCDetails", JSON.stringify(showPPCDetails));
+    localStorage.setItem("showPPSDetails", JSON.stringify(showPPSDetails));
+    localStorage.setItem("isFullScreen", JSON.stringify(isFullScreen));
+    localStorage.setItem(
+      "openingBalanceEnabled",
+      JSON.stringify(isOpeningBalanceEnabled)
+    );
+    localStorage.setItem("openingBalances", JSON.stringify(openingBalances));
+  }, [
+    startDate,
+    endDate,
+    showCashDetails,
+    showCardDetails,
+    showPPDetails,
+    showPPCDetails,
+    showPPSDetails,
+    isFullScreen,
+    isOpeningBalanceEnabled,
+    openingBalances,
   ]);
+
+  useEffect(() => {
+    hasInitialized.current = true;
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -464,6 +539,7 @@ const OfficeMerged = () => {
         officeBook
           ?.filter((entry) => formatDate(entry.createDate) === dateStr)
           ?.flatMap((entry) => entry.officeIn || [])
+          ?.filter((item) => item.categoryName !== "Pending")
           ?.reduce(
             (sum, item) =>
               sum + (item.modeOfPayment === "Cash" ? item.amount : 0),
@@ -503,6 +579,7 @@ const OfficeMerged = () => {
         officeBook
           ?.filter((entry) => formatDate(entry.createDate) === dateStr)
           ?.flatMap((entry) => entry.officeIn || [])
+          ?.filter((item) => item.categoryName !== "Pending")
           ?.reduce(
             (sum, item) =>
               sum + (item.modeOfPayment === "Card" ? item.amount : 0),
@@ -521,6 +598,7 @@ const OfficeMerged = () => {
         officeBook
           ?.filter((entry) => formatDate(entry.createDate) === dateStr)
           ?.flatMap((entry) => entry.officeIn || [])
+          ?.filter((item) => item.categoryName !== "Pending")
           ?.reduce(
             (sum, item) =>
               sum + (item.modeOfPayment === "PP" ? item.amount : 0),
@@ -554,6 +632,7 @@ const OfficeMerged = () => {
         officeBook
           ?.filter((entry) => formatDate(entry.createDate) === dateStr)
           ?.flatMap((entry) => entry.officeIn || [])
+          ?.filter((item) => item.categoryName !== "Pending")
           ?.reduce(
             (sum, item) =>
               sum + (item.modeOfPayment === "PPC" ? item.amount : 0),
@@ -587,6 +666,7 @@ const OfficeMerged = () => {
         officeBook
           ?.filter((entry) => formatDate(entry.createDate) === dateStr)
           ?.flatMap((entry) => entry.officeIn || [])
+          ?.filter((item) => item.categoryName !== "Pending")
           ?.reduce(
             (sum, item) =>
               sum + (item.modeOfPayment === "PPS" ? item.amount : 0),
