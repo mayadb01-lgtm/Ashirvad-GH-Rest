@@ -21,7 +21,10 @@ import PieChartComponent from "../charts/PieChartComponent";
 import { getOfficeBookByDateRange } from "../../redux/actions/officeBookAction";
 import { GH_MODE_OF_PAYMENT_OPTIONS } from "../../utils/utils";
 import { getEntriesByDateRange } from "../../redux/actions/entryAction";
-import { getRestEntriesByDateRange } from "../../redux/actions/restEntryAction";
+import {
+  getExpensesByDateRange,
+  getRestEntriesByDateRange,
+} from "../../redux/actions/restEntryAction";
 
 // Utility helper for GH sales sum
 const sumValidEntryRates = (entries, validModes) => {
@@ -197,6 +200,57 @@ const OfficeMergedGraph = () => {
     [restAapvanaTotal, restLevanaTotal]
   );
   const totalAppvanaLevanaAmount = restAapvanaTotal + restLevanaTotal || 0;
+
+  // Chart 4 - categoryName wise Rest and Office Out
+
+  const restOfficeCategoryExpensesData = useMemo(() => {
+    const restExpensesCategoryData =
+      restEntries?.flatMap((entry) => entry.expenses || []) || [];
+    const officeExpensesCategoryData =
+      officeBook?.flatMap((entry) => entry.officeOut || []) || [];
+
+    const mergedData = [
+      ...restExpensesCategoryData,
+      ...officeExpensesCategoryData,
+    ];
+
+    const groupedData = mergedData.reduce((acc, item) => {
+      const categoryKey = item.categoryName || "Uncategorized";
+      if (!acc[categoryKey]) {
+        acc[categoryKey] = [];
+      }
+      acc[categoryKey].push({
+        expenseName: item.expenseName || "Unnamed",
+        amount: Number(item.amount) || 0,
+        createDate: item.createDate,
+      });
+      return acc;
+    }, {});
+
+    const categoryTotals = Object.entries(groupedData).map(
+      ([categoryName, items]) => ({
+        categoryName,
+        totalAmount: items.reduce((acc, item) => acc + item.amount, 0),
+      })
+    );
+
+    return categoryTotals
+      .sort((a, b) => b.totalAmount - a.totalAmount)
+      .map((item) => ({ name: item.categoryName, value: item.totalAmount }));
+  }, [restEntries, officeBook]);
+
+  console.log("restOfficeCategoryExpensesData", restOfficeCategoryExpensesData);
+
+  const pieChartRestOfficeExpenseCategoryWiseData = useMemo(
+    () => restOfficeCategoryExpensesData || [],
+    [restOfficeCategoryExpensesData]
+  );
+
+  const totalRestOfficeExpensesCategoryWiseAmount =
+    restOfficeCategoryExpensesData?.reduce(
+      (acc, item) => acc + item.value,
+      0
+    ) || 0;
 
   const chartBoxStyle = {
     width: "100%",
@@ -413,14 +467,15 @@ const OfficeMergedGraph = () => {
                     gutterBottom
                     color="primary"
                   >
-                    Total Spent: ₹{totalExpensesAmount.toFixed(2)}
+                    Total Spent: ₹
+                    {totalRestOfficeExpensesCategoryWiseAmount.toFixed(2)}
                   </Typography>
                 </Stack>
-                {totalExpensesAmount === 0 ? (
+                {totalRestOfficeExpensesCategoryWiseAmount === 0 ? (
                   <Typography>No expense data available</Typography>
                 ) : (
                   <PieChartComponent
-                    data={pieChartTotalExpensesData}
+                    data={pieChartRestOfficeExpenseCategoryWiseData}
                     isFullScreen={isFullScreen}
                   />
                 )}
