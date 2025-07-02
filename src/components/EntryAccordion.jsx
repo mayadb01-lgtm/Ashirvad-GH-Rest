@@ -11,13 +11,7 @@ import React, { Suspense } from "react";
 
 const TableComponent = React.lazy(() => import("./TableComponent"));
 
-const EntryAccordion = ({
-  title,
-  period,
-  onSubmit,
-  bgColor,
-  selectedDate,
-}) => {
+const EntryAccordion = ({ title, period, onSubmit, bgColor, selectedDate }) => {
   return (
     <Accordion style={{ boxShadow: "none" }} expanded={true}>
       <AccordionSummary
@@ -49,7 +43,9 @@ const EntryAccordion = ({
           <TableComponent
             period={period}
             title={`${title} Table`}
-            rowsLength={16}
+            rowsLength={
+              import.meta.env.VITE_REACT_APP_BUSINESS_NAME === "TGT" ? 11 : 16
+            }
             onSubmit={onSubmit}
             selectedDate={selectedDate}
           />
