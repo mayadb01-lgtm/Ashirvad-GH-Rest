@@ -1,7 +1,6 @@
 import { Router } from "express";
 import dayjs from "dayjs";
 import OfficeBook, { OfficeCategory } from "../model/officeBook.js";
-import initPendingCategory from "../utils/initPendingCategory.js";
 const router = Router();
 
 // Create a new Entry
@@ -183,18 +182,10 @@ router.get("/get-entries/:startDate/:endDate", async (req, res) => {
 });
 
 // OfficeCategory Controller
-// Create a new Category
+// Create a new Category// Create a new Category
 router.post("/create-category", async (req, res) => {
   try {
     const reqBody = req.body;
-
-    // Do not allow creating Pending
-    if (reqBody.categoryName === "Pending") {
-      return res.status(400).json({
-        success: false,
-        message: "Pending category cannot be created manually",
-      });
-    }
 
     const existingCategory = await OfficeCategory.findOne({
       categoryName: reqBody.categoryName,
@@ -218,22 +209,19 @@ router.post("/create-category", async (req, res) => {
 });
 
 // Get all Categories
+
 router.get("/get-categories", async (req, res) => {
   try {
-    let categories = await OfficeCategory.find();
-
-    // If no categories found
-    if (categories.length === 0) {
-      await initPendingCategory();
-      categories = await OfficeCategory.find(); // refetch after creating
-    } else if (!categories.some((c) => c.categoryName === "Pending")) {
-      await initPendingCategory();
-      categories = await OfficeCategory.find();
-    }
-
-    return res.status(200).json({ success: true, data: categories });
+    const categories = await OfficeCategory.find();
+    res.status(200).json({
+      success: true,
+      data: categories,
+    });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 });
 
@@ -299,21 +287,6 @@ router.put("/update-category/:id", async (req, res) => {
         .json({ success: false, message: "Category not found" });
     }
 
-    if (existingCategory.categoryName === "Pending") {
-      return res.status(400).json({
-        success: false,
-        message: "Cannot update the pending category",
-      });
-    }
-
-    // Prevent setting categoryName to "Pending"
-    if (categoryName === "Pending") {
-      return res.status(400).json({
-        success: false,
-        message: "Cannot set categoryName to Pending",
-      });
-    }
-
     existingCategory.categoryName =
       categoryName ?? existingCategory.categoryName;
     existingCategory.categoryDescription =
@@ -337,13 +310,6 @@ router.delete("/delete-category/:id", async (req, res) => {
       return res
         .status(404)
         .json({ success: false, message: "Category not found" });
-    }
-
-    if (categoryToDelete.categoryName === "Pending") {
-      return res.status(400).json({
-        success: false,
-        message: "Pending Category Cannot Be Deleted",
-      });
     }
 
     await categoryToDelete.deleteOne();

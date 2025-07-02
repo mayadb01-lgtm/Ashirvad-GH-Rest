@@ -190,7 +190,6 @@ const TableComponent = ({ period, rowsLength, onSubmit, selectedDate }) => {
       return false;
     }
   };
-
   if (rows.length === 0) {
     return (
       <Box

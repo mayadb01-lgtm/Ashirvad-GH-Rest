@@ -11,7 +11,7 @@ import {
   Typography,
   Stack,
 } from "@mui/material";
-import { Add, Edit } from "@mui/icons-material";
+import { Add, Edit, Delete } from "@mui/icons-material";
 import {
   createPendingUser,
   getPendingUser,
@@ -66,12 +66,12 @@ const RestPendingUsersDashboard = () => {
     handleClose();
   };
 
-  // const handleDelete = async (id) => {
-  //   if (window.confirm("Are you sure you want to delete this staff member?")) {
-  //     await dispatch(removePendingUser(id));
-  //     dispatch(getPendingUser());
-  //   }
-  // };
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this staff member?")) {
+      await dispatch(removePendingUser(id));
+      dispatch(getPendingUser());
+    }
+  };
 
   // ** Filtered Staff List based on Search Query **
   const filteredStaff = restPending.filter(
@@ -123,9 +123,9 @@ const RestPendingUsersDashboard = () => {
           <IconButton onClick={() => handleOpen(params.row)}>
             <Edit color="primary" />
           </IconButton>
-          {/* <IconButton onClick={() => handleDelete(params.row._id)}>
+          <IconButton onClick={() => handleDelete(params.row._id)}>
             <Delete color="error" />
-          </IconButton> */}
+          </IconButton>
         </>
       ),
     },
@@ -273,6 +273,7 @@ const RestPendingUsersDashboard = () => {
           <TextField
             fullWidth
             label="Mobile Number"
+            type="number"
             value={pendingUserData.mobileNumber}
             onChange={(e) =>
               setPendingUserData({

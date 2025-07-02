@@ -21,6 +21,7 @@ import {
   getOfficeAllCategories,
   updateOfficeCategory,
 } from "../../redux/actions/officeBookAction";
+import { getPendingUser } from "../../redux/actions/restPendingAction";
 
 // Accordion item to display category and its expenses
 const CategoryAccordion = ({ key, category, onEdit, onDelete }) => (
@@ -102,7 +103,7 @@ const OfficeCategoryDashboard = () => {
   const { loading, officeCategory } = useAppSelector(
     (state) => state.officeBook
   );
-
+  const { restPending } = useAppSelector((state) => state.restPending);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -116,7 +117,60 @@ const OfficeCategoryDashboard = () => {
 
   useEffect(() => {
     dispatch(getOfficeAllCategories());
+    dispatch(getPendingUser());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (!restPending?.length || !officeCategory?.length) return;
+
+    const pendingCategory = officeCategory.find(
+      (cat) => cat.categoryName === "Pending"
+    );
+
+    const newExpenses = restPending.map((user) => ({
+      expenseName: user.fullname,
+      expenseDescription: user.fullname,
+    }));
+
+    const existingExpenses = pendingCategory?.expense || [];
+
+    const isDifferent =
+      newExpenses.length !== existingExpenses.length ||
+      newExpenses.some(
+        (newExp) =>
+          !existingExpenses.some(
+            (exp) =>
+              exp.expenseName === newExp.expenseName &&
+              exp.expenseDescription === newExp.expenseDescription
+          )
+      ) ||
+      existingExpenses.some(
+        (exp) =>
+          !newExpenses.some(
+            (newExp) =>
+              exp.expenseName === newExp.expenseName &&
+              exp.expenseDescription === newExp.expenseDescription
+          )
+      );
+
+    if (isDifferent) {
+      (async () => {
+        const payload = {
+          categoryName: "Pending",
+          categoryDescription: "Pending",
+          expense: newExpenses,
+        };
+
+        if (pendingCategory) {
+          await dispatch(updateOfficeCategory(pendingCategory._id, payload));
+        } else {
+          await dispatch(createOfficeCategory(payload));
+        }
+
+        await dispatch(getOfficeAllCategories());
+      })();
+    }
+  }, [restPending, officeCategory, dispatch]);
 
   const handleOpen = (category = null) => {
     if (category) {
@@ -310,16 +364,27 @@ const OfficeCategoryDashboard = () => {
         </Box>
       )}
 
-      <Modal open={open} onClose={handleClose}>
+      <Modal
+        open={open}
+        onClose={handleClose}
+        sx={{
+          display: "flex",
+          overflowY: "auto",
+        }}
+      >
         <Box
           sx={{
-            backgroundColor: "background.paper",
-            boxShadow: 24,
-            borderRadius: 3,
             p: 4,
             mx: "auto",
-            mt: "10vh",
-            width: { xs: "90%", sm: "500px" },
+            mt: 10,
+            borderRadius: 3,
+            boxShadow: 3,
+            display: "flex",
+            flexDirection: "column",
+            backgroundColor: "#f9f9f9",
+            height: "fit-content",
+            gap: 2,
+            width: { xs: "100%", sm: "50%" },
           }}
         >
           <Stack spacing={2}>
