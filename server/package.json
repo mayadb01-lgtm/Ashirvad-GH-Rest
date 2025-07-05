@@ -10,6 +10,7 @@
   "proxy": "http://localhost:8080",
   "type": "module",
   "dependencies": {
+    "adm-zip": "^0.5.16",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
@@ -17,8 +18,10 @@
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "fs-extra": "^11.3.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.8.4",
+    "nodemailer": "^7.0.4",
     "nodemon": "^3.1.7",
     "uuid": "^11.1.0"
   },
