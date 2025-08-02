@@ -98,7 +98,8 @@ router.put("/update-entry/:date", async (req, res) => {
           item.fullname &&
           item.categoryName &&
           item.expenseName &&
-          item.modeOfPayment
+          item.modeOfPayment &&
+          item.createDate
       );
 
     if (officeIn && !validateEntries(officeIn)) {
@@ -118,8 +119,20 @@ router.put("/update-entry/:date", async (req, res) => {
     const entry = await OfficeBook.findOneAndUpdate(
       { createDate },
       {
-        officeIn,
-        officeOut,
+        officeIn: officeIn?.map((item) => {
+          return {
+            ...item,
+            entryCreateDate: reqBody.entryCreateDate || "",
+            updatedDate: reqBody.updatedDate || "",
+          };
+        }),
+        officeOut: officeOut?.map((item) => {
+          return {
+            ...item,
+            entryCreateDate: reqBody.entryCreateDate || "",
+            updatedDate: reqBody.updatedDate || "",
+          };
+        }),
         createDate: createDate || "",
         entryCreateDate: reqBody.entryCreateDate || "",
         updatedDate: reqBody.updatedDate || "",

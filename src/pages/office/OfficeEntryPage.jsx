@@ -37,6 +37,7 @@ const OfficeEntryPage = () => {
       remark: "",
       createDate: date,
       fullname_id: "",
+      entryCreateDate: "",
     }));
   const [officeInData, setOfficeInData] = useState(() =>
     makeInitialRows(selectedDate)
@@ -44,6 +45,7 @@ const OfficeEntryPage = () => {
   const [officeOutData, setOfficeOutData] = useState(() =>
     makeInitialRows(selectedDate)
   );
+  const [entryCreateDate, setEntryCreateDate] = useState(today);
 
   // ✅ Load session data on mount
   useEffect(() => {
@@ -51,10 +53,12 @@ const OfficeEntryPage = () => {
       const savedDate = sessionStorage.getItem("officeEntryDate");
       const savedIn = sessionStorage.getItem("officeInData");
       const savedOut = sessionStorage.getItem("officeOutData");
+      const savedCreateDate = sessionStorage.getItem("entryCreateDate");
 
       if (savedDate) setSelectedDate(savedDate);
       if (savedIn) setOfficeInData(JSON.parse(savedIn));
       if (savedOut) setOfficeOutData(JSON.parse(savedOut));
+      if (savedCreateDate) setEntryCreateDate(savedCreateDate);
     }
   }, []);
 
@@ -64,8 +68,9 @@ const OfficeEntryPage = () => {
       sessionStorage.setItem("officeEntryDate", selectedDate);
       sessionStorage.setItem("officeInData", JSON.stringify(officeInData));
       sessionStorage.setItem("officeOutData", JSON.stringify(officeOutData));
+      sessionStorage.setItem("entryCreateDate", entryCreateDate);
     }
-  }, [selectedDate, officeInData, officeOutData]);
+  }, [selectedDate, officeInData, officeOutData, entryCreateDate]);
 
   // Fetch office bookings by date
   useEffect(() => {
@@ -97,6 +102,7 @@ const OfficeEntryPage = () => {
 
     const isEmptyIn = !officeBook.officeIn?.length;
     const isEmptyOut = !officeBook.officeOut?.length;
+    const hasEntryCreateDate = officeBook.entryCreateDate;
 
     if (isEmptyIn && isEmptyOut) {
       resetForm();
@@ -106,6 +112,9 @@ const OfficeEntryPage = () => {
     resetForm();
     if (!isEmptyIn) setOfficeInData(officeBook.officeIn);
     if (!isEmptyOut) setOfficeOutData(officeBook.officeOut);
+    if (hasEntryCreateDate) {
+      setEntryCreateDate(officeBook.entryCreateDate);
+    }
   }, [officeBook, selectedDate]);
 
   const handleDateChange = (newDate) => {
@@ -160,6 +169,7 @@ const OfficeEntryPage = () => {
       officeIn: JSON.stringify(processedOfficeIn),
       officeOut: JSON.stringify(processedOfficeOut),
       createDate: selectedDate,
+      entryCreateDate: entryCreateDate,
     };
   }, [officeInData, officeOutData, selectedDate]);
 
