@@ -148,7 +148,12 @@ const OfficeBookDashboard = () => {
     const combined = [...officeIn, ...officeOut];
 
     // Get the correct base data
-    let baseData = combined;
+    let baseData = combined?.sort((a, b) => {
+      return (
+        dayjs(a.createDate, "DD-MM-YYYY").unix() -
+        dayjs(b.createDate, "DD-MM-YYYY").unix()
+      );
+    });
     if (officeInOut === "in") baseData = officeIn;
     if (officeInOut === "out") baseData = officeOut;
 
