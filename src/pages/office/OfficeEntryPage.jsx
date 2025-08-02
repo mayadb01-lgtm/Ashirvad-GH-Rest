@@ -174,7 +174,9 @@ const OfficeEntryPage = () => {
         `Are you sure you want to submit office book for ${selectedDate}?`
       );
       if (!confirmSubmit) return;
-      dispatch(createOfficeBook(officeBookData));
+      console.log("Submit - Office Book", officeBookData);
+      await dispatch(createOfficeBook(officeBookData));
+      await dispatch(getOfficeBookByDate(today));
       setSelectedDate(today);
       resetForm();
       resetSession();
@@ -198,7 +200,7 @@ const OfficeEntryPage = () => {
         `Are you sure you want to update office book for ${selectedDate}?`
       );
       if (!confirmSubmit) return;
-
+      console.log("Update - Office Book", selectedDate, officeBookData);
       await dispatch(updateOfficeBookByDate(selectedDate, officeBookData));
       await dispatch(getOfficeBookByDate(today));
       setSelectedDate(today);
@@ -220,6 +222,7 @@ const OfficeEntryPage = () => {
         `Are you sure you want to delete office book for ${selectedDate}?`
       );
       if (!confirmSubmit) return;
+      console.log("Delete - Office Book", selectedDate);
       await dispatch(deleteOfficeBookByDate(selectedDate));
       await dispatch(getOfficeBookByDate(today));
       setSelectedDate(today);
@@ -387,6 +390,7 @@ const OfficeEntryPage = () => {
                     Office In
                   </Typography>
                   <OfficeBookTable
+                    selectedDate={selectedDate}
                     officeData={officeInData}
                     setOfficeData={setOfficeInData}
                     isOfficeIn
@@ -411,6 +415,7 @@ const OfficeEntryPage = () => {
                     Office Out
                   </Typography>
                   <OfficeBookTable
+                    selectedDate={selectedDate}
                     officeData={officeOutData}
                     setOfficeData={setOfficeOutData}
                     isOfficeOut

@@ -38,8 +38,8 @@ router.post("/create-entry", async (req, res) => {
     const entry = await OfficeBook.create({
       officeIn,
       officeOut,
-      createDate: reqBody.createDate,
-      modeOfPayment: reqBody.modeOfPayment,
+      createDate: reqBody.createDate || "",
+      modeOfPayment: reqBody.modeOfPayment || "",
       fullname_id: reqBody?.fullname_id || "",
     });
 
@@ -120,8 +120,9 @@ router.put("/update-entry/:date", async (req, res) => {
       {
         officeIn,
         officeOut,
-        modeOfPayment: reqBody.modeOfPayment,
-        fullname_id: reqBody?.fullname_id || "",
+        createDate: createDate || "",
+        entryCreateDate: reqBody.entryCreateDate || "",
+        updatedDate: reqBody.updatedDate || "",
       },
       { new: true }
     );

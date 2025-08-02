@@ -209,6 +209,7 @@ const OfficeBookTable = ({
   setOfficeData,
   isOfficeIn,
   isOfficeOut,
+  selectedDate,
 }) => {
   const { restCategory } = useAppSelector((state) => state.restCategory);
   const { officeCategory } = useAppSelector((state) => state.officeBook);
@@ -237,7 +238,7 @@ const OfficeBookTable = ({
         remark: "",
         categoryName: "",
         expenseName: "",
-        createDate: dayjs().format("DD-MM-YYYY"),
+        createDate: selectedDate || "",
         fullname_id: "",
       },
     ]);
