@@ -30,6 +30,7 @@ const OfficeBookDashboard = () => {
   const [officeInOut, setOfficeInOut] = useState("");
   const [category, setCategory] = useState("");
   const [expenss, setExpense] = useState("");
+  const [selectedStaff, setSelectedStaff] = useState("");
 
   const handleStartDateChange = useCallback((newDate) => {
     if (newDate) setStartDate(newDate);
@@ -75,6 +76,17 @@ const OfficeBookDashboard = () => {
       ]) || [];
     return Array.from(
       new Set(allData.map((item) => item.expenseName).filter(Boolean))
+    ).sort();
+  }, [officeBook]);
+
+  const staffOptions = useMemo(() => {
+    const allData =
+      officeBook?.flatMap((entry) => [
+        ...(entry.officeIn || []),
+        ...(entry.officeOut || []),
+      ]) || [];
+    return Array.from(
+      new Set(allData.map((item) => item.fullname).filter(Boolean))
     ).sort();
   }, [officeBook]);
 
@@ -147,7 +159,12 @@ const OfficeBookDashboard = () => {
         : true;
       const matchesCategory = category ? item.categoryName === category : true;
       const matchesExpense = expenss ? item.expenseName === expenss : true;
-      return matchesPayment && matchesCategory && matchesExpense;
+      const matchesStaff = selectedStaff
+        ? item.fullname === selectedStaff
+        : true;
+      return (
+        matchesPayment && matchesCategory && matchesExpense && matchesStaff
+      );
     });
 
     // ✅ Compute total
@@ -169,7 +186,14 @@ const OfficeBookDashboard = () => {
     };
 
     return [...filteredData, totalRow];
-  }, [officeBook, officeInOut, paymentMethod, category, expenss]);
+  }, [
+    officeBook,
+    officeInOut,
+    paymentMethod,
+    category,
+    expenss,
+    selectedStaff,
+  ]);
 
   const headerMap = {
     id: "No.",
@@ -211,6 +235,7 @@ const OfficeBookDashboard = () => {
       <Box
         sx={{
           py: 2,
+          px: 8,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -221,7 +246,15 @@ const OfficeBookDashboard = () => {
           Office Book Dashboard
         </Typography>
 
-        <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          mb={2}
+          flex
+          gap={1}
+          flexWrap={"wrap"}
+        >
           <Typography
             variant="subtitle2"
             fontWeight={500}
@@ -265,60 +298,82 @@ const OfficeBookDashboard = () => {
           >
             Export to Excel
           </Button>
-          <FormGroup row sx={{ ml: 2, gap: 2 }}>
-            <Autocomplete
-              options={MODE_OF_PAYMENT_OPTIONS}
-              sx={{ width: 200 }}
-              value={paymentMethod}
-              onChange={(e, value) => setPaymentMethod(value)}
-              size="small"
-              renderInput={(params) => (
-                <TextField {...params} label="Payment Method" />
-              )}
-            />
-            <Autocomplete
-              options={[
-                { label: "Office In", value: "in" },
-                { label: "Office Out", value: "out" },
-              ]}
-              getOptionLabel={(option) => option.label}
-              isOptionEqualToValue={(opt, val) => opt.value === val?.value}
-              sx={{ width: 200 }}
-              value={
-                ["in", "out"].includes(officeInOut)
-                  ? {
-                      label: `Office ${officeInOut === "in" ? "In" : "Out"}`,
-                      value: officeInOut,
-                    }
-                  : null
-              }
-              onChange={(e, newValue) => setOfficeInOut(newValue?.value || "")}
-              size="small"
-              renderInput={(params) => (
-                <TextField {...params} label="Office In/Out" />
-              )}
-            />
-            <Autocomplete
-              options={categoryOptions}
-              sx={{ width: 200 }}
-              value={category || null}
-              onChange={(e, newValue) => setCategory(newValue || "")}
-              size="small"
-              renderInput={(params) => (
-                <TextField {...params} label="Category" placeholder="All" />
-              )}
-            />
-            <Autocomplete
-              options={expenssOptions}
-              sx={{ width: 200 }}
-              value={expenss || null}
-              onChange={(e, newValue) => setExpense(newValue || "")}
-              size="small"
-              renderInput={(params) => (
-                <TextField {...params} label="Expense" placeholder="All" />
-              )}
-            />
-          </FormGroup>
+        </Stack>
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          mb={2}
+          flex
+          gap={1}
+          flexWrap={"wrap"}
+        >
+          <Autocomplete
+            options={MODE_OF_PAYMENT_OPTIONS}
+            sx={{ width: 200 }}
+            value={paymentMethod}
+            onChange={(e, value) => setPaymentMethod(value)}
+            size="small"
+            renderInput={(params) => (
+              <TextField {...params} label="Payment Method" />
+            )}
+          />
+          <Autocomplete
+            options={[
+              { label: "Office In", value: "in" },
+              { label: "Office Out", value: "out" },
+            ]}
+            getOptionLabel={(option) => option.label}
+            isOptionEqualToValue={(opt, val) => opt.value === val?.value}
+            sx={{ width: 200 }}
+            value={
+              ["in", "out"].includes(officeInOut)
+                ? {
+                    label: `Office ${officeInOut === "in" ? "In" : "Out"}`,
+                    value: officeInOut,
+                  }
+                : null
+            }
+            onChange={(e, newValue) => setOfficeInOut(newValue?.value || "")}
+            size="small"
+            renderInput={(params) => (
+              <TextField {...params} label="Office In/Out" />
+            )}
+          />
+          <Autocomplete
+            options={categoryOptions}
+            sx={{ width: 200 }}
+            value={category || null}
+            onChange={(e, newValue) => setCategory(newValue || "")}
+            size="small"
+            renderInput={(params) => (
+              <TextField {...params} label="Category" placeholder="All" />
+            )}
+          />
+          <Autocomplete
+            options={expenssOptions}
+            sx={{ width: 200 }}
+            value={expenss || null}
+            onChange={(e, newValue) => setExpense(newValue || "")}
+            size="small"
+            renderInput={(params) => (
+              <TextField {...params} label="Expense" placeholder="All" />
+            )}
+          />
+          {/* Filter For Staff - fullname */}
+          <Autocomplete
+            disablePortal
+            id="fullname"
+            options={staffOptions}
+            value={selectedStaff || null}
+            getOptionLabel={(option) => option || ""}
+            sx={{ width: 200 }}
+            renderInput={(params) => (
+              <TextField {...params} label="Select Staff" placeholder="All" />
+            )}
+            onChange={(e, newValue) => setSelectedStaff(newValue || "")}
+            size="small"
+          />
         </Stack>
 
         {officeBook ? (
