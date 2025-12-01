@@ -31,6 +31,9 @@ const ProtectedAdminRoute = ({ children }) => {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Check if current path requires extra security
+  const requiresExtraSecurity = location.pathname.includes("/dashboard");
+
   useEffect(() => {
     if (!loading && !isAdminAuthenticated) {
       navigate("/admin-login", { state: { from: location }, replace: true });
@@ -41,7 +44,6 @@ const ProtectedAdminRoute = ({ children }) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate brief validation delay for better UX
     setTimeout(() => {
       if (inputPassword === ADMIN_EXTRA_PASSWORD) {
         setPassedExtra(true);
@@ -68,6 +70,11 @@ const ProtectedAdminRoute = ({ children }) => {
     );
 
   if (!isAdminAuthenticated) return null;
+
+  // Skip extra security if not on dashboard routes
+  if (!requiresExtraSecurity) {
+    return children;
+  }
 
   if (!passedExtra) {
     return (
@@ -116,14 +123,14 @@ const ProtectedAdminRoute = ({ children }) => {
                 WebkitTextFillColor: "transparent",
               }}
             >
-              Extra Security Layer
+              Dashboard Access
             </Typography>
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{ fontSize: 15 }}
             >
-              Enter the additional password to access admin panel
+              Enter the additional password to access dashboard
             </Typography>
           </Box>
 
@@ -213,8 +220,7 @@ const ProtectedAdminRoute = ({ children }) => {
               fontSize: 13,
             }}
           >
-            🔒 This is an additional security measure for sensitive admin
-            operations
+            🔒 Dashboard requires additional authentication
           </Typography>
         </Paper>
       </Box>
