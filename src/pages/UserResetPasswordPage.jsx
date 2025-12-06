@@ -74,6 +74,7 @@ const ResetPasswordPage = () => {
         <Box
           component="form"
           onSubmit={handleResetPassword}
+          autoComplete="off"
           sx={{ mt: 3, display: "flex", flexDirection: "column", gap: 2 }}
         >
           <TextField
@@ -85,6 +86,8 @@ const ResetPasswordPage = () => {
             value={form.email}
             onChange={handleChange}
             required
+            autoComplete="email"
+            textareaProps={{ spellCheck: "false" }}
           />
 
           <TextField
@@ -96,6 +99,8 @@ const ResetPasswordPage = () => {
             value={form.password}
             onChange={handleChange}
             required
+            autoComplete="password"
+            textareaProps={{ spellCheck: "false" }}
           />
 
           <TextField
@@ -106,6 +111,8 @@ const ResetPasswordPage = () => {
             value={form.referralCode}
             onChange={handleChange}
             required
+            autoComplete="referral-code"
+            textareaProps={{ spellCheck: "false" }}
           />
 
           <Button
