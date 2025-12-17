@@ -64,6 +64,15 @@ const EntryPage = () => {
   const [pendingJamaRows, setPendingJamaRows] = useState([]);
   const [reservationData, setReservationData] = useState([]);
   const [extraToggle, setExtraToggle] = useState(false);
+  const USER_ALLOWED_DAYS = 20;
+  const todayFun = dayjs();
+
+  const userMinDate = useMemo(
+    () => todayFun.clone().subtract(USER_ALLOWED_DAYS - 1, "day"),
+    []
+  );
+
+  const userMaxDate = todayFun;
 
   useEffect(() => {
     const fetchEntries = async () => {
@@ -575,7 +584,7 @@ const EntryPage = () => {
                   adapterLocale="en-gb"
                 >
                   <DatePicker
-                    disabled={!isAdminAuthenticated}
+                    // disabled={!isAdminAuthenticated}
                     views={["year", "month", "day"]}
                     value={
                       selectedDate
@@ -600,7 +609,9 @@ const EntryPage = () => {
                       },
                     }}
                     disableFuture={isAdminAuthenticated ? false : true}
-                    disablePast={isAdminAuthenticated ? false : true}
+                    // disablePast={isAdminAuthenticated ? false : true}
+                    minDate={isAdminAuthenticated ? undefined : userMinDate}
+                    maxDate={isAdminAuthenticated ? undefined : userMaxDate}
                   />
                 </LocalizationProvider>
               </Stack>
