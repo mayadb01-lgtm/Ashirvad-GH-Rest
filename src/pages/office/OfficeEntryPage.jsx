@@ -25,6 +25,14 @@ const OfficeEntryPage = () => {
   const { isAdminAuthenticated } = useAppSelector((state) => state.admin);
   const today = dayjs().format("DD-MM-YYYY");
   const [selectedDate, setSelectedDate] = useState(today);
+  const USER_ALLOWED_DAYS = 20;
+  const todayFun = dayjs();
+
+  const userMinDate = useMemo(
+    () => todayFun.clone().subtract(USER_ALLOWED_DAYS - 1, "day"),
+    []
+  );
+  const userMaxDate = todayFun;
 
   const makeInitialRows = (date, count = 8) =>
     Array.from({ length: count }, (_, i) => ({
@@ -286,7 +294,7 @@ const OfficeEntryPage = () => {
                       adapterLocale="en-gb"
                     >
                       <DatePicker
-                        disabled={!isAdminAuthenticated}
+                        // disabled={!isAdminAuthenticated}
                         format="DD-MM-YYYY"
                         views={["year", "month", "day"]}
                         value={
@@ -313,7 +321,9 @@ const OfficeEntryPage = () => {
                           },
                         }}
                         disableFuture={!isAdminAuthenticated}
-                        disablePast={!isAdminAuthenticated}
+                        // disablePast={!isAdminAuthenticated}
+                        minDate={isAdminAuthenticated ? undefined : userMinDate}
+                        maxDate={isAdminAuthenticated ? undefined : userMaxDate}
                       />
                     </LocalizationProvider>
                   </Grid>
