@@ -51,7 +51,14 @@ const GHHome = () => {
   const formattedDatasetL1 = useMemo(() => {
     if (!Array.isArray(entries)) return [];
 
-    const sortedEntries = [...entries].sort((a, b) =>
+    const filteredEntries = entries.map((entry) => {
+      return {
+        ...entry,
+        entry: entry.entry.filter((e) => e.period !== "UnPaid"),
+      };
+    });
+
+    const sortedEntries = [...filteredEntries].sort((a, b) =>
       dayjs(a.entryCreateDate).diff(dayjs(b.entryCreateDate))
     );
 
