@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import {
   Box,
   Typography,
@@ -31,6 +31,7 @@ const OfficeBookDashboard = () => {
   const [category, setCategory] = useState("");
   const [expenss, setExpense] = useState("");
   const [selectedStaff, setSelectedStaff] = useState("");
+  const fileNameRef = useRef(null);
 
   const handleStartDateChange = useCallback((newDate) => {
     if (newDate) setStartDate(newDate);
@@ -217,6 +218,15 @@ const OfficeBookDashboard = () => {
       toast.error("No data available to export for selected date range.");
       return;
     }
+    const headingText = fileNameRef.current?.innerText || "";
+    let prefix = "Export";
+    if (headingText.includes("Guest House")) prefix = "GH";
+    else if (headingText.includes("Restaurant")) prefix = "R";
+    else if (headingText.includes("Office")) prefix = "OB";
+
+    const fileName = `${prefix} Book Dashboard - ${startDate.format(
+      "DD-MM-YYYY"
+    )} to ${endDate.format("DD-MM-YYYY")}.xlsx`;
 
     const exportData = filteredOfficeBook.map(({ ...item }) => {
       const transformed = {};
@@ -228,9 +238,9 @@ const OfficeBookDashboard = () => {
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Guest Entries");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Office Book");
 
-    XLSX.writeFile(workbook, "GuestHouseEntries.xlsx");
+    XLSX.writeFile(workbook, fileName);
   };
 
   if (loading) {
@@ -247,7 +257,7 @@ const OfficeBookDashboard = () => {
           width: "100%",
         }}
       >
-        <Typography variant="h5" fontWeight={600} mb={2}>
+        <Typography ref={fileNameRef} variant="h5" fontWeight={600} mb={2}>
           Office Book Dashboard
         </Typography>
 

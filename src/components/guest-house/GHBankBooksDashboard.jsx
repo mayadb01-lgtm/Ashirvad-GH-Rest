@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import {
   Box,
   Typography,
@@ -25,6 +25,7 @@ const GHBankBooksDashboard = () => {
   const { loading, entries } = useAppSelector((state) => state.entry);
   const [startDate, setStartDate] = useState(dayjs().startOf("month"));
   const [endDate, setEndDate] = useState(dayjs());
+  const fileNameRef = useRef(null);
 
   const [selectedMethod, setSelectedMethod] = useState(null);
 
@@ -137,11 +138,23 @@ const GHBankBooksDashboard = () => {
       toast.error("No data available to export for selected date range.");
       return;
     }
+    const headingText = fileNameRef.current?.innerText || "";
+    let prefix = "BB";
+    if (headingText.includes("Guest House")) prefix = "GH";
+    else if (headingText.includes("Restaurant")) prefix = "R";
+    else if (headingText.includes("Office")) prefix = "OB";
+
+    const fileName = `${prefix} Bank Book - ${startDate.format(
+      "DD-MM-YYYY"
+    )} to ${endDate.format("DD-MM-YYYY")}.xlsx`;
 
     const worksheet = XLSX.utils.json_to_sheet(preparedData);
     const workbook = XLSX.utils.book_new();
+
     XLSX.utils.book_append_sheet(workbook, worksheet, "Bank Book");
-    XLSX.writeFile(workbook, "GuestHouseBankBook.xlsx");
+    XLSX.writeFile(workbook, fileName);
+
+    toast.success("Data exported successfully.");
   };
 
   return (
@@ -160,7 +173,12 @@ const GHBankBooksDashboard = () => {
           py: 3,
         }}
       >
-        <Typography variant="h5" fontWeight={600} color="text.primary">
+        <Typography
+          ref={fileNameRef}
+          variant="h5"
+          fontWeight={600}
+          color="text.primary"
+        >
           Guest House - Bank Book
         </Typography>
       </Box>

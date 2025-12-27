@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import {
   Box,
   Typography,
@@ -24,6 +24,7 @@ const RestUpaadEntriesDashboard = () => {
   const [startDate, setStartDate] = useState(dayjs().startOf("month"));
   const [endDate, setEndDate] = useState(dayjs());
   const [selectedStaff, setSelectedStaff] = useState(null);
+  const fileNameRef = useRef(null);
 
   const handleStartDateChange = useCallback((newDate) => {
     if (newDate) setStartDate(newDate);
@@ -127,6 +128,16 @@ const RestUpaadEntriesDashboard = () => {
       toast.error("No data available to export for selected date range.");
       return;
     }
+    const headingText = fileNameRef.current?.innerText || "";
+    let prefix = "Export";
+    if (headingText.includes("Guest House")) prefix = "GH";
+    else if (headingText.includes("Restaurant")) prefix = "R";
+    else if (headingText.includes("Office")) prefix = "OB";
+
+    const fileName = `${prefix} Upaad Report - ${startDate.format(
+      "DD-MM-YYYY"
+    )} to ${endDate.format("DD-MM-YYYY")}.xlsx`;
+
     const exportData = preparedEntries
       .filter((row) => row.type !== "group" && row.id !== "Total")
       .map(({ ...item }) => {
@@ -139,9 +150,9 @@ const RestUpaadEntriesDashboard = () => {
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Guest Entries");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Upaad Report");
 
-    XLSX.writeFile(workbook, "GuestHouseEntries.xlsx");
+    XLSX.writeFile(workbook, fileName);
   };
 
   return (
@@ -160,7 +171,12 @@ const RestUpaadEntriesDashboard = () => {
           py: 3,
         }}
       >
-        <Typography variant="h5" fontWeight={600} color="text.primary">
+        <Typography
+          ref={fileNameRef}
+          variant="h5"
+          fontWeight={600}
+          color="text.primary"
+        >
           Restaurant Upaad Report
         </Typography>
       </Box>

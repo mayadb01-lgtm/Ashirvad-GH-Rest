@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import {
   Box,
   Typography,
@@ -25,6 +25,7 @@ const BankBooksDashboard = () => {
   const [endDate, setEndDate] = useState(dayjs());
   const [selectedMethod, setSelectedMethod] = useState(null);
   const optionsForMethod = ["Cash", "Card", "PP"];
+  const fileNameRef = useRef(null);
 
   const handleStartDateChange = useCallback((newDate) => {
     if (newDate) setStartDate(newDate);
@@ -172,6 +173,16 @@ const BankBooksDashboard = () => {
       toast.error("No data available to export for selected date range.");
       return;
     }
+    const headingText = fileNameRef.current?.innerText || "";
+    let prefix = "Export";
+    if (headingText.includes("Guest House")) prefix = "GH";
+    else if (headingText.includes("Restaurant")) prefix = "R";
+    else if (headingText.includes("Office")) prefix = "OB";
+
+    const fileName = `${prefix} Bank Book - ${startDate.format(
+      "DD-MM-YYYY"
+    )} to ${endDate.format("DD-MM-YYYY")}.xlsx`;
+
     const exportData = preparedEntries
       .filter((row) => row.type !== "group" && row.id !== "Total")
       .map(({ ...item }) => {
@@ -184,9 +195,9 @@ const BankBooksDashboard = () => {
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Guest Entries");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Bank Book");
 
-    XLSX.writeFile(workbook, "GuestHouseEntries.xlsx");
+    XLSX.writeFile(workbook, fileName);
   };
 
   return (
@@ -205,7 +216,12 @@ const BankBooksDashboard = () => {
           py: 3,
         }}
       >
-        <Typography variant="h5" fontWeight={600} color="text.primary">
+        <Typography
+          ref={fileNameRef}
+          variant="h5"
+          fontWeight={600}
+          color="text.primary"
+        >
           Restaurant Bank Book
         </Typography>
       </Box>

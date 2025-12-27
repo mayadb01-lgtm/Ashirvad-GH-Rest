@@ -28,19 +28,19 @@ const Home = () => {
   const services = [
     {
       path: isAdminAuthenticated ? "/admin/hotel" : "/hotel",
-      title: "Guest House",
+      title: "G H",
       icon: <ApartmentIcon fontSize="large" />,
       color: "#FFB74D",
     },
     {
       path: isAdminAuthenticated ? "/admin/restaurant" : "/restaurant",
-      title: "Restaurant",
+      title: "R",
       icon: <RestaurantMenuIcon fontSize="large" />,
       color: "#FF8A80",
     },
     {
       path: isAdminAuthenticated ? "/admin/office" : "/office",
-      title: "Office Book",
+      title: "O B",
       icon: <MenuBookOutlinedIcon fontSize="large" />,
       color: "#80CBC4",
     },
@@ -111,8 +111,14 @@ const Home = () => {
                     color: theme.palette.getContrastText(service.color),
                   }}
                 >
-                  {service.icon}
-                  <Typography variant="h6" mt={1} fontWeight={500}>
+                  <Typography
+                    variant="h6"
+                    fontWeight={500}
+                    style={{
+                      fontSize: "1.5rem",
+                      fontWeight: "bold",
+                    }}
+                  >
                     {service.title}
                   </Typography>
                 </CardContent>

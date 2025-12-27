@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { DataGrid } from "@mui/x-data-grid";
 import {
@@ -33,6 +33,7 @@ const RestPendingUsersDashboard = () => {
     mobileNumber: "",
   });
   const [selectedId, setSelectedId] = useState(null);
+  const fileNameRef = useRef(null);
 
   useEffect(() => {
     dispatch(getPendingUser());
@@ -142,6 +143,14 @@ const RestPendingUsersDashboard = () => {
       toast.error("No data available to export for selected date range.");
       return;
     }
+    const headingText = fileNameRef.current?.innerText || "";
+    let prefix = "Export";
+    if (headingText.includes("Guest House")) prefix = "GH";
+    else if (headingText.includes("Restaurant")) prefix = "R";
+    else if (headingText.includes("Office")) prefix = "OB";
+
+    const fileName = `${prefix} Pending Users.xlsx`;
+
     const exportData = filteredStaff
       .filter((row) => row.type !== "group" && row.id !== "Total")
       .map(({ ...item }) => {
@@ -154,9 +163,9 @@ const RestPendingUsersDashboard = () => {
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Guest Entries");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Pending Users");
 
-    XLSX.writeFile(workbook, "GuestHouseEntries.xlsx");
+    XLSX.writeFile(workbook, fileName);
   };
 
   return (
@@ -175,7 +184,12 @@ const RestPendingUsersDashboard = () => {
           py: 3,
         }}
       >
-        <Typography variant="h5" fontWeight={600} color="text.primary">
+        <Typography
+          ref={fileNameRef}
+          variant="h5"
+          fontWeight={600}
+          color="text.primary"
+        >
           Restaurant Pending Users
         </Typography>
       </Box>

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import {
   Box,
   Typography,
@@ -29,6 +29,7 @@ const RestLevanaDashboard = () => {
   const [startDate, setStartDate] = useState(dayjs().startOf("month"));
   const [endDate, setEndDate] = useState(dayjs());
   const [selectedStaff, setSelectedStaff] = useState(null);
+  const fileNameRef = useRef(null);
   const [isCombinedView, setIsCombinedView] = useState(false);
 
   useEffect(() => {
@@ -142,6 +143,16 @@ const RestLevanaDashboard = () => {
       toast.error("No data available to export for selected date range.");
       return;
     }
+    const headingText = fileNameRef.current?.innerText || "";
+    let prefix = "Export";
+    if (headingText.includes("Guest House")) prefix = "GH";
+    else if (headingText.includes("Restaurant")) prefix = "R";
+    else if (headingText.includes("Office")) prefix = "OB";
+
+    const fileName = `${prefix} Levana Report - ${startDate.format(
+      "DD-MM-YYYY"
+    )} to ${endDate.format("DD-MM-YYYY")}.xlsx`;
+
     const exportData = preparedEntries
       .filter((row) => row.id !== "Total")
       .map((row) =>
@@ -152,8 +163,8 @@ const RestLevanaDashboard = () => {
       );
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Guest Entries");
-    XLSX.writeFile(workbook, "GuestHouseEntries.xlsx");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Levana Report");
+    XLSX.writeFile(workbook, fileName);
   };
 
   return (
@@ -167,7 +178,7 @@ const RestLevanaDashboard = () => {
       }}
     >
       <Box sx={{ alignItems: "center", py: 3 }}>
-        <Typography variant="h5" fontWeight={600}>
+        <Typography ref={fileNameRef} variant="h5" fontWeight={600}>
           Restaurant Levana Dashboard
         </Typography>
       </Box>

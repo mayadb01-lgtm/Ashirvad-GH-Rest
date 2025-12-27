@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import {
   Dialog,
   DialogActions,
@@ -58,6 +58,7 @@ const GHSalesDashboardRange = () => {
   const [openEditForm, setOpenEditForm] = useState(false);
   const [editEntry, setEditEntry] = useState(null);
   const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
+  const fileNameRef = useRef(null);
   // const [entryToDelete, setEntryToDelete] = useState(null);
 
   // Fetch entries based on the selected date range
@@ -309,6 +310,16 @@ const GHSalesDashboardRange = () => {
       toast.error("No data available to export for selected date range.");
       return;
     }
+    const headingText = fileNameRef.current?.innerText || "";
+    let prefix = "Export";
+    if (headingText.includes("Guest House")) prefix = "GH";
+    else if (headingText.includes("Restaurant")) prefix = "R";
+    else if (headingText.includes("Office")) prefix = "OB";
+
+    const fileName = `${prefix} Dashboard Range - ${startDate.format(
+      "DD-MM-YYYY"
+    )} to ${endDate.format("DD-MM-YYYY")}.xlsx`;
+
     const exportData = preparedEntries
       .filter((row) => row.type !== "group" && row.id !== "Total")
       .map(({ ...item }) => {
@@ -323,7 +334,7 @@ const GHSalesDashboardRange = () => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Guest Entries");
 
-    XLSX.writeFile(workbook, "GuestHouseEntries.xlsx");
+    XLSX.writeFile(workbook, fileName);
   };
 
   return (
@@ -337,6 +348,7 @@ const GHSalesDashboardRange = () => {
       }}
     >
       <Typography
+        ref={fileNameRef}
         variant="h5"
         fontWeight={600}
         color="text.primary"

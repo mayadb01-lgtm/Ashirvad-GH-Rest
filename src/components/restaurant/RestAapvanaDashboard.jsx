@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import {
   Box,
   Typography,
@@ -30,6 +30,7 @@ const RestAapvanaDashboard = () => {
   const [endDate, setEndDate] = useState(dayjs());
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [isCombinedView, setIsCombinedView] = useState(false);
+  const fileNameRef = useRef(null);
 
   useEffect(() => {
     dispatch(getPendingUser());
@@ -142,6 +143,16 @@ const RestAapvanaDashboard = () => {
       toast.error("No data available to export for selected date range.");
       return;
     }
+    const headingText = fileNameRef.current?.innerText || "";
+    let prefix = "Export";
+    if (headingText.includes("Guest House")) prefix = "GH";
+    else if (headingText.includes("Restaurant")) prefix = "R";
+    else if (headingText.includes("Office")) prefix = "OB";
+
+    const fileName = `${prefix} Aapvana Report - ${startDate.format(
+      "DD-MM-YYYY"
+    )} to ${endDate.format("DD-MM-YYYY")}.xlsx`;
+
     const exportData = preparedEntries
       .filter((row) => row.id !== "Total")
       .map((row) =>
@@ -152,8 +163,8 @@ const RestAapvanaDashboard = () => {
       );
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Guest Entries");
-    XLSX.writeFile(workbook, "GuestHouseEntries.xlsx");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Aapvana Report");
+    XLSX.writeFile(workbook, fileName);
   };
 
   return (
@@ -167,7 +178,7 @@ const RestAapvanaDashboard = () => {
       }}
     >
       <Box sx={{ alignItems: "center", py: 3 }}>
-        <Typography variant="h5" fontWeight={600}>
+        <Typography ref={fileNameRef} variant="h5" fontWeight={600}>
           Restaurant Aapvana Dashboard
         </Typography>
       </Box>
