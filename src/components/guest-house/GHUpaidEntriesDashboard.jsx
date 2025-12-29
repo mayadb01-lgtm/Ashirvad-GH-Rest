@@ -193,6 +193,28 @@ const GHUpaidEntriesDashboard = () => {
             views={["year", "month", "day"]}
           />
         </LocalizationProvider>
+        {/* <Button
+          variant="outlined"
+          color="primary"
+          onClick={() => {
+            const prevMonth = dayjs(startDate).subtract(1, "month");
+            setStartDate(prevMonth.startOf("month"));
+            setEndDate(prevMonth.endOf("month"));
+          }}
+        >
+          Previous Month
+        </Button>
+        <Button
+          variant="outlined"
+          color="primary"
+          onClick={() => {
+            const nextMonth = dayjs(startDate).add(1, "month");
+            setStartDate(nextMonth.startOf("month"));
+            setEndDate(nextMonth.endOf("month"));
+          }}
+        >
+          Next Month
+        </Button> */}
         <Button
           variant="outlined"
           color="primary"

@@ -90,7 +90,7 @@ const GHHome = () => {
 
     entries.forEach((entry) => {
       entry.entry.forEach((e) => {
-        if (paymentModes.includes(e.modeOfPayment)) {
+        if (paymentModes.includes(e.modeOfPayment) && e.period !== "UnPaid") {
           totals[e.modeOfPayment] += e.rate ?? 0;
         }
       });
