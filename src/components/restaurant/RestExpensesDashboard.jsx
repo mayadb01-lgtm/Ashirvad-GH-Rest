@@ -118,6 +118,21 @@ const RestExpensesDashboard = () => {
       amount: totalAmount,
     };
 
+    // Calculate unique days - get unique dates from filtered entries
+    const uniqueDates = new Set(filteredData.map((entry) => entry.createDate));
+    const numberOfUniqueDays = uniqueDates.size;
+
+    const averageRow = {
+      id: "Average",
+      createDate: numberOfUniqueDays, // Show unique day count
+      expenseName: "",
+      categoryName: "",
+      amount:
+        numberOfUniqueDays > 0
+          ? parseFloat((totalAmount / numberOfUniqueDays).toFixed(2))
+          : 0,
+    };
+
     return [
       ...filteredData.map((entry, index) => ({
         id: index + 1,
@@ -127,6 +142,7 @@ const RestExpensesDashboard = () => {
         amount: entry.amount,
       })),
       totalRow,
+      averageRow,
     ];
   }, [restEntries, selectedCategory, selectedExpense]);
 
@@ -154,7 +170,10 @@ const RestExpensesDashboard = () => {
     )} to ${endDate.format("DD-MM-YYYY")}.xlsx`;
 
     const exportData = preparedEntries
-      .filter((row) => row.type !== "group" && row.id !== "Total")
+      .filter(
+        (row) =>
+          row.type !== "group" && row.id !== "Total" && row.id !== "Average"
+      )
       .map(({ ...item }) => {
         const transformed = {};
         Object.keys(headerMap).forEach((key) => {
@@ -269,6 +288,9 @@ const RestExpensesDashboard = () => {
               border: "1px solid #f0f0f0",
             },
             "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
+              fontWeight: "bold",
+            },
+            "& .MuiDataGrid-row[data-id='Average'] .MuiDataGrid-cell": {
               fontWeight: "bold",
             },
           }}

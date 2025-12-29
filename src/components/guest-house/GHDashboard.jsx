@@ -166,46 +166,57 @@ const GHDashboard = () => {
         py: 2,
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
+        alignItems: "right",
         width: "100%",
       }}
     >
-      <Typography variant="h5" fontWeight={600} color="text.primary" mb={2}>
-        Guest House - Detailed Dashboard
-      </Typography>
+      <Box sx={{ display: "flex", justifyContent: "center" }}>
+        <Typography variant="h5" fontWeight={600} color="text.primary" mb={2}>
+          Guest House - Detailed Dashboard
+        </Typography>
+      </Box>
 
       {/* Date Selection */}
-      <Stack direction="row" spacing={1} alignItems="center" mb={2}>
-        <Typography variant="subtitle2" fontWeight={500} color="text.secondary">
-          Select Date:
-        </Typography>
-        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en-gb">
-          <DatePicker
-            value={dayjs(selectedDate, "DD-MM-YYYY")}
-            onChange={handleDateChange}
-            format="DD-MM-YYYY"
-            renderInput={(params) => (
-              <TextField {...params} variant="outlined" size="small" />
-            )}
-          />
-        </LocalizationProvider>
-
-        {/* Extra Fields Checkboxes */}
-        <FormGroup row sx={{ ml: 2 }}>
-          {Object.keys(extraFields).map((key) => (
-            <FormControlLabel
-              key={key}
-              control={
-                <Checkbox
-                  checked={selectedExtras.includes(key)}
-                  onChange={() => handleExtraToggle(key)}
-                />
-              }
-              label={extraFields[key].headerName}
+      <Box sx={{ display: "flex", justifyContent: "center" }}>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Typography
+            variant="subtitle2"
+            fontWeight={500}
+            color="text.secondary"
+          >
+            Select Date:
+          </Typography>
+          <LocalizationProvider
+            dateAdapter={AdapterDayjs}
+            adapterLocale="en-gb"
+          >
+            <DatePicker
+              value={dayjs(selectedDate, "DD-MM-YYYY")}
+              onChange={handleDateChange}
+              format="DD-MM-YYYY"
+              renderInput={(params) => (
+                <TextField {...params} variant="outlined" size="small" />
+              )}
             />
-          ))}
-        </FormGroup>
-      </Stack>
+          </LocalizationProvider>
+
+          {/* Extra Fields Checkboxes */}
+          <FormGroup row sx={{ ml: 2 }}>
+            {Object.keys(extraFields).map((key) => (
+              <FormControlLabel
+                key={key}
+                control={
+                  <Checkbox
+                    checked={selectedExtras.includes(key)}
+                    onChange={() => handleExtraToggle(key)}
+                  />
+                }
+                label={extraFields[key].headerName}
+              />
+            ))}
+          </FormGroup>
+        </Stack>
+      </Box>
 
       {/* Table & Loading State */}
       {loading ? (

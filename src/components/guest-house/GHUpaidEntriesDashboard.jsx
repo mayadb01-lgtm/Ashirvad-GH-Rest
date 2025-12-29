@@ -123,7 +123,21 @@ const GHUpaidEntriesDashboard = () => {
       Paid: rows.reduce((sum, row) => sum + row.Paid, 0),
       total: rows.reduce((sum, row) => sum + row.total, 0),
     };
-    return [...rows, totalRow];
+
+    // Average row
+    const rowCount = rows.length;
+    const averageRow = {
+      id: "Average",
+      date: "Average",
+      UnPaid:
+        rowCount > 0 ? parseFloat((totalRow.UnPaid / rowCount).toFixed(2)) : 0,
+      Paid:
+        rowCount > 0 ? parseFloat((totalRow.Paid / rowCount).toFixed(2)) : 0,
+      total:
+        rowCount > 0 ? parseFloat((totalRow.total / rowCount).toFixed(2)) : 0,
+    };
+
+    return [...rows, totalRow, averageRow];
   }, [entries]);
 
   const handleExportToExcel = () => {
@@ -141,7 +155,11 @@ const GHUpaidEntriesDashboard = () => {
       "DD-MM-YYYY"
     )} to ${endDate.format("DD-MM-YYYY")}.xlsx`;
 
-    const worksheet = XLSX.utils.json_to_sheet(preparedData);
+    const exportData = preparedData.filter(
+      (row) => row.id !== "Total" && row.id !== "Average"
+    );
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "UnPaid Report");
     XLSX.writeFile(workbook, fileName);
@@ -193,7 +211,7 @@ const GHUpaidEntriesDashboard = () => {
             views={["year", "month", "day"]}
           />
         </LocalizationProvider>
-        {/* <Button
+        <Button
           variant="outlined"
           color="primary"
           onClick={() => {
@@ -214,7 +232,7 @@ const GHUpaidEntriesDashboard = () => {
           }}
         >
           Next Month
-        </Button> */}
+        </Button>
         <Button
           variant="outlined"
           color="primary"
@@ -246,6 +264,9 @@ const GHUpaidEntriesDashboard = () => {
               border: "1px solid #f0f0f0",
             },
             "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
+              fontWeight: "bold",
+            },
+            "& .MuiDataGrid-row[data-id='Average'] .MuiDataGrid-cell": {
               fontWeight: "bold",
             },
           }}

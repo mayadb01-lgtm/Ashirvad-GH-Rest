@@ -82,7 +82,18 @@ const GHBankBooksDashboard = () => {
       totalRow.total += totalRow[method];
     });
 
-    return [...rows, totalRow];
+    // Average row
+    const averageRow = { id: "Average", date: "", total: 0 };
+    const rowCount = rows.length;
+
+    methodsToInclude.forEach((method) => {
+      averageRow[method] =
+        rowCount > 0 ? parseFloat((totalRow[method] / rowCount).toFixed(2)) : 0;
+      averageRow.total += averageRow[method];
+    });
+    averageRow.total = parseFloat(averageRow.total.toFixed(2));
+
+    return [...rows, totalRow, averageRow];
   }, [entries, selectedMethod]);
 
   const columns = useMemo(() => {
@@ -148,7 +159,11 @@ const GHBankBooksDashboard = () => {
       "DD-MM-YYYY"
     )} to ${endDate.format("DD-MM-YYYY")}.xlsx`;
 
-    const worksheet = XLSX.utils.json_to_sheet(preparedData);
+    const exportData = preparedData.filter(
+      (row) => row.id !== "Total" && row.id !== "Average"
+    );
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
 
     XLSX.utils.book_append_sheet(workbook, worksheet, "Bank Book");
@@ -246,6 +261,9 @@ const GHBankBooksDashboard = () => {
               border: "1px solid #f0f0f0",
             },
             "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
+              fontWeight: "bold",
+            },
+            "& .MuiDataGrid-row[data-id='Average'] .MuiDataGrid-cell": {
               fontWeight: "bold",
             },
           }}

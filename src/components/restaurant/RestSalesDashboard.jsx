@@ -74,13 +74,23 @@ const RestSalesDashboard = () => {
       restEntries.reduce((total, entry) => total + entry.grandTotal, 0),
   };
 
+  const averageRow = {
+    id: "Average",
+    date: "",
+    total:
+      restEntries && restEntries.length > 0
+        ? parseFloat((totalRow.total / restEntries.length).toFixed(2))
+        : 0,
+  };
+
   const preparedEntries = restEntries
     .map((entry, index) => ({
       id: index + 1,
       date: entry.createDate,
       total: entry.grandTotal,
     }))
-    .concat(totalRow);
+    .concat(totalRow)
+    .concat(averageRow);
 
   // handleExportToExcel
 
@@ -105,7 +115,10 @@ const RestSalesDashboard = () => {
     )} to ${endDate.format("DD-MM-YYYY")}.xlsx`;
 
     const exportData = preparedEntries
-      .filter((row) => row.type !== "group" && row.id !== "Total")
+      .filter(
+        (row) =>
+          row.type !== "group" && row.id !== "Total" && row.id !== "Average"
+      )
       .map(({ ...item }) => {
         const transformed = {};
         Object.keys(headerMap).forEach((key) => {
@@ -197,6 +210,9 @@ const RestSalesDashboard = () => {
               border: "1px solid #f0f0f0",
             },
             "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
+              fontWeight: "bold",
+            },
+            "& .MuiDataGrid-row[data-id='Average'] .MuiDataGrid-cell": {
               fontWeight: "bold",
             },
           }}

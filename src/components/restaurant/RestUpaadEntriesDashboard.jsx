@@ -91,6 +91,22 @@ const RestUpaadEntriesDashboard = () => {
             .reduce((a, b) => a + b, 0)
         : restEntries.map((entry) => entry.amount).reduce((a, b) => a + b, 0),
     };
+
+    // Calculate unique days - get unique dates from entries
+    const entriesToUse = selectedStaff ? selectedStaffEntries : restEntries;
+    const uniqueDates = new Set(entriesToUse.map((entry) => entry.createDate));
+    const numberOfUniqueDays = uniqueDates.size;
+
+    const averageRow = {
+      id: "Average",
+      createDate: numberOfUniqueDays,
+      fullname: "",
+      amount:
+        numberOfUniqueDays > 0
+          ? parseFloat((totalRow.amount / numberOfUniqueDays).toFixed(2))
+          : 0,
+    };
+
     if (selectedStaff) {
       return selectedStaffEntries
         .map((entry, index) => ({
@@ -99,7 +115,8 @@ const RestUpaadEntriesDashboard = () => {
           fullname: entry.fullname,
           amount: entry.amount,
         }))
-        .concat(totalRow);
+        .concat(totalRow)
+        .concat(averageRow);
     }
 
     const sortedEntries = [...restEntries].sort((a, b) =>
@@ -112,7 +129,8 @@ const RestUpaadEntriesDashboard = () => {
         fullname: entry.fullname,
         amount: entry.amount,
       }))
-      .concat(totalRow);
+      .concat(totalRow)
+      .concat(averageRow);
   }, [restEntries, selectedStaff, selectedStaffEntries]);
 
   // handleExportToExcel
@@ -139,7 +157,10 @@ const RestUpaadEntriesDashboard = () => {
     )} to ${endDate.format("DD-MM-YYYY")}.xlsx`;
 
     const exportData = preparedEntries
-      .filter((row) => row.type !== "group" && row.id !== "Total")
+      .filter(
+        (row) =>
+          row.type !== "group" && row.id !== "Total" && row.id !== "Average"
+      )
       .map(({ ...item }) => {
         const transformed = {};
         Object.keys(headerMap).forEach((key) => {
@@ -246,6 +267,9 @@ const RestUpaadEntriesDashboard = () => {
               border: "1px solid #f0f0f0",
             },
             "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
+              fontWeight: "bold",
+            },
+            "& .MuiDataGrid-row[data-id='Average'] .MuiDataGrid-cell": {
               fontWeight: "bold",
             },
           }}

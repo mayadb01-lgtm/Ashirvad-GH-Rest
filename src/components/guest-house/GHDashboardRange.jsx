@@ -292,6 +292,16 @@ const GHSalesDashboardRange = () => {
         .reduce((a, b) => a + b, 0)
     : 0;
 
+  const totalNumberOfPeople = Array.isArray(entries)
+    ? entries
+        .flatMap((entry) =>
+          Array.isArray(entry.entry)
+            ? entry.entry.map((item) => item?.noOfPeople || 0)
+            : []
+        )
+        .reduce((a, b) => a + b, 0)
+    : 0;
+
   // Add total row if entries exist
   if (preparedEntries.length > 0) {
     preparedEntries.push({
@@ -301,6 +311,7 @@ const GHSalesDashboardRange = () => {
       cost: "",
       rate: totalCost,
       discount: totalDiscount,
+      noOfPeople: totalNumberOfPeople,
       type: "",
     });
   }
@@ -405,6 +416,9 @@ const GHSalesDashboardRange = () => {
             mt: 2,
             height: 600,
             width: "95%",
+            "& .MuiDataGrid-columnHeader, .MuiDataGrid-cell": {
+              border: "1px solid #f0f0f0",
+            },
             "& .MuiDataGrid-columnHeaderTitle": {
               fontWeight: "bold",
             },

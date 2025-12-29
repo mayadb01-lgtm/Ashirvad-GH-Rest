@@ -87,6 +87,15 @@ const GHSalesDashboard = () => {
         .reduce((a, b) => a + b, 0),
   };
 
+  const averageRow = {
+    id: "Average",
+    date: "",
+    total:
+      entries && entries.length > 0
+        ? (totalRow.total / entries.length).toFixed(2)
+        : 0,
+  };
+
   const preparedEntries =
     entries &&
     entries.length > 0 &&
@@ -103,7 +112,8 @@ const GHSalesDashboard = () => {
           ?.map((item) => item.rate)
           .reduce((a, b) => a + b, 0),
       }))
-      .concat(totalRow);
+      .concat(totalRow)
+      .concat(averageRow);
 
   const headerMap = {
     id: "Index",
@@ -127,7 +137,10 @@ const GHSalesDashboard = () => {
     )} to ${endDate.format("DD-MM-YYYY")}.xlsx`;
 
     const exportData = preparedEntries
-      .filter((row) => row.type !== "group" && row.id !== "Total")
+      .filter(
+        (row) =>
+          row.type !== "group" && row.id !== "Total" && row.id !== "Average"
+      )
       .map(({ ...item }) => {
         const transformed = {};
         Object.keys(headerMap).forEach((key) => {
@@ -220,6 +233,9 @@ const GHSalesDashboard = () => {
               border: "1px solid #f0f0f0",
             },
             "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
+              fontWeight: "bold",
+            },
+            "& .MuiDataGrid-row[data-id='Average'] .MuiDataGrid-cell": {
               fontWeight: "bold",
             },
           }}

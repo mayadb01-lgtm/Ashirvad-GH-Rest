@@ -130,6 +130,20 @@ const BankBooksDashboard = () => {
       grandTotal: clonedEntries.reduce((total, e) => total + e.grandTotal, 0),
     };
 
+    const rowCount = clonedEntries.length;
+    const averageRow = {
+      id: "Average",
+      Cash:
+        rowCount > 0 ? parseFloat((totalRow.Cash / rowCount).toFixed(2)) : 0,
+      Card:
+        rowCount > 0 ? parseFloat((totalRow.Card / rowCount).toFixed(2)) : 0,
+      PP: rowCount > 0 ? parseFloat((totalRow.PP / rowCount).toFixed(2)) : 0,
+      grandTotal:
+        rowCount > 0
+          ? parseFloat((totalRow.grandTotal / rowCount).toFixed(2))
+          : 0,
+    };
+
     const sortedEntries = clonedEntries.sort((a, b) =>
       dayjs(a.entryCreateDate).diff(dayjs(b.entryCreateDate))
     );
@@ -157,7 +171,7 @@ const BankBooksDashboard = () => {
       }
     });
 
-    return [...rows, totalRow];
+    return [...rows, totalRow, averageRow];
   }, [restEntries, selectedMethod]);
 
   const headerMap = {
@@ -184,7 +198,10 @@ const BankBooksDashboard = () => {
     )} to ${endDate.format("DD-MM-YYYY")}.xlsx`;
 
     const exportData = preparedEntries
-      .filter((row) => row.type !== "group" && row.id !== "Total")
+      .filter(
+        (row) =>
+          row.type !== "group" && row.id !== "Total" && row.id !== "Average"
+      )
       .map(({ ...item }) => {
         const transformed = {};
         Object.keys(headerMap).forEach((key) => {
@@ -289,6 +306,9 @@ const BankBooksDashboard = () => {
               border: "1px solid #f0f0f0",
             },
             "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
+              fontWeight: "bold",
+            },
+            "& .MuiDataGrid-row[data-id='Average'] .MuiDataGrid-cell": {
               fontWeight: "bold",
             },
           }}

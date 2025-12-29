@@ -91,6 +91,12 @@ const RestLevanaDashboard = () => {
     : sortedEntries;
 
   const preparedEntries = useMemo(() => {
+    // Calculate unique days from filtered entries
+    const uniqueDates = new Set(
+      filteredEntries.map((entry) => entry.createDate)
+    );
+    const numberOfUniqueDays = uniqueDates.size;
+
     if (isCombinedView) {
       // Group by date + fullname
       const grouped = filteredEntries.reduce((acc, entry) => {
@@ -110,9 +116,21 @@ const RestLevanaDashboard = () => {
         amount: entry.amount,
       }));
       const totalAmount = combinedArray.reduce((sum, e) => sum + e.amount, 0);
+
+      const averageRow = {
+        id: "Average",
+        createDate: numberOfUniqueDays,
+        fullname: "",
+        amount:
+          numberOfUniqueDays > 0
+            ? parseFloat((totalAmount / numberOfUniqueDays).toFixed(2))
+            : 0,
+      };
+
       return [
         ...combinedArray,
         { id: "Total", createDate: "", fullname: "", amount: totalAmount },
+        averageRow,
       ];
     } else {
       // Original behavior
@@ -122,6 +140,17 @@ const RestLevanaDashboard = () => {
         fullname: "",
         amount: filteredEntries.reduce((sum, e) => sum + e.amount, 0),
       };
+
+      const averageRow = {
+        id: "Average",
+        createDate: numberOfUniqueDays,
+        fullname: "",
+        amount:
+          numberOfUniqueDays > 0
+            ? parseFloat((totalRow.amount / numberOfUniqueDays).toFixed(2))
+            : 0,
+      };
+
       return filteredEntries
         .map((entry, index) => ({
           id: index + 1,
@@ -129,7 +158,8 @@ const RestLevanaDashboard = () => {
           fullname: entry.fullname,
           amount: entry.amount,
         }))
-        .concat(totalRow);
+        .concat(totalRow)
+        .concat(averageRow);
     }
   }, [filteredEntries, isCombinedView]);
 
@@ -154,7 +184,7 @@ const RestLevanaDashboard = () => {
     )} to ${endDate.format("DD-MM-YYYY")}.xlsx`;
 
     const exportData = preparedEntries
-      .filter((row) => row.id !== "Total")
+      .filter((row) => row.id !== "Total" && row.id !== "Average")
       .map((row) =>
         Object.keys(headerMap).reduce((obj, key) => {
           obj[headerMap[key]] = row[key];
@@ -255,6 +285,9 @@ const RestLevanaDashboard = () => {
               border: "1px solid #f0f0f0",
             },
             "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
+              fontWeight: "bold",
+            },
+            "& .MuiDataGrid-row[data-id='Average'] .MuiDataGrid-cell": {
               fontWeight: "bold",
             },
           }}

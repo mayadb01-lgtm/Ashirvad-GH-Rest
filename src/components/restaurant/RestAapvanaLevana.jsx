@@ -153,6 +153,13 @@ const AapvanaLevanaBalance = () => {
 
     const balance = totalAmountIn - totalAmountOut;
 
+    // Calculate unique days from both sources
+    const allDates = new Set([
+      ...restFiltered.map((entry) => entry.createDate),
+      ...officeFiltered.map((entry) => entry.createDate),
+    ]);
+    const numberOfUniqueDays = allDates.size;
+
     const totalRow = {
       id: "Total",
       createDate: "",
@@ -160,6 +167,24 @@ const AapvanaLevanaBalance = () => {
       amountIn: totalAmountIn,
       amountOut: totalAmountOut,
       balance: balance,
+    };
+
+    const averageRow = {
+      id: "Average",
+      createDate: numberOfUniqueDays,
+      fullname: "",
+      amountIn:
+        numberOfUniqueDays > 0
+          ? parseFloat((totalAmountIn / numberOfUniqueDays).toFixed(2))
+          : 0,
+      amountOut:
+        numberOfUniqueDays > 0
+          ? parseFloat((totalAmountOut / numberOfUniqueDays).toFixed(2))
+          : 0,
+      balance:
+        numberOfUniqueDays > 0
+          ? parseFloat((balance / numberOfUniqueDays).toFixed(2))
+          : 0,
     };
 
     // Combine all entries
@@ -181,6 +206,7 @@ const AapvanaLevanaBalance = () => {
         balance: null,
       })),
       totalRow,
+      averageRow,
     ];
 
     return finalRows.map((entry) => ({
@@ -213,7 +239,10 @@ const AapvanaLevanaBalance = () => {
     )} to ${endDate.format("DD-MM-YYYY")}.xlsx`;
 
     const exportData = preparedEntries
-      .filter((row) => row.type !== "group" && row.id !== "Total")
+      .filter(
+        (row) =>
+          row.type !== "group" && row.id !== "Total" && row.id !== "Average"
+      )
       .map(({ ...item }) => {
         const transformed = {};
         Object.keys(headerMap).forEach((key) => {
@@ -318,6 +347,9 @@ const AapvanaLevanaBalance = () => {
               border: "1px solid #f0f0f0",
             },
             "& .MuiDataGrid-row[data-id='Total'] .MuiDataGrid-cell": {
+              fontWeight: "bold",
+            },
+            "& .MuiDataGrid-row[data-id='Average'] .MuiDataGrid-cell": {
               fontWeight: "bold",
             },
           }}
