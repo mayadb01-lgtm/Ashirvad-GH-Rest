@@ -22,9 +22,11 @@ import HomeDashboard from "../components/HomeDashboard";
 import GHDashboard from "../components/guest-house/GHDashboard";
 import GHSalesDashboard from "../components/guest-house/GHSalesDashboard";
 import GHSalesDashboardRange from "../components/guest-house/GHDashboardRange";
+import GHSalesGoalDashboard from "../components/guest-house/GHSalesGoalDashboard";
 import GHHome from "../components/guest-house/GHHome";
 import RestHome from "../components/restaurant/RestHome";
 import RestSalesDashboard from "../components/restaurant/RestSalesDashboard";
+import RestSalesGoalDashboard from "../components/restaurant/RestSalesGoalDashboard";
 import RestUpaadEntriesDashboard from "../components/restaurant/RestUpaadEntriesDashboard";
 import RestExpensesDashboard from "../components/restaurant/RestExpensesDashboard";
 import BankBooksDashboard from "../components/restaurant/RestBankBookEntry";
@@ -111,6 +113,11 @@ const NAVIGATION = [
         icon: <CurrencyRupeeIcon />,
       },
       {
+        segment: "sales-goal",
+        title: "GH - Sales Goal",
+        icon: <CurrencyRupeeIcon />,
+      },
+      {
         segment: "bank-books",
         title: "GH - Bank Books",
         icon: <BookOutlined />,
@@ -132,6 +139,11 @@ const NAVIGATION = [
       {
         segment: "sales-report",
         title: "Rest - Sales",
+        icon: <CurrencyRupeeIcon />,
+      },
+      {
+        segment: "sales-goal",
+        title: "Rest - Sales Goal",
         icon: <CurrencyRupeeIcon />,
       },
       {
@@ -238,10 +250,12 @@ const DashboardPage = () => {
     { path: "gh-dashboard-range", element: <GHSalesDashboardRange /> },
     { path: "guest-house", element: <GHHome /> },
     { path: "gh-reports/sales-report", element: <GHSalesDashboard /> },
+    { path: "gh-reports/sales-goal", element: <GHSalesGoalDashboard /> },
     { path: "gh-reports/bank-books", element: <GHBankBooksDashboard /> },
     { path: "gh-reports/upaid-report", element: <GHUpaidEntriesDashboard /> },
     { path: "restaurant", element: <RestHome /> },
     { path: "res-reports/sales-report", element: <RestSalesDashboard /> },
+    { path: "res-reports/sales-goal", element: <RestSalesGoalDashboard /> },
     {
       path: "res-reports/upaad-report",
       element: <RestUpaadEntriesDashboard />,

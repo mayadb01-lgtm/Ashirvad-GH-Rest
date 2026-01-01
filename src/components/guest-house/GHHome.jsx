@@ -70,6 +70,11 @@ const GHHome = () => {
     }));
   }, [entries]);
 
+  // Calculate total number of people
+  const calculatedTotalPeople = useMemo(() => {
+    return formattedDatasetL1.reduce((sum, item) => sum + item.y, 0);
+  }, [formattedDatasetL1]);
+
   const dayNightData = useMemo(() => {
     return entries.map((entry) => ({
       date: dayjs(entry.entryCreateDate).format("DD MMM"),
@@ -204,14 +209,28 @@ const GHHome = () => {
           >
             <Grid item xs={12} md={12} sx={chartBoxStyle}>
               <Box>
-                <Typography
-                  variant="subtitle1"
-                  fontWeight={600}
-                  gutterBottom
-                  color="primary"
+                <Box
+                  display="flex"
+                  alignItems="space-between"
+                  justifyContent="space-between"
                 >
-                  📈 Date vs Number of People
-                </Typography>
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={600}
+                    gutterBottom
+                    color="primary"
+                  >
+                    📈 Date vs Number of People
+                  </Typography>
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={600}
+                    gutterBottom
+                    color="secondary"
+                  >
+                    Total: {calculatedTotalPeople}
+                  </Typography>
+                </Box>
                 <LineChart
                   height={isFullScreen ? 500 : 300}
                   width={isFullScreen ? 1000 : 600}
