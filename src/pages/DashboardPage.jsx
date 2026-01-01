@@ -13,6 +13,7 @@ import PaymentsIcon from "@mui/icons-material/Payments";
 import CreditScoreIcon from "@mui/icons-material/CreditScore";
 import { BookOutlined } from "@mui/icons-material";
 import PieChartIcon from "@mui/icons-material/PieChart";
+import StackedLineChartIcon from "@mui/icons-material/StackedLineChart";
 import HomeIcon from "@mui/icons-material/Home";
 import LooksOneIcon from "@mui/icons-material/LooksOne";
 import DateRangeIcon from "@mui/icons-material/DateRange";
@@ -43,6 +44,7 @@ import OfficeMergedGraph from "../components/office/OfficeMergedGraph";
 import RestAapvanaDashboard from "../components/restaurant/RestAapvanaDashboard";
 import RestLevanaDashboard from "../components/restaurant/RestLevanaDashboard";
 import AapvanaLevanaBalance from "../components/restaurant/RestAapvanaLevana";
+import OfficeBanquetSalesGoalDashboard from "../components/office/OfficeBanquetSalesGoalDashboard";
 
 const DashboardHeader = ({ onNavigate }) => {
   const navigate = useNavigate();
@@ -115,7 +117,7 @@ const NAVIGATION = [
       {
         segment: "sales-goal",
         title: "GH - Sales Goal",
-        icon: <CurrencyRupeeIcon />,
+        icon: <StackedLineChartIcon />,
       },
       {
         segment: "bank-books",
@@ -144,7 +146,7 @@ const NAVIGATION = [
       {
         segment: "sales-goal",
         title: "Rest - Sales Goal",
-        icon: <CurrencyRupeeIcon />,
+        icon: <StackedLineChartIcon />,
       },
       {
         segment: "upaad-report",
@@ -195,6 +197,11 @@ const NAVIGATION = [
   },
   { kind: "header", title: "Office Book" },
   { segment: "office", title: "Office Graph", icon: <PieChartIcon /> },
+  {
+    segment: "office-banquet-sales-goal",
+    title: "Banquet Sales Goal",
+    icon: <StackedLineChartIcon />,
+  },
   { segment: "office-book", title: "Office Book", icon: <LooksOneIcon /> },
   {
     segment: "office-category",
@@ -278,6 +285,10 @@ const DashboardPage = () => {
     { path: "categories-expenses", element: <RestCategoryExpensesDashboard /> },
     { path: "pending-users", element: <RestPendingUsersDashboard /> },
     { path: "office", element: <OfficeHome /> },
+    {
+      path: "office-banquet-sales-goal",
+      element: <OfficeBanquetSalesGoalDashboard />,
+    },
     { path: "office-book", element: <OfficeBookDashboard /> },
     { path: "office-category", element: <OfficeCategoryDashboard /> },
     { path: "merged-graph", element: <OfficeMergedGraph /> },
