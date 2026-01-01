@@ -8,6 +8,8 @@ import {
   Button,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
+import SkipPreviousRoundedIcon from "@mui/icons-material/SkipPreviousRounded";
+import SkipNextRoundedIcon from "@mui/icons-material/SkipNextRounded";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
@@ -202,6 +204,48 @@ const GHSalesDashboard = () => {
             views={["year", "month", "day"]}
           />
         </LocalizationProvider>
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={2}
+          justifyContent="center"
+          border={1}
+          borderColor="divider"
+          borderRadius={2}
+          p={2}
+        >
+          <Typography variant="subtitle2" color="text.secondary">
+            Month
+          </Typography>
+
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              color="secondary"
+              size="small"
+              onClick={() => {
+                const prevMonth = dayjs(startDate).subtract(1, "month");
+                setStartDate(prevMonth.startOf("month"));
+                setEndDate(prevMonth.endOf("month"));
+              }}
+            >
+              <SkipPreviousRoundedIcon fontSize="small" />
+            </Button>
+
+            <Button
+              variant="outlined"
+              color="secondary"
+              size="small"
+              onClick={() => {
+                const nextMonth = dayjs(startDate).add(1, "month");
+                setStartDate(nextMonth.startOf("month"));
+                setEndDate(nextMonth.endOf("month"));
+              }}
+            >
+              <SkipNextRoundedIcon fontSize="small" />
+            </Button>
+          </Stack>
+        </Box>
         <Button
           variant="outlined"
           color="primary"
