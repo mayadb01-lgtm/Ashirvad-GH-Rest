@@ -13,7 +13,11 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   Divider,
+  Button,
 } from "@mui/material";
+import SkipPreviousRoundedIcon from "@mui/icons-material/SkipPreviousRounded";
+import SkipNextRoundedIcon from "@mui/icons-material/SkipNextRounded";
+import { useDateNavigation } from "../../hooks/useDateNavigation";
 import Grid from "@mui/material/Grid2";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -71,6 +75,13 @@ const RestSalesGoalDashboard = () => {
   const handleEndDateChange = useCallback((newDate) => {
     if (newDate) setEndDate(newDate);
   }, []);
+
+  const { goToPreviousRange, goToNextRange } = useDateNavigation({
+    startDate,
+    endDate,
+    setStartDate,
+    setEndDate,
+  });
 
   const handleYearlyGoalChange = useCallback((e) => {
     const value = parseFloat(e.target.value) || 0;
@@ -338,6 +349,48 @@ const RestSalesGoalDashboard = () => {
             slotProps={{ textField: { size: "small" } }}
           />
         </LocalizationProvider>
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={2}
+          justifyContent="center"
+          border={1}
+          borderColor="divider"
+          borderRadius={2}
+          p={2}
+        >
+          <Typography variant="subtitle2" color="text.secondary">
+            Month
+          </Typography>
+
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              color="secondary"
+              size="small"
+              onClick={goToPreviousRange}
+              sx={{
+                minWidth: "40px",
+                padding: "4px",
+              }}
+            >
+              <SkipPreviousRoundedIcon fontSize="small" />
+            </Button>
+
+            <Button
+              variant="outlined"
+              color="secondary"
+              size="small"
+              onClick={goToNextRange}
+              sx={{
+                minWidth: "40px",
+                padding: "4px",
+              }}
+            >
+              <SkipNextRoundedIcon fontSize="small" />
+            </Button>
+          </Stack>
+        </Box>
 
         <ToggleButtonGroup
           value={viewMode}

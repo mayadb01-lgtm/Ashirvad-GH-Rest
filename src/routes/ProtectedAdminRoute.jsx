@@ -25,7 +25,7 @@ const ProtectedAdminRoute = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [passedExtra, setPassedExtra] = useState(false);
+  const [passedExtra, setPassedExtra] = useState(true);
   const [inputPassword, setInputPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");

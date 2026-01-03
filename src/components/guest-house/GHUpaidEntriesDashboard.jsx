@@ -8,6 +8,9 @@ import {
   Button,
   Autocomplete,
 } from "@mui/material";
+import SkipPreviousRoundedIcon from "@mui/icons-material/SkipPreviousRounded";
+import SkipNextRoundedIcon from "@mui/icons-material/SkipNextRounded";
+import { useDateNavigation } from "../../hooks/useDateNavigation";
 import { DataGrid } from "@mui/x-data-grid";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -43,6 +46,13 @@ const GHUpaidEntriesDashboard = () => {
   const handleEndDateChange = useCallback((newDate) => {
     if (newDate) setEndDate(newDate);
   }, []);
+
+  const { goToPreviousRange, goToNextRange } = useDateNavigation({
+    startDate,
+    endDate,
+    setStartDate,
+    setEndDate,
+  });
 
   const columns = useMemo(() => {
     return [
@@ -211,28 +221,48 @@ const GHUpaidEntriesDashboard = () => {
             views={["year", "month", "day"]}
           />
         </LocalizationProvider>
-        <Button
-          variant="outlined"
-          color="primary"
-          onClick={() => {
-            const prevMonth = dayjs(startDate).subtract(1, "month");
-            setStartDate(prevMonth.startOf("month"));
-            setEndDate(prevMonth.endOf("month"));
-          }}
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={2}
+          justifyContent="center"
+          border={1}
+          borderColor="divider"
+          borderRadius={2}
+          p={2}
         >
-          Previous Month
-        </Button>
-        <Button
-          variant="outlined"
-          color="primary"
-          onClick={() => {
-            const nextMonth = dayjs(startDate).add(1, "month");
-            setStartDate(nextMonth.startOf("month"));
-            setEndDate(nextMonth.endOf("month"));
-          }}
-        >
-          Next Month
-        </Button>
+          <Typography variant="subtitle2" color="text.secondary">
+            Month
+          </Typography>
+
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              color="secondary"
+              size="small"
+              onClick={goToPreviousRange}
+              sx={{
+                minWidth: "40px",
+                padding: "4px",
+              }}
+            >
+              <SkipPreviousRoundedIcon fontSize="small" />
+            </Button>
+
+            <Button
+              variant="outlined"
+              color="secondary"
+              size="small"
+              onClick={goToNextRange}
+              sx={{
+                minWidth: "40px",
+                padding: "4px",
+              }}
+            >
+              <SkipNextRoundedIcon fontSize="small" />
+            </Button>
+          </Stack>
+        </Box>
         <Button
           variant="outlined"
           color="primary"

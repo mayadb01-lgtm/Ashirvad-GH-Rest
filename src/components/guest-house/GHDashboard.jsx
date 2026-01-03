@@ -12,6 +12,10 @@ import {
 import { DataGrid } from "@mui/x-data-grid";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import SkipPreviousRoundedIcon from "@mui/icons-material/SkipPreviousRounded";
+import SkipNextRoundedIcon from "@mui/icons-material/SkipNextRounded";
+import { Button } from "@mui/material";
+import { useDateNavigation } from "../../hooks/useDateNavigation";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { getEntriesByDate } from "../../redux/actions/entryAction";
 import dayjs from "dayjs";
@@ -41,6 +45,15 @@ const GHDashboard = () => {
     },
     [selectedDate]
   );
+
+  const { goToPreviousDate, goToNextDate } = useDateNavigation({
+    date: dayjs(selectedDate, "DD-MM-YYYY"),
+    setDate: (newDate) => {
+      if (newDate) {
+        setSelectedDate(newDate.format("DD-MM-YYYY"));
+      }
+    },
+  });
 
   // Fetch data on date change
   useEffect(() => {
@@ -199,6 +212,50 @@ const GHDashboard = () => {
               )}
             />
           </LocalizationProvider>
+
+          <Box
+            display="flex"
+            alignItems="center"
+            gap={2}
+            justifyContent="center"
+            border={1}
+            borderColor="divider"
+            borderRadius={2}
+            p={2}
+            sx={{ ml: 2 }}
+          >
+            <Typography variant="subtitle2" color="text.secondary">
+              Day
+            </Typography>
+
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="outlined"
+                color="secondary"
+                size="small"
+                onClick={goToPreviousDate}
+                sx={{
+                  minWidth: "40px",
+                  padding: "4px",
+                }}
+              >
+                <SkipPreviousRoundedIcon fontSize="small" />
+              </Button>
+
+              <Button
+                variant="outlined"
+                color="secondary"
+                size="small"
+                onClick={goToNextDate}
+                sx={{
+                  minWidth: "40px",
+                  padding: "4px",
+                }}
+              >
+                <SkipNextRoundedIcon fontSize="small" />
+              </Button>
+            </Stack>
+          </Box>
 
           {/* Extra Fields Checkboxes */}
           <FormGroup row sx={{ ml: 2 }}>

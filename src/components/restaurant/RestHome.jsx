@@ -13,7 +13,11 @@ import {
   FormControlLabel,
   Stack,
   Typography,
+  Button,
 } from "@mui/material";
+import SkipPreviousRoundedIcon from "@mui/icons-material/SkipPreviousRounded";
+import SkipNextRoundedIcon from "@mui/icons-material/SkipNextRounded";
+import { useDateNavigation } from "../../hooks/useDateNavigation";
 import Grid from "@mui/material/Grid2";
 import { getRestEntriesByDateRange } from "../../redux/actions/restEntryAction";
 import { formatChartData } from "../charts/chartUtils";
@@ -45,6 +49,13 @@ const RestHome = () => {
     (newDate) => newDate && setEndDate(newDate),
     []
   );
+
+  const { goToPreviousRange, goToNextRange } = useDateNavigation({
+    startDate,
+    endDate,
+    setStartDate,
+    setEndDate,
+  });
 
   // Prepare - Chart 1 data = Expenses by category
   const pieChartExpensesCategoryData = useMemo(
@@ -132,6 +143,48 @@ const RestHome = () => {
             slotProps={{ textField: { size: "small" } }}
           />
         </LocalizationProvider>
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={2}
+          justifyContent="center"
+          border={1}
+          borderColor="divider"
+          borderRadius={2}
+          p={2}
+        >
+          <Typography variant="subtitle2" color="text.secondary">
+            Month
+          </Typography>
+
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              color="secondary"
+              size="small"
+              onClick={goToPreviousRange}
+              sx={{
+                minWidth: "40px",
+                padding: "4px",
+              }}
+            >
+              <SkipPreviousRoundedIcon fontSize="small" />
+            </Button>
+
+            <Button
+              variant="outlined"
+              color="secondary"
+              size="small"
+              onClick={goToNextRange}
+              sx={{
+                minWidth: "40px",
+                padding: "4px",
+              }}
+            >
+              <SkipNextRoundedIcon fontSize="small" />
+            </Button>
+          </Stack>
+        </Box>
         <FormControlLabel
           control={
             <Checkbox

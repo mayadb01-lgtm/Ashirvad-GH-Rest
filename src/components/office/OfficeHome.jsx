@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAppSelector, useAppDispatch } from "../../redux/hooks";
 import { DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import SkipPreviousRoundedIcon from "@mui/icons-material/SkipPreviousRounded";
+import SkipNextRoundedIcon from "@mui/icons-material/SkipNextRounded";
+import { Button } from "@mui/material";
+import { useDateNavigation } from "../../hooks/useDateNavigation";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs from "dayjs";
 import "dayjs/locale/en-gb";
@@ -51,6 +55,13 @@ const OfficeHome = () => {
     (newDate) => newDate && setEndDate(newDate),
     []
   );
+
+  const { goToPreviousRange, goToNextRange } = useDateNavigation({
+    startDate,
+    endDate,
+    setStartDate,
+    setEndDate,
+  });
 
   // Prepare - Chart 1 data
   const pieChartOfficeCategoryExpensesInData = useMemo(
@@ -118,6 +129,48 @@ const OfficeHome = () => {
             slotProps={{ textField: { size: "small" } }}
           />
         </LocalizationProvider>
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={2}
+          justifyContent="center"
+          border={1}
+          borderColor="divider"
+          borderRadius={2}
+          p={2}
+        >
+          <Typography variant="subtitle2" color="text.secondary">
+            Month
+          </Typography>
+
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              color="secondary"
+              size="small"
+              onClick={goToPreviousRange}
+              sx={{
+                minWidth: "40px",
+                padding: "4px",
+              }}
+            >
+              <SkipPreviousRoundedIcon fontSize="small" />
+            </Button>
+
+            <Button
+              variant="outlined"
+              color="secondary"
+              size="small"
+              onClick={goToNextRange}
+              sx={{
+                minWidth: "40px",
+                padding: "4px",
+              }}
+            >
+              <SkipNextRoundedIcon fontSize="small" />
+            </Button>
+          </Stack>
+        </Box>
         <FormControlLabel
           control={
             <Checkbox

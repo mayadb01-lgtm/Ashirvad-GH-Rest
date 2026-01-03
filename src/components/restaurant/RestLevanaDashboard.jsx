@@ -14,6 +14,9 @@ import { DataGrid } from "@mui/x-data-grid";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
+import SkipPreviousRoundedIcon from "@mui/icons-material/SkipPreviousRounded";
+import SkipNextRoundedIcon from "@mui/icons-material/SkipNextRounded";
+import { useDateNavigation } from "../../hooks/useDateNavigation";
 import dayjs from "dayjs";
 import { getLevanaByDateRange } from "../../redux/actions/restEntryAction";
 import { getPendingUser } from "../../redux/actions/restPendingAction";
@@ -31,6 +34,13 @@ const RestLevanaDashboard = () => {
   const [selectedStaff, setSelectedStaff] = useState(null);
   const fileNameRef = useRef(null);
   const [isCombinedView, setIsCombinedView] = useState(false);
+
+  const { goToPreviousRange, goToNextRange } = useDateNavigation({
+    startDate,
+    endDate,
+    setStartDate,
+    setEndDate,
+  });
 
   useEffect(() => {
     dispatch(getPendingUser());
@@ -233,6 +243,48 @@ const RestLevanaDashboard = () => {
             views={["year", "month", "day"]}
           />
         </LocalizationProvider>
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={2}
+          justifyContent="center"
+          border={1}
+          borderColor="divider"
+          borderRadius={2}
+          p={2}
+        >
+          <Typography variant="subtitle2" color="text.secondary">
+            Month
+          </Typography>
+
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              color="secondary"
+              size="small"
+              onClick={goToPreviousRange}
+              sx={{
+                minWidth: "40px",
+                padding: "4px",
+              }}
+            >
+              <SkipPreviousRoundedIcon fontSize="small" />
+            </Button>
+
+            <Button
+              variant="outlined"
+              color="secondary"
+              size="small"
+              onClick={goToNextRange}
+              sx={{
+                minWidth: "40px",
+                padding: "4px",
+              }}
+            >
+              <SkipNextRoundedIcon fontSize="small" />
+            </Button>
+          </Stack>
+        </Box>
         <Autocomplete
           disablePortal
           id="fullname"
