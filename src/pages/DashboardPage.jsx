@@ -45,6 +45,8 @@ import RestAapvanaDashboard from "../components/restaurant/RestAapvanaDashboard"
 import RestLevanaDashboard from "../components/restaurant/RestLevanaDashboard";
 import AapvanaLevanaBalance from "../components/restaurant/RestAapvanaLevana";
 import OfficeBanquetSalesGoalDashboard from "../components/office/OfficeBanquetSalesGoalDashboard";
+import OfficeBakeryBaadaSalesGoalDashboard from "../components/office/OfficeBakeryBaadaSalesGoalDashboard";
+import OfficeMotiBaadaSalesGoalDashboard from "../components/office/OfficeMotiBaadaSalesGoalDashboard";
 
 const DashboardHeader = ({ onNavigate }) => {
   const navigate = useNavigate();
@@ -115,11 +117,6 @@ const NAVIGATION = [
         icon: <CurrencyRupeeIcon />,
       },
       {
-        segment: "sales-goal",
-        title: "GH - Sales Goal",
-        icon: <StackedLineChartIcon />,
-      },
-      {
         segment: "bank-books",
         title: "GH - Bank Books",
         icon: <BookOutlined />,
@@ -142,11 +139,6 @@ const NAVIGATION = [
         segment: "sales-report",
         title: "Rest - Sales",
         icon: <CurrencyRupeeIcon />,
-      },
-      {
-        segment: "sales-goal",
-        title: "Rest - Sales Goal",
-        icon: <StackedLineChartIcon />,
       },
       {
         segment: "upaad-report",
@@ -197,11 +189,6 @@ const NAVIGATION = [
   },
   { kind: "header", title: "Office Book" },
   { segment: "office", title: "Office Graph", icon: <PieChartIcon /> },
-  {
-    segment: "office-banquet-sales-goal",
-    title: "Banquet Sales Goal",
-    icon: <StackedLineChartIcon />,
-  },
   { segment: "office-book", title: "Office Book", icon: <LooksOneIcon /> },
   {
     segment: "office-category",
@@ -218,6 +205,42 @@ const NAVIGATION = [
     segment: "merged-reports",
     title: "Merged Report",
     icon: <BarChartIcon />,
+  },
+  {
+    kind: "header",
+    title: "Sales Goal",
+  },
+  {
+    segment: "sales-goal",
+    title: "Sales Goal",
+    icon: <StackedLineChartIcon />,
+    children: [
+      {
+        segment: "gh-sales-goal",
+        title: "GH - Sales Goal",
+        icon: <StackedLineChartIcon />,
+      },
+      {
+        segment: "rest-sales-goal",
+        title: "Rest - Sales Goal",
+        icon: <StackedLineChartIcon />,
+      },
+      {
+        segment: "office-banquet-sales-goal",
+        title: "Banquet Sales Goal",
+        icon: <StackedLineChartIcon />,
+      },
+      {
+        segment: "office-bakery-baada",
+        title: "Bakery Baada",
+        icon: <StackedLineChartIcon />,
+      },
+      {
+        segment: "office-moti-baada",
+        title: "Moti  Baada",
+        icon: <StackedLineChartIcon />,
+      },
+    ],
   },
 ];
 
@@ -257,12 +280,10 @@ const DashboardPage = () => {
     { path: "gh-dashboard-range", element: <GHSalesDashboardRange /> },
     { path: "guest-house", element: <GHHome /> },
     { path: "gh-reports/sales-report", element: <GHSalesDashboard /> },
-    { path: "gh-reports/sales-goal", element: <GHSalesGoalDashboard /> },
     { path: "gh-reports/bank-books", element: <GHBankBooksDashboard /> },
     { path: "gh-reports/upaid-report", element: <GHUpaidEntriesDashboard /> },
     { path: "restaurant", element: <RestHome /> },
     { path: "res-reports/sales-report", element: <RestSalesDashboard /> },
-    { path: "res-reports/sales-goal", element: <RestSalesGoalDashboard /> },
     {
       path: "res-reports/upaad-report",
       element: <RestUpaadEntriesDashboard />,
@@ -285,14 +306,24 @@ const DashboardPage = () => {
     { path: "categories-expenses", element: <RestCategoryExpensesDashboard /> },
     { path: "pending-users", element: <RestPendingUsersDashboard /> },
     { path: "office", element: <OfficeHome /> },
-    {
-      path: "office-banquet-sales-goal",
-      element: <OfficeBanquetSalesGoalDashboard />,
-    },
     { path: "office-book", element: <OfficeBookDashboard /> },
     { path: "office-category", element: <OfficeCategoryDashboard /> },
     { path: "merged-graph", element: <OfficeMergedGraph /> },
     { path: "merged-reports", element: <OfficeMerged /> },
+    { path: "sales-goal/gh-sales-goal", element: <GHSalesGoalDashboard /> },
+    { path: "sales-goal/rest-sales-goal", element: <RestSalesGoalDashboard /> },
+    {
+      path: "sales-goal/office-banquet-sales-goal",
+      element: <OfficeBanquetSalesGoalDashboard />,
+    },
+    {
+      path: "sales-goal/office-bakery-baada",
+      element: <OfficeBakeryBaadaSalesGoalDashboard />,
+    },
+    {
+      path: "sales-goal/office-moti-baada",
+      element: <OfficeMotiBaadaSalesGoalDashboard />,
+    },
     { path: "*", element: <Typography>404: Page Not Found</Typography> },
   ]);
 
