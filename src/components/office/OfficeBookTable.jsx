@@ -114,6 +114,10 @@ const EditableRow = ({
     />
   );
 
+  // If Category is UPAD or Staff then show Drop Down of names
+  const isCategoryUpaadOrStaff = row.categoryName.match(/upad|upaad|Upad|Upaad|staff|Staff/i);
+
+
   return (
     <TableRow
       key={row.id}
@@ -168,7 +172,7 @@ const EditableRow = ({
       </TableCell>
 
       <TableCell sx={{ width: "20%" }}>
-        {row.categoryName.match(/Upad|Upaad|upad|upaad/i) ? (
+        {isCategoryUpaadOrStaff ? (
           renderUpadNameAutocomplete(
             flattenedUpadName,
             "fullname",
@@ -217,15 +221,15 @@ const OfficeBookTable = ({
   const tableColumns = isOfficeIn
     ? ["ID", "Amount", "Mode", "Income", "Category", "Name", "Remark", "Remove"]
     : [
-        "ID",
-        "Amount",
-        "Mode",
-        "Expense",
-        "Category",
-        "Name",
-        "Remark",
-        "Remove",
-      ];
+      "ID",
+      "Amount",
+      "Mode",
+      "Expense",
+      "Category",
+      "Name",
+      "Remark",
+      "Remove",
+    ];
 
   const handleAddRow = () => {
     setOfficeData((prevData) => [

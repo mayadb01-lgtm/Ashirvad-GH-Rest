@@ -3,6 +3,9 @@ import app from "./app.js";
 import connectDatabase from "./db/Database.js";
 import dotenv from "dotenv";
 
+import dns from 'dns';
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
 // Uncaught Exception
 process.on("uncaughtException", (err) => {
   console.log(`Error: ${err.message}`);
