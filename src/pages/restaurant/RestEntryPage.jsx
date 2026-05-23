@@ -50,6 +50,7 @@ const RestEntryPage = () => {
         _id: staff._id,
         fullname: staff.fullname,
         mobileNumber: staff.mobileNumber,
+        category: staff.category,
       }))
     : [];
 

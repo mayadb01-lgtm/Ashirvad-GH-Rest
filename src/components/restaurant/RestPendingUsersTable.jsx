@@ -34,6 +34,7 @@ const RestPendingUsersTable = ({
         _id: "",
         fullname: "",
         mobileNumber: 0,
+        category: "",
         amount: 0,
         createDate: selectedDate,
       },
@@ -59,10 +60,11 @@ const RestPendingUsersTable = ({
       value={
         options.find((option) => option.fullname === row[fieldKey]) || null
       }
-      groupBy={(option) => option.business || ""}
+      groupBy={(option) => option.category || ""}
       onChange={(_, value) => {
         handleUpdateRow(index, fieldKey, value ? value?.fullname : "");
         handleUpdateRow(index, "mobileNumber", value ? value?.mobileNumber : 0);
+        handleUpdateRow(index, "category", value ? value?.category : "");
         handleUpdateRow(index, "_id", value?._id ? value._id : "");
       }}
       renderInput={(params) => (
@@ -146,6 +148,7 @@ RestPendingUsersTable.propTypes = {
       id: PropTypes.number.isRequired,
       fullname: PropTypes.string,
       mobileNumber: PropTypes.number,
+      category: PropTypes.string,
       amount: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       _id: PropTypes.string,
       createDate: PropTypes.string,

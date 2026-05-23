@@ -10,6 +10,9 @@ import {
   TextField,
   Typography,
   Stack,
+  Select,
+  MenuItem,
+  InputLabel,
 } from "@mui/material";
 import { Add, Edit, Delete } from "@mui/icons-material";
 import {
@@ -31,6 +34,7 @@ const RestPendingUsersDashboard = () => {
   const [pendingUserData, setPendingUserData] = useState({
     fullname: "",
     mobileNumber: "",
+    category: "",
   });
   const [selectedId, setSelectedId] = useState(null);
   const fileNameRef = useRef(null);
@@ -45,11 +49,12 @@ const RestPendingUsersDashboard = () => {
       setPendingUserData({
         fullname: staff.fullname,
         mobileNumber: staff.mobileNumber,
+        category: staff.category || "",
       });
       setSelectedId(staff._id);
     } else {
       setEditMode(false);
-      setPendingUserData({ fullname: "", mobileNumber: "" });
+      setPendingUserData({ fullname: "", mobileNumber: "", category: "" });
       setSelectedId(null);
     }
     setOpen(true);
@@ -114,6 +119,13 @@ const RestPendingUsersDashboard = () => {
       align: "center",
     },
     {
+      field: "category",
+      headerName: "Category",
+      width: 150,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
       field: "actions",
       headerName: "Edit",
       width: 150,
@@ -136,6 +148,7 @@ const RestPendingUsersDashboard = () => {
     _id: "ID",
     fullname: "Full Name",
     mobileNumber: "Mobile Number",
+    category: "Category",
   };
 
   const handleExportToExcel = () => {
@@ -297,6 +310,22 @@ const RestPendingUsersDashboard = () => {
             }
             sx={{ mb: 2 }}
           />
+          <InputLabel id="category-label">Category</InputLabel>
+          <Select
+            fullWidth
+            labelId="category-label"
+            value={pendingUserData.category || ""}
+            onChange={(e) =>
+              setPendingUserData({
+                ...pendingUserData,
+                category: e.target.value,
+              })
+            }
+            sx={{ mb: 2 }}
+          >
+            <MenuItem value="Pending">Pending</MenuItem>
+            <MenuItem value="Vendor">Vendor</MenuItem>
+          </Select>
           <Button
             variant="contained"
             color="primary"

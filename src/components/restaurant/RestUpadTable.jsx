@@ -46,6 +46,7 @@ const EditableRow = ({
         <Autocomplete
           options={fieldOptions}
           getOptionLabel={(option) => option.fullname || ""}
+          groupBy={(option) => option.category || ""}
           value={
             fieldOptions.find((option) => option.fullname === row.fullname) ||
             null
@@ -53,6 +54,7 @@ const EditableRow = ({
           onChange={(event, value) => {
             handleInputChange("fullname", value?.fullname || "");
             handleInputChange("mobileNumber", value?.mobileNumber || "");
+            handleInputChange("category", value?.category || "");
             handleInputChange("_id", value?._id ? value._id : "");
           }}
           renderInput={(params) => (
@@ -81,6 +83,7 @@ const RestUpadTable = ({ restUpadData, setRestUpadData, fieldOptions }) => {
         amount: 0,
         fullname: "",
         mobileNumber: 0,
+        category: "",
       },
     ]);
   };

@@ -10,6 +10,7 @@ router.post("/create-pending-user", async (req, res) => {
     const staff = await RestPending.create({
       fullname: reqBody.fullname,
       mobileNumber: reqBody.mobileNumber,
+      category: reqBody.category,
     });
 
     res.status(200).json({
@@ -68,6 +69,7 @@ router.put("/update-pending-user/:id", async (req, res) => {
       {
         fullname: reqBody.fullname,
         mobileNumber: reqBody.mobileNumber,
+        category: reqBody.category,
       },
       { new: true }
     );

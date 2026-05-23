@@ -10,6 +10,9 @@ import {
   TextField,
   Typography,
   Stack,
+  Select,
+  MenuItem,
+  InputLabel,
 } from "@mui/material";
 import { Add, Edit, Delete } from "@mui/icons-material";
 import {
@@ -29,6 +32,7 @@ const RestStaffDashboard = () => {
   const [staffData, setStaffData] = useState({
     fullname: "",
     mobileNumber: "",
+    category: "",
   });
   const [selectedId, setSelectedId] = useState(null);
 
@@ -42,11 +46,12 @@ const RestStaffDashboard = () => {
       setStaffData({
         fullname: staff.fullname,
         mobileNumber: staff.mobileNumber,
+        category: staff.category || "",
       });
       setSelectedId(staff._id);
     } else {
       setEditMode(false);
-      setStaffData({ fullname: "", mobileNumber: "" });
+      setStaffData({ fullname: "", mobileNumber: "", category: "" });
       setSelectedId(null);
     }
     setOpen(true);
@@ -107,6 +112,13 @@ const RestStaffDashboard = () => {
       width: 250,
       headerAlign: "center",
       align: "center",
+    },
+    {
+      field: "category",
+      headerName: "Category",
+      width: 150,
+      headerAlign: "center",
+      align: "center"
     },
     {
       field: "actions",
@@ -239,6 +251,19 @@ const RestStaffDashboard = () => {
             }
             sx={{ mb: 2 }}
           />
+          <InputLabel id="category-label">Category</InputLabel>
+          <Select
+            fullWidth
+            labelId="category-label"
+            value={staffData.category}
+            onChange={(e) =>
+              setStaffData({ ...staffData, category: e.target.value })
+            }
+            sx={{ mb: 2 }}
+          >
+            <MenuItem value="Staff">Staff</MenuItem>
+            <MenuItem value="Vendor">Vendor</MenuItem>
+          </Select>
           <Button
             variant="contained"
             color="primary"
