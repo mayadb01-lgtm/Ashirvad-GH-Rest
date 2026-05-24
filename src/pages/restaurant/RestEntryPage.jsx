@@ -32,6 +32,7 @@ const RestEntryPage = () => {
   const dispatch = useAppDispatch();
   const { loading, restEntries } = useAppSelector((state) => state.restEntry);
   const { restStaff } = useAppSelector((state) => state.restStaff);
+  const { restPending } = useAppSelector((state) => state.restPending);
   const { isAdminAuthenticated } = useAppSelector((state) => state.admin);
   const today = dayjs().format("DD-MM-YYYY");
   const [selectedDate, setSelectedDate] = useState(today);
@@ -45,13 +46,13 @@ const RestEntryPage = () => {
   const userMaxDate = todayFun;
 
   // Create Full Name options
-  const fieldOptions = restStaff
-    ? restStaff?.map((staff) => ({
-        _id: staff._id,
-        fullname: staff.fullname,
-        mobileNumber: staff.mobileNumber,
-        category: staff.category,
-      }))
+  const fieldOptions = restStaff && restPending
+    ? [...restStaff, ...restPending]?.map((staff) => ({
+      _id: staff._id,
+      fullname: staff.fullname,
+      mobileNumber: staff.mobileNumber,
+      category: staff.category,
+    }))
     : [];
 
   // Upad
@@ -302,7 +303,7 @@ const RestEntryPage = () => {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          "An error occurred while creating the entry."
+        "An error occurred while creating the entry."
       );
     }
   };
@@ -319,7 +320,7 @@ const RestEntryPage = () => {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          "An error occurred while deleting the entry."
+        "An error occurred while deleting the entry."
       );
     }
   };
@@ -354,7 +355,7 @@ const RestEntryPage = () => {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          "An error occurred while updating the entry."
+        "An error occurred while updating the entry."
       );
     }
   };
@@ -470,6 +471,7 @@ const RestEntryPage = () => {
                   Levana Baki
                 </Typography>
                 <RestPendingTable
+                  fieldOptions={fieldOptions}
                   restPendingData={restPendingData}
                   setRestPendingData={setRestPendingData}
                   selectedDate={selectedDate}
@@ -494,6 +496,7 @@ const RestEntryPage = () => {
                   Aapvana Baki
                 </Typography>
                 <RestPendingUsersTable
+                  fieldOptions={fieldOptions}
                   restPendingData={restPendingUsersData}
                   setRestPendingData={setRestPendingUsersData}
                   selectedDate={selectedDate}

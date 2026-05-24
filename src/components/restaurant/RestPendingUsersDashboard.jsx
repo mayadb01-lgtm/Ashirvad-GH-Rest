@@ -223,8 +223,15 @@ const RestPendingUsersDashboard = () => {
           slot="start"
         />
         <Button
+          onClick={() => handleOpen()}
           variant="contained"
           color="primary"
+          sx={{ mt: 2 }}>
+          Create Pending User
+        </Button>
+        <Button
+          variant="contained"
+          color="success"
           onClick={handleExportToExcel}
           sx={{ mt: 2 }}
         >
@@ -258,15 +265,6 @@ const RestPendingUsersDashboard = () => {
               },
             }}
           />
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<Add />}
-            onClick={() => handleOpen()}
-            sx={{ mt: 2 }}
-          >
-            Create Pending User
-          </Button>
         </>
       )}
 

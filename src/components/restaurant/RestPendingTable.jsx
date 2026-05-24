@@ -12,12 +12,10 @@ import {
   Button,
 } from "@mui/material";
 import { RemoveCircleOutlineRounded } from "@mui/icons-material";
-import { useAppSelector } from "../../redux/hooks";
 
 const TABLE_COLUMNS = ["ID", "Amount", "Name", "Remove"];
 
-const RestPendingTable = ({ restPendingData, setRestPendingData }) => {
-  const { restPending } = useAppSelector((state) => state.restPending);
+const RestPendingTable = ({ fieldOptions, restPendingData, setRestPendingData }) => {
 
   const handleAddRow = () => {
     setRestPendingData((prevData) => [
@@ -113,7 +111,7 @@ const RestPendingTable = ({ restPendingData, setRestPendingData }) => {
                   />
                 </TableCell>
                 <TableCell sx={{ width: "40%" }}>
-                  {renderAutocompleteCell(restPending, row, index, "fullname")}
+                  {renderAutocompleteCell(fieldOptions, row, index, "fullname")}
                 </TableCell>
                 <TableCell sx={{ width: "5%" }}>
                   <Button size="small" onClick={() => handleRemoveRow(row.id)}>
