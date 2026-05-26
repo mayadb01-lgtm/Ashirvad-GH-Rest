@@ -5,7 +5,7 @@ const restStaffSchema = new Schema(
     id: { type: String },
     fullname: { type: String, required: true },
     mobileNumber: { type: Number, required: true },
-    category: { type: String, enum: ["Staff", "Vendor"] },
+    category: { type: String, required: true },
     createDate: { type: String, required: true },
     updatedDateTime: { type: Date, default: Date.now() },
   },

@@ -24,6 +24,7 @@ dayjs.locale("en-gb");
 const RestUpaadEntriesDashboard = () => {
   const dispatch = useAppDispatch();
   const { loading, restEntries } = useAppSelector((state) => state.restEntry);
+  const { restStaff } = useAppSelector((state) => state.restStaff);
   const [startDate, setStartDate] = useState(dayjs().startOf("month"));
   const [endDate, setEndDate] = useState(dayjs());
   const [selectedStaff, setSelectedStaff] = useState(null);
@@ -97,8 +98,8 @@ const RestUpaadEntriesDashboard = () => {
       fullname: "",
       amount: selectedStaff
         ? selectedStaffEntries
-            .map((entry) => entry.amount)
-            .reduce((a, b) => a + b, 0)
+          .map((entry) => entry.amount)
+          .reduce((a, b) => a + b, 0)
         : restEntries.map((entry) => entry.amount).reduce((a, b) => a + b, 0),
     };
 
@@ -279,7 +280,7 @@ const RestUpaadEntriesDashboard = () => {
         <Autocomplete
           disablePortal
           id="fullname"
-          options={restEntries}
+          options={restStaff}
           getOptionLabel={(option) => option.fullname}
           style={{ width: 300 }}
           renderInput={(params) => (

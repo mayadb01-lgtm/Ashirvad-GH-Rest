@@ -16,7 +16,7 @@ import { RemoveCircleOutlineRounded } from "@mui/icons-material";
 const TABLE_COLUMNS = ["ID", "Amount", "Name", "Remove"];
 
 const RestPendingUsersTable = ({
-  fieldOptions,
+  pendingVendorsOptions,
   selectedDate,
   restPendingData,
   setRestPendingData,
@@ -116,7 +116,7 @@ const RestPendingUsersTable = ({
                   />
                 </TableCell>
                 <TableCell sx={{ width: "40%" }}>
-                  {renderAutocompleteCell(fieldOptions, row, index, "fullname")}
+                  {renderAutocompleteCell(pendingVendorsOptions, row, index, "fullname")}
                 </TableCell>
                 <TableCell sx={{ width: "5%" }}>
                   <Button size="small" onClick={() => handleRemoveRow(row.id)}>

@@ -396,9 +396,9 @@ const OfficeBookDashboard = () => {
             value={
               ["in", "out"].includes(officeInOut)
                 ? {
-                    label: `Office ${officeInOut === "in" ? "In" : "Out"}`,
-                    value: officeInOut,
-                  }
+                  label: `Office ${officeInOut === "in" ? "In" : "Out"}`,
+                  value: officeInOut,
+                }
                 : null
             }
             onChange={(e, newValue) => setOfficeInOut(newValue?.value || "")}

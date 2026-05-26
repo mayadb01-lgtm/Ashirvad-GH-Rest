@@ -19,7 +19,7 @@ const EditableRow = ({
   row,
   index,
   onUpdateRow,
-  fieldOptions,
+  upaadFieldOptions,
   handleRemoveRow,
 }) => {
   const handleInputChange = (key, value) => {
@@ -44,11 +44,11 @@ const EditableRow = ({
       </TableCell>
       <TableCell sx={{ width: "50%" }}>
         <Autocomplete
-          options={fieldOptions}
+          options={upaadFieldOptions}
           getOptionLabel={(option) => option.fullname || ""}
           groupBy={(option) => option.category || ""}
           value={
-            fieldOptions.find((option) => option.fullname === row.fullname) ||
+            upaadFieldOptions.find((option) => option.fullname === row.fullname) ||
             null
           }
           onChange={(event, value) => {
@@ -73,7 +73,7 @@ const EditableRow = ({
   );
 };
 
-const RestUpadTable = ({ restUpadData, setRestUpadData, fieldOptions }) => {
+const RestUpadTable = ({ restUpadData, setRestUpadData, upaadFieldOptions }) => {
   const handleAddRow = () => {
     setRestUpadData((prevData) => [
       ...prevData,
@@ -134,7 +134,7 @@ const RestUpadTable = ({ restUpadData, setRestUpadData, fieldOptions }) => {
                 row={row}
                 index={index}
                 onUpdateRow={handleUpdateRow}
-                fieldOptions={fieldOptions}
+                upaadFieldOptions={upaadFieldOptions}
                 handleRemoveRow={handleRemoveRow}
               />
             ))}

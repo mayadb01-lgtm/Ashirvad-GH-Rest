@@ -10,6 +10,7 @@ const upadEntrySchemaObj = new Schema(
     amount: { type: Number, required: true },
     fullname: { type: String, required: true },
     mobileNumber: { type: Number, required: true },
+    category: { type: String, required: true },
     createDate: { type: String, required: true },
     entryCreateDate: { type: Date },
     updatedDateTime: { type: Date, default: Date.now() },

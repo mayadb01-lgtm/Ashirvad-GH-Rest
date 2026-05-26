@@ -45,15 +45,36 @@ const RestEntryPage = () => {
   );
   const userMaxDate = todayFun;
 
-  // Create Full Name options
-  const fieldOptions = restStaff && restPending
-    ? [...restStaff, ...restPending]?.map((staff) => ({
-      _id: staff._id,
-      fullname: staff.fullname,
-      mobileNumber: staff.mobileNumber,
-      category: staff.category,
-    }))
-    : [];
+  // Create Full Name options both
+  // const fieldOptions = restStaff && restPending
+  //   ? [...restStaff, ...restPending]?.map((staff) => ({
+  //     _id: staff._id,
+  //     fullname: staff.fullname,
+  //     mobileNumber: staff.mobileNumber,
+  //     category: staff.category,
+  //   }))
+  //   : [];
+
+  const upaadFieldOptions = restStaff?.map((staff) => ({
+    _id: staff._id,
+    fullname: staff.fullname,
+    mobileNumber: staff.mobileNumber,
+    category: staff.category,
+  })) || [];
+
+  const pendingUsersFieldOptions = restPending?.filter((staff) => staff.category === "Pending")?.map((staff) => ({
+    _id: staff._id,
+    fullname: staff.fullname,
+    mobileNumber: staff.mobileNumber,
+    category: staff.category,
+  })) || [];
+
+  const pendingVendorsOptions = restPending?.filter((staff) => staff.category === "Vendor")?.map((staff) => ({
+    _id: staff._id,
+    fullname: staff.fullname,
+    mobileNumber: staff.mobileNumber,
+    category: staff.category,
+  })) || [];
 
   // Upad
   const restUpadInitialData = Array.from({ length: 8 }, (_, i) => ({
@@ -446,7 +467,7 @@ const RestEntryPage = () => {
                   Upaad
                 </Typography>
                 <RestUpadTable
-                  fieldOptions={fieldOptions}
+                  upaadFieldOptions={upaadFieldOptions}
                   restUpadData={restUpadData}
                   setRestUpadData={setRestUpadData}
                   selectedDate={selectedDate}
@@ -471,7 +492,7 @@ const RestEntryPage = () => {
                   Levana Baki
                 </Typography>
                 <RestPendingTable
-                  fieldOptions={fieldOptions}
+                  pendingUsersFieldOptions={pendingUsersFieldOptions}
                   restPendingData={restPendingData}
                   setRestPendingData={setRestPendingData}
                   selectedDate={selectedDate}
@@ -496,7 +517,7 @@ const RestEntryPage = () => {
                   Aapvana Baki
                 </Typography>
                 <RestPendingUsersTable
-                  fieldOptions={fieldOptions}
+                  pendingVendorsOptions={pendingVendorsOptions}
                   restPendingData={restPendingUsersData}
                   setRestPendingData={setRestPendingUsersData}
                   selectedDate={selectedDate}
