@@ -143,11 +143,12 @@ const RestEntryPage = () => {
     const restPendingTotal = restPendingData.reduce((acc, row) => {
       return acc + Number(row.amount);
     }, 0);
-    const restPendingUsersTotal = restPendingUsersData.reduce((acc, row) => {
-      return acc + Number(row.amount);
-    }, 0);
-    setTotalPending(restPendingTotal + restPendingUsersTotal);
-  }, [restPendingData, restPendingUsersData]);
+    // Expense = Only Levana Baki - Not Appvana Baki
+    // const restPendingUsersTotal = restPendingUsersData.reduce((acc, row) => {
+    //   return acc + Number(row.amount);
+    // }, 0);
+    setTotalPending(restPendingTotal);
+  }, [restPendingData]);
 
   useMemo(() => {
     const total = restExpensesData.reduce((acc, row) => {
