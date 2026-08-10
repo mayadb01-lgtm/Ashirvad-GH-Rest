@@ -66,23 +66,23 @@ export const getRestCategoryName = () => async (dispatch) => {
 };
 
 // Get Expense - expenseName - get-expenses
-export const getRestExpenseName = () => async (dispatch) => {
-  try {
-    dispatch({ type: "GetRestExpenseNameRequest" });
-    const { data } = await axios.get(
-      `${import.meta.env.VITE_REACT_APP_SERVER_URL}/restCategory/get-expenses`
-    );
-    console.log("Expense fetched successfully", data);
-    dispatch({ type: "GetRestExpenseNameSuccess", payload: data.data });
-  } catch (error) {
-    dispatch({
-      type: "GetRestExpenseNameFailure",
-      payload: error?.response?.data?.message,
-    });
-    toast.error(error?.response?.data?.message);
-    console.log("Error Catch", error?.response?.data?.message);
-  }
-};
+// export const getRestExpenseName = () => async (dispatch) => {
+//   try {
+//     dispatch({ type: "GetRestExpenseNameRequest" });
+//     const { data } = await axios.get(
+//       `${import.meta.env.VITE_REACT_APP_SERVER_URL}/restCategory/get-expenses`
+//     );
+//     console.log("Expense fetched successfully", data);
+//     dispatch({ type: "GetRestExpenseNameSuccess", payload: data.data });
+//   } catch (error) {
+//     dispatch({
+//       type: "GetRestExpenseNameFailure",
+//       payload: error?.response?.data?.message,
+//     });
+//     toast.error(error?.response?.data?.message);
+//     console.log("Error Catch", error?.response?.data?.message);
+//   }
+// };
 
 // Get Category - categoryName - by expenseName
 export const getCategoryNameByExpense = (id) => async (dispatch) => {

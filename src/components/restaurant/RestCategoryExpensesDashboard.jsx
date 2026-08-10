@@ -13,6 +13,7 @@ import {
   Typography,
   Tooltip,
   Stack,
+  Checkbox,
 } from "@mui/material";
 import { Add, Edit, Delete, ExpandMore } from "@mui/icons-material";
 import {
@@ -44,7 +45,16 @@ const CategoryAccordion = ({ category, onEdit, onDelete }) => (
       }}
     >
       <Typography variant="h6" sx={{ fontWeight: "bold", flexGrow: 1 }}>
-        {category.categoryName}
+        {category.categoryName}{" "}
+        {category?.isVendor && (
+          <Typography
+            component="span"
+            variant="body2"
+            sx={{ color: "primary.main", ml: 1 }}
+          >
+            (Vendor)
+          </Typography>
+        )}
       </Typography>
       <Box>
         <IconButton
@@ -106,6 +116,7 @@ const CategoriesExpensesDashboard = () => {
   const [categoryData, setCategoryData] = useState({
     categoryName: "",
     categoryDescription: "",
+    isVendor: false,
     expense: [],
   });
   const [selectedId, setSelectedId] = useState(null);
@@ -124,6 +135,7 @@ const CategoriesExpensesDashboard = () => {
       setCategoryData({
         categoryName: "",
         categoryDescription: "",
+        isVendor: false,
         expense: [],
       });
       setSelectedId(null);
@@ -203,6 +215,7 @@ const CategoriesExpensesDashboard = () => {
     return (
       categoryData.categoryName !== category.categoryName ||
       categoryData.categoryDescription !== category.categoryDescription ||
+      categoryData?.isVendor !== category?.isVendor ||
       JSON.stringify(categoryData.expense) !== JSON.stringify(category.expense)
     );
   }, [editMode, selectedId, categoryData, restCategory]);
@@ -355,7 +368,7 @@ const CategoriesExpensesDashboard = () => {
             >
               <TextField
                 size="small"
-                label="Expense Name"
+                label="Expense Name - Vendor Name"
                 value={exp.expenseName}
                 onChange={(e) =>
                   handleUpdateExpense(index, "expenseName", e.target.value)
@@ -375,6 +388,16 @@ const CategoriesExpensesDashboard = () => {
                 }
                 sx={{ flex: 1 }}
               />
+
+              {/* Checkbox - Is Vendor? */}
+              <Typography variant="subtitle2">Is Vendor?</Typography>
+              <Checkbox
+                checked={exp?.isVendor}
+                onChange={(e) =>
+                  handleUpdateExpense(index, "isVendor", e.target.checked)
+                }
+              />
+
               <IconButton
                 size="small"
                 color="error"

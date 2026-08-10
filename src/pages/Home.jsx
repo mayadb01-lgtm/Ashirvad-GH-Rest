@@ -44,6 +44,12 @@ const Home = () => {
       icon: <MenuBookOutlinedIcon fontSize="large" />,
       color: "#80CBC4",
     },
+    {
+      path: isAdminAuthenticated ? "/admin/staff-salary" : "/staff-salary",
+      title: "S S",
+      icon: <BookOutlined fontSize="large" />,
+      color: "#FF6F00",
+    },
   ];
 
   return (

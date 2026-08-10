@@ -11,6 +11,7 @@ const officeBookSchema = new Schema(
     fullname: { type: String, required: true },
     categoryName: { type: String, required: true },
     expenseName: { type: String, required: true },
+    isVendor: { type: Boolean, default: false },
     remark: { type: String },
     createDate: { type: String, required: true },
     entryCreateDate: { type: Date },

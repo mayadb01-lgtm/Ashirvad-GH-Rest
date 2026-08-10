@@ -21,7 +21,6 @@ import { getRestStaff } from "../../redux/actions/restStaffAction";
 import {
   getRestCategory,
   getRestCategoryName,
-  getRestExpenseName,
 } from "../../redux/actions/restCategoryAction";
 import ModernLoader from "../../utils/util";
 import { getPendingUser } from "../../redux/actions/restPendingAction";
@@ -33,6 +32,7 @@ const RestEntryPage = () => {
   const { loading, restEntries } = useAppSelector((state) => state.restEntry);
   const { restStaff } = useAppSelector((state) => state.restStaff);
   const { restPending } = useAppSelector((state) => state.restPending);
+  const { restCategory } = useAppSelector((state) => state.restCategory);
   const { isAdminAuthenticated } = useAppSelector((state) => state.admin);
   const today = dayjs().format("DD-MM-YYYY");
   const [selectedDate, setSelectedDate] = useState(today);
@@ -45,36 +45,42 @@ const RestEntryPage = () => {
   );
   const userMaxDate = todayFun;
 
-  // Create Full Name options both
-  // const fieldOptions = restStaff && restPending
-  //   ? [...restStaff, ...restPending]?.map((staff) => ({
-  //     _id: staff._id,
-  //     fullname: staff.fullname,
-  //     mobileNumber: staff.mobileNumber,
-  //     category: staff.category,
-  //   }))
-  //   : [];
+  const upaadFieldOptions =
+    restStaff?.map((staff) => ({
+      _id: staff._id,
+      fullname: staff.fullname,
+      mobileNumber: staff.mobileNumber,
+      category: staff.category,
+      perDayPay: staff.perDayPay,
+    })) || [];
 
-  const upaadFieldOptions = restStaff?.map((staff) => ({
-    _id: staff._id,
-    fullname: staff.fullname,
-    mobileNumber: staff.mobileNumber,
-    category: staff.category,
-  })) || [];
+  const pendingUsersFieldOptions =
+    restPending
+      ?.filter((staff) => staff.category === "Pending")
+      ?.map((staff) => ({
+        _id: staff._id,
+        fullname: staff.fullname,
+        mobileNumber: staff.mobileNumber,
+        category: staff.category,
+      })) || [];
 
-  const pendingUsersFieldOptions = restPending?.filter((staff) => staff.category === "Pending")?.map((staff) => ({
-    _id: staff._id,
-    fullname: staff.fullname,
-    mobileNumber: staff.mobileNumber,
-    category: staff.category,
-  })) || [];
-
-  const pendingVendorsOptions = restPending?.filter((staff) => staff.category === "Vendor")?.map((staff) => ({
-    _id: staff._id,
-    fullname: staff.fullname,
-    mobileNumber: staff.mobileNumber,
-    category: staff.category,
-  })) || [];
+  const pendingVendorsOptions = restCategory
+    ?.filter((category) => category.expense.some((exp) => exp?.isVendor))
+    .flatMap((category) =>
+      category.expense
+        .filter((exp) => exp?.isVendor)
+        .map((exp) => ({
+          _id: exp?._id,
+          fullname: exp.fullname || exp.expenseName,
+          mobileNumber: exp?.mobileNumber || 0,
+          category: exp?.category || "",
+          expenseName: exp?.expenseName,
+          expenseDescription: exp?.expenseDescription,
+          isVendor: exp?.isVendor || false,
+          categoryName: category?.categoryName,
+          categoryDescription: category?.categoryDescription,
+        }))
+    );
 
   // Upad
   const restUpadInitialData = Array.from({ length: 8 }, (_, i) => ({
@@ -106,6 +112,7 @@ const RestEntryPage = () => {
     amount: 0,
     categoryName: "",
     expenseName: "",
+    isVendor: false,
     createDate: selectedDate,
   }));
   const [restExpensesData, setRestExpensesData] = useState(
@@ -116,6 +123,10 @@ const RestEntryPage = () => {
     _id: "",
     fullname: "",
     mobileNumber: 0,
+    expenseName: "",
+    isVendor: false,
+    categoryName: "",
+    categoryDescription: "",
     amount: 0,
     createDate: selectedDate,
   }));
@@ -183,7 +194,7 @@ const RestEntryPage = () => {
     dispatch(getRestStaff());
     dispatch(getRestCategory());
     dispatch(getRestCategoryName());
-    dispatch(getRestExpenseName());
+    // dispatch(getRestExpenseName());
     // dispatch(getRestStaffGHLastSevenDays());
     dispatch(getPendingUser());
   }, []);
@@ -239,7 +250,7 @@ const RestEntryPage = () => {
 
   const processRestPendingUsersData = (data) => {
     return data.filter((row) => {
-      return row.amount > 0 && row.fullname;
+      return row.amount > 0 && row?.isVendor;
     });
   };
 
@@ -325,7 +336,7 @@ const RestEntryPage = () => {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-        "An error occurred while creating the entry."
+          "An error occurred while creating the entry."
       );
     }
   };
@@ -342,7 +353,7 @@ const RestEntryPage = () => {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-        "An error occurred while deleting the entry."
+          "An error occurred while deleting the entry."
       );
     }
   };
@@ -377,7 +388,7 @@ const RestEntryPage = () => {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-        "An error occurred while updating the entry."
+          "An error occurred while updating the entry."
       );
     }
   };

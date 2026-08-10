@@ -38,6 +38,7 @@ import OfficeBookDashboard from "../components/office/OfficeBookDashboard";
 import GHBankBooksDashboard from "../components/guest-house/GHBankBooksDashboard";
 import OfficeCategoryDashboard from "../components/office/OfficeCategoryDashboard";
 import OfficeMerged from "../components/office/OfficeMerged";
+import OfficeCreditDebit from "../components/office/OfficeCreditDebit";
 import GHUpaidEntriesDashboard from "../components/guest-house/GHUpaidEntriesDashboard";
 import OfficeHome from "../components/office/OfficeHome";
 import OfficeMergedGraph from "../components/office/OfficeMergedGraph";
@@ -47,6 +48,8 @@ import AapvanaLevanaBalance from "../components/restaurant/RestAapvanaLevana";
 import OfficeBanquetSalesGoalDashboard from "../components/office/OfficeBanquetSalesGoalDashboard";
 import OfficeBakeryBaadaSalesGoalDashboard from "../components/office/OfficeBakeryBaadaSalesGoalDashboard";
 import OfficeMotiBaadaSalesGoalDashboard from "../components/office/OfficeMotiBaadaSalesGoalDashboard";
+// Staff Salary
+import StaffSalaryDashboard from "../components/restaurant/StaffSalaryDashboard";
 
 const DashboardHeader = ({ onNavigate }) => {
   const navigate = useNavigate();
@@ -195,6 +198,12 @@ const NAVIGATION = [
     title: "Office Category",
     icon: <CategoryIcon />,
   },
+  { kind: "header", title: "Staff Salary" },
+  {
+    segment: "staff-salary",
+    title: "Staff Salary",
+    icon: <BadgeIcon />,
+  },
   { kind: "header", title: "Merged Reports" },
   {
     segment: "merged-graph",
@@ -204,6 +213,11 @@ const NAVIGATION = [
   {
     segment: "merged-reports",
     title: "Merged Report",
+    icon: <BarChartIcon />,
+  },
+  {
+    segment: "merged-vendor-report",
+    title: "Merged Vendor Report",
     icon: <BarChartIcon />,
   },
   {
@@ -308,8 +322,10 @@ const DashboardPage = () => {
     { path: "office", element: <OfficeHome /> },
     { path: "office-book", element: <OfficeBookDashboard /> },
     { path: "office-category", element: <OfficeCategoryDashboard /> },
+    { path: "staff-salary", element: <StaffSalaryDashboard /> },
     { path: "merged-graph", element: <OfficeMergedGraph /> },
     { path: "merged-reports", element: <OfficeMerged /> },
+    { path: "merged-vendor-report", element: <OfficeCreditDebit /> },
     { path: "sales-goal/gh-sales-goal", element: <GHSalesGoalDashboard /> },
     { path: "sales-goal/rest-sales-goal", element: <RestSalesGoalDashboard /> },
     {

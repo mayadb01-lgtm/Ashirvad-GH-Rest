@@ -8,11 +8,7 @@ import dotenv from "dotenv";
 
 app.use(
   cors({
-    origin: [
-      process.env.CLIENT_URL,
-      "http://localhost:5173",
-      "https://guesthouse-seven.vercel.app",
-    ],
+    origin: [process.env.CLIENT_URL, "http://localhost:5173"],
     credentials: true,
   })
 );
@@ -40,6 +36,8 @@ import pendingRestAggregation from "./controller/pendingRestAggregation.js";
 import restPending from "./controller/restPending.js";
 import officeBook from "./controller/officeBook.js";
 import room from "./controller/room.js";
+import staffSalary from "./controller/staffSalary.js";
+import vendor from "./controller/vendor.js";
 
 // Use routes
 app.use("/api/v1/user", user);
@@ -49,8 +47,10 @@ app.use("/api/v1/restEntry", restEntry);
 app.use("/api/v1/restStaff", restStaff);
 app.use("/api/v1/restCategory", restCategory);
 app.use("/api/v1/aggregation", pendingRestAggregation);
+app.use("/api/v1/vendor", vendor);
 app.use("/api/v1/restPending", restPending);
 app.use("/api/v1/officeBook", officeBook);
 app.use("/api/v1/room", room);
+app.use("/api/v1/staffSalary", staffSalary);
 
 export default app;

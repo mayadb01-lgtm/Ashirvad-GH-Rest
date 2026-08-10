@@ -6,6 +6,7 @@ import {
   CircularProgress,
   Button,
   IconButton,
+  MenuItem,
   Modal,
   TextField,
   Typography,
@@ -30,6 +31,8 @@ const RestStaffDashboard = () => {
     fullname: "",
     mobileNumber: "",
     category: "",
+    perDayPay: 0,
+    staffStatus: "Active",
   });
   const [selectedId, setSelectedId] = useState(null);
 
@@ -44,11 +47,19 @@ const RestStaffDashboard = () => {
         fullname: staff.fullname,
         mobileNumber: staff.mobileNumber,
         category: staff.category || "Staff",
+        perDayPay: staff.perDayPay || 0,
+        staffStatus: staff.staffStatus || "Active",
       });
       setSelectedId(staff._id);
     } else {
       setEditMode(false);
-      setStaffData({ fullname: "", mobileNumber: "", category: "Staff" });
+      setStaffData({
+        fullname: "",
+        mobileNumber: "",
+        category: "Staff",
+        perDayPay: 0,
+        staffStatus: "Active",
+      });
       setSelectedId(null);
     }
     setOpen(true);
@@ -115,7 +126,30 @@ const RestStaffDashboard = () => {
       headerName: "Category",
       width: 150,
       headerAlign: "center",
-      align: "center"
+      align: "center",
+    },
+    {
+      field: "perDayPay",
+      headerName: "Per Day Pay",
+      width: 150,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "staffStatus",
+      headerName: "Status",
+      width: 130,
+      headerAlign: "center",
+      align: "center",
+      renderCell: (params) => (
+        <Typography
+          variant="body2"
+          fontWeight={600}
+          color={params.value === "Inactive" ? "error.main" : "success.main"}
+        >
+          {params.value || "Active"}
+        </Typography>
+      ),
     },
     {
       field: "actions",
@@ -248,6 +282,29 @@ const RestStaffDashboard = () => {
             }
             sx={{ mb: 2 }}
           />
+          <TextField
+            fullWidth
+            label="Per Day Pay"
+            type="number"
+            value={staffData.perDayPay}
+            onChange={(e) =>
+              setStaffData({ ...staffData, perDayPay: Number(e.target.value) })
+            }
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            select
+            fullWidth
+            label="Status"
+            value={staffData.staffStatus}
+            onChange={(e) =>
+              setStaffData({ ...staffData, staffStatus: e.target.value })
+            }
+            sx={{ mb: 2 }}
+          >
+            <MenuItem value="Active">Active</MenuItem>
+            <MenuItem value="Inactive">Inactive</MenuItem>
+          </TextField>
           <Button
             variant="contained"
             color="primary"

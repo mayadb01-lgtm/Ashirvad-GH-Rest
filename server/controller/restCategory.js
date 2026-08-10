@@ -71,28 +71,44 @@ router.get("/get-category-name", async (req, res) => {
 });
 
 // Get All Expenses - Flattened Response
-router.get("/get-expenses", async (req, res) => {
-  try {
-    const categories = await RestCategory.find({}, { expense: 1 });
+// router.get("/get-expenses", async (req, res) => {
+//   try {
+//     const categories = await RestCategory.find({}, { expense: 1 });
+//     // const allExpenses = categories.flatMap((category) =>
+//     //   category.expense.map((exp) => ({
+//     //     _id: exp._id,
+//     //     expenseName: exp.expenseName,
+//     //     isVendor: exp.isVendor,
+//     //   })),
+//     // );
 
-    const allExpenses = categories.flatMap((category) =>
-      category.expense.map((exp) => ({
-        _id: exp._id,
-        expenseName: exp.expenseName,
-      }))
-    );
+//     const allExpenses = categories.flatMap((category) => {
+//       return category.expense.flatMap((exp) => {
+//         if (exp.isVendor) {
+//           return {
+//             _id: exp._id,
+//             expenseName: exp.expenseName,
+//             isVendor: exp.isVendor,
+//             categoryName: category.categoryName,
+//           };
+//         }
+//         return [];
+//       });
+//     });
 
-    res.status(200).json({
-      success: true,
-      data: allExpenses,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
+//     console.log("allExpenses", allExpenses);
+
+//     res.status(200).json({
+//       success: true,
+//       data: allExpenses,
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// });
 
 // Get a categoryName by expenseName
 router.get("/get-category-name/:id", async (req, res) => {

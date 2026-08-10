@@ -3,7 +3,7 @@ import { createReducer } from "@reduxjs/toolkit";
 const initialState = {
   restCategory: [],
   restCategoryName: [],
-  restExpenseName: [],
+  // restExpenseName: [],
   singleCategoryName: "",
   loading: false,
   error: null,
@@ -49,18 +49,18 @@ const restCategoryReducer = createReducer(initialState, (builder) => {
       state.restCategoryName = [];
     })
     // Get Expenses - expenseName
-    .addCase("GetRestExpenseNameRequest", (state) => {
-      state.loading = true;
-    })
-    .addCase("GetRestExpenseNameSuccess", (state, action) => {
-      state.loading = false;
-      state.restExpenseName = action.payload;
-    })
-    .addCase("GetRestExpenseNameFailure", (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-      state.restExpenseName = [];
-    })
+    // .addCase("GetRestExpenseNameRequest", (state) => {
+    //   state.loading = true;
+    // })
+    // .addCase("GetRestExpenseNameSuccess", (state, action) => {
+    //   state.loading = false;
+    //   state.restExpenseName = action.payload;
+    // })
+    // .addCase("GetRestExpenseNameFailure", (state, action) => {
+    //   state.loading = false;
+    //   state.error = action.payload;
+    //   state.restExpenseName = [];
+    // })
     // Get categoryName by expenseName (_id)
     .addCase("GetCategoryNameByExpenseRequest", (state) => {
       state.loading = true;

@@ -8,6 +8,7 @@ const restCategorySchema = new Schema(
       {
         expenseName: { type: String, required: true },
         expenseDescription: { type: String, required: true },
+        isVendor: { type: Boolean, default: false },
       },
     ],
   },

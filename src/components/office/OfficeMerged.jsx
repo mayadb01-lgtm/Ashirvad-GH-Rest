@@ -316,7 +316,7 @@ const OfficeMerged = () => {
             align: "center",
           },
           {
-            field: "officeCardIn",
+            field: "OfficeCardIn",
             headerName: "OfficeCardIn",
             width: 125,
             cellClassName: "entry-in",
@@ -824,27 +824,6 @@ const OfficeMerged = () => {
     [preparedRowsWithOpeningBalance]
   );
 
-  const headerMap = [
-    "id",
-    "date",
-    "ghCashIn",
-    "restCashIn",
-    "officeCashIn",
-    "officeCashOut",
-    "cash",
-    "ghCardIn",
-    "restCardIn",
-    "OfficeCardIn",
-    "card",
-    "restPPIn",
-    "OfficePPIn",
-    "OfficePPOut",
-    "pp",
-    "ghPPCIn",
-    "officePPCIn",
-    "officePPCOut",
-  ];
-
   const handleExportToExcel = () => {
     if (!Array.isArray(preparedRows) || preparedRows.length === 0) {
       toast.error("No data available to export for selected date range.");
@@ -860,21 +839,26 @@ const OfficeMerged = () => {
       "DD-MM-YYYY"
     )} to ${endDate.format("DD-MM-YYYY")}.xlsx`;
 
-    const exportData = preparedRows
-      .filter((row) => row.type !== "group" && row.id !== "Total")
-      .map(({ ...item }) => {
-        const transformed = {};
-        Object.keys(headerMap).forEach((key) => {
-          transformed[headerMap[key]] = item[key];
-        });
-        return transformed;
+    const rowsToExport = [...preparedRows, totalsRow];
+
+    const exportData = rowsToExport.map((row) => {
+      const transformed = {};
+      visibleColumns.forEach(({ field, headerName }) => {
+        transformed[headerName] = row[field] ?? "";
       });
+      return transformed;
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
+    worksheet["!cols"] = visibleColumns.map(({ headerName }) => ({
+      wch: Math.max(headerName.length + 2, 12),
+    }));
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Merged Report");
 
     XLSX.writeFile(workbook, fileName);
+    toast.success("Merged report exported successfully.");
   };
 
   return (

@@ -5,6 +5,7 @@ const initialState = {
   officeCategory: [],
   loading: false,
   error: null,
+  officeBookCategoryUpaad: {},
 };
 
 export const officeBookReducer = createReducer(initialState, (builder) => {
@@ -120,7 +121,45 @@ export const officeBookReducer = createReducer(initialState, (builder) => {
       state.loading = false;
       state.error = action.payload;
       state.officeCategory = [];
-    });
+    })
+    // Get Office Book Category Upaad by Month and Year
+    .addCase("GetOfficeBookCategoryUpaadByMonthAndYearRequest", (state) => {
+      state.loading = true;
+    })
+    .addCase(
+      "GetOfficeBookCategoryUpaadByMonthAndYearSuccess",
+      (state, action) => {
+        state.loading = false;
+        state.officeBookCategoryUpaad = action.payload;
+      }
+    )
+    .addCase(
+      "GetOfficeBookCategoryUpaadByMonthAndYearFailure",
+      (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.officeBookCategoryUpaad = {};
+      }
+    )
+    // Get Office Book Category Upaad by Month Range
+    .addCase("GetOfficeBookCategoryUpaadByMonthRangeRequest", (state) => {
+      state.loading = true;
+    })
+    .addCase(
+      "GetOfficeBookCategoryUpaadByMonthRangeSuccess",
+      (state, action) => {
+        state.loading = false;
+        state.officeBookCategoryUpaad = action.payload;
+      }
+    )
+    .addCase(
+      "GetOfficeBookCategoryUpaadByMonthRangeFailure",
+      (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.officeBookCategoryUpaad = {};
+      }
+    );
 });
 
 export default officeBookReducer;

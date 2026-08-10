@@ -31,6 +31,9 @@ const RestEntryPage = lazy(
 const OfficeEntryPage = lazy(
   () => import("./pages/office/OfficeEntryPage.jsx")
 );
+const StaffSalaryEntryPage = lazy(
+  () => import("./pages/staffSalary/StaffSalaryEntryPage.jsx")
+);
 
 const App = () => {
   const dispatch = useAppDispatch();
@@ -84,6 +87,15 @@ const App = () => {
             }
           />
           <Route
+            path="/staff-salary"
+            element={
+              <ProtectedRoute>
+                <Navbar />
+                <StaffSalaryEntryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/hotel"
             element={
               <ProtectedAdminRoute>
@@ -107,6 +119,15 @@ const App = () => {
               <ProtectedAdminRoute>
                 <Navbar />
                 <OfficeEntryPage />
+              </ProtectedAdminRoute>
+            }
+          />
+          <Route
+            path="/admin/staff-salary"
+            element={
+              <ProtectedAdminRoute>
+                <Navbar />
+                <StaffSalaryEntryPage />
               </ProtectedAdminRoute>
             }
           />

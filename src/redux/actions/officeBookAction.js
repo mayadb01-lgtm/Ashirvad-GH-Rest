@@ -207,3 +207,49 @@ export const deleteOfficeCategory = (id) => async (dispatch) => {
     console.log("Error Catch", error?.response?.data?.message);
   }
 };
+
+// Get Office Book - Category - Upaad by Month and Year (Month, Year) for All Staffs
+export const getOfficeBookCategoryUpaadByMonthAndYear =
+  (month, year) => async (dispatch) => {
+    try {
+      dispatch({ type: "GetOfficeBookCategoryUpaadByMonthAndYearRequest" });
+      const { data } = await axios.get(
+        `${import.meta.env.VITE_REACT_APP_SERVER_URL}/officeBook/get-category-upaad-by-month-and-year/${month}/${year}`
+      );
+      console.log("Office Book Category Upaad fetched successfully", data);
+      dispatch({
+        type: "GetOfficeBookCategoryUpaadByMonthAndYearSuccess",
+        payload: data.data,
+      });
+    } catch (error) {
+      dispatch({
+        type: "GetOfficeBookCategoryUpaadByMonthAndYearFailure",
+        payload: error?.response?.data?.message,
+      });
+      toast.error(error?.response?.data?.message);
+      console.log("Error Catch", error?.response?.data?.message);
+    }
+  };
+
+// Get Office Book Category Upaad by Month Range (Start Month, End Month)
+export const getOfficeBookCategoryUpaadByMonthRange =
+  (startMonth, endMonth) => async (dispatch) => {
+    try {
+      dispatch({ type: "GetOfficeBookCategoryUpaadByMonthRangeRequest" });
+      const { data } = await axios.get(
+        `${import.meta.env.VITE_REACT_APP_SERVER_URL}/officeBook/get-category-upaad-by-month-range/${startMonth}/${endMonth}`
+      );
+      console.log("Office Book Category Upaad fetched successfully", data);
+      dispatch({
+        type: "GetOfficeBookCategoryUpaadByMonthRangeSuccess",
+        payload: data.data,
+      });
+    } catch (error) {
+      dispatch({
+        type: "GetOfficeBookCategoryUpaadByMonthRangeFailure",
+        payload: error?.response?.data?.message,
+      });
+      toast.error(error?.response?.data?.message);
+      console.log("Error Catch", error?.response?.data?.message);
+    }
+  };

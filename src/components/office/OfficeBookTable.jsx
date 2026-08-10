@@ -40,11 +40,12 @@ const EditableRow = ({
   const sourceOptions = isOfficeIn ? officeCategoryOptions : categoryOptions;
 
   // Flattened expenses for autocomplete
-  const flattenedExpenses = sourceOptions.flatMap((category) =>
-    category.expense.map((exp) => ({
-      _id: exp._id,
-      expenseName: exp.expenseName,
-      categoryName: category.categoryName,
+  const flattenedExpenses = sourceOptions?.flatMap((category) =>
+    category?.expense?.map((exp) => ({
+      _id: exp?._id,
+      expenseName: exp?.expenseName,
+      categoryName: category?.categoryName,
+      isVendor: exp?.isVendor || false,
     }))
   );
 
@@ -52,13 +53,20 @@ const EditableRow = ({
   const renderExpenseAutocomplete = (options, rowKey, currentValue) => (
     <Autocomplete
       options={options}
-      getOptionLabel={(option) => option.expenseName || ""}
-      groupBy={(option) => option.categoryName || ""}
-      value={options.find((opt) => opt.expenseName === currentValue) || null}
+      getOptionLabel={(option) => option?.expenseName || ""}
+      groupBy={(option) => {
+        if (option?.isVendor) {
+          return "Vendor";
+        } else {
+          return option?.categoryName || "";
+        }
+      }}
+      value={options.find((opt) => opt?.expenseName === currentValue) || null}
       onChange={(_, value) => {
         handleInputChange(rowKey, value?.expenseName);
         handleInputChange("_id", value ? value._id : "");
-        handleInputChange("categoryName", value ? value.categoryName : "");
+        handleInputChange("categoryName", value ? value?.categoryName : "");
+        handleInputChange("isVendor", value ? value?.isVendor || false : false);
       }}
       renderInput={(params) => (
         <TextField {...params} variant="outlined" size="small" />
@@ -68,8 +76,8 @@ const EditableRow = ({
   );
 
   const flattenedCategory = sourceOptions.flatMap((category) => ({
-    _id: category._id,
-    categoryName: category.categoryName,
+    _id: category?._id,
+    categoryName: category?.categoryName,
   }));
 
   // Render Category Autocomplete (disabled)
@@ -115,8 +123,9 @@ const EditableRow = ({
   );
 
   // If Category is UPAD or Staff then show Drop Down of names
-  const isCategoryUpaadOrStaff = row.categoryName.match(/upad|upaad|Upad|Upaad|staff|Staff/i);
-
+  const isCategoryUpaadOrStaff = row.categoryName.match(
+    /upad|upaad|Upad|Upaad|staff|Staff/i
+  );
 
   return (
     <TableRow
@@ -217,19 +226,56 @@ const OfficeBookTable = ({
 }) => {
   const { restCategory } = useAppSelector((state) => state.restCategory);
   const { officeCategory } = useAppSelector((state) => state.officeBook);
+  const { restPending } = useAppSelector((state) => state.restPending);
+
+  const pendingVendorsOptions = restCategory
+    ?.filter((category) => category.expense.some((exp) => exp?.isVendor))
+    .map((category) => ({
+      _id: category._id,
+      categoryName: category.categoryName,
+      categoryDescription: category.categoryDescription,
+      expense: category.expense.filter((exp) => exp?.isVendor),
+    }));
+
+  const pendingUsersOptions = restPending.map((pending) => ({
+    _id: pending._id,
+    fullname: pending.fullname,
+    mobileNumber: pending.mobileNumber,
+    expenseName: pending.fullname,
+    isVendor: false,
+    categoryName: "Pending",
+    expense: [
+      {
+        _id: pending._id,
+        expenseName: pending.fullname,
+        isVendor: false,
+        categoryName: "Pending",
+      },
+    ],
+  }));
+
+  const officeInOptions = isOfficeIn
+    ? [
+        ...officeCategory.filter(
+          (category) => category.categoryName !== "Pending"
+        ),
+        ...pendingVendorsOptions,
+        ...pendingUsersOptions,
+      ]
+    : officeCategory;
 
   const tableColumns = isOfficeIn
     ? ["ID", "Amount", "Mode", "Income", "Category", "Name", "Remark", "Remove"]
     : [
-      "ID",
-      "Amount",
-      "Mode",
-      "Expense",
-      "Category",
-      "Name",
-      "Remark",
-      "Remove",
-    ];
+        "ID",
+        "Amount",
+        "Mode",
+        "Expense",
+        "Category",
+        "Name",
+        "Remark",
+        "Remove",
+      ];
 
   const handleAddRow = () => {
     setOfficeData((prevData) => [
@@ -296,7 +342,7 @@ const OfficeBookTable = ({
                 onUpdateRow={handleUpdateRow}
                 handleRemoveRow={handleRemoveRow}
                 categoryOptions={restCategory}
-                officeCategoryOptions={officeCategory}
+                officeCategoryOptions={officeInOptions}
                 isOfficeIn={isOfficeIn}
                 isOfficeOut={isOfficeOut}
               />

@@ -199,7 +199,7 @@ router.get("/get-aapvana-entries/:startDate/:endDate", async (req, res) => {
       },
     });
 
-    const aapvanaEntries = entries.flatMap((entry) => entry.pending);
+    const aapvanaEntries = entries.flatMap((entry) => entry.pendingUsers);
 
     res.status(200).json({
       success: true,
@@ -225,7 +225,7 @@ router.get("/get-levana-entries/:startDate/:endDate", async (req, res) => {
       },
     });
 
-    const levanaEntries = entries.flatMap((entry) => entry.pendingUsers);
+    const levanaEntries = entries.flatMap((entry) => entry.pending);
 
     res.status(200).json({
       success: true,
@@ -240,38 +240,38 @@ router.get("/get-levana-entries/:startDate/:endDate", async (req, res) => {
 });
 
 // Get Expenses Entries by Date Range
-router.get("/get-expenses-entries/:startDate/:endDate", async (req, res) => {
-  try {
-    const start = dayjs(req.params.startDate, "DD-MM-YYYY");
-    const end = dayjs(req.params.endDate, "DD-MM-YYYY");
+// router.get("/get-expenses-entries/:startDate/:endDate", async (req, res) => {
+//   try {
+//     const start = dayjs(req.params.startDate, "DD-MM-YYYY");
+//     const end = dayjs(req.params.endDate, "DD-MM-YYYY");
 
-    if (!start.isValid() || !end.isValid()) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid date format. Please use DD-MM-YYYY.",
-      });
-    }
+//     if (!start.isValid() || !end.isValid()) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid date format. Please use DD-MM-YYYY.",
+//       });
+//     }
 
-    const entries = await RestEntry.find({
-      entryCreateDate: {
-        $gte: start.startOf("day").toDate(),
-        $lte: end.endOf("day").toDate(),
-      },
-    }).sort({ entryCreateDate: 1 });
+//     const entries = await RestEntry.find({
+//       entryCreateDate: {
+//         $gte: start.startOf("day").toDate(),
+//         $lte: end.endOf("day").toDate(),
+//       },
+//     }).sort({ entryCreateDate: 1 });
 
-    const expensesEntries = entries.flatMap((entry) => entry.expenses);
+//     const expensesEntries = entries.flatMap((entry) => entry.expenses);
 
-    res.status(200).json({
-      success: true,
-      data: expensesEntries,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
+//     res.status(200).json({
+//       success: true,
+//       data: expensesEntries,
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// });
 
 router.get(
   "/get-entries-by-payment-method/:startDate/:endDate",
@@ -319,6 +319,104 @@ router.get(
         success: false,
         message: error.message,
       });
+    }
+  }
+);
+
+// Get Staff Upaad by Month (StaffID, Month, Year)
+router.get("/get-staff-total-upaad-by-month/:month/:year", async (req, res) => {
+  try {
+    const month = parseInt(req.params.month, 10);
+    const year = parseInt(req.params.year, 10);
+    const startDate = dayjs(`${year}-${month}-01`).startOf("month").toDate();
+    const endDate = dayjs(`${year}-${month}-01`).endOf("month").toDate();
+
+    const entries = await RestEntry.find(
+      {
+        entryCreateDate: {
+          $gte: startDate,
+          $lte: endDate,
+        },
+      },
+      {
+        upad: 1,
+      }
+    );
+
+    const staffUpaadEntries = entries.flatMap((entry) => entry.upad);
+
+    const staffTotalUpaad = staffUpaadEntries.reduce((acc, upad) => {
+      acc[upad._id] = (acc[upad._id] || 0) + (upad.amount || 0);
+      return acc;
+    }, {});
+
+    res.status(200).json({
+      success: true,
+      data: staffTotalUpaad,
+    });
+  } catch (error) {
+    console.error("Get Staff Upaad by Month Error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+router.get(
+  "/get-staff-total-upaad-by-month-range/:startDate/:endDate",
+  async (req, res) => {
+    try {
+      if (
+        !dayjs(req.params.startDate, "DD-MM-YYYY", true).isValid() ||
+        !dayjs(req.params.endDate, "DD-MM-YYYY", true).isValid()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid date format. Use DD-MM-YYYY.",
+        });
+      }
+
+      const startDate = dayjs(req.params.startDate, "DD-MM-YYYY");
+      const endDate = dayjs(req.params.endDate, "DD-MM-YYYY");
+
+      const entries = await RestEntry.find(
+        {
+          entryCreateDate: {
+            $gte: startDate,
+            $lte: endDate,
+          },
+        },
+        {
+          upad: 1,
+          entryCreateDate: 1,
+        }
+      );
+
+      // Group by "YYYY-MM" first, keeping staffId totals inside each month
+      const staffTotalUpaadByMonth = entries.reduce((acc, entry) => {
+        const monthKey = dayjs(entry.entryCreateDate).format("YYYY-MM");
+
+        if (!acc[monthKey]) {
+          acc[monthKey] = {};
+        }
+
+        (entry.upad || []).forEach((upad) => {
+          acc[monthKey][upad._id] =
+            (acc[monthKey][upad._id] || 0) + (upad.amount || 0);
+        });
+
+        return acc;
+      }, {});
+
+      res.status(200).json({
+        success: true,
+        data: staffTotalUpaadByMonth,
+      });
+    } catch (error) {
+      console.error("Get Staff Upaad by Month Range Error:", error);
+      res.status(500).json({ success: false, message: error.message });
     }
   }
 );

@@ -244,3 +244,46 @@ export const getRestEntryByPaymentMethod =
       console.log("Error Catch", error?.response?.data?.message);
     }
   };
+
+// Get Staff Upaad by Month (Month Input) and Calculate Total Upaad for that Staff for that Month (StaffID, Month, Year)
+export const getStaffUpaadByMonth = (month, year) => async (dispatch) => {
+  try {
+    console.log("month", month);
+    console.log("year", year);
+    dispatch({ type: "GetStaffUpaadByMonthRequest" });
+    const { data } = await axios.get(
+      `${import.meta.env.VITE_REACT_APP_SERVER_URL}/restEntry/get-staff-total-upaad-by-month/${month}/${year}`
+    );
+    console.log("Staff Upaad fetched successfully", data);
+    dispatch({ type: "GetStaffUpaadByMonthSuccess", payload: data.data });
+  } catch (error) {
+    dispatch({
+      type: "GetStaffUpaadByMonthFailure",
+      payload: error?.response?.data?.message,
+    });
+    toast.error(error?.response?.data?.message);
+    console.log("Error Catch", error?.response?.data?.message);
+  }
+};
+
+export const getStaffUpaadByMonthRange =
+  (startMonth, endMonth) => async (dispatch) => {
+    try {
+      dispatch({ type: "GetStaffUpaadByMonthRangeRequest" });
+      const { data } = await axios.get(
+        `${import.meta.env.VITE_REACT_APP_SERVER_URL}/restEntry/get-staff-total-upaad-by-month-range/${startMonth}/${endMonth}`
+      );
+      console.log("Staff Upaad fetched successfully", data);
+      dispatch({
+        type: "GetStaffUpaadByMonthRangeSuccess",
+        payload: data.data,
+      });
+    } catch (error) {
+      dispatch({
+        type: "GetStaffUpaadByMonthRangeFailure",
+        payload: error?.response?.data?.message,
+      });
+      toast.error(error?.response?.data?.message);
+      console.log("Error Catch", error?.response?.data?.message);
+    }
+  };
