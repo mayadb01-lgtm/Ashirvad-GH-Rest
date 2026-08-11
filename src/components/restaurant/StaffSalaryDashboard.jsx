@@ -252,7 +252,7 @@ const StaffSalaryDashboard = () => {
     restaurantUpaad: summary.totalRestUpaad,
     officeUpaad: summary.totalOfficeUpaad,
     currentBalance: summary.totalBalance,
-    salaryPaid: "Total",
+    salaryPaid: false,
   };
 
   const rowsWithTotals = [...rows, totalsRow];
