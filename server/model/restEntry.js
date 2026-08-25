@@ -41,6 +41,11 @@ const expensesEntrySchemaObj = new Schema(
     expenseName: { type: String, required: true },
     isVendor: { type: Boolean, default: false },
     categoryName: { type: String, required: true },
+    // Staff attribution (mirrors OfficeBook's officeOut rows) - only used when
+    // categoryName is "Staff" so entries like "Salaries"/"Overtime Payment"
+    // can be tied to an individual staff member.
+    fullname: { type: String, default: "" },
+    fullname_id: { type: String, default: "" },
     createDate: { type: String, required: true },
     entryCreateDate: { type: Date },
     updatedDate: { type: String, default: "" },

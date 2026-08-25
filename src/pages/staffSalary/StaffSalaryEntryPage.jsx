@@ -33,27 +33,30 @@ import {
   createSalarySheet,
   updateSalarySheet,
   deleteSalarySheet,
+  getSalaryAndOvertimeByMonthRange,
 } from "../../redux/actions/staffSalaryAction";
 
 dayjs.locale("en-gb");
 
 const tableColumns = [
   { label: "No", width: "4%", align: "center" },
-  { label: "Staff Name", width: "17%", align: "left" },
-  { label: "Per Day Pay", width: "10%", align: "center" },
-  { label: "Attendance", width: "9%", align: "center" },
-  { label: "Total", width: "10%", align: "center" },
-  { label: "Rest Upaad", width: "10%", align: "center" },
-  { label: "Office Upaad", width: "10%", align: "center" },
-  { label: "Current Balance", width: "11%", align: "center" },
-  { label: "Salary Paid?", width: "8%", align: "center" },
-  { label: "Prev Month Salary", width: "11%", align: "center" },
+  { label: "Staff Name", width: "12%", align: "left" },
+  { label: "Per Day Pay", width: "8%", align: "center" },
+  { label: "Attendance", width: "7%", align: "center" },
+  { label: "Total", width: "8%", align: "center" },
+  { label: "Rest Upaad", width: "8%", align: "center" },
+  { label: "Office Upaad", width: "8%", align: "center" },
+  { label: "Current Balance", width: "9%", align: "center" },
+  { label: "Salary Paid?", width: "6%", align: "center" },
+  { label: "Prev Month Salary", width: "10%", align: "center" },
+  { label: "Prev Month Salary and Overtime", width: "10%", align: "center" },
 ];
 
 const buildDraftRows = (
   staff,
   staffTotalUpaad = {},
-  officeBookCategoryUpaad = {}
+  officeBookCategoryUpaad = {},
+  salaryAndOvertime = {}
 ) =>
   staff.map((s) => {
     const restaurantUpaad = staffTotalUpaad?.[s._id?.toString()] || 0;
@@ -71,6 +74,8 @@ const buildDraftRows = (
       officeUpaad,
       currentBalance,
       salaryPaid: false,
+      // Informational only - not persisted, not used in any total/balance calculation.
+      salaryAndOvertime: Number(salaryAndOvertime?.[s._id?.toString()]) || 0,
     };
   });
 
@@ -89,6 +94,7 @@ const StaffSalaryEntryPage = () => {
     salarySheet,
     salarySheetNotFound,
     previousSalarySheet,
+    salaryAndOvertime,
   } = useAppSelector((state) => state.staffSalary);
 
   const [selectedMonth, setSelectedMonth] = useState(dayjs());
@@ -104,13 +110,23 @@ const StaffSalaryEntryPage = () => {
   const previousMonth = previousMonthDate.month() + 1;
   const previousYear = previousMonthDate.year();
 
+  // "YYYY-MM" key matching the shape returned by getSalaryAndOvertimeByMonthRange
+  const monthKey = `${year}-${String(month).padStart(2, "0")}`;
+  const salaryAndOvertimeMonthBucket = salaryAndOvertime?.[monthKey] || {};
+
   useEffect(() => {
     dispatch(getRestStaff());
     dispatch(getStaffUpaadByMonth(month, year));
     dispatch(getOfficeBookCategoryUpaadByMonthAndYear(month, year));
     dispatch(getSalarySheet(month, year));
     dispatch(getPreviousMonthSalarySheet(previousMonth, previousYear));
-  }, [dispatch, month, year, previousMonth, previousYear]);
+    dispatch(
+      getSalaryAndOvertimeByMonthRange(
+        selectedMonth.startOf("month").format("DD-MM-YYYY"),
+        selectedMonth.endOf("month").format("DD-MM-YYYY")
+      )
+    );
+  }, [dispatch, month, year, previousMonth, previousYear, selectedMonth]);
 
   // Map of staffId -> amount paid last month (only for staff whose "Salary Paid?"
   // checkbox was checked in the previous month's sheet)
@@ -164,6 +180,9 @@ const StaffSalaryEntryPage = () => {
           officeUpaad,
           currentBalance: total - restaurantUpaad - officeUpaad,
           salaryPaid: Boolean(row.salaryPaid),
+          // Informational only - not persisted, not used in any total/balance calculation.
+          salaryAndOvertime:
+            Number(salaryAndOvertimeMonthBucket[row.staffId?.toString()]) || 0,
         };
       });
 
@@ -171,7 +190,12 @@ const StaffSalaryEntryPage = () => {
     } else {
       setRows([]);
     }
-  }, [salarySheet, staffTotalUpaad, officeBookCategoryUpaad]);
+  }, [
+    salarySheet,
+    staffTotalUpaad,
+    officeBookCategoryUpaad,
+    salaryAndOvertimeMonthBucket,
+  ]);
 
   useEffect(() => {
     if (
@@ -181,14 +205,30 @@ const StaffSalaryEntryPage = () => {
       officeBookCategoryUpaad
     ) {
       setRows(
-        buildDraftRows(restStaff, staffTotalUpaad, officeBookCategoryUpaad)
+        buildDraftRows(
+          restStaff,
+          staffTotalUpaad,
+          officeBookCategoryUpaad,
+          salaryAndOvertimeMonthBucket
+        )
       );
     }
-  }, [isNew, restStaff, staffTotalUpaad, officeBookCategoryUpaad]);
+  }, [
+    isNew,
+    restStaff,
+    staffTotalUpaad,
+    officeBookCategoryUpaad,
+    salaryAndOvertimeMonthBucket,
+  ]);
 
   const resetForm = () => {
     setRows(
-      buildDraftRows(restStaff, staffTotalUpaad, officeBookCategoryUpaad)
+      buildDraftRows(
+        restStaff,
+        staffTotalUpaad,
+        officeBookCategoryUpaad,
+        salaryAndOvertimeMonthBucket
+      )
     );
   };
 
@@ -504,7 +544,7 @@ const StaffSalaryEntryPage = () => {
                 width: "100%",
                 boxShadow: 1,
                 borderRadius: "8px",
-                overflowX: "auto",
+                overflowX: "hidden",
               }}
             >
               <Table
@@ -516,7 +556,8 @@ const StaffSalaryEntryPage = () => {
                   "& .MuiTableCell-root": {
                     borderRight: "1px solid",
                     borderColor: "divider",
-                    px: 1,
+                    px: 0.5,
+                    overflow: "hidden",
                   },
                   "& .MuiTableCell-root:last-of-type": {
                     borderRight: "none",
@@ -532,8 +573,10 @@ const StaffSalaryEntryPage = () => {
                         sx={{
                           width: col.width,
                           fontWeight: 700,
-                          fontSize: "13px",
-                          whiteSpace: "nowrap",
+                          fontSize: "12px",
+                          whiteSpace: "normal",
+                          lineHeight: 1.2,
+                          wordBreak: "break-word",
                           backgroundColor: "#f5f3fc",
                           color: "text.primary",
                         }}
@@ -686,6 +729,17 @@ const StaffSalaryEntryPage = () => {
                             </Typography>
                           );
                         })()}
+                      </TableCell>
+                      <TableCell align="center">
+                        <TextField
+                          variant="outlined"
+                          type="number"
+                          size="small"
+                          value={row.salaryAndOvertime || 0}
+                          disabled
+                          fullWidth
+                          inputProps={{ style: { textAlign: "center" } }}
+                        />
                       </TableCell>
                     </TableRow>
                   ))}

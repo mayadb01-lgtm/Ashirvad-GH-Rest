@@ -35,9 +35,10 @@ const ExpensesTable = ({
   extraAmount,
 }) => {
   const { restCategory } = useAppSelector((state) => state.restCategory);
+  const { restStaff } = useAppSelector((state) => state.restStaff);
   // Column headers
   const columns = useMemo(
-    () => ["ID", "Amount", "Name", "Category", "Remove"],
+    () => ["ID", "Amount", "Expense", "Category", "Description", "Remove"],
     []
   );
 
@@ -90,6 +91,8 @@ const ExpensesTable = ({
         expenseName: "",
         categoryName: "",
         isVendor: false,
+        fullname: "",
+        fullname_id: "",
         createDate: selectedDate,
       },
     ]);
@@ -125,6 +128,28 @@ const ExpensesTable = ({
       categoryName: category.categoryName,
       isVendor: exp?.isVendor || false,
     }))
+  );
+
+  // Staff dropdown options (only relevant when categoryName is "Staff")
+  const flattenedStaffNames = (restStaff || []).map((staff) => ({
+    _id: staff._id,
+    fullname: staff.fullname,
+  }));
+
+  const renderStaffNameAutocomplete = (options, index, currentValue) => (
+    <Autocomplete
+      options={options}
+      getOptionLabel={(option) => option.fullname || ""}
+      value={options.find((opt) => opt.fullname === currentValue) || null}
+      onChange={(_, value) => {
+        handleUpdateRow(index, "fullname", value?.fullname || "");
+        handleUpdateRow(index, "fullname_id", value ? value._id : "");
+      }}
+      renderInput={(params) => (
+        <TextField {...params} variant="outlined" size="small" />
+      )}
+      size="small"
+    />
   );
 
   const handleRemoveRow = useCallback(
@@ -184,51 +209,76 @@ const ExpensesTable = ({
           {/* Dynamic Rows */}
           {restExpensesData.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} align="center">
+              <TableCell colSpan={columns.length} align="center">
                 No Expense data available
               </TableCell>
             </TableRow>
           )}
-          {restExpensesData.map((row, index) => (
-            <TableRow
-              sx={{ bgcolor: row.amount && row.expenseName ? "#f5f5f5" : "" }}
-              key={row.id}
-            >
-              <TableCell sx={{ width: "5%" }}>{row.id}</TableCell>
-              <TableCell sx={{ width: "20%" }}>
-                <TextField
-                  variant="outlined"
-                  size="small"
-                  type="number"
-                  value={row.amount || ""}
-                  onChange={(e) =>
-                    handleUpdateRow(index, "amount", e.target.value)
-                  }
-                />
-              </TableCell>
-              <TableCell sx={{ width: "30%" }}>
-                {renderExpenseAutocomplete(
-                  flattenedExpenses,
-                  "expenseName",
-                  index,
-                  row.expenseName
-                )}
-              </TableCell>
-              <TableCell sx={{ width: "30%" }}>
-                {renderCategoryAutocomplete(
-                  restCategory,
-                  "categoryName",
-                  index,
-                  row.categoryName
-                )}
-              </TableCell>
-              <TableCell sx={{ width: "10%" }}>
-                <Button size="small" onClick={() => handleRemoveRow(row.id)}>
-                  <RemoveCircleOutlineIcon variant="outlined" color="error" />
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
+          {restExpensesData.map((row, index) => {
+            const isCategoryStaff = row.categoryName?.trim() === "Staff";
+
+            return (
+              <TableRow
+                sx={{
+                  bgcolor: row.amount && row.expenseName ? "#f5f5f5" : "",
+                }}
+                key={row.id}
+              >
+                <TableCell sx={{ width: "5%" }}>{row.id}</TableCell>
+                <TableCell sx={{ width: "15%" }}>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    type="number"
+                    value={row.amount || ""}
+                    onChange={(e) =>
+                      handleUpdateRow(index, "amount", e.target.value)
+                    }
+                  />
+                </TableCell>
+                <TableCell sx={{ width: "25%" }}>
+                  {renderExpenseAutocomplete(
+                    flattenedExpenses,
+                    "expenseName",
+                    index,
+                    row.expenseName
+                  )}
+                </TableCell>
+                <TableCell sx={{ width: "20%" }}>
+                  {renderCategoryAutocomplete(
+                    restCategory,
+                    "categoryName",
+                    index,
+                    row.categoryName
+                  )}
+                </TableCell>
+                <TableCell sx={{ width: "25%" }}>
+                  {isCategoryStaff ? (
+                    renderStaffNameAutocomplete(
+                      flattenedStaffNames,
+                      index,
+                      row.fullname
+                    )
+                  ) : (
+                    <TextField
+                      variant="outlined"
+                      size="small"
+                      value={row.fullname || ""}
+                      onChange={(e) =>
+                        handleUpdateRow(index, "fullname", e.target.value)
+                      }
+                      fullWidth
+                    />
+                  )}
+                </TableCell>
+                <TableCell sx={{ width: "10%" }}>
+                  <Button size="small" onClick={() => handleRemoveRow(row.id)}>
+                    <RemoveCircleOutlineIcon variant="outlined" color="error" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            );
+          })}
           <Button
             variant="contained"
             color="primary"
@@ -242,7 +292,7 @@ const ExpensesTable = ({
           {calculationRows.map((row, index) => (
             <TableRow key={index}>
               <TableCell colSpan={2}>{row.label}</TableCell>
-              <TableCell colSpan={3}>
+              <TableCell colSpan={columns.length - 2}>
                 <TextField
                   variant="outlined"
                   size="small"
@@ -272,7 +322,11 @@ const ExpensesTable = ({
           ))}
           {extraAmount < 0 && (
             <TableRow>
-              <TableCell colSpan={5} align="center" sx={{ color: "red" }}>
+              <TableCell
+                colSpan={columns.length}
+                align="center"
+                sx={{ color: "red" }}
+              >
                 Extra amount is negative
               </TableCell>
             </TableRow>

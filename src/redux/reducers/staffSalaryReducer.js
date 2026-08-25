@@ -6,6 +6,9 @@ const initialState = {
   salarySheetNotFound: false,
   previousSalarySheet: null,
   previousSalarySheetNotFound: false,
+  // Informational-only, not persisted; keyed by "YYYY-MM" -> { staffId: value }
+  salaryAndOvertime: {},
+  salaryAndOvertimeLoading: false,
   loading: false,
   error: null,
 };
@@ -99,6 +102,19 @@ const staffSalaryReducer = createReducer(initialState, (builder) => {
     .addCase("DeleteSalarySheetFailure", (state, action) => {
       state.loading = false;
       state.error = action.payload;
+    })
+    // Get Salary and Overtime by Month Range (informational only, not persisted)
+    .addCase("GetSalaryAndOvertimeByMonthRangeRequest", (state) => {
+      state.salaryAndOvertimeLoading = true;
+    })
+    .addCase("GetSalaryAndOvertimeByMonthRangeSuccess", (state, action) => {
+      state.salaryAndOvertimeLoading = false;
+      state.salaryAndOvertime = action.payload;
+    })
+    .addCase("GetSalaryAndOvertimeByMonthRangeFailure", (state, action) => {
+      state.salaryAndOvertimeLoading = false;
+      state.error = action.payload;
+      state.salaryAndOvertime = {};
     });
 });
 

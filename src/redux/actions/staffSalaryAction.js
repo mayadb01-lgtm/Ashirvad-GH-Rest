@@ -153,3 +153,26 @@ export const deleteSalarySheet = (month, year) => async (dispatch) => {
     console.log("Error Catch", error?.response?.data?.message);
   }
 };
+
+// Get Salary and Overtime by Month Range (Start Date, End Date - DD-MM-YYYY)
+export const getSalaryAndOvertimeByMonthRange =
+  (startDate, endDate) => async (dispatch) => {
+    try {
+      dispatch({ type: "GetSalaryAndOvertimeByMonthRangeRequest" });
+      const { data } = await axios.get(
+        `${import.meta.env.VITE_REACT_APP_SERVER_URL}/staffSalary/get-salary-and-overtime-by-month-range/${startDate}/${endDate}`
+      );
+      console.log("Salary and Overtime fetched successfully", data);
+      dispatch({
+        type: "GetSalaryAndOvertimeByMonthRangeSuccess",
+        payload: data.data,
+      });
+    } catch (error) {
+      dispatch({
+        type: "GetSalaryAndOvertimeByMonthRangeFailure",
+        payload: error?.response?.data?.message,
+      });
+      toast.error(error?.response?.data?.message);
+      console.log("Error Catch", error?.response?.data?.message);
+    }
+  };

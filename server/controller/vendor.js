@@ -33,7 +33,6 @@ router.get("/get-vendor-entries/:startDate/:endDate", async (req, res) => {
         $lte: end.endOf("day").toDate(),
       },
     };
-    console.log("dateRange", dateRange);
 
     // Fetch both sources in parallel instead of sequentially.
     const [restEntries, officeBooks] = await Promise.all([
@@ -49,7 +48,6 @@ router.get("/get-vendor-entries/:startDate/:endDate", async (req, res) => {
       return e.pendingUsers;
     });
 
-    console.log("restAapvanaEntries", restAapvanaEntries);
     const restExpensesEntries = restEntries.flatMap((e) => {
       const expense = e.expenses || [];
       return expense.map((exp) => {
@@ -81,7 +79,6 @@ router.get("/get-vendor-entries/:startDate/:endDate", async (req, res) => {
     // Unique Return Schema
     // Columns: id, date, fullname, expenseName, modeOfPayment, credit, debit, balance, source
     const buildRow = (entry, { isCredit, defaultMode, source }) => {
-      // console.log("entry", entry);
       return {
         // NOTE: with .lean() docs are plain objects, so the Mongoose virtual
         // `.id` getter no longer exists — use `_id` directly instead.
@@ -129,8 +126,6 @@ router.get("/get-vendor-entries/:startDate/:endDate", async (req, res) => {
       ),
     ];
 
-    console.log("finalRows", finalRows);
-
     // Sort by the actual entryCreateDate (real Date value), falling back
     // to parsing createDate with an explicit format if it's ever missing.
     finalRows.sort((a, b) => {
@@ -148,8 +143,6 @@ router.get("/get-vendor-entries/:startDate/:endDate", async (req, res) => {
     const expenseNameOptions = [
       ...new Set(finalRows.map((r) => r.expenseName).filter(Boolean)),
     ].sort();
-
-    console.log("expenseNameOptions", expenseNameOptions);
 
     const rows = finalRows;
 

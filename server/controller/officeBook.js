@@ -454,11 +454,6 @@ router.get(
         return acc;
       }, {});
 
-      console.log(
-        "Office Book Category Upaad by Month Range:",
-        officeBookCategoryUpaadByMonth
-      );
-
       res.status(200).json({
         success: true,
         data: officeBookCategoryUpaadByMonth,

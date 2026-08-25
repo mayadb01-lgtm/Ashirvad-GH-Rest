@@ -9,7 +9,6 @@ import process from "process";
 router.post("/create-user", async (req, res) => {
   try {
     const { name, email, password } = req.body;
-    console.log(req.body);
 
     // Check if the user already exists
     const userEmail = await User.findOne({ email: email });

@@ -11,9 +11,6 @@ router.get("/get-pending-rest", async (req, res) => {
     const startDate = dayjs().subtract(7, "day").format("DD-MM-YYYY");
     const endDate = dayjs().format("DD-MM-YYYY");
 
-    console.log("Start Date:", startDate);
-    console.log("End Date:", endDate);
-
     // Fetch RestStaff and Entries concurrently for better performance
     const [staff, entries] = await Promise.all([
       RestStaff.find(
@@ -31,9 +28,6 @@ router.get("/get-pending-rest", async (req, res) => {
       ).lean(),
     ]);
 
-    console.log("Fetched Staff:", JSON.stringify(staff, null, 2));
-    console.log("Fetched Entries:", JSON.stringify(entries, null, 2));
-
     // Flatten entry arrays and merge into one list
     const ghUsers = entries.flatMap((doc) =>
       doc.entry.map((e) => ({
@@ -43,8 +37,6 @@ router.get("/get-pending-rest", async (req, res) => {
         business: "Guest House - Last 7 Days",
       }))
     );
-
-    console.log("Merged Entries:", JSON.stringify(ghUsers, null, 2));
 
     res.status(200).json({
       success: true,

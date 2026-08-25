@@ -1,8 +1,17 @@
 import { Router } from "express";
 import dayjs from "dayjs";
 import StaffSalary from "../model/staffSalary.js";
-import RestStaff from "../model/restStaff.js";
+import RestEntry from "../model/restEntry.js";
+import OfficeBook from "../model/officeBook.js";
 const router = Router();
+
+// Category and Expense Names are fixed - used as the matching condition for
+// "Salary and Overtime" entries in both the Restaurant Expense Table and the
+// Office Table (Office Out).
+const SALARY_AND_OVERTIME_CATEGORY = "Staff";
+
+const isSalaryOrOvertimeExpense = (categoryName, expenseName) =>
+  categoryName?.trim() === SALARY_AND_OVERTIME_CATEGORY;
 
 // Create Salary Sheet
 router.post("/create-salary-sheet", async (req, res) => {
@@ -215,5 +224,93 @@ router.delete("/delete-salary-sheet/:month/:year", async (req, res) => {
     });
   }
 });
+
+// Get Salary and Overtime by Month Range (Start Date, End Date - DD-MM-YYYY)
+// NOTE: This is informational-only data (not persisted, not used in any
+// salary/balance calculation). "Salary and Overtime" is paid out via two
+// sources, both matched by their fixed Category + Expense Name:
+//   1. Restaurant Expense Table (RestEntry.expenses)
+//   2. Office Table - Office Out (OfficeBook.officeOut)
+// Both are attributed to a staff member via fullname_id and summed together,
+// grouped by "YYYY-MM" -> { staffId: amount }, matching the shape used by
+// staffTotalUpaad / officeBookCategoryUpaad above.
+router.get(
+  "/get-salary-and-overtime-by-month-range/:startDate/:endDate",
+  async (req, res) => {
+    try {
+      if (
+        !dayjs(req.params.startDate, "DD-MM-YYYY", true).isValid() ||
+        !dayjs(req.params.endDate, "DD-MM-YYYY", true).isValid()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid date format. Use DD-MM-YYYY.",
+        });
+      }
+
+      const start = dayjs(req.params.startDate, "DD-MM-YYYY");
+      const end = dayjs(req.params.endDate, "DD-MM-YYYY");
+
+      const dateRangeQuery = {
+        entryCreateDate: {
+          $gte: start.startOf("day").toDate(),
+          $lte: end.endOf("day").toDate(),
+        },
+      };
+
+      const [restEntries, officeEntries] = await Promise.all([
+        RestEntry.find(dateRangeQuery, {
+          expenses: 1,
+          entryCreateDate: 1,
+        }),
+        OfficeBook.find(dateRangeQuery, {
+          officeOut: 1,
+          entryCreateDate: 1,
+        }),
+      ]);
+
+      // Group by "YYYY-MM" first, keeping staffId totals inside each month
+      const salaryAndOvertimeByMonth = {};
+
+      const addToMonth = (entryCreateDate, items) => {
+        const monthKey = dayjs(entryCreateDate).format("YYYY-MM");
+
+        items.forEach((item) => {
+          if (!isSalaryOrOvertimeExpense(item.categoryName, item.expenseName))
+            return;
+
+          const staffId = item.fullname_id?.trim();
+          if (!staffId) return;
+
+          if (!salaryAndOvertimeByMonth[monthKey]) {
+            salaryAndOvertimeByMonth[monthKey] = {};
+          }
+
+          salaryAndOvertimeByMonth[monthKey][staffId] =
+            (salaryAndOvertimeByMonth[monthKey][staffId] || 0) +
+            (item.amount || 0);
+        });
+      };
+
+      restEntries.forEach((entry) =>
+        addToMonth(entry.entryCreateDate, entry.expenses || [])
+      );
+      officeEntries.forEach((entry) =>
+        addToMonth(entry.entryCreateDate, entry.officeOut || [])
+      );
+
+      res.status(200).json({
+        success: true,
+        data: salaryAndOvertimeByMonth,
+      });
+    } catch (error) {
+      console.error("Get Salary and Overtime by Month Range Error:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+);
 
 export default router;

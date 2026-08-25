@@ -30,7 +30,6 @@ router.post("/create-entry", async (req, res) => {
     if (typeof entries === "string") {
       parsedEntries = JSON.parse(entries);
     }
-    console.log("entries", parsedEntries);
 
     // Validate request body
     if (
@@ -67,7 +66,6 @@ router.post("/create-entry", async (req, res) => {
     const unpaidEntries = parsedEntries.filter(
       (entry) => entry.period === "UnPaid"
     );
-    console.log("unpaidEntries", unpaidEntries);
 
     for (const entry of unpaidEntries) {
       const updatedEntry = await Entry.findOneAndUpdate(
@@ -85,7 +83,6 @@ router.post("/create-entry", async (req, res) => {
         },
         { new: true }
       );
-      console.log("updatedEntry", updatedEntry);
     }
 
     // Create a new Entry document

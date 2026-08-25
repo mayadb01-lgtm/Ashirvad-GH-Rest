@@ -21,7 +21,10 @@ import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { useDateNavigation } from "../../hooks/useDateNavigation";
 import { getRestStaff } from "../../redux/actions/restStaffAction";
 import { getOfficeBookCategoryUpaadByMonthRange } from "../../redux/actions/officeBookAction";
-import { getSalarySheetsByMonthRange } from "../../redux/actions/staffSalaryAction";
+import {
+  getSalarySheetsByMonthRange,
+  getSalaryAndOvertimeByMonthRange,
+} from "../../redux/actions/staffSalaryAction";
 import { getStaffUpaadByMonthRange } from "../../redux/actions/restEntryAction";
 
 dayjs.locale("en-gb");
@@ -30,7 +33,8 @@ const columns = [
   {
     field: "index",
     headerName: "No",
-    width: 80,
+    flex: 0.4,
+    minWidth: 40,
     headerAlign: "center",
     align: "center",
     renderCell: (params) => (
@@ -40,21 +44,24 @@ const columns = [
   {
     field: "month",
     headerName: "Month",
-    width: 150,
+    flex: 0.9,
+    minWidth: 70,
     headerAlign: "center",
     align: "center",
   },
   {
     field: "fullname",
     headerName: "Staff Name",
-    width: 200,
+    flex: 1.3,
+    minWidth: 90,
     headerAlign: "center",
     align: "center",
   },
   {
     field: "perDayPay",
     headerName: "Per Day Pay",
-    width: 120,
+    flex: 0.8,
+    minWidth: 70,
     headerAlign: "center",
     align: "center",
     renderCell: (params) =>
@@ -63,15 +70,16 @@ const columns = [
   {
     field: "attendance",
     headerName: "Attendance",
-    width: 120,
+    flex: 0.7,
+    minWidth: 70,
     headerAlign: "center",
     align: "center",
   },
   {
     field: "total",
     headerName: "Total",
-    minWidth: 150,
-    flex: 1,
+    flex: 0.8,
+    minWidth: 70,
     headerAlign: "center",
     align: "center",
     renderCell: (params) =>
@@ -80,7 +88,8 @@ const columns = [
   {
     field: "restaurantUpaad",
     headerName: "Rest. Upaad",
-    width: 130,
+    flex: 0.8,
+    minWidth: 70,
     headerAlign: "center",
     align: "center",
     renderCell: (params) =>
@@ -89,7 +98,8 @@ const columns = [
   {
     field: "officeUpaad",
     headerName: "Office Upaad",
-    width: 130,
+    flex: 0.8,
+    minWidth: 70,
     headerAlign: "center",
     align: "center",
     renderCell: (params) =>
@@ -98,8 +108,8 @@ const columns = [
   {
     field: "currentBalance",
     headerName: "Balance",
-    minWidth: 150,
-    flex: 1,
+    flex: 0.8,
+    minWidth: 70,
     headerAlign: "center",
     align: "center",
     renderCell: (params) =>
@@ -108,7 +118,8 @@ const columns = [
   {
     field: "salaryPaid",
     headerName: "Salary Paid?",
-    width: 130,
+    flex: 0.8,
+    minWidth: 80,
     headerAlign: "center",
     align: "center",
     renderCell: (params) => (
@@ -120,6 +131,17 @@ const columns = [
       />
     ),
   },
+  {
+    // Informational only - not used in any total/balance calculation.
+    field: "salaryAndOvertime",
+    headerName: "Prev Month Salary and Overtime",
+    flex: 1.2,
+    minWidth: 90,
+    headerAlign: "center",
+    align: "center",
+    renderCell: (params) =>
+      `${Number(params.value || 0).toLocaleString("en-IN")}`,
+  },
 ];
 
 const StaffSalaryDashboard = () => {
@@ -130,9 +152,12 @@ const StaffSalaryDashboard = () => {
   );
   const { loading: officeUpaadLoading, officeBookCategoryUpaad } =
     useAppSelector((state) => state.officeBook);
-  const { loading: salaryLoading, salarySheets } = useAppSelector(
-    (state) => state.staffSalary
-  );
+  const {
+    loading: salaryLoading,
+    salarySheets,
+    salaryAndOvertime,
+    salaryAndOvertimeLoading,
+  } = useAppSelector((state) => state.staffSalary);
   const [startDate, setStartDate] = useState(dayjs().startOf("month"));
   const [endDate, setEndDate] = useState(dayjs());
   const [selectedName, setSelectedName] = useState(null);
@@ -169,6 +194,9 @@ const StaffSalaryDashboard = () => {
       )
     );
     dispatch(getSalarySheetsByMonthRange(formattedStartDate, formattedEndDate));
+    dispatch(
+      getSalaryAndOvertimeByMonthRange(formattedStartDate, formattedEndDate)
+    );
   }, [dispatch, startDate, endDate]);
 
   const staffStatusById = (restStaff || []).reduce((acc, staff) => {
@@ -181,6 +209,7 @@ const StaffSalaryDashboard = () => {
     const monthKey = `${sheet.year}-${String(sheet.month).padStart(2, "0")}`;
     const staffMonthBucket = staffTotalUpaad?.[monthKey] || {};
     const officeMonthBucket = officeBookCategoryUpaad?.[monthKey] || {};
+    const salaryAndOvertimeMonthBucket = salaryAndOvertime?.[monthKey] || {};
 
     return (sheet.rows || []).map((row) => {
       const restaurantUpaad = staffMonthBucket[row.staffId?.toString()] || 0;
@@ -200,6 +229,9 @@ const StaffSalaryDashboard = () => {
         officeUpaad,
         currentBalance: total - restaurantUpaad - officeUpaad,
         salaryPaid: Boolean(row.salaryPaid),
+        // Informational only - not persisted, not used in any total/balance calculation.
+        salaryAndOvertime:
+          Number(salaryAndOvertimeMonthBucket[row.staffId?.toString()]) || 0,
         staffStatus: staffStatusById[row.staffId?.toString()] || "Active",
       };
     });
@@ -232,6 +264,7 @@ const StaffSalaryDashboard = () => {
       acc.totalRestUpaad += row.restaurantUpaad || 0;
       acc.totalOfficeUpaad += row.officeUpaad || 0;
       acc.totalBalance += row.currentBalance || 0;
+      acc.totalSalaryAndOvertime += row.salaryAndOvertime || 0;
       return acc;
     },
     {
@@ -239,6 +272,7 @@ const StaffSalaryDashboard = () => {
       totalRestUpaad: 0,
       totalOfficeUpaad: 0,
       totalBalance: 0,
+      totalSalaryAndOvertime: 0,
     }
   );
 
@@ -253,6 +287,7 @@ const StaffSalaryDashboard = () => {
     officeUpaad: summary.totalOfficeUpaad,
     currentBalance: summary.totalBalance,
     salaryPaid: false,
+    salaryAndOvertime: summary.totalSalaryAndOvertime,
   };
 
   const rowsWithTotals = [...rows, totalsRow];
@@ -267,6 +302,7 @@ const StaffSalaryDashboard = () => {
     officeUpaad: "Office Upaad",
     currentBalance: "Balance",
     salaryPaid: "Salary Paid?",
+    salaryAndOvertime: "Prev Month Salary and Overtime",
   };
 
   const handleExportToExcel = () => {
@@ -305,11 +341,12 @@ const StaffSalaryDashboard = () => {
     <Box
       sx={{
         py: 2,
-        px: 8,
+        px: { xs: 2, md: 3 },
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         width: "100%",
+        maxWidth: "100%",
       }}
     >
       <Box sx={{ alignItems: "center", py: 3 }}>
@@ -492,16 +529,31 @@ const StaffSalaryDashboard = () => {
 
       {rows.length > 0 ? (
         <DataGrid
-          loading={staffUpaadLoading || officeUpaadLoading || salaryLoading}
+          loading={
+            staffUpaadLoading ||
+            officeUpaadLoading ||
+            salaryLoading ||
+            salaryAndOvertimeLoading
+          }
           rows={rowsWithTotals}
           columns={columns}
           hideFooter
+          disableColumnMenu
+          columnHeaderHeight={56}
           WebkitFontSmoothing="auto"
           letterSpacing="normal"
           sx={{
             mt: 2,
             width: "100%",
-            "& .MuiDataGrid-columnHeaderTitle": { fontWeight: "bold" },
+            maxWidth: "100%",
+            "& .MuiDataGrid-main": { overflow: "hidden" },
+            "& .MuiDataGrid-virtualScroller": { overflowX: "hidden" },
+            "& .MuiDataGrid-columnHeaderTitle": {
+              fontWeight: "bold",
+              whiteSpace: "normal",
+              lineHeight: 1.2,
+              textAlign: "center",
+            },
             "& .MuiDataGrid-cell:hover": { color: "primary.main" },
             "& .MuiDataGrid-columnHeader, .MuiDataGrid-cell": {
               border: "1px solid #f0f0f0",
