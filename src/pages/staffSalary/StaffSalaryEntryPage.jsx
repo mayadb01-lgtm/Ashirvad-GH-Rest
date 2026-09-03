@@ -41,6 +41,9 @@ dayjs.locale("en-gb");
 /** Round to nearest whole number (e.g. 12.25 → 12, 12.99 → 13). */
 const roundWhole = (value) => Math.round(Number(value) || 0);
 
+/** Stable fallback so missing month buckets don't retrigger row-sync effects. */
+const EMPTY_OBJECT = {};
+
 const tableColumns = [
   { label: "No", width: "4%", align: "center" },
   { label: "Staff Name", width: "12%", align: "left" },
@@ -58,8 +61,7 @@ const tableColumns = [
 const buildDraftRows = (
   staff,
   staffTotalUpaad = {},
-  officeBookCategoryUpaad = {},
-  salaryAndOvertime = {}
+  officeBookCategoryUpaad = {}
 ) =>
   staff.map((s) => {
     const restaurantUpaad = roundWhole(
@@ -83,10 +85,6 @@ const buildDraftRows = (
       officeUpaad,
       currentBalance,
       salaryPaid: false,
-      // Informational only - not persisted, not used in any total/balance calculation.
-      salaryAndOvertime: roundWhole(
-        salaryAndOvertime?.[s._id?.toString()] || 0
-      ),
     };
   });
 
@@ -123,7 +121,10 @@ const StaffSalaryEntryPage = () => {
 
   // "YYYY-MM" key matching the shape returned by getSalaryAndOvertimeByMonthRange
   const monthKey = `${year}-${String(month).padStart(2, "0")}`;
-  const salaryAndOvertimeMonthBucket = salaryAndOvertime?.[monthKey] || {};
+  const salaryAndOvertimeMonthBucket = useMemo(
+    () => salaryAndOvertime?.[monthKey] || EMPTY_OBJECT,
+    [salaryAndOvertime, monthKey]
+  );
 
   useEffect(() => {
     dispatch(getRestStaff());
@@ -174,78 +175,48 @@ const StaffSalaryEntryPage = () => {
   }, [rows, statusFilter, staffStatusById]);
 
   useEffect(() => {
-    if (salarySheet && salarySheet.rows?.length > 0) {
-      const allRows = salarySheet.rows.map((row) => {
-        const restaurantUpaad = roundWhole(
-          staffTotalUpaad?.[row.staffId?.toString()] || 0
-        );
-        const officeUpaad = roundWhole(
-          officeBookCategoryUpaad?.[row.staffId?.toString()] || 0
-        );
-        const total = roundWhole(
-          Number(row.perDayPay || 0) * Number(row.attendance || 0)
-        );
-
-        return {
-          staffId: row.staffId,
-          fullname: row.fullname,
-          perDayPay: row.perDayPay || 0,
-          attendance: row.attendance || 0,
-          total,
-          restaurantUpaad,
-          officeUpaad,
-          currentBalance: roundWhole(total - restaurantUpaad - officeUpaad),
-          salaryPaid: Boolean(row.salaryPaid),
-          // Informational only - not persisted, not used in any total/balance calculation.
-          salaryAndOvertime: roundWhole(
-            salaryAndOvertimeMonthBucket[row.staffId?.toString()] || 0
-          ),
-        };
-      });
-
-      setRows(allRows);
-    } else {
-      setRows([]);
-    }
-  }, [
-    salarySheet,
-    staffTotalUpaad,
-    officeBookCategoryUpaad,
-    salaryAndOvertimeMonthBucket,
-  ]);
-
-  useEffect(() => {
-    if (
-      isNew &&
-      restStaff?.length > 0 &&
-      staffTotalUpaad &&
-      officeBookCategoryUpaad
-    ) {
+    if (salarySheet?.rows?.length > 0) {
       setRows(
-        buildDraftRows(
-          restStaff,
-          staffTotalUpaad,
-          officeBookCategoryUpaad,
-          salaryAndOvertimeMonthBucket
-        )
+        salarySheet.rows.map((row) => {
+          const restaurantUpaad = roundWhole(
+            staffTotalUpaad?.[row.staffId?.toString()] || 0
+          );
+          const officeUpaad = roundWhole(
+            officeBookCategoryUpaad?.[row.staffId?.toString()] || 0
+          );
+          const total = roundWhole(
+            Number(row.perDayPay || 0) * Number(row.attendance || 0)
+          );
+
+          return {
+            staffId: row.staffId,
+            fullname: row.fullname,
+            perDayPay: row.perDayPay || 0,
+            attendance: row.attendance || 0,
+            total,
+            restaurantUpaad,
+            officeUpaad,
+            currentBalance: roundWhole(total - restaurantUpaad - officeUpaad),
+            salaryPaid: Boolean(row.salaryPaid),
+          };
+        })
       );
+      return;
     }
-  }, [
-    isNew,
-    restStaff,
-    staffTotalUpaad,
-    officeBookCategoryUpaad,
-    salaryAndOvertimeMonthBucket,
-  ]);
+
+    if (isNew && restStaff?.length > 0) {
+      setRows(
+        buildDraftRows(restStaff, staffTotalUpaad, officeBookCategoryUpaad)
+      );
+      return;
+    }
+
+    setRows([]);
+  }, [salarySheet, isNew, restStaff, staffTotalUpaad, officeBookCategoryUpaad]);
 
   const resetForm = () => {
     setRows(
-      buildDraftRows(
-        restStaff,
-        staffTotalUpaad,
-        officeBookCategoryUpaad,
-        salaryAndOvertimeMonthBucket
-      )
+      buildDraftRows(restStaff, staffTotalUpaad, officeBookCategoryUpaad)
     );
   };
 
@@ -754,7 +725,11 @@ const StaffSalaryEntryPage = () => {
                           variant="outlined"
                           type="number"
                           size="small"
-                          value={row.salaryAndOvertime || 0}
+                          value={roundWhole(
+                            salaryAndOvertimeMonthBucket[
+                              row.staffId?.toString()
+                            ] || 0
+                          )}
                           disabled
                           fullWidth
                           inputProps={{ style: { textAlign: "center" } }}
