@@ -38,6 +38,9 @@ import {
 
 dayjs.locale("en-gb");
 
+/** Round to nearest whole number (e.g. 12.25 → 12, 12.99 → 13). */
+const roundWhole = (value) => Math.round(Number(value) || 0);
+
 const tableColumns = [
   { label: "No", width: "4%", align: "center" },
   { label: "Staff Name", width: "12%", align: "left" },
@@ -59,10 +62,16 @@ const buildDraftRows = (
   salaryAndOvertime = {}
 ) =>
   staff.map((s) => {
-    const restaurantUpaad = staffTotalUpaad?.[s._id?.toString()] || 0;
-    const officeUpaad = officeBookCategoryUpaad?.[s._id?.toString()] || 0;
-    const total = Number(s.perDayPay || 0) * Number(s.attendance || 0);
-    const currentBalance = total - restaurantUpaad - officeUpaad;
+    const restaurantUpaad = roundWhole(
+      staffTotalUpaad?.[s._id?.toString()] || 0
+    );
+    const officeUpaad = roundWhole(
+      officeBookCategoryUpaad?.[s._id?.toString()] || 0
+    );
+    const total = roundWhole(
+      Number(s.perDayPay || 0) * Number(s.attendance || 0)
+    );
+    const currentBalance = roundWhole(total - restaurantUpaad - officeUpaad);
 
     return {
       staffId: s._id,
@@ -75,7 +84,9 @@ const buildDraftRows = (
       currentBalance,
       salaryPaid: false,
       // Informational only - not persisted, not used in any total/balance calculation.
-      salaryAndOvertime: Number(salaryAndOvertime?.[s._id?.toString()]) || 0,
+      salaryAndOvertime: roundWhole(
+        salaryAndOvertime?.[s._id?.toString()] || 0
+      ),
     };
   });
 
@@ -142,7 +153,7 @@ const StaffSalaryEntryPage = () => {
 
   const getPreviousMonthPaidAmount = (staffId) => {
     const amount = previousMonthPaidAmountByStaffId[staffId?.toString()];
-    return amount === undefined ? "Not Paid" : amount;
+    return amount === undefined ? "Not Paid" : roundWhole(amount);
   };
 
   const staffStatusById = useMemo(() => {
@@ -165,10 +176,15 @@ const StaffSalaryEntryPage = () => {
   useEffect(() => {
     if (salarySheet && salarySheet.rows?.length > 0) {
       const allRows = salarySheet.rows.map((row) => {
-        const restaurantUpaad = staffTotalUpaad?.[row.staffId?.toString()] || 0;
-        const officeUpaad =
-          officeBookCategoryUpaad?.[row.staffId?.toString()] || 0;
-        const total = Number(row.perDayPay || 0) * Number(row.attendance || 0);
+        const restaurantUpaad = roundWhole(
+          staffTotalUpaad?.[row.staffId?.toString()] || 0
+        );
+        const officeUpaad = roundWhole(
+          officeBookCategoryUpaad?.[row.staffId?.toString()] || 0
+        );
+        const total = roundWhole(
+          Number(row.perDayPay || 0) * Number(row.attendance || 0)
+        );
 
         return {
           staffId: row.staffId,
@@ -178,11 +194,12 @@ const StaffSalaryEntryPage = () => {
           total,
           restaurantUpaad,
           officeUpaad,
-          currentBalance: total - restaurantUpaad - officeUpaad,
+          currentBalance: roundWhole(total - restaurantUpaad - officeUpaad),
           salaryPaid: Boolean(row.salaryPaid),
           // Informational only - not persisted, not used in any total/balance calculation.
-          salaryAndOvertime:
-            Number(salaryAndOvertimeMonthBucket[row.staffId?.toString()]) || 0,
+          salaryAndOvertime: roundWhole(
+            salaryAndOvertimeMonthBucket[row.staffId?.toString()] || 0
+          ),
         };
       });
 
@@ -242,14 +259,16 @@ const StaffSalaryEntryPage = () => {
           [field]: value,
         };
 
-        updatedRow.total =
+        updatedRow.total = roundWhole(
           Number(updatedRow.perDayPay || 0) *
-          Number(updatedRow.attendance || 0);
+            Number(updatedRow.attendance || 0)
+        );
 
-        updatedRow.currentBalance =
+        updatedRow.currentBalance = roundWhole(
           updatedRow.total -
-          Number(updatedRow.restaurantUpaad || 0) -
-          Number(updatedRow.officeUpaad || 0);
+            Number(updatedRow.restaurantUpaad || 0) -
+            Number(updatedRow.officeUpaad || 0)
+        );
 
         return updatedRow;
       })
