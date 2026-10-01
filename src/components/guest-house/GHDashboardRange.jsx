@@ -32,27 +32,6 @@ import * as XLSX from "xlsx";
 
 dayjs.locale("en-gb");
 
-const headerMap = {
-  createDate: "Created Date",
-  _id: "Entry ID",
-  roomNo: "Room Number",
-  roomType: "Room Type",
-  period: "Stay Period",
-  cost: "Cost",
-  rate: "Rate",
-  discount: "Discount",
-  noOfPeople: "No. of People",
-  modeOfPayment: "Payment Mode",
-  fullname: "Full Name",
-  mobileNumber: "Mobile Number",
-  checkInTime: "Check-In Time",
-  checkOutTime: "Check-Out Time",
-  date: "Date",
-  createdAt: "Created At",
-  paidDate: "Paid Date",
-  isPaid: "Is Paid?",
-};
-
 const GHSalesDashboardRange = () => {
   const dispatch = useAppDispatch();
   const { loading, entries } = useAppSelector((state) => state.entry);
@@ -356,12 +335,12 @@ const GHSalesDashboardRange = () => {
       "DD-MM-YYYY"
     )} to ${endDate.format("DD-MM-YYYY")}.xlsx`;
 
-    const exportData = preparedEntries
-      .filter((row) => row.type !== "group" && row.id !== "Total")
-      .map(({ ...item }) => {
+    const exportData = getGroupedRows(preparedEntries)
+      .filter((row) => row.type !== "group" && row.date !== "Total")
+      .map((item) => {
         const transformed = {};
-        Object.keys(headerMap).forEach((key) => {
-          transformed[headerMap[key]] = item[key];
+        baseColumns.forEach((col) => {
+          transformed[col.headerName] = item[col.field] ?? "";
         });
         return transformed;
       });
