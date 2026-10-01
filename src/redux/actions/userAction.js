@@ -71,8 +71,6 @@ export const loadUser = () => async (dispatch) => {
       type: "LoadUserFailure",
       payload: error?.response?.data?.message,
     });
-    toast.error(error?.response?.data?.message);
-    console.log("Error Catch", error?.response?.data?.message);
   }
 };
 

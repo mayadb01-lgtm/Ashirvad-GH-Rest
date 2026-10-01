@@ -49,7 +49,11 @@ const adminReducer = createReducer(initialState, (builder) => {
     .addCase("LoadAdminFailure", (state, action) => {
       state.loading = false;
       state.error = action.payload;
-      state.isAdminAuthenticated = false;
+      // A session check started before login can fail after login succeeds.
+      // Keep the profile that login just stored.
+      if (!state.admin) {
+        state.isAdminAuthenticated = false;
+      }
     })
     // Log out Admin
     .addCase("LogoutAdminRequest", (state) => {

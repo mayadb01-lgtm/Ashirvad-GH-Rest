@@ -48,7 +48,11 @@ const userReducer = createReducer(initialState, (builder) => {
     .addCase("LoadUserFailure", (state, action) => {
       state.loading = false;
       state.error = action.payload;
-      state.isAuthenticated = false;
+      // A session check started before login can fail after login succeeds.
+      // Keep the profile that login just stored.
+      if (!state.user) {
+        state.isAuthenticated = false;
+      }
     })
     // Logout User
     .addCase("LogoutUserRequest", (state) => {

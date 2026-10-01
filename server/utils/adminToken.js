@@ -1,6 +1,6 @@
 // create token and saving that in cookies
-const sendAdminToken = (user, statusCode, res) => {
-  const token = user.getJwtToken();
+const sendAdminToken = (admin, statusCode, res) => {
+  const token = admin.getJwtToken();
 
   // Options for cookies
   const options = {
@@ -10,9 +10,12 @@ const sendAdminToken = (user, statusCode, res) => {
     secure: true,
   };
 
+  const adminProfile = admin.toObject();
+  delete adminProfile.password;
+
   res.status(statusCode).cookie("admin_token", token, options).json({
     success: true,
-    user,
+    admin: adminProfile,
     token,
   });
 };

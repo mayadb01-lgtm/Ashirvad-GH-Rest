@@ -15,7 +15,10 @@ export const createAdmin = (adminData) => async (dispatch) => {
       }
     );
     console.log("Admin created successfully", data);
-    dispatch({ type: "CreateAdminSuccess", payload: data.admin });
+    dispatch({
+      type: "CreateAdminSuccess",
+      payload: data.admin ?? data.user,
+    });
     toast.success("Admin created successfully");
   } catch (error) {
     dispatch({
@@ -38,7 +41,10 @@ export const loginAdmin = (adminData) => async (dispatch) => {
         withCredentials: true,
       }
     );
-    dispatch({ type: "LoginAdminSuccess", payload: data.admin });
+    dispatch({
+      type: "LoginAdminSuccess",
+      payload: data.admin ?? data.user,
+    });
     // toast.success("Admin logged in successfully");
   } catch (error) {
     dispatch({
@@ -61,7 +67,6 @@ export const loadAdmin = () => async (dispatch) => {
         withCredentials: true,
       }
     );
-    console.log("Admin loaded successfully", data);
     dispatch({ type: "LoadAdminSuccess", payload: data.admin });
     toast.success("Admin Login - Success");
   } catch (error) {
@@ -69,8 +74,6 @@ export const loadAdmin = () => async (dispatch) => {
       type: "LoadAdminFailure",
       payload: error?.response?.data?.message,
     });
-    toast.error(error?.response?.data?.message);
-    console.log("Error Catch", error?.response?.data?.message);
   }
 };
 
