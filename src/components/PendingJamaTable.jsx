@@ -52,7 +52,7 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
   const handleAddRow = () => {
     setPendingJamaRows((prevRows) => {
       const nextId =
-        prevRows.length > 0 ? prevRows[prevRows.length - 1].id + 1 : 1;
+        prevRows.length > 0 ? Number(prevRows[prevRows.length - 1].id) + 1 : 1;
       const newRow = initializePendingJamaRows(nextId, 1)[0];
       return [...prevRows, newRow];
     });
