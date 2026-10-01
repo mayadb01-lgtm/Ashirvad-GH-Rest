@@ -223,6 +223,28 @@ router.put("/update-entry/:date", async (req, res) => {
     entry.entry = parsedEntries;
     const updatedEntry = await entry.save();
 
+    const unpaidEntries = parsedEntries.filter(
+      (item) => item.period === "UnPaid"
+    );
+
+    for (const item of unpaidEntries) {
+      await Entry.findOneAndUpdate(
+        {
+          "entry.createDate": item.createDate,
+          "entry.roomNo": item.roomNo,
+          "entry.mobileNumber": item.mobileNumber,
+        },
+        {
+          $set: {
+            "entry.$.isPaid": true,
+            "entry.$.paidDate": new Date().toLocaleDateString("en-gb"),
+            "entry.$.updatedDateTime": new Date().toString(),
+          },
+        },
+        { new: true }
+      );
+    }
+
     res.status(200).json({
       success: true,
       message: "Entry updated successfully.",

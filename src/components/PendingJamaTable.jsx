@@ -189,8 +189,6 @@ const PendingJamaTable = ({ pendingJamaRows, setPendingJamaRows }) => {
     );
   };
 
-  console.log("Pending Jama Rows:", pendingJamaRows);
-
   return (
     <TableContainer component={Paper} sx={{ maxHeight: 600, boxShadow: 3 }}>
       <Table size="small" stickyHeader>
