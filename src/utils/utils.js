@@ -40,7 +40,8 @@ export const processEntries = (data, period, selectedDate, currentDateTime) => {
         row.rate !== 0 &&
         row.noOfPeople !== 0 &&
         row.type !== "" &&
-        row.modeOfPayment !== ""
+        row.modeOfPayment !== "" &&
+        row.fullname !== ""
     )
     .map((row) => ({
       ...row,
@@ -59,7 +60,8 @@ export const processUpdateEntries = (data, period, selectedDate) => {
         row.rate !== 0 &&
         row.noOfPeople !== 0 &&
         row.type !== "" &&
-        row.modeOfPayment !== ""
+        row.modeOfPayment !== "" &&
+        row.fullname !== ""
     )
     .map((row) => ({
       ...row,

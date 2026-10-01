@@ -50,9 +50,7 @@ const entrySchemaObj = new Schema(
     paidDate: { type: String, default: "" },
     isPaid: {
       type: Boolean,
-      default: function () {
-        return this.modeOfPayment !== "UnPaid";
-      },
+      default: false,
     },
   },
   { timestamps: true }

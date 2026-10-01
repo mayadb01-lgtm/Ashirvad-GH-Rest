@@ -385,6 +385,15 @@ const EntryPage = () => {
         ...reservationEntries,
       ];
 
+      // If PaymentMethod = UnPaid, then isPaid = false otherwise true
+      combinedEntries.forEach((entry) => {
+        if (entry.modeOfPayment === "UnPaid") {
+          entry.isPaid = false;
+        } else {
+          entry.isPaid = true;
+        }
+      });
+
       console.log("Combined Entries", combinedEntries);
 
       if (combinedEntries.length === 0) {

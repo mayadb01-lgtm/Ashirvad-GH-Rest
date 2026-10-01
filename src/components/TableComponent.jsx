@@ -53,6 +53,7 @@ const TableComponent = ({ period, rowsLength, onSubmit, selectedDate }) => {
       period: period,
       createDate: selectedDate || "",
       discount: 0,
+      isPaid: false,
     }));
   };
 
@@ -94,6 +95,7 @@ const TableComponent = ({ period, rowsLength, onSubmit, selectedDate }) => {
                 createDate: entry.createDate,
                 period: entry.period,
                 discount: entry?.discount || 0,
+                isPaid: entry?.isPaid || false,
               }
             : row;
         });
@@ -139,6 +141,7 @@ const TableComponent = ({ period, rowsLength, onSubmit, selectedDate }) => {
         (sum, row) => sum + (isNaN(row.discount) ? 0 : Number(row.discount)),
         0
       ),
+      isPaid: false,
     };
   }, [rows]);
 
