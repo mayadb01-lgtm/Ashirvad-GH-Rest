@@ -180,6 +180,27 @@ const GHSalesDashboardRange = () => {
       align: "center",
     },
     {
+      field: "fullname",
+      headerName: "Full Name",
+      width: 140,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "mobileNumber",
+      headerName: "Mobile Number",
+      width: 140,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
+      field: "period",
+      headerName: "Period",
+      width: 110,
+      headerAlign: "center",
+      align: "center",
+    },
+    {
       field: "checkInTime",
       headerName: "Check In",
       width: 130,
@@ -200,13 +221,7 @@ const GHSalesDashboardRange = () => {
       headerAlign: "center",
       align: "center",
     },
-    {
-      field: "period",
-      headerName: "Period",
-      width: 110,
-      headerAlign: "center",
-      align: "center",
-    },
+
     {
       field: "createDate",
       headerName: "Created At",
@@ -274,7 +289,7 @@ const GHSalesDashboardRange = () => {
       grouped.push({
         ...entry,
         id: `entry-${idCounter++}`, // Ensure uniqueness
-        type: "entry",
+        type: entry.type || "entry",
       });
     });
 

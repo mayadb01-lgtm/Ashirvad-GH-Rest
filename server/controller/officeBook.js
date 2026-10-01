@@ -432,7 +432,7 @@ router.get(
         const matchingItems = (entry.officeOut || []).filter(
           (item) =>
             item.categoryName &&
-            item.categoryName.match(/upad|upaad|Upad|Upaad|staff|Staff/i)
+            item.categoryName.match(/upad|upaad|Upad|Upaad/i)
         );
 
         if (matchingItems.length === 0) {
