@@ -390,7 +390,7 @@ stayRouter.get("/calendar/:start/:days", async (req, res) => {
         status: st.status,
         checkoutDate: st.checkoutDate,
         checkoutTime: st.checkoutTime,
-        days: last.diff(start, "day") + 1,
+        days: Math.max(1, last.diff(start, "day") + (dueOut ? 0 : 1)), // due-out: aaj abhi gina nahi
         dueOut,
       });
     });

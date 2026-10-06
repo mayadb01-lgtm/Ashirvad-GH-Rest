@@ -33,7 +33,7 @@ import { BookingForm } from "./BookingsPanel";
 dayjs.extend(customParseFormat);
 const F = "DD-MM-YYYY";
 const LABEL_W = 132;
-const COL_W = 66;
+const COL_W = 84;
 const ROW_H = 40;
 
 const COLORS = {
@@ -217,7 +217,7 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
               "&:hover": { filter: "brightness(1.08)" },
             }}
           >
-            {c.tag && (
+            {c.tag && e - s > 0 && (
               <Box component="span" sx={{ bgcolor: "rgba(255,255,255,.9)", color: "#111", borderRadius: "4px", fontSize: 10, px: 0.5, lineHeight: "16px", flexShrink: 0 }}>
                 {c.tag}
               </Box>
