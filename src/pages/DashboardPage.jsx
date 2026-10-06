@@ -67,6 +67,8 @@ import OfficeBakeryBaadaSalesGoalDashboard from "../components/office/OfficeBake
 import OfficeMotiBaadaSalesGoalDashboard from "../components/office/OfficeMotiBaadaSalesGoalDashboard";
 // Staff Salary
 import StaffSalaryDashboard from "../components/restaurant/StaffSalaryDashboard";
+import AttendanceImportDashboard from "../components/restaurant/AttendanceImportDashboard";
+import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import DataImportDashboard from "../components/import/DataImportDashboard";
 import OwnerMonthlyDashboard from "../components/owner/OwnerMonthlyDashboard";
 import GuestDuesReminders from "../components/owner/GuestDuesReminders";
@@ -96,9 +98,6 @@ const DashboardHeader = () => {
       <Stack direction="row" spacing={1} alignItems="center">
         <Button variant="contained" size="small" startIcon={<EditNoteIcon />} onClick={() => navigate("/entry")}>
           Entry karo
-        </Button>
-        <Button variant="outlined" size="small" onClick={() => navigate("/")} sx={{ display: { xs: "none", md: "inline-flex" } }}>
-          Purana Home
         </Button>
       </Stack>
     </Stack>
@@ -157,6 +156,7 @@ const NAVIGATION = [
   { segment: "office-category", title: "Office Category", icon: <CategoryIcon /> },
   { kind: "header", title: "Staff Salary" },
   { segment: "staff-salary", title: "Staff Salary", icon: <BadgeIcon /> },
+  { segment: "attendance-import", title: "Attendance machine import", icon: <FingerprintIcon /> },
   { kind: "header", title: "Merged Reports" },
   { segment: "merged-graph", title: "Merged Graph", icon: <PieChartIcon /> },
   { segment: "merged-reports", title: "Merged Report", icon: <BarChartIcon /> },
@@ -331,6 +331,7 @@ const DashboardPage = () => {
     { path: "office-book", element: <OfficeBookDashboard /> },
     { path: "office-category", element: <OfficeCategoryDashboard /> },
     { path: "staff-salary", element: <StaffSalaryDashboard /> },
+    { path: "attendance-import", element: <AttendanceImportDashboard /> },
     { path: "merged-graph", element: <OfficeMergedGraph /> },
     { path: "merged-reports", element: <OfficeMerged /> },
     { path: "merged-vendor-report", element: <OfficeCreditDebit /> },
