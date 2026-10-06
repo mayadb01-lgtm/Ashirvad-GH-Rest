@@ -3,6 +3,7 @@ import Entry from "../model/entry.js";
 import dayjs from "dayjs";
 // import { isAuthenticated } from "../middleware/auth.js";
 const router = Router();
+const who = (req) => (req.user ? `${req.user.name || req.user.email || ""}${req.user.role === "Admin" ? " (Admin)" : ""}` : "");
 
 // Create a new Entry
 router.post("/create-entry", async (req, res) => {
@@ -89,6 +90,8 @@ router.post("/create-entry", async (req, res) => {
     const newEntry = new Entry({
       entry: parsedEntries,
       date,
+      enteredBy: who(req),
+      enteredAt: new Date(),
       // user: req.user._id, // Assign the authenticated user's ID
     });
 
@@ -221,6 +224,7 @@ router.put("/update-entry/:date", async (req, res) => {
 
     // Update the Entry
     entry.entry = parsedEntries;
+    entry.updatedBy = who(req);
     const updatedEntry = await entry.save();
 
     const unpaidEntries = parsedEntries.filter(

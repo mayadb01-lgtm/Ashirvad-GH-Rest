@@ -8,7 +8,16 @@ import process from "process";
 // Sign Up User
 router.post("/create-user", async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, signupCode } = req.body;
+
+    // 🔒 Koi bhi bahar wala khud account na bana sake.
+    // Owner .env mein USER_SIGNUP_CODE set kare aur sirf staff ko bataye.
+    if (!process.env.USER_SIGNUP_CODE || signupCode !== process.env.USER_SIGNUP_CODE) {
+      return res.status(403).json({
+        success: false,
+        message: "Invalid signup code. Please ask the owner for the code.",
+      });
+    }
 
     // Check if the user already exists
     const userEmail = await User.findOne({ email: email });

@@ -60,6 +60,17 @@ const userSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  // 🔒 Staff kis business ki entry kar sakta hai. "none" = abhi kuch nahi (owner set karega)
+  department: {
+    type: String,
+    enum: ["none", "gh", "rest", "office"],
+    default: "none",
+  },
+  // false = account band (staff chhod gaya ho to)
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 //  Hash password

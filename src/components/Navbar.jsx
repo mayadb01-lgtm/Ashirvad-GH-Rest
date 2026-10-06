@@ -114,8 +114,11 @@ const Navbar = () => {
     <AppBar
       position="static"
       sx={{
-        backgroundColor: "#5f7174",
-        height: 40,
+        backgroundColor: "#0F172A",
+        color: "#fff",
+        borderBottom: "none",
+        backdropFilter: "none",
+        height: 48,
         display: "flex",
         justifyContent: "center",
       }}

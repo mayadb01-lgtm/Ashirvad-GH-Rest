@@ -1,16 +1,10 @@
 import { useEffect, useState } from "react";
-import {
-  Box,
-  TextField,
-  Button,
-  Typography,
-  Paper,
-  CircularProgress,
-} from "@mui/material";
+import { Box, TextField, Button } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../redux/hooks";
 import { loginUser } from "../redux/actions/userAction";
 import toast from "react-hot-toast";
+import AuthShell, { AuthLinks } from "../components/AuthShell";
 
 const LoginPage = () => {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -51,142 +45,27 @@ const LoginPage = () => {
   }, [isAdminAuthenticated, isAuthenticated, navigate]);
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        minHeight: "100vh",
-        backgroundColor: "#f4f6f8",
-        padding: 2,
-      }}
+    <AuthShell
+      title="Login"
+      subtitle="Apne staff account se login karo."
+      footer={
+        <AuthLinks
+          links={[
+            ["Naya staff account", () => navigate("/signup")],
+            ["Password bhool gaye?", () => navigate("/reset-password")],
+            ["Owner / Admin login", () => navigate("/admin-login")],
+          ]}
+        />
+      }
     >
-      <Paper
-        elevation={3}
-        sx={{
-          maxWidth: 450,
-          width: "100%",
-          padding: 4,
-          borderRadius: 2,
-        }}
-      >
-        <Typography
-          variant="h4"
-          align="center"
-          gutterBottom
-          sx={{ fontWeight: 600, color: "#1976d2" }}
-        >
-          Login
-        </Typography>
-
-        <Typography
-          variant="body2"
-          align="center"
-          gutterBottom
-          sx={{ color: "#666" }}
-        >
-          Welcome back! Please log in to continue.
-        </Typography>
-
-        <Box
-          component="form"
-          onSubmit={handleLogin}
-          sx={{ mt: 3, display: "flex", flexDirection: "column", gap: 2 }}
-        >
-          <TextField
-            name="email"
-            label="Email"
-            type="email"
-            variant="outlined"
-            fullWidth
-            value={form.email}
-            onChange={handleChange}
-            required
-          />
-
-          <TextField
-            name="password"
-            label="Password"
-            type="password"
-            variant="outlined"
-            fullWidth
-            value={form.password}
-            onChange={handleChange}
-            required
-          />
-
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            fullWidth
-            disabled={loading}
-            sx={{
-              padding: "10px 0",
-              fontWeight: 600,
-              fontSize: "16px",
-            }}
-          >
-            {loading ? <CircularProgress size={24} color="inherit" /> : "Login"}
-          </Button>
-        </Box>
-        <Box container justifyContent="center" sx={{ mt: 1 }}>
-          <Typography variant="body2" sx={{ color: "#666" }}>
-            User Sign Up?{" "}
-            <Button
-              onClick={() => navigate("/signup")}
-              sx={{ color: "#1976d2", cursor: "pointer" }}
-            >
-              User Sign Up
-            </Button>
-          </Typography>
-        </Box>
-        <Box container justifyContent="center" sx={{ mt: 1 }}>
-          <Typography variant="body2" sx={{ color: "#666" }}>
-            User Forgot Password?{" "}
-            <Button
-              onClick={() => navigate("/reset-password")}
-              sx={{ color: "#1976d2", cursor: "pointer" }}
-            >
-              Reset Password
-            </Button>
-          </Typography>
-        </Box>
-        <Box container justifyContent="center" sx={{ mt: 1 }}>
-          <Typography variant="body2" sx={{ color: "#666" }}>
-            Admin Sign Up?{" "}
-            <Button
-              onClick={() => navigate("/admin-signup")}
-              sx={{ color: "#1976d2", cursor: "pointer" }}
-            >
-              Admin Sign Up
-            </Button>
-          </Typography>
-        </Box>
-        <Box container justifyContent="center" sx={{ mt: 1 }}>
-          <Typography variant="body2" sx={{ color: "#666" }}>
-            Admin Login?{" "}
-            <Button
-              onClick={() => navigate("/admin-login")}
-              sx={{ color: "#1976d2", cursor: "pointer" }}
-            >
-              Admin Login
-            </Button>
-          </Typography>
-        </Box>
-        <Box container justifyContent="center" sx={{ mt: 1 }}>
-          <Typography variant="body2" sx={{ color: "#666" }}>
-            Admin Forgot Password?{" "}
-            <Button
-              onClick={() => navigate("/admin-reset-password")}
-              sx={{ color: "#1976d2", cursor: "pointer" }}
-            >
-              Admin Reset Password
-            </Button>
-          </Typography>
-        </Box>
-      </Paper>
-    </Box>
+      <Box component="form" onSubmit={handleLogin} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <TextField name="email" label="Email" type="email" fullWidth value={form.email} onChange={handleChange} required autoComplete="email" />
+        <TextField name="password" label="Password" type="password" fullWidth value={form.password} onChange={handleChange} required autoComplete="current-password" />
+        <Button type="submit" variant="contained" size="large" fullWidth disabled={loading} sx={{ mt: 0.5 }}>
+          {loading ? "Login ho raha hai…" : "Login"}
+        </Button>
+      </Box>
+    </AuthShell>
   );
 };
 

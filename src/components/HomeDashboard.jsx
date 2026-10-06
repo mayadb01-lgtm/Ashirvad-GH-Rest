@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Box,
   Typography,
@@ -12,11 +12,9 @@ import {
 } from "@mui/material";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
-import { Link } from "react-router-dom";
-import toast from "react-hot-toast";
+import BackupStatusCard from "./BackupStatusCard";
 
 const HomeDashboard = ({ navigation, onNavigate }) => {
-  const [loading, setLoading] = useState(false);
   // Group items by headers (ignore those without header)
   const splitByHeaders = (nav) => {
     const groups = {};
@@ -86,30 +84,7 @@ const HomeDashboard = ({ navigation, onNavigate }) => {
     </List>
   );
 
-  const handleBackupEmail = async () => {
-    setLoading(true);
 
-    await toast
-      .promise(
-        fetch(
-          `${import.meta.env.VITE_REACT_APP_SERVER_URL}/admin/send-backup`,
-          {
-            method: "GET",
-            credentials: "include",
-          }
-        ),
-        {
-          loading: "Sending backup email...",
-          success: "Backup email sent successfully!",
-          error: "Failed to send backup email.",
-        }
-      )
-      .catch((error) => {
-        console.error("Error sending email:", error);
-      });
-
-    setLoading(false);
-  };
 
   return (
     <Box sx={{ p: 4 }}>
@@ -123,17 +98,10 @@ const HomeDashboard = ({ navigation, onNavigate }) => {
         maxWidth={600}
       >
         Use the sections below to navigate through the Guest House and
-        Restaurant dashboards. or{" "}
-        <Link
-          to="#"
-          onClick={(e) => {
-            e.preventDefault();
-            handleBackupEmail();
-          }}
-        >
-          Here.
-        </Link>
+        Restaurant dashboards.
       </Typography>
+
+      <BackupStatusCard />
 
       <Box
         sx={{

@@ -61,6 +61,9 @@ const entrySchema = new Schema({
   date: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
   entryCreateDate: { type: Date },
+  enteredBy: { type: String, default: "" },
+  enteredAt: { type: Date },
+  updatedBy: { type: String, default: "" },
   // user: { type: Schema.Types.ObjectId, ref: "User" },
 });
 

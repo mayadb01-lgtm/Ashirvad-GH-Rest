@@ -3,6 +3,7 @@ import { Suspense, lazy, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import ProtectedAdminRoute from "./routes/ProtectedAdminRoute";
+import { HomeGate, LegacyGate } from "./routes/StaffGate.jsx";
 import { loadUser } from "./redux/actions/userAction.js";
 import { Toaster } from "react-hot-toast";
 import { loadAdmin } from "./redux/actions/adminAction.js";
@@ -31,6 +32,7 @@ const RestEntryPage = lazy(
 const OfficeEntryPage = lazy(
   () => import("./pages/office/OfficeEntryPage.jsx")
 );
+const QuickEntryPage = lazy(() => import("./pages/quick/QuickEntryPage.jsx"));
 const StaffSalaryEntryPage = lazy(
   () => import("./pages/staffSalary/StaffSalaryEntryPage.jsx")
 );
@@ -53,18 +55,22 @@ const App = () => {
           <Route
             path="/"
             element={
-              <>
+              <HomeGate>
                 <Navbar />
                 <Home />
-              </>
+              </HomeGate>
             }
           />
+          {/* Nayi PC + mobile entry (staff ya admin, login khud check karta hai) */}
+          <Route path="/entry" element={<QuickEntryPage />} />
           <Route
             path="/hotel"
             element={
               <ProtectedRoute>
-                <Navbar />
-                <EntryPage />
+                <LegacyGate>
+                  <Navbar />
+                  <EntryPage />
+                </LegacyGate>
               </ProtectedRoute>
             }
           />
@@ -72,8 +78,10 @@ const App = () => {
             path="/restaurant"
             element={
               <ProtectedRoute>
-                <Navbar />
-                <RestEntryPage />
+                <LegacyGate>
+                  <Navbar />
+                  <RestEntryPage />
+                </LegacyGate>
               </ProtectedRoute>
             }
           />
@@ -81,8 +89,10 @@ const App = () => {
             path="/office"
             element={
               <ProtectedRoute>
-                <Navbar />
-                <OfficeEntryPage />
+                <LegacyGate>
+                  <Navbar />
+                  <OfficeEntryPage />
+                </LegacyGate>
               </ProtectedRoute>
             }
           />
@@ -90,8 +100,10 @@ const App = () => {
             path="/staff-salary"
             element={
               <ProtectedRoute>
-                <Navbar />
-                <StaffSalaryEntryPage />
+                <LegacyGate>
+                  <Navbar />
+                  <StaffSalaryEntryPage />
+                </LegacyGate>
               </ProtectedRoute>
             }
           />

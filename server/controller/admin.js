@@ -3,20 +3,8 @@ const router = Router();
 import { isAuthenticated } from "../middleware/auth.js";
 import sendAdminToken from "../utils/adminToken.js";
 import process from "process";
-import runBackup from "../utils/runBackup.js";
-import sendMailWithAttachment from "../utils/sendMail.js";
-
-// Models
-import User from "../model/user.js";
+import { runAutoBackup } from "../utils/autoBackup.js";
 import Admin from "../model/admin.js";
-import Room from "../model/room.js";
-import Entry from "../model/entry.js";
-import RestEntry from "../model/restEntry.js";
-import RestStaff from "../model/restStaff.js";
-import RestPending from "../model/restPending.js";
-import OfficeBook, { OfficeCategory } from "../model/officeBook.js";
-import RestCategory from "../model/restCategory.js";
-import StaffSalary from "../model/staffSalary.js";
 
 // Sign Up Admin
 router.post("/create-admin", async (req, res) => {
@@ -190,34 +178,10 @@ router.post("/reset-password", async (req, res) => {
 });
 
 router.get("/send-backup", isAuthenticated, async (req, res) => {
-  try {
-    const backupModels = [
-      User,
-      Admin,
-      Room,
-      Entry,
-      RestEntry,
-      RestStaff,
-      RestPending,
-      OfficeBook,
-      OfficeCategory,
-      RestCategory, // pehle backup mein missing tha
-      StaffSalary, // pehle backup mein missing tha
-    ];
-    await runBackup(backupModels);
-    await sendMailWithAttachment();
-    res.status(200).json({
-      success: true,
-      message: "Backup created and stored as backup.zip",
-    });
-  } catch (error) {
-    console.error("❌ Backup failed:", error);
-    res.status(500).json({
-      success: false,
-      message: "Backup failed",
-      error: error.message,
-    });
-  }
+  // Ab ye bhi naya full backup use karta hai (saare collections, restore-ready)
+  const log = await runAutoBackup("manual");
+  if (log.ok) return res.status(200).json({ success: true, message: "Backup sent successfully" });
+  return res.status(500).json({ success: false, message: log.error || "Backup failed" });
 });
 
 export default router;

@@ -13,7 +13,7 @@ import { createUser } from "../redux/actions/userAction";
 import toast from "react-hot-toast";
 
 const SignupPage = () => {
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", signupCode: "" });
   const { loading, isAuthenticated } = useAppSelector((state) => state.user);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -31,13 +31,13 @@ const SignupPage = () => {
   const handleSignup = async (e) => {
     e.preventDefault();
     try {
-      if (!form.name || !form.email || !form.password) {
+      if (!form.name || !form.email || !form.password || !form.signupCode) {
         return toast.error("Please fill in all fields");
       }
       dispatch(createUser(form));
 
       navigate("/");
-      setForm({ name: "", email: "", password: "" });
+      setForm({ name: "", email: "", password: "", signupCode: "" });
     } catch (err) {
       toast.error(err.response.data.message);
     }
@@ -131,6 +131,17 @@ const SignupPage = () => {
             variant="outlined"
             fullWidth
             value={form.password}
+            onChange={handleChange}
+            required
+          />
+
+          <TextField
+            name="signupCode"
+            label="Signup Code (owner se poochho)"
+            type="password"
+            variant="outlined"
+            fullWidth
+            value={form.signupCode}
             onChange={handleChange}
             required
           />

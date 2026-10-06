@@ -27,11 +27,19 @@ export const isAuthenticated = async (req, res, next) => {
     if (admin_token && !token) {
       const decoded = jwt.verify(admin_token, process.env.JWT_SECRET_KEY);
       req.user = await Admin.findById(decoded.id);
+      if (!req.user) {
+        res.clearCookie("admin_token");
+        return res.status(401).json({ success: false, message: "Account not found. Please login again." });
+      }
       return next();
     } else if (!admin_token && token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
       req.user = await User.findById(decoded.id);
-      next();
+      if (!req.user) {
+        res.clearCookie("token");
+        return res.status(401).json({ success: false, message: "Account not found. Please login again." });
+      }
+      return next();
     }
   } catch (error) {
     console.log(error);

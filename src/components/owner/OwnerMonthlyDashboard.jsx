@@ -27,6 +27,7 @@ import PrintIcon from "@mui/icons-material/Print";
 import DownloadIcon from "@mui/icons-material/Download";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import {
   Area,
   AreaChart,
@@ -685,6 +686,7 @@ const OwnerMonthlyDashboard = () => {
                               <TableCell>Date</TableCell>
                               <TableCell align="right">Days</TableCell>
                               <TableCell align="right">Amount</TableCell>
+                              <TableCell className="no-print" />
                             </TableRow>
                           </TableHead>
                           <TableBody>
@@ -696,6 +698,22 @@ const OwnerMonthlyDashboard = () => {
                                 <TableCell>{u.date}</TableCell>
                                 <TableCell align="right" sx={{ color: u.age > 30 ? C.bad : C.ink, fontWeight: u.age > 30 ? 700 : 400 }}>{u.age}</TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 700 }}>{inr(u.rate)}</TableCell>
+                                <TableCell className="no-print" padding="none">
+                                  {String(u.mobileNumber || "").replace(/\D/g, "").length === 10 && (
+                                    <IconButton
+                                      size="small"
+                                      aria-label="WhatsApp reminder"
+                                      sx={{ color: "#1DA851" }}
+                                      href={`https://wa.me/91${String(u.mobileNumber).replace(/\D/g, "")}?text=${encodeURIComponent(
+                                        `Namaste ${u.fullname || ""} ji, ${u.date} ko Room ${u.roomNo} ka ${inr(u.rate)} payment abhi baaki hai. Kripya jaldi payment kar dijiye. Dhanyavaad 🙏`
+                                      )}`}
+                                      target="_blank"
+                                      rel="noopener"
+                                    >
+                                      <WhatsAppIcon fontSize="small" />
+                                    </IconButton>
+                                  )}
+                                </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>

@@ -287,4 +287,43 @@ router.get("/monthly-summary/:month/:year", async (req, res) => {
   }
 });
 
+// GET /api/v1/owner/dues  → saare pending guest dues, guest-wise group (read-only)
+router.get("/dues", async (req, res) => {
+  try {
+    const rows = await Entry.aggregate([
+      { $unwind: "$entry" },
+      { $match: { "entry.modeOfPayment": "UnPaid", "entry.isPaid": { $ne: true }, "entry.period": { $ne: "UnPaid" } } },
+      {
+        $project: {
+          _id: 0,
+          date: "$entry.createDate",
+          roomNo: "$entry.roomNo",
+          fullname: "$entry.fullname",
+          mobileNumber: "$entry.mobileNumber",
+          rate: "$entry.rate",
+          period: "$entry.period",
+        },
+      },
+    ]);
+    const today = dayjs();
+    const groups = new Map();
+    rows.forEach((r) => {
+      const mobile = String(r.mobileNumber || "").replace(/\D/g, "");
+      const key = mobile.length === 10 ? mobile : `name:${(r.fullname || "").toLowerCase().trim()}`;
+      const age = today.diff(dayjs(r.date, "DD-MM-YYYY"), "day");
+      if (!groups.has(key)) groups.set(key, { key, fullname: r.fullname, mobile: mobile.length === 10 ? mobile : "", total: 0, oldestDays: 0, stays: [] });
+      const g = groups.get(key);
+      g.total += r.rate || 0;
+      g.oldestDays = Math.max(g.oldestDays, age);
+      g.stays.push({ date: r.date, roomNo: r.roomNo, rate: r.rate, period: r.period, age });
+    });
+    const guests = [...groups.values()]
+      .map((g) => ({ ...g, stays: g.stays.sort((a, b) => b.age - a.age) }))
+      .sort((a, b) => b.oldestDays - a.oldestDays || b.total - a.total);
+    res.json({ success: true, total: guests.reduce((s, g) => s + g.total, 0), guests });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 export default router;

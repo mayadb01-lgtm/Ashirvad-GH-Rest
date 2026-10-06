@@ -27,6 +27,9 @@ const officeEntrySchema = new Schema(
   {
     officeIn: [officeBookSchema],
     officeOut: [officeBookSchema],
+    enteredBy: { type: String, default: "" },
+    enteredAt: { type: Date },
+    updatedBy: { type: String, default: "" },
     createDate: { type: String, required: true },
     entryCreateDate: { type: Date },
     updatedDate: { type: String, default: "" },

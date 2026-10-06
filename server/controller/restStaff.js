@@ -32,6 +32,8 @@ router.post("/create-staff", async (req, res) => {
 // Get Staff All - ID, fullname, Mobile Number
 router.get("/get-staff-id-name-mobile", async (req, res) => {
   try {
+    // 🔒 Staff ko dusre staff ki per-day salary nahi dikhni chahiye
+    const adminLike = req.user && (req.user.constructor?.modelName === "Admin" || req.user.role === "Admin" || req.user.isSuperUser);
     const staff = await RestStaff.find(
       {},
       {
@@ -39,7 +41,7 @@ router.get("/get-staff-id-name-mobile", async (req, res) => {
         fullname: 1,
         mobileNumber: 1,
         category: 1,
-        perDayPay: 1,
+        ...(adminLike ? { perDayPay: 1 } : {}),
         staffStatus: 1,
       }
     );

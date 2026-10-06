@@ -39,9 +39,17 @@ import room from "./controller/room.js";
 import staffSalary from "./controller/staffSalary.js";
 import vendor from "./controller/vendor.js";
 import dataImport from "./controller/import.js";
+import backup from "./controller/backup.js";
+import { apiGate } from "./middleware/security.js";
 import owner from "./controller/owner.js";
+import quickEntry from "./controller/quickEntry.js";
+import staffAccounts from "./controller/staffAccounts.js";
 
 // Use routes
+// 🔒 Har API ke liye login zaroori (public list security.js mein)
+app.set("trust proxy", 1);
+app.use("/api/v1", apiGate);
+
 app.use("/api/v1/user", user);
 app.use("/api/v1/admin", admin);
 app.use("/api/v1/entry", entry);
@@ -56,5 +64,8 @@ app.use("/api/v1/room", room);
 app.use("/api/v1/staffSalary", staffSalary);
 app.use("/api/v1/import", dataImport);
 app.use("/api/v1/owner", owner); // read-only owner report
+app.use("/api/v1/backup", backup);
+app.use("/api/v1/quick", quickEntry); // mobile/PC quick entry helpers (read-only)
+app.use("/api/v1/staff-accounts", staffAccounts); // owner: staff ka department / band-chalu
 
 export default app;

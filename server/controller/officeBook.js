@@ -1,7 +1,10 @@
 import { Router } from "express";
 import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat.js";
+dayjs.extend(customParseFormat);
 import OfficeBook, { OfficeCategory } from "../model/officeBook.js";
 const router = Router();
+const who = (req) => (req.user ? `${req.user.name || req.user.email || ""}${req.user.role === "Admin" ? " (Admin)" : ""}` : "");
 
 // Create a new Entry
 router.post("/create-entry", async (req, res) => {
@@ -35,7 +38,18 @@ router.post("/create-entry", async (req, res) => {
       });
     }
 
+    // Ek din ki ek hi entry (double-tap / do phone se do baar submit na ho)
+    const already = await OfficeBook.findOne({ createDate: reqBody.createDate }).lean();
+    if (already) {
+      return res.status(400).json({
+        success: false,
+        message: "Is din ki office entry pehle se hai. Edit karke badlo.",
+      });
+    }
+
     const entry = await OfficeBook.create({
+      enteredBy: who(req),
+      enteredAt: new Date(),
       officeIn,
       officeOut,
       createDate: reqBody.createDate || "",
@@ -116,26 +130,32 @@ router.put("/update-entry/:date", async (req, res) => {
       });
     }
 
+    // entryCreateDate na aaye to date se khud banao (warna reports se din gayab ho jaata)
+    const parsedDay = dayjs(createDate, "DD-MM-YYYY");
+    const safeEntryCreateDate =
+      reqBody.entryCreateDate || (parsedDay.isValid() ? parsedDay.startOf("day").toDate() : undefined);
+
     const entry = await OfficeBook.findOneAndUpdate(
       { createDate },
       {
         officeIn: officeIn?.map((item) => {
           return {
             ...item,
-            entryCreateDate: reqBody.entryCreateDate || "",
+            entryCreateDate: safeEntryCreateDate,
             updatedDate: reqBody.updatedDate || "",
           };
         }),
         officeOut: officeOut?.map((item) => {
           return {
             ...item,
-            entryCreateDate: reqBody.entryCreateDate || "",
+            entryCreateDate: safeEntryCreateDate,
             updatedDate: reqBody.updatedDate || "",
           };
         }),
         createDate: createDate || "",
-        entryCreateDate: reqBody.entryCreateDate || "",
+        entryCreateDate: safeEntryCreateDate,
         updatedDate: reqBody.updatedDate || "",
+        updatedBy: who(req),
       },
       { new: true }
     );

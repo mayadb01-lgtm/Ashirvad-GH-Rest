@@ -82,6 +82,28 @@ const Home = () => {
         )}
       </Box>
 
+      {(isAdminAuthenticated || isAuthenticated) && (
+        <Box sx={{ maxWidth: 720, mx: "auto", mb: 3 }}>
+          <Card elevation={0} sx={{ borderRadius: 3, bgcolor: "#0F766E", color: "#fff" }}>
+            <CardActionArea component={Link} to="/entry">
+              <CardContent sx={{ p: 3, display: "flex", alignItems: "center", gap: 2 }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="h6" fontWeight={800}>
+                    Nayi Entry (Mobile + PC)
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                    Guest House, Restaurant aur Office ki entry ek jagah · phone pe aasaan
+                  </Typography>
+                </Box>
+                <Typography variant="h5" fontWeight={800}>
+                  →
+                </Typography>
+              </CardContent>
+            </CardActionArea>
+          </Card>
+        </Box>
+      )}
+
       <Grid container spacing={3} justifyContent="center" alignItems="center">
         {services.map((service, index) => (
           <Grid item xs={12} sm={6} md={4} key={index}>
