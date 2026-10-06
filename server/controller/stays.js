@@ -24,6 +24,17 @@ const clean = (v, max = 120) => String(v ?? "").replace(/[\r\n\t]+/g, " ").trim(
 const n = (v) => Math.round((Number(v) || 0) * 100) / 100;
 const bad = (res, message) => res.status(400).json({ success: false, message });
 const fail = (res, e) => res.status(500).json({ success: false, message: e.message });
+// Checkout ka niyam: check-in ka din hamesha 1 gina jaata hai. Agle din 11:00 AM ke baad tak ruka → wo din bhi gina jaata hai.
+const CUTOFF_MIN = 11 * 60;
+const nowIst = () => dayjs(new Date(Date.now() + IST_MS).toISOString().slice(0, 19));
+const minutesOf = (t) => {
+  const m = dayjs(`2000-01-01 ${String(t || "").trim()}`, ["YYYY-MM-DD hh:mm A", "YYYY-MM-DD h:mm A", "YYYY-MM-DD HH:mm"], true);
+  return m.isValid() ? m.hour() * 60 + m.minute() : null;
+};
+const afterCutoff = (t) => {
+  const m = minutesOf(t);
+  return m !== null && m >= CUTOFF_MIN;
+};
 const staffDateOk = (req, d) => isAdminLike(req.user) || allowedStaffDates().includes(d);
 
 const cleanGuest = (g = {}) => ({
@@ -50,19 +61,26 @@ stayRouter.get("/day/:date", async (req, res) => {
       Booking.find({ checkInDate: date, status: { $ne: "cancelled" } }).lean(),
       Booking.find({ "advances.date": date }, { bookingNo: 1, guestName: 1, advances: 1, status: 1 }).lean(),
     ]);
-    const continuing = [];
-    const dueOut = []; // aaj checkout hona chahiye (zyadatar subah 10 baje)
+    const continuing = []; // is din ka bhi charge (apne aap)
+    const dueOut = []; // aaj 11:00 AM se pehle — abhi checkout ka time hai
     const started = [];
     const checkouts = [];
+    const now = nowIst();
+    const today = now.format(F);
+    const pastCutoffNow = now.hour() * 60 + now.minute() >= CUTOFF_MIN;
     stays.forEach((s) => {
       const diff = d.diff(D(s.startDate), "day");
-      if (s.checkoutDate === date) checkouts.push({ _id: s._id, roomNo: s.roomNo, period: s.checkoutPeriod || s.period, time: s.checkoutTime, guest: s.guest.fullname, startDate: s.startDate });
+      if (s.checkoutDate === date) checkouts.push({ _id: s._id, roomNo: s.roomNo, period: s.checkoutPeriod || s.period, time: s.checkoutTime, guest: s.guest.fullname, startDate: s.startDate, billed: diff === 0 || afterCutoff(s.checkoutTime) });
       if (diff === 0) started.push({ _id: s._id, roomNo: s.roomNo, period: s.period, nights: s.nights, status: s.status, bookingId: s.bookingId, checkoutDate: s.checkoutDate });
-      if (diff >= 1 && diff === s.nights && s.status === "active") {
-        dueOut.push({ _id: s._id, roomNo: s.roomNo, period: s.period, nights: s.nights, startDate: s.startDate, guest: s.guest, dueTime: s.guest?.checkOutTime || "10:00 AM" });
-      }
-      if (diff >= 1 && diff < s.nights && s.status === "active") {
-        continuing.push({ _id: s._id, roomNo: s.roomNo, dayNo: diff + 1, nights: s.nights, startDate: s.startDate, guest: s.guest, bookingId: s.bookingId });
+      if (diff < 1) return;
+      const item = { _id: s._id, roomNo: s.roomNo, dayNo: diff + 1, startDate: s.startDate, guest: s.guest, bookingId: s.bookingId, dueTime: "11:00 AM" };
+      if (s.status === "active") {
+        if (d.isBefore(D(today), "day") || (date === today && pastCutoffNow)) continuing.push(item);
+        else if (date === today) dueOut.push(item);
+      } else if (s.checkoutDate) {
+        const c = D(s.checkoutDate);
+        // checkout se pehle ke din, aur checkout wala din agar 11 baje ke baad gaye
+        if (d.isBefore(c, "day") || (s.checkoutDate === date && afterCutoff(s.checkoutTime))) continuing.push({ ...item, checkedOut: true });
       }
     });
     const advances = [];
@@ -108,10 +126,7 @@ stayRouter.post("/checkout", async (req, res) => {
     if (!doc) {
       // kal se ruka hua (continue) guest
       const cands = await Stay.find({ roomNo, status: "active", startCreateDate: { $gte: d.subtract(60, "day").toDate(), $lt: d.startOf("day").toDate() } });
-      doc = cands.find((s) => {
-        const diff = d.diff(D(s.startDate), "day");
-        return diff >= 1 && diff <= s.nights;
-      });
+      doc = cands.find((s) => d.diff(D(s.startDate), "day") >= 1);
     }
     if (!doc) {
       doc = new Stay({ roomNo, startDate: b.date, startCreateDate: d.startOf("day").toDate(), period: b.period, nights: 1, guest: cleanGuest(b.guest), enteredBy: who(req) });
@@ -120,11 +135,13 @@ stayRouter.post("/checkout", async (req, res) => {
     doc.status = "out";
     doc.checkoutDate = b.date;
     doc.checkoutPeriod = b.period;
-    doc.checkoutTime = clean(b.time, 10) || dayjs(new Date(Date.now() + IST_MS)).format("hh:mm A");
-    doc.nights = Math.max(1, diff || doc.nights);
+    // Staff ke liye time server ka (India time); owner galti sudhaarne ke liye time de sakta hai
+    doc.checkoutTime = (isAdminLike(req.user) && clean(b.time, 10)) || nowIst().format("hh:mm A");
+    const billed = diff === 0 || afterCutoff(doc.checkoutTime);
+    doc.nights = Math.max(1, diff + (diff >= 1 && billed ? 1 : 0)); // kitne din gine gaye
     doc.updatedBy = who(req);
     await doc.save();
-    res.json({ success: true, data: doc });
+    res.json({ success: true, data: doc, billedToday: billed });
   } catch (e) {
     fail(res, e);
   }
@@ -148,6 +165,7 @@ stayRouter.put("/undo-checkout/:id", async (req, res) => {
 // PUT /stay/extend/:id  { nights } → aur din rukenge
 stayRouter.put("/extend/:id", async (req, res) => {
   try {
+    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can change the stay count" });
     const doc = await Stay.findById(req.params.id);
     if (!doc) return res.status(404).json({ success: false, message: "Not found" });
     const nights = Math.min(60, Math.max(1, Math.round(Number(req.body?.nights) || 0)));

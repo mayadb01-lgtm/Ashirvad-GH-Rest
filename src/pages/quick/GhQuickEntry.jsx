@@ -126,7 +126,7 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkou
         {(row?._stayDay || checkout || dueOut) && (
           <Stack direction="row" spacing={0.5} sx={{ mt: 0.5 }} flexWrap="wrap" useFlexGap>
             {dueOut && <StatusPill tone="warn">⏰ {dueOut.guest?.fullname || "Guest"} · checkout due {dueOut.dueTime}</StatusPill>}
-            {row?._stayDay && <StatusPill tone="info">🔁 Day {row._stayDay} of {row._stayNights}</StatusPill>}
+            {row?._stayDay && <StatusPill tone="info">🔁 Day {row._stayDay}</StatusPill>}
             {checkout && <StatusPill tone="good">✓ Checkout {checkout.time}</StatusPill>}
           </Stack>
         )}
@@ -190,7 +190,7 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkou
 };
 
 /* ---------------- Room editor ---------------- */
-const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClear, locked, isAdmin, charges, onChargesChanged, stay, onCheckout, onUndoCheckout, onExtend, onNewGuest, advance = 0 }) => {
+const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClear, locked, isAdmin, charges, onChargesChanged, stay, onCheckout, onUndoCheckout, onNewGuest, advance = 0 }) => {
   const [f, setF] = useState(initial);
   const [guest, setGuest] = useState(null);
   const lastLookup = useRef("");
@@ -240,7 +240,7 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
           </Button>
         ) : (
           <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
-            {initial && isTouched(initial) && (
+            {initial && isTouched(initial) && (!initial._stayId || isAdmin) && (
               <Button color="error" onClick={onClear} sx={{ fontWeight: 700 }}>
                 Remove
               </Button>
@@ -360,35 +360,23 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
               </>
             ) : f._stayId ? (
               <>
-                <Typography fontWeight={800}>
-                  🔁 Continuing stay · Day {f._stayDay} of {f._stayNights}
-                </Typography>
+                <Typography fontWeight={800}>🔁 Continuing stay · Day {f._stayDay}</Typography>
                 <Typography variant="caption" color={Q.muted} component="div" sx={{ mb: 1 }}>
-                  Since {f._stayStart}. Filled automatically each day — just select payment.
+                  Checked in on {f._stayStart}. Guest was still here after 11:00 AM, so today is counted automatically — just select payment.
                 </Typography>
-                <Stack direction="row" spacing={1}>
-                  <Button size="small" variant="outlined" onClick={() => onExtend?.(f._stayId, (f._stayNights || 1) + 1)}>
-                    +1 more night
-                  </Button>
-                  <Button size="small" variant="contained" color="success" onClick={() => onCheckout?.(f)}>
-                    ✅ Check out
-                  </Button>
-                </Stack>
+                <Button size="small" variant="contained" color="success" onClick={() => onCheckout?.(f)} sx={{ fontWeight: 800 }}>
+                  ✅ Check out
+                </Button>
               </>
             ) : (
               <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box sx={{ flex: 1 }}>
-                  <Stepper outlined label="Nights" value={num(f._nights) || stay?.started?.nights || 1} onChange={(v) => set("_nights", Math.max(1, v))} min={1} max={60} />
-                </Box>
-                <Button variant="contained" color="success" onClick={() => onCheckout?.(f)} sx={{ height: 64, fontWeight: 800 }}>
-                  ✅ Checkout
+                <Typography variant="caption" color={Q.muted} sx={{ flex: 1 }}>
+                  Day count is automatic: check-in day = 1. If the guest is still here after 11:00 AM the next day, another day is added automatically. Only the owner can change it.
+                </Typography>
+                <Button variant="contained" color="success" onClick={() => onCheckout?.(f)} sx={{ fontWeight: 800, flexShrink: 0 }}>
+                  ✅ Check out
                 </Button>
               </Stack>
-            )}
-            {!stay?.checkout && !f._stayId && (num(f._nights) || stay?.started?.nights || 1) > 1 && (
-              <Typography variant="caption" color={Q.muted} component="div" sx={{ mt: 0.75 }}>
-                This room will be filled automatically for the next {(num(f._nights) || stay?.started?.nights) - 1} days (just select payment).
-              </Typography>
             )}
           </Paper>
         )}
@@ -509,7 +497,6 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       stayInfo.continuing.forEach((c) => {
         const k = keyOf("day", c.roomNo);
         if (rooms[k] || dismissed.includes(c._id)) return;
-        if (stayInfo.checkouts.some((x) => x.roomNo === c.roomNo && x._id === c._id)) return;
         const g = c.guest || {};
         rooms[k] = {
           fullname: g.fullname,
@@ -523,7 +510,6 @@ const GhQuickEntry = ({ date, isAdmin }) => {
           modeOfPayment: "",
           _stayId: c._id,
           _stayDay: c.dayNo,
-          _stayNights: c.nights,
           _stayStart: c.startDate,
         };
         changed = true;
@@ -554,7 +540,6 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         checkOutTime: "10:00 AM",
         discount: 0,
         _bookingId: bk._id,
-        _nights: bk.nights || 1,
       };
     return (
       draft.rooms[keyOf(period, room.roomNumber)] || {
@@ -579,7 +564,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
     // Stay plan / booking check-in (alag collection, turant save)
     if (f._stayId) return;
     const started = (stayInfo?.started || []).find((x) => x.roomNo === roomNo && x.period === period);
-    const nights = num(f._nights) || started?.nights || 1;
+    const nights = started?.nights || 1; // din apne aap gine jaate hain (checkout se)
     const jobs = [];
     if (f._bookingId) jobs.push(axios.put(`${API}/booking/${f._bookingId}/checkin`, { date, period, roomNo }));
     // har check-in ka plan (default 1 raat = agli subah checkout) taaki due-out pata chale
@@ -610,7 +595,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
 
   // ✅ Checkout: guest gaya → room khaali, usi din naya guest agle slot mein
   const doCheckout = async (roomNo, p, f, stayId) => {
-    await axios.post(`${API}/stay/checkout`, {
+    const { data } = await axios.post(`${API}/stay/checkout`, {
       date,
       period: p,
       roomNo,
@@ -618,33 +603,23 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       time: dayjs().format("hh:mm A"),
       guest: { fullname: f.fullname, mobileNumber: digits(f.mobileNumber), type: f.type, noOfPeople: num(f.noOfPeople), rate: num(f.rate), discount: num(f.discount) },
     });
-    // ruka hua row abhi tak payment ke bina auto-bhara tha aur aaj ka bill nahi banta → hata do
-    if (f._stayId && !f.modeOfPayment)
+    // 11:00 AM se pehle gaya → aaj ka charge nahi, auto-bhara row hata do
+    if (f._stayId && !data?.billedToday)
       setDraft((d) => {
         const next = { ...d.rooms };
         delete next[keyOf(p, roomNo)];
         return { ...d, rooms: next, _dismissed: [...(d._dismissed || []), f._stayId] };
       });
     const next = PERIODS.find((x) => x.key === NEXT_PERIOD[p])?.label;
-    toast.success(`Room ${roomNo} checked out${next ? ` — new guest goes in ${next}` : ""}`);
+    toast.success(`Room ${roomNo} checked out${f._stayId || stayId ? (data?.billedToday ? " (after 11:00 AM — today is counted)" : " (before 11:00 AM — no charge today)") : ""}${next ? ` · new guest goes in ${next}` : ""}`);
     loadStay();
   };
   const checkoutRoom = async (f) => {
     try {
       const roomNo = room.roomNumber;
-      if (!(f._stayId && !f.modeOfPayment)) saveRoom({ ...f });
+      if (!f._stayId) saveRoom({ ...f });
       else setEditing(null);
       await doCheckout(roomNo, period, f);
-    } catch (e) {
-      toast.error(apiError(e));
-    }
-  };
-  // 🌙 Due-out guest aur ek raat rukega → aaj ka din apne aap bhar jaata hai (payment chuno)
-  const extendDue = async (u) => {
-    try {
-      await axios.put(`${API}/stay/extend/${u.stayId}`, { nights: num(u.nights) + 1 });
-      toast.success(`Room ${u.roomNo}: extended by 1 night — select payment for today`);
-      loadStay();
     } catch (e) {
       toast.error(apiError(e));
     }
@@ -658,22 +633,6 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       toast.error(apiError(e));
     }
   };
-  const extendStay = async (id, nights) => {
-    try {
-      await axios.put(`${API}/stay/extend/${id}`, { nights });
-      setDraft((d) => {
-        const rooms = { ...d.rooms };
-        Object.keys(rooms).forEach((k) => rooms[k]?._stayId === id && (rooms[k] = { ...rooms[k], _stayNights: nights }));
-        return { ...d, rooms };
-      });
-      toast.success(`Stay extended to ${nights} nights`);
-      setEditing(null);
-      loadStay();
-    } catch (e) {
-      toast.error(apiError(e));
-    }
-  };
-  // Is slot ka checkout (aaj aaya guest aaj gaya, ya ruka hua guest) — subah wale due-out guest ka nahi
   const checkoutOf = (p, roomNo) => {
     const row = draft.rooms[keyOf(p, roomNo)];
     return (stayInfo?.checkouts || []).find(
@@ -690,7 +649,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
   const advToday = (stayInfo?.advances || []).reduce((s, a) => s + num(a.amount), 0);
   const unassignedToday = (stayInfo?.bookings || []).filter((b) => b.status === "booked" && !b.roomNo);
 
-  // 🌙 Day settlement: jin guests ka aaj checkout due hai (zyadatar subah 10 baje) — "Checked out" ya "+1 night"
+  // ⏰ Subah 11 baje tak checkout ka time: in guests ko "Checked out" karo, warna 11 ke baad aaj ka din apne aap gina jaata hai
   const todayStr = dayjs().format(DATE_FMT);
   const yesterdayStr = dayjs().subtract(1, "day").format(DATE_FMT);
   const settleDay = date === todayStr || date === yesterdayStr; // sirf chalu din pe niyam (purane din admin ke liye khule)
@@ -950,7 +909,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
             <Paper variant="outlined" sx={{ p: 1.5, mb: 1.5, borderRadius: 3, borderColor: "#FCD34D", bgcolor: "#FFFBEB" }}>
               <Typography fontWeight={800}>⏰ Checkout due today · {unsettled.length} room{unsettled.length > 1 ? "s" : ""}</Typography>
               <Typography variant="caption" color={Q.muted} component="div" sx={{ mb: 1 }}>
-                These guests are due to check out today. Mark them checked out, or extend if they are staying another night. The day cannot be submitted until this is done.
+                Checkout time is 11:00 AM. Mark guests who have left as checked out. Anyone still here after 11:00 AM is automatically counted for today.
               </Typography>
               {unsettled.map((u, i) => (
                 <Stack key={`${u.period}-${u.roomNo}`} direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }} sx={{ py: 0.75, borderTop: i ? `1px solid ${Q.line}` : "none" }}>
@@ -963,9 +922,6 @@ const GhQuickEntry = ({ date, isAdmin }) => {
                   <Stack direction="row" spacing={1}>
                     <Button size="small" variant="contained" color="success" onClick={() => doCheckout(u.roomNo, "day", u.row, u.stayId).catch((e) => toast.error(apiError(e)))} sx={{ fontWeight: 700 }}>
                       ✅ Checked out
-                    </Button>
-                    <Button size="small" variant="outlined" onClick={() => extendDue(u)} sx={{ fontWeight: 700 }}>
-                      🌙 +1 night (staying)
                     </Button>
                   </Stack>
                 </Stack>
@@ -1124,7 +1080,6 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         }
         onCheckout={checkoutRoom}
         onUndoCheckout={undoCheckout}
-        onExtend={extendStay}
         onNewGuest={() => {
           const rn = room?.roomNumber;
           setEditing(null);
