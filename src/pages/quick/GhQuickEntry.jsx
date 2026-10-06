@@ -138,13 +138,9 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [] }) => {
               >
                 {row.modeOfPayment === "UnPaid" ? "Baaki" : row.modeOfPayment || "—"}
               </Box>
-              {charges.length > 0 && (
-                <Box component="span" title="Room + food + extra mein se guest se lena baaki" sx={{ fontSize: 12, fontWeight: 800, px: 1, py: 0.3, borderRadius: 10, bgcolor: due > 0 ? "#FEE2E2" : "#CCFBF1", color: due > 0 ? Q.bad : "#115E59" }}>
-                  {due > 0 ? `Baaki ${inr(due)}` : "✓ Sab paid"}
-                </Box>
-              )}
-              <Typography fontWeight={800} fontSize={17} sx={{ color: low ? Q.bad : Q.ink }}>
-                {inr(row.rate)}
+              {/* Rate nahi, sirf guest se lena baaki (room + food + extra) */}
+              <Typography fontWeight={800} fontSize={due > 0 ? 17 : 14} title="Room + food + extra mein se baaki" sx={{ color: due > 0 ? Q.bad : Q.good }}>
+                {due > 0 ? `Baaki ${inr(due)}` : "✓ Paid"}
               </Typography>
             </Stack>
             {partial && (
