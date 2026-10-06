@@ -12,7 +12,7 @@ const fmt = (d) => `${pad(d.getUTCDate())}-${pad(d.getUTCMonth() + 1)}-${d.getUT
 
 // Staff kaun si dates chhoo sakta hai (India time)
 export const allowedStaffDates = () => {
-  const grace = Number(process.env.STAFF_GRACE_HOURS ?? 3);
+  const grace = Number(process.env.STAFF_GRACE_HOURS ?? 2); // din raat 12 baje band, 2 ghante settle karne ke liye
   const nowIst = new Date(Date.now() + IST_OFFSET_MS);
   const today = fmt(nowIst);
   const dates = [today];
