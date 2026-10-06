@@ -22,6 +22,12 @@ export const allowedStaffDates = () => {
   return dates;
 };
 
+// Guest registration / checkout: check-in ka din aur agla din (aaj + kal)
+export const twoDayWindow = () => {
+  const nowIst = new Date(Date.now() + IST_OFFSET_MS);
+  return [fmt(nowIst), fmt(new Date(nowIst.getTime() - 24 * 3600 * 1000))];
+};
+
 export const isAdminLike = (user) =>
   !!user && (user.constructor?.modelName === "Admin" || user.role === "Admin" || user.isSuperUser === true);
 
@@ -48,9 +54,10 @@ const RULES = {
     R("GET", /^\/api\/v1\/quick\/guest\/\d{10}$/), // purana guest
     // Govt guest register (sirf aaj ka; photo dekhna sirf admin)
     R("GET", /^\/api\/v1\/guest-register\/day\/([^/]+)$/, { dateParam: 1 }),
-    R("GET", /^\/api\/v1\/guest-register\/one\/([^/]+)\/[A-Za-z]+\/\d+$/, { dateParam: 1 }),
-    R("PUT", /^\/api\/v1\/guest-register\/one\/([^/]+)\/[A-Za-z]+\/\d+$/, { dateParam: 1 }),
-    R("POST", /^\/api\/v1\/guest-register\/one\/([^/]+)\/[A-Za-z]+\/\d+\/photo$/, { dateParam: 1 }),
+    R("GET", /^\/api\/v1\/guest-register\/one\/([^/]+)\/[A-Za-z]+\/\d+$/, { dateParam: 1, window2: true }),
+    R("PUT", /^\/api\/v1\/guest-register\/one\/([^/]+)\/[A-Za-z]+\/\d+$/, { dateParam: 1, window2: true }),
+    R("POST", /^\/api\/v1\/guest-register\/one\/([^/]+)\/[A-Za-z]+\/\d+\/photo$/, { dateParam: 1, window2: true }),
+    R("GET", /^\/api\/v1\/guest-register\/pending\/([^/]+)$/, { dateParam: 1 }),
     // Room charges: food bill dekhna, extra charge jodna/hatana, vasooli (id wale routes andar date check karte hain)
     R("GET", /^\/api\/v1\/room-charges\/day\/([^/]+)$/, { dateParam: 1 }),
     R("POST", /^\/api\/v1\/room-charges\/extra$/, { dateBody: "date" }),
@@ -122,7 +129,8 @@ export const staffGuard = (req, res, next) => {
   const rule = RULES[dept].find((r) => r.method === method && r.re.test(path));
   if (!rule) return deny(res, "This page/report is not available to staff.");
 
-  const allowed = allowedStaffDates();
+  // window2: check-in ka din + agla din (guest registration)
+  const allowed = rule.window2 ? [...new Set([...allowedStaffDates(), ...twoDayWindow()])] : allowedStaffDates();
   if (rule.dateParam) {
     const d = decodeURIComponent(path.match(rule.re)[rule.dateParam] || "");
     if (!allowed.includes(d)) return deny(res, "Staff can only view/edit today's entries.");

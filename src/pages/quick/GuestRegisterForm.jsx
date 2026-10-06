@@ -73,8 +73,8 @@ const seedFrom = (date, seed) => {
   };
 };
 
-const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved }) => {
-  const [open, setOpen] = useState(false);
+const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved, defaultOpen = false }) => {
+  const [open, setOpen] = useState(defaultOpen);
   const [g, setG] = useState(null);
   const [exists, setExists] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -177,7 +177,7 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved }) => 
     <Paper variant="outlined" sx={{ borderRadius: 3, borderStyle: "dashed" }}>
       <Button fullWidth onClick={() => setOpen((o) => !o)} endIcon={open ? <ExpandLessIcon /> : <ExpandMoreIcon />} sx={{ justifyContent: "space-between", color: Q.ink, py: 1.2 }}>
         <span>
-          📄 Guest registration (Govt / Police) <Typography component="span" variant="caption" color={Q.muted}>(optional)</Typography>
+          📄 Guest registration (Govt / Police) <Typography component="span" variant="caption" color={Q.muted}>(required before next day&apos;s settlement)</Typography>
         </span>
         {exists && <Chip size="small" color="success" label="Filled" sx={{ ml: "auto", mr: 1 }} />}
       </Button>
@@ -189,7 +189,7 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved }) => 
         ) : (
           <Box sx={{ p: 1.5, pt: 0 }}>
             <Alert severity="info" sx={{ mb: 1.5 }}>
-              These fields are optional. The details above are enough to give a room. This data goes into the CSV for the government site.
+              Not needed to give the room, but must be completed by the next day&apos;s settlement. Required: first name, mobile, address, city, state, document type and number. This data goes into the CSV for the government site.
             </Alert>
             <Grid container spacing={1.25}>
               {T("First name", "firstName")}

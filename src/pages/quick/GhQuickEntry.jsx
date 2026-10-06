@@ -417,6 +417,16 @@ const GhQuickEntry = ({ date, isAdmin }) => {
   const [unpaid, setUnpaid] = useState([]);
   const [charges, setCharges] = useState([]);
   const [stayInfo, setStayInfo] = useState(null); // { continuing, started, checkouts, bookings, advances }
+  const [regPending, setRegPending] = useState({ yesterday: [], today: [] });
+  const [regEdit, setRegEdit] = useState(null); // pending item jiska form khula hai
+  const loadRegPending = useCallback(
+    () =>
+      axios
+        .get(`${API}/guest-register/pending/${date}`)
+        .then(({ data }) => setRegPending(data.data || { yesterday: [], today: [] }))
+        .catch(() => setRegPending({ yesterday: [], today: [] })),
+    [date]
+  );
   const loadStay = useCallback(
     () =>
       axios
@@ -460,6 +470,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       setUnpaid(u.data.data || []);
       loadCharges();
       loadStay();
+      loadRegPending();
     } catch (err) {
       setError(apiError(err));
       setServer({ loaded: true, entries: [] });
@@ -666,6 +677,8 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       .filter(Boolean)
       .map((x) => ({ roomNo: x.roomNo, stayId: x._id, nights: x.nights, dueTime: x.dueTime, row: { ...(x.guest || {}) } }));
   })();
+  // 📄 Kal check-in hue guests ki registration aaj ke settlement se pehle zaroori
+  const regBlock = settleDay ? regPending.yesterday || [] : [];
   const hourNow = dayjs().hour();
   const settleBanner =
     date === todayStr && hourNow >= 21
@@ -934,6 +947,32 @@ const GhQuickEntry = ({ date, isAdmin }) => {
               ))}
             </Paper>
           )}
+          {(regBlock.length > 0 || (settleDay && regPending.today?.length > 0)) && (
+            <Paper variant="outlined" sx={{ p: 1.5, mb: 1.5, borderRadius: 3, borderColor: regBlock.length ? "#FCA5A5" : Q.line, bgcolor: regBlock.length ? "#FEF2F2" : "#fff" }}>
+              <Typography fontWeight={800}>📄 Guest registration</Typography>
+              <Typography variant="caption" color={Q.muted} component="div" sx={{ mb: 1 }}>
+                Registration can be filled on the check-in day or the next day. It must be complete before the next day is submitted.
+              </Typography>
+              {[...(regBlock || []).map((x) => ({ ...x, must: true })), ...(regPending.today || []).map((x) => ({ ...x, must: false }))].map((u, i) => (
+                <Stack key={`${u.date}-${u.period}-${u.roomNo}`} direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }} sx={{ py: 0.75, borderTop: i ? `1px solid ${Q.line}` : "none" }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography fontWeight={700}>
+                      Room {u.roomNo} · {u.guest?.fullname || "—"}{" "}
+                      <Typography component="span" variant="caption" sx={{ color: u.must ? Q.bad : Q.muted, fontWeight: 700 }}>
+                        {u.must ? `checked in ${u.date} — required now` : "due by tomorrow"}
+                      </Typography>
+                    </Typography>
+                    <Typography variant="caption" color={Q.muted}>
+                      Missing: {u.missing.join(", ")}
+                    </Typography>
+                  </Box>
+                  <Button size="small" variant={u.must ? "contained" : "outlined"} onClick={() => setRegEdit(u)} sx={{ fontWeight: 700, ...(u.must ? { bgcolor: Q.bad, "&:hover": { bgcolor: Q.bad } } : {}) }}>
+                    Fill details
+                  </Button>
+                </Stack>
+              ))}
+            </Paper>
+          )}
           <Box sx={{ mb: 1.5 }}>
             <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
               <Typography variant="caption" color={Q.muted}>
@@ -1053,12 +1092,14 @@ const GhQuickEntry = ({ date, isAdmin }) => {
               ? { text: `Incomplete: ${summary.incomplete.slice(0, 3).join(", ")}${summary.incomplete.length > 3 ? "…" : ""}`, color: Q.bad }
               : unsettled.length
               ? { text: `Settle rooms: ${unsettled.map((u) => u.roomNo).slice(0, 4).join(", ")}${unsettled.length > 4 ? "…" : ""}`, color: Q.bad }
+              : regBlock.length
+              ? { text: `Guest registration pending: ${regBlock.map((u) => u.roomNo).slice(0, 4).join(", ")}`, color: Q.bad }
               : null
           }
           buttonText={submitted ? "Update" : "Submit day"}
           color={Q.gh}
           busy={busy}
-          disabled={summary.incomplete.length > 0 || unsettled.length > 0 || (summary.filled === 0 && draft.jama.length === 0 && others.length === 0)}
+          disabled={summary.incomplete.length > 0 || unsettled.length > 0 || regBlock.length > 0 || (summary.filled === 0 && draft.jama.length === 0 && others.length === 0)}
           onClick={() => setConfirm(true)}
         />
       )}
@@ -1071,7 +1112,10 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         initial={editingInitial}
         checkedIn={!!(room && draft.rooms[keyOf(period, room.roomNumber)] && isTouched(draft.rooms[keyOf(period, room.roomNumber)]))}
         locked={locked}
-        onClose={() => setEditing(null)}
+        onClose={() => {
+          setEditing(null);
+          loadRegPending();
+        }}
         onSave={saveRoom}
         onClear={clearRoom}
         isAdmin={isAdmin}
@@ -1095,6 +1139,21 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         }}
         advance={room ? advanceFor(period, room.roomNumber, editingInitial) : 0}
       />
+
+      <EditorDialog open={!!regEdit} onClose={() => { setRegEdit(null); loadRegPending(); }} subtitle={regEdit ? `Checked in ${regEdit.date}` : ""} title={regEdit ? `Guest registration · Room ${regEdit.roomNo}` : ""} actions={<Button fullWidth variant="outlined" onClick={() => { setRegEdit(null); loadRegPending(); }}>Done</Button>}>
+        {regEdit && (
+          <GuestRegisterForm
+            key={`${regEdit.date}-${regEdit.period}-${regEdit.roomNo}`}
+            date={regEdit.date}
+            period={regEdit.period}
+            roomNo={regEdit.roomNo}
+            seed={{ fullname: regEdit.guest?.fullname, mobileNumber: regEdit.guest?.mobileNumber, noOfPeople: regEdit.guest?.noOfPeople, checkInTime: regEdit.guest?.checkInTime, checkOutTime: regEdit.guest?.checkOutTime }}
+            isAdmin={isAdmin}
+            defaultOpen
+            onSaved={loadRegPending}
+          />
+        )}
+      </EditorDialog>
 
       <ConfirmDialog
         open={confirm}

@@ -8,6 +8,7 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import GuestRegister from "../model/guestRegister.js";
 import { isAdminLike } from "../middleware/staffAccess.js";
+import Stay from "../model/stay.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -197,6 +198,39 @@ router.get("/csv/:start/:end", async (req, res) => {
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename="guest-register_${req.params.start}_to_${req.params.end}.csv"`);
     res.send("﻿" + lines.join("\r\n"));
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+// GET /pending/:date → registration baaki: kal check-in hue guests (aaj ke settlement se pehle zaroori) + aaj ke
+// Sirf naye system se check-in hue guest (roomstays mein us din shuru hua stay) — purane din / ruke hue guest nahi.
+export const REQUIRED = [
+  ["firstName", "First name"],
+  ["mobile", "Mobile"],
+  ["address", "Address"],
+  ["city", "City"],
+  ["state", "State"],
+  ["documentType", "Document type"],
+  ["documentNumber", "Document number"],
+];
+router.get("/pending/:date", async (req, res) => {
+  try {
+    const d = dayjs(req.params.date, F, true);
+    if (!d.isValid()) return res.status(400).json({ success: false, message: "Invalid date" });
+    const dates = [d.subtract(1, "day").format(F), d.format(F)];
+    const [stays, regs] = await Promise.all([Stay.find({ startDate: { $in: dates } }).lean(), GuestRegister.find({ date: { $in: dates } }).lean()]);
+    const out = { yesterday: [], today: [] };
+    stays.forEach((s) => {
+      const r = regs.find((x) => x.date === s.startDate && x.period === s.period && x.roomNo === s.roomNo);
+      const missing = REQUIRED.filter(([k]) => !String(r?.[k] || "").trim()).map(([, l]) => l);
+      if (!missing.length) return;
+      const item = { date: s.startDate, period: s.period, roomNo: s.roomNo, guest: s.guest, missing };
+      (s.startDate === dates[0] ? out.yesterday : out.today).push(item);
+    });
+    out.yesterday.sort((a, b) => a.roomNo - b.roomNo);
+    out.today.sort((a, b) => a.roomNo - b.roomNo);
+    res.json({ success: true, data: out });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
   }
