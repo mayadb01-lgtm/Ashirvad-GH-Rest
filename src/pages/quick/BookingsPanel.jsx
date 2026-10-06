@@ -24,7 +24,7 @@ export const BookingForm = ({ open, onClose, rooms = [], initial, onSaved }) => 
   const room = rooms.find((r) => r.roomNumber === Number(b.roomNo));
 
   const save = async () => {
-    if (!b.guestName.trim()) return toast.error("Guest ka naam likho");
+    if (!b.guestName.trim()) return toast.error("Enter guest name");
     const mob = cleanMobile(b.mobile);
     if (mob && mob.length !== 10) return toast.error("Mobile number must be 10 digits");
     setBusy(true);
@@ -43,7 +43,7 @@ export const BookingForm = ({ open, onClose, rooms = [], initial, onSaved }) => 
       };
       if (editing) await axios.put(`${API}/booking/${initial._id}`, body);
       else await axios.post(`${API}/booking`, { ...body, advance: num(b.advAmount) > 0 ? { amount: num(b.advAmount), mode: b.advMode } : undefined });
-      toast.success(editing ? "Booking badal di" : "Booking ho gayi");
+      toast.success(editing ? "Booking updated" : "Booking created");
       onSaved?.();
     } catch (e) {
       toast.error(apiError(e));
@@ -54,48 +54,48 @@ export const BookingForm = ({ open, onClose, rooms = [], initial, onSaved }) => 
 
   return (
     <Dialog open={open} onClose={busy ? undefined : onClose} fullWidth maxWidth="sm">
-      <DialogTitle fontWeight={800}>{editing ? `Booking ${initial.bookingNo} badlo` : "📅 Nayi advance booking"}</DialogTitle>
+      <DialogTitle fontWeight={800}>{editing ? `Edit booking ${initial.bookingNo}` : "📅 New advance booking"}</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={1.5}>
-          <TextField label="Guest ka naam" value={b.guestName} onChange={(e) => set("guestName", e.target.value)} autoFocus />
+          <TextField label="Guest name" value={b.guestName} onChange={(e) => set("guestName", e.target.value)} autoFocus />
           <Stack direction="row" spacing={1.5}>
             <TextField fullWidth label="Mobile" value={b.mobile} onChange={(e) => set("mobile", cleanMobile(e.target.value))}
               error={!!b.mobile && b.mobile.length !== 10}
               helperText={b.mobile && b.mobile.length !== 10 ? `${b.mobile.length}/10 digits` : " "} inputProps={{ inputMode: "numeric" }} />
-            <TextField sx={{ width: 110 }} type="number" label="Log" value={b.people} onChange={(e) => set("people", Number(e.target.value) || 1)} />
+            <TextField sx={{ width: 110 }} type="number" label="Guests" value={b.people} onChange={(e) => set("people", Number(e.target.value) || 1)} />
           </Stack>
-          <TextField label="Company (agar ho)" value={b.company} onChange={(e) => set("company", e.target.value)} />
+          <TextField label="Company (if any)" value={b.company} onChange={(e) => set("company", e.target.value)} />
           <Stack direction="row" spacing={1.5}>
             <TextField
               fullWidth
               type="date"
-              label="Kab aayenge"
+              label="Check-in date"
               value={dayjs(b.checkInDate, F).format("YYYY-MM-DD")}
               onChange={(e) => e.target.value && set("checkInDate", dayjs(e.target.value).format(F))}
               InputLabelProps={{ shrink: true }}
               inputProps={{ min: dayjs().format("YYYY-MM-DD") }}
             />
-            <TextField sx={{ width: 120 }} type="number" label="Kitni raat" value={b.nights} onChange={(e) => set("nights", Math.max(1, Number(e.target.value) || 1))} />
+            <TextField sx={{ width: 120 }} type="number" label="Nights" value={b.nights} onChange={(e) => set("nights", Math.max(1, Number(e.target.value) || 1))} />
           </Stack>
           <Stack direction="row" spacing={1.5}>
-            <TextField select fullWidth label="Room (baad mein bhi chun sakte ho)" value={b.roomNo} onChange={(e) => set("roomNo", e.target.value)}>
-              <MenuItem value="">Abhi tay nahi</MenuItem>
+            <TextField select fullWidth label="Room (can be chosen later)" value={b.roomNo} onChange={(e) => set("roomNo", e.target.value)}>
+              <MenuItem value="">Not decided yet</MenuItem>
               {rooms.map((r) => (
                 <MenuItem key={r.roomNumber} value={r.roomNumber}>
                   {r.roomNumber} · {r.roomType} · {inr(r.roomCost)}
                 </MenuItem>
               ))}
             </TextField>
-            <MoneyField label="Rate / raat" value={b.rate} onChange={(v) => set("rate", v)} sx={{ width: 150 }} />
+            <MoneyField label="Rate / night" value={b.rate} onChange={(v) => set("rate", v)} sx={{ width: 150 }} />
           </Stack>
           {!editing && (
             <Paper variant="outlined" sx={{ p: 1.5, bgcolor: "#F0FDF4", borderColor: "#BBF7D0" }}>
               <Typography fontWeight={800} sx={{ mb: 1 }}>
-                Advance (aaj mila)
+                Advance (received today)
               </Typography>
               <Stack direction="row" spacing={1.5}>
                 <MoneyField label="Advance amount" value={b.advAmount} onChange={(v) => set("advAmount", v)} />
-                <TextField select sx={{ width: 130 }} label="Kaise" value={b.advMode} onChange={(e) => set("advMode", e.target.value)}>
+                <TextField select sx={{ width: 130 }} label="Mode" value={b.advMode} onChange={(e) => set("advMode", e.target.value)}>
                   {MODES.map((m) => (
                     <MenuItem key={m} value={m}>
                       {m}
@@ -108,17 +108,17 @@ export const BookingForm = ({ open, onClose, rooms = [], initial, onSaved }) => 
           <TextField label="Note (optional)" value={b.notes} onChange={(e) => set("notes", e.target.value)} />
           {num(b.rate) > 0 && (
             <Typography variant="body2" color={Q.muted}>
-              Kul andaaza: {inr(num(b.rate) * b.nights)} ({b.nights} raat){!editing && num(b.advAmount) > 0 ? ` · Advance ke baad baaki ${inr(num(b.rate) * b.nights - num(b.advAmount))}` : ""}
+              Estimated total: {inr(num(b.rate) * b.nights)} ({b.nights} nights){!editing && num(b.advAmount) > 0 ? ` · Due after advance ${inr(num(b.rate) * b.nights - num(b.advAmount))}` : ""}
             </Typography>
           )}
         </Stack>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={busy}>
-          Band karo
+          Close
         </Button>
         <Button variant="contained" onClick={save} disabled={busy} sx={{ bgcolor: Q.gh, fontWeight: 800, "&:hover": { bgcolor: Q.gh } }}>
-          {editing ? "Save karo" : "Booking karo"}
+          {editing ? "Save" : "Create booking"}
         </Button>
       </DialogActions>
     </Dialog>
@@ -134,11 +134,11 @@ const AdvanceDialog = ({ booking, onClose, onSaved }) => {
     setMode("Cash");
   }, [booking]);
   const save = async () => {
-    if (!(num(amount) > 0)) return toast.error("Amount bharo");
+    if (!(num(amount) > 0)) return toast.error("Enter amount");
     setBusy(true);
     try {
       await axios.post(`${API}/booking/${booking._id}/advance`, { amount: num(amount), mode });
-      toast.success("Advance jud gaya");
+      toast.success("Advance added");
       onSaved?.();
     } catch (e) {
       toast.error(apiError(e));
@@ -148,11 +148,11 @@ const AdvanceDialog = ({ booking, onClose, onSaved }) => {
   };
   return (
     <Dialog open={!!booking} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle fontWeight={800}>Advance jodo · {booking?.guestName}</DialogTitle>
+      <DialogTitle fontWeight={800}>Add advance · {booking?.guestName}</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={1.5}>
-          <MoneyField label="Amount (aaj mila)" value={amount} onChange={setAmount} big autoFocus />
-          <TextField select label="Kaise" value={mode} onChange={(e) => setMode(e.target.value)}>
+          <MoneyField label="Amount (received today)" value={amount} onChange={setAmount} big autoFocus />
+          <TextField select label="Mode" value={mode} onChange={(e) => setMode(e.target.value)}>
             {MODES.map((m) => (
               <MenuItem key={m} value={m}>
                 {m}
@@ -162,9 +162,9 @@ const AdvanceDialog = ({ booking, onClose, onSaved }) => {
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Band karo</Button>
+        <Button onClick={onClose}>Close</Button>
         <Button variant="contained" disabled={busy} onClick={save} sx={{ bgcolor: Q.gh, "&:hover": { bgcolor: Q.gh } }}>
-          Jodo
+          Add
         </Button>
       </DialogActions>
     </Dialog>
@@ -199,7 +199,7 @@ const BookingsPanel = ({ rooms, isAdmin, onChanged }) => {
   const doCancel = async () => {
     try {
       await axios.put(`${API}/booking/${cancel._id}/cancel`, { reason });
-      toast.success("Booking cancel ho gayi");
+      toast.success("Booking cancelled");
       changed();
     } catch (e) {
       toast.error(apiError(e));
@@ -210,13 +210,13 @@ const BookingsPanel = ({ rooms, isAdmin, onChanged }) => {
   return (
     <Stack spacing={1.5}>
       <Button variant="contained" startIcon={<AddIcon />} onClick={() => setForm({ initial: null })} sx={{ bgcolor: Q.gh, py: 1.2, fontWeight: 800, "&:hover": { bgcolor: Q.gh } }}>
-        Nayi advance booking
+        New advance booking
       </Button>
       <Typography variant="caption" color={Q.muted}>
-        Check-in ke din room card pe &quot;📅 Booking&quot; dikhega — tap karte hi guest ki details bhar jayengi, aur advance room bill mein minus ho jayega.
+        On the check-in day, the room card will show &quot;📅 Booking&quot;. Tap it to fill in guest details; the advance is deducted from the room bill.
       </Typography>
-      {list === null && <Typography color={Q.muted}>Load ho raha hai…</Typography>}
-      {list?.length === 0 && <Alert severity="info">Koi aane wali booking nahi.</Alert>}
+      {list === null && <Typography color={Q.muted}>Loading…</Typography>}
+      {list?.length === 0 && <Alert severity="info">No upcoming bookings.</Alert>}
       {(list || []).map((b) => {
         const adv = advTotal(b);
         const total = num(b.rate) * (b.nights || 1);
@@ -231,11 +231,11 @@ const BookingsPanel = ({ rooms, isAdmin, onChanged }) => {
                   {b.company ? ` · ${b.company}` : ""}
                 </Typography>
                 <Typography variant="caption" color={Q.muted} component="div">
-                  {b.bookingNo} · {b.mobile || "mobile nahi"} · {b.people} log
+                  {b.bookingNo} · {b.mobile || "No mobile"} · {b.people} guests
                 </Typography>
                 <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 700, color: isToday ? Q.gh : late ? Q.bad : Q.ink }}>
                   📅 {b.checkInDate}
-                  {isToday ? " (AAJ)" : late ? " (aaye nahi)" : ""} · {b.nights} raat · {b.roomNo ? `Room ${b.roomNo}` : "Room tay nahi"}
+                  {isToday ? " (TODAY)" : late ? " (no-show)" : ""} · {b.nights} nights · {b.roomNo ? `Room ${b.roomNo}` : "Room not assigned"}
                 </Typography>
                 {b.notes && (
                   <Typography variant="caption" color={Q.muted}>
@@ -245,13 +245,13 @@ const BookingsPanel = ({ rooms, isAdmin, onChanged }) => {
               </Box>
               <Box sx={{ textAlign: "right", flexShrink: 0 }}>
                 <Typography variant="caption" color={Q.muted} component="div">
-                  Kul {inr(total)}
+                  Total {inr(total)}
                 </Typography>
                 <Typography fontWeight={800} color={Q.good}>
                   Adv {inr(adv)}
                 </Typography>
                 <Typography variant="caption" sx={{ color: total - adv > 0 ? Q.bad : Q.good, fontWeight: 700 }}>
-                  Baaki {inr(Math.max(0, total - adv))}
+                  Due {inr(Math.max(0, total - adv))}
                 </Typography>
               </Box>
             </Stack>
@@ -265,7 +265,7 @@ const BookingsPanel = ({ rooms, isAdmin, onChanged }) => {
                 + Advance
               </Button>
               <Button size="small" onClick={() => setForm({ initial: b })}>
-                Badlo
+                Edit
               </Button>
               {isAdmin && (
                 <Button size="small" color="error" onClick={() => setCancel(b)}>
@@ -280,17 +280,17 @@ const BookingsPanel = ({ rooms, isAdmin, onChanged }) => {
       <BookingForm open={!!form} initial={form?.initial} rooms={rooms} onClose={() => setForm(null)} onSaved={changed} />
       <AdvanceDialog booking={adv} onClose={() => setAdv(null)} onSaved={changed} />
       <Dialog open={!!cancel} onClose={() => setCancel(null)}>
-        <DialogTitle>{cancel?.bookingNo} cancel karein?</DialogTitle>
+        <DialogTitle>Cancel booking {cancel?.bookingNo}?</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 1.5 }}>
-            Advance {inr(cancel ? advTotal(cancel) : 0)} mila tha. Wapas diya ya nahi — wajah mein likho.
+            Advance of {inr(cancel ? advTotal(cancel) : 0)} was received. Mention in the reason whether it was refunded.
           </Typography>
-          <TextField fullWidth autoFocus label="Wajah" value={reason} onChange={(e) => setReason(e.target.value)} />
+          <TextField fullWidth autoFocus label="Reason" value={reason} onChange={(e) => setReason(e.target.value)} />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCancel(null)}>Nahi</Button>
+          <Button onClick={() => setCancel(null)}>No</Button>
           <Button color="error" variant="contained" disabled={!reason.trim()} onClick={doCancel}>
-            Haan, cancel
+            Yes, cancel
           </Button>
         </DialogActions>
       </Dialog>

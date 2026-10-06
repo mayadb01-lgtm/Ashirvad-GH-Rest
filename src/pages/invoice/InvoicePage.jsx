@@ -214,7 +214,7 @@ const InvoicePage = () => {
     axios
       .get(`${API}/invoice/one/${id}`)
       .then(({ data }) => setInv(data.data))
-      .catch((e) => setErr(e?.response?.data?.message || "Invoice load nahi hua (login hai?)"));
+      .catch((e) => setErr(e?.response?.data?.message || "Could not load invoice (are you logged in?)"));
   }, [id]);
 
   useEffect(() => {
@@ -229,12 +229,12 @@ const InvoicePage = () => {
           ⬇ PDF / Print
         </button>
         <button style={{ background: "#fff", color: BROWN, border: `1px solid ${BROWN}` }} onClick={() => (window.history.length > 1 ? window.history.back() : window.close())}>
-          ← Wapas
+          ← Back
         </button>
-        <span style={{ fontSize: 12, color: "#4B5563" }}>PDF ke liye: Print → &quot;Save as PDF&quot; chuno</span>
+        <span style={{ fontSize: 12, color: "#4B5563" }}>For PDF: Print → choose &quot;Save as PDF&quot;</span>
       </div>
       {err && <div className="inv-paper" style={{ color: "#B91C1C" }}>{err}</div>}
-      {!inv && !err && <div className="inv-paper">Load ho raha hai…</div>}
+      {!inv && !err && <div className="inv-paper">Loading…</div>}
       {inv && <InvoiceDocument inv={inv} />}
     </div>
   );

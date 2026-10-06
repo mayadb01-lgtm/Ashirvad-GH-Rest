@@ -705,7 +705,7 @@ const OwnerMonthlyDashboard = () => {
                                       aria-label="WhatsApp reminder"
                                       sx={{ color: "#1DA851" }}
                                       href={`https://wa.me/91${String(u.mobileNumber).replace(/\D/g, "")}?text=${encodeURIComponent(
-                                        `Namaste ${u.fullname || ""} ji, ${u.date} ko Room ${u.roomNo} ka ${inr(u.rate)} payment abhi baaki hai. Kripya jaldi payment kar dijiye. Dhanyavaad 🙏`
+                                        `Namaste ${u.fullname || ""} ji, this is a gentle reminder that a payment of ${inr(u.rate)} for Room ${u.roomNo} on ${u.date} is still due. Kindly clear it at your earliest convenience. Thank you 🙏`
                                       )}`}
                                       target="_blank"
                                       rel="noopener"

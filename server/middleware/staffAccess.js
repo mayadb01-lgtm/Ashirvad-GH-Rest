@@ -113,25 +113,25 @@ export const staffGuard = (req, res, next) => {
   // getuser / me hamesha (taaki app sahi message dikha sake)
   if (RULES.common.some((r) => r.method === method && r.re.test(path))) return next();
 
-  if (user?.isActive === false) return deny(res, "Aapka account band hai. Owner se baat karo.");
+  if (user?.isActive === false) return deny(res, "Your account is disabled. Please contact the owner.");
   const dept = user?.department || "none";
   if (!RULES[dept] || dept === "common") {
-    return deny(res, "Aapko abhi kisi business ka access nahi mila. Owner se department set karwao.");
+    return deny(res, "You do not have access to any business yet. Ask the owner to set your department.");
   }
 
   const rule = RULES[dept].find((r) => r.method === method && r.re.test(path));
-  if (!rule) return deny(res, "Ye page/report staff ke liye nahi hai.");
+  if (!rule) return deny(res, "This page/report is not available to staff.");
 
   const allowed = allowedStaffDates();
   if (rule.dateParam) {
     const d = decodeURIComponent(path.match(rule.re)[rule.dateParam] || "");
-    if (!allowed.includes(d)) return deny(res, "Staff sirf aaj ki entry dekh/bhar sakta hai.");
+    if (!allowed.includes(d)) return deny(res, "Staff can only view/edit today's entries.");
   }
   if (rule.dateBody) {
     const d = String(req.body?.[rule.dateBody] ?? "");
     const mustMatch = rule.dateParam ? decodeURIComponent(path.match(rule.re)[rule.dateParam]) : null;
     if (!allowed.includes(d) || (mustMatch && d !== mustMatch)) {
-      return deny(res, "Staff sirf aaj ki entry bhar sakta hai.");
+      return deny(res, "Staff can only edit today's entries.");
     }
   }
   return next();

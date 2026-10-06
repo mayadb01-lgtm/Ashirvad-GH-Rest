@@ -16,7 +16,7 @@ const BROWN = "#5B2222";
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
 const nameOf = (x) => x.customer?.company || x.customer?.name || "";
 
-const SimpleTable = ({ head, rows, empty = "Kuch nahi" }) => (
+const SimpleTable = ({ head, rows, empty = "None" }) => (
   <TableContainer>
     <Table size="small">
       <TableHead>
@@ -69,7 +69,7 @@ const InvoicesDashboard = () => {
     axios
       .get(`${API}/invoice/list/${start.format(F)}/${end.format(F)}`)
       .then(({ data }) => !off && setList(data.data || []))
-      .catch((e) => toast.error(e?.response?.data?.message || "Invoice list load nahi hui"))
+      .catch((e) => toast.error(e?.response?.data?.message || "Could not load invoice list"))
       .finally(() => !off && setLoading(false));
     return () => {
       off = true;
@@ -193,36 +193,36 @@ const InvoicesDashboard = () => {
   const doCancel = async () => {
     try {
       await axios.put(`${API}/invoice/cancel/${cancel._id}`, { reason });
-      toast.success(`${cancel.invoiceNo} cancel ho gaya`);
+      toast.success(`${cancel.invoiceNo} cancelled`);
       setCancel(null);
       setReason("");
       setReload((x) => x + 1);
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Cancel nahi hua");
+      toast.error(e?.response?.data?.message || "Could not cancel");
     }
   };
 
   return (
     <Box sx={{ p: { xs: 1, md: 2 } }}>
-      <PageTitle title="Invoices (GST / Non-GST)" sub="Dono ki numbering aur register alag. GST return (GSTR-1 / 3B) ke liye summary + Excel neeche." />
+      <PageTitle title="Invoices (GST / Non-GST)" sub="Separate numbering and register for each. Summary and Excel for GST return (GSTR-1 / 3B) below." />
       <MonthStepBar start={start} end={end} setStart={setStart} setEnd={setEnd} format={F}>
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => {
             setNewDraft(emptyDraft());
             setEditor(true);
           }} sx={{ bgcolor: BROWN, "&:hover": { bgcolor: BROWN } }}>
-          Naya invoice
+          New invoice
         </Button>
         <Button variant="outlined" startIcon={<DownloadIcon />} onClick={exportExcel} disabled={!list.length}>
-          Excel (return ke liye)
+          Excel (for GST return)
         </Button>
       </MonthStepBar>
-      {loading && <Typography color="text.secondary">Load ho raha hai…</Typography>}
+      {loading && <Typography color="text.secondary">Loading…</Typography>}
 
       <Stack direction="row" spacing={1.5} sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
         <Kpi label="GST invoices" value={g.count} sub={`B2B ${g.b2b.length} · B2C ${g.b2c.length}`} />
         <Kpi label="Taxable value" value={`₹${money(g.taxable)}`} />
         <Kpi label="CGST + SGST" value={`₹${money(g.cgst + g.sgst)}`} sub={`CGST ₹${money(g.cgst)} · SGST ₹${money(g.sgst)}`} color={BROWN} />
-        <Kpi label="GST invoices ka total" value={`₹${money(g.total)}`} />
+        <Kpi label="GST invoices total" value={`₹${money(g.total)}`} />
         <Kpi label="Non-GST invoices" value={g.nonCount} sub={`₹${money(g.nonTotal)}`} />
       </Stack>
 
@@ -231,12 +231,12 @@ const InvoicesDashboard = () => {
         <Tab value="NON" label={`Non-GST (${list.filter((x) => x.series === "NON").length})`} />
       </Tabs>
 
-      <Section title={tab === "GST" ? "GST invoice register" : "Non-GST invoice register"} right={<Typography variant="caption">Active {active.length} · Cancel {shown.length - active.length}</Typography>}>
+      <Section title={tab === "GST" ? "GST invoice register" : "Non-GST invoice register"} right={<Typography variant="caption">Active {active.length} · Cancelled {shown.length - active.length}</Typography>}>
         <TableContainer>
           <Table size="small">
             <TableHead>
               <TableRow>
-                {["Invoice No", "Date", "Kiske naam", ...(tab === "GST" ? ["GSTIN", "Taxable", "GST"] : []), "Total", "", ""].map((h, i) => (
+                {["Invoice No", "Date", "Billed to", ...(tab === "GST" ? ["GSTIN", "Taxable", "GST"] : []), "Total", "", ""].map((h, i) => (
                   <TableCell key={i} sx={{ fontWeight: 700, whiteSpace: "nowrap" }}>
                     {h}
                   </TableCell>
@@ -280,7 +280,7 @@ const InvoicesDashboard = () => {
               {!loading && !shown.length && (
                 <TableRow>
                   <TableCell colSpan={9}>
-                    <Typography color="text.secondary">Is date range mein koi invoice nahi.</Typography>
+                    <Typography color="text.secondary">No invoices in this date range.</Typography>
                   </TableCell>
                 </TableRow>
               )}
@@ -292,22 +292,22 @@ const InvoicesDashboard = () => {
       {tab === "GST" && (
         <>
           <Alert severity="info" sx={{ mb: 2 }}>
-            Return ke liye: neeche ki tables GSTR-1 ke hisse jaisi hain (B2B, B2C small, HSN/SAC, Documents). &quot;Excel (return ke liye)&quot; mein ye sab alag sheets mein milega — CA ko bhej sakte ho. Cancelled invoice kisi total mein nahi jude, sirf Documents mein gine gaye.
+            For GST return: the tables below follow the GSTR-1 sections (B2B, B2C small, HSN/SAC, Documents). &quot;Excel (for GST return)&quot; has each of these on a separate sheet, ready to send to your CA. Cancelled invoices are not added to any total; they are only counted under Documents.
           </Alert>
-          <Section title="B2B — company GST number wale invoices">
+          <Section title="B2B — invoices with company GSTIN">
             <SimpleTable
-              head={["GSTIN", "Naam", "Invoice", "Date", "Taxable", "CGST", "SGST", "Total"]}
+              head={["GSTIN", "Name", "Invoice", "Date", "Taxable", "CGST", "SGST", "Total"]}
               rows={g.b2b.map((x) => [x.customer.gstin, nameOf(x), x.invoiceNo, x.invoiceDate, `₹${money(x.taxable)}`, `₹${money(x.cgst)}`, `₹${money(x.sgst)}`, `₹${money(x.grandTotal)}`])}
             />
           </Section>
-          <Section title="B2C — aam guest (GST rate-wise total)">
+          <Section title="B2C — regular guests (total by GST rate)">
             <SimpleTable head={["GST rate", "Taxable", "CGST", "SGST"]} rows={g.b2cRates.map((o) => [`${o.rate}%`, `₹${money(o.taxable)}`, `₹${money(o.cgst)}`, `₹${money(o.sgst)}`])} />
           </Section>
           <Section title="HSN / SAC summary">
             <SimpleTable head={["SAC", "Rate", "Qty", "Taxable", "CGST", "SGST", "Total"]} rows={g.sac.map((o) => [o.sac, `${o.rate}%`, o.qty, `₹${money(o.taxable)}`, `₹${money(o.cgst)}`, `₹${money(o.sgst)}`, `₹${money(o.total)}`])} />
           </Section>
           <Section title="Documents issued">
-            <SimpleTable head={["Type", "Se", "Tak", "Kul", "Cancelled"]} rows={g.docs.map((o) => [o.series, o.from, o.to, o.total, o.cancelled])} />
+            <SimpleTable head={["Type", "From", "To", "Total", "Cancelled"]} rows={g.docs.map((o) => [o.series, o.from, o.to, o.total, o.cancelled])} />
           </Section>
         </>
       )}
@@ -324,17 +324,17 @@ const InvoicesDashboard = () => {
       />
 
       <Dialog open={!!cancel} onClose={() => setCancel(null)}>
-        <DialogTitle>{cancel?.invoiceNo} cancel karein?</DialogTitle>
+        <DialogTitle>Cancel {cancel?.invoiceNo}?</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 1.5 }}>
-            Number wahi rahega (GST niyam), invoice par &quot;CANCELLED&quot; dikhega aur totals mein nahi judega. Sahi bill ke liye naya invoice banao.
+            The number stays reserved (GST rule). The invoice will show &quot;CANCELLED&quot; and will not be added to totals. Create a new invoice for the correct bill.
           </Typography>
-          <TextField fullWidth autoFocus label="Wajah (zaroori)" value={reason} onChange={(e) => setReason(e.target.value)} />
+          <TextField fullWidth autoFocus label="Reason (required)" value={reason} onChange={(e) => setReason(e.target.value)} />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCancel(null)}>Nahi</Button>
+          <Button onClick={() => setCancel(null)}>No</Button>
           <Button color="error" variant="contained" disabled={!reason.trim()} onClick={doCancel}>
-            Haan, cancel karo
+            Yes, cancel
           </Button>
         </DialogActions>
       </Dialog>

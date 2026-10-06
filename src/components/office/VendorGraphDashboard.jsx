@@ -75,7 +75,7 @@ const VendorGraphDashboard = () => {
         }
         setVendorMaster(list);
       })
-      .catch(() => toast.error("Vendor list (Categories & Expenses) load nahi hui"));
+      .catch(() => toast.error("Could not load vendor list (Categories & Expenses)"));
   }, []);
 
   const onStart = useCallback((d) => d && setStartDate(d), []);
@@ -101,11 +101,11 @@ const VendorGraphDashboard = () => {
           setRows((data.data.finalRows || []).filter((r) => r.id !== "Total"));
         } else {
           setRows([]);
-          setError(data?.message || "Data nahi aaya");
+          setError(data?.message || "Could not load data");
         }
       } catch (e) {
         if (cancelled) return;
-        const m = e?.response?.data?.message || "Data nahi aaya";
+        const m = e?.response?.data?.message || "Could not load data";
         setError(m);
         toast.error(m);
         setRows([]);
@@ -211,22 +211,22 @@ const VendorGraphDashboard = () => {
   }, [rows, selectedVendor]);
 
   const exportExcel = () => {
-    if (!vendors.length) return toast.error("Is date range mein koi vendor data nahi hai.");
+    if (!vendors.length) return toast.error("No vendor data in this date range.");
     const sheet = XLSX.utils.json_to_sheet([
       ...vendors.map((v) => ({
         Vendor: v.vendor,
         Category: v.category,
-        "Credit (maal/udhaar)": Math.round(v.credit),
+        "Credit (goods/credit)": Math.round(v.credit),
         "Debit (payment)": Math.round(v.debit),
-        "Balance (baaki)": Math.round(v.balance),
+        "Balance (due)": Math.round(v.balance),
         Entries: v.entries,
         "Last entry": v.lastDateText,
       })),
       {
         Vendor: "TOTAL",
-        "Credit (maal/udhaar)": Math.round(totals.credit),
+        "Credit (goods/credit)": Math.round(totals.credit),
         "Debit (payment)": Math.round(totals.debit),
-        "Balance (baaki)": Math.round(totals.balance),
+        "Balance (due)": Math.round(totals.balance),
       },
     ]);
     const wb = XLSX.utils.book_new();
@@ -237,11 +237,11 @@ const VendorGraphDashboard = () => {
   const columns = [
     { field: "vendor", headerName: "Vendor", flex: 1.4, minWidth: 160 },
     { field: "category", headerName: "Category", flex: 1, minWidth: 130 },
-    { field: "credit", headerName: "Credit (maal/udhaar)", flex: 1, minWidth: 140, type: "number", valueFormatter: (v) => inr(v) },
+    { field: "credit", headerName: "Credit (goods/credit)", flex: 1, minWidth: 140, type: "number", valueFormatter: (v) => inr(v) },
     { field: "debit", headerName: "Debit (payment)", flex: 1, minWidth: 130, type: "number", valueFormatter: (v) => inr(v) },
     {
       field: "balance",
-      headerName: "Balance (baaki)",
+      headerName: "Balance (due)",
       flex: 1,
       minWidth: 130,
       type: "number",
@@ -261,19 +261,19 @@ const VendorGraphDashboard = () => {
         Vendor Graph
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Credit = Rest Aapvana + Office In · Debit = Rest Kharch (vendor) + Office Out · Balance = Credit − Debit
+        Credit = Rest Payables + Office In · Debit = Rest Expenses (vendor) + Office Out · Balance = Credit − Debit
       </Typography>
       <Alert severity="info" sx={{ mb: 2 }}>
-        Vendor list "Restaurant → Categories &amp; Expenses" se aati hai: jis expense pe <b>Vendor</b> tick hai wahi yahan dikhta hai
-        (abhi {vendorMaster.length} vendors). Naya vendor jodna ho to wahan tick lagao.
+        The vendor list comes from "Restaurant → Categories &amp; Expenses": only expenses marked as <b>Vendor</b> are shown here
+        (currently {vendorMaster.length} vendors). To add a new vendor, tick it there.
       </Alert>
 
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ sm: "center" }} sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
-          <Button variant="outlined" onClick={goToPreviousRange} startIcon={<SkipPreviousRoundedIcon />}>Pichla</Button>
-          <DatePicker label="Shuru" value={startDate} onChange={onStart} format="DD-MM-YYYY" slotProps={{ textField: { size: "small" } }} />
-          <DatePicker label="Tak" value={endDate} onChange={onEnd} format="DD-MM-YYYY" slotProps={{ textField: { size: "small" } }} />
-          <Button variant="outlined" onClick={goToNextRange} endIcon={<SkipNextRoundedIcon />}>Agla</Button>
+          <Button variant="outlined" onClick={goToPreviousRange} startIcon={<SkipPreviousRoundedIcon />}>Previous</Button>
+          <DatePicker label="Start" value={startDate} onChange={onStart} format="DD-MM-YYYY" slotProps={{ textField: { size: "small" } }} />
+          <DatePicker label="End" value={endDate} onChange={onEnd} format="DD-MM-YYYY" slotProps={{ textField: { size: "small" } }} />
+          <Button variant="outlined" onClick={goToNextRange} endIcon={<SkipNextRoundedIcon />}>Next</Button>
           <Button variant="contained" onClick={exportExcel} startIcon={<DownloadIcon />}>Excel</Button>
         </Stack>
       </LocalizationProvider>
@@ -283,9 +283,9 @@ const VendorGraphDashboard = () => {
       <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mb: 2 }}>
         {[
           ["Vendors", vendors.length, "text.primary"],
-          ["Credit (maal/udhaar)", inr(totals.credit), COLORS.credit],
+          ["Credit (goods/credit)", inr(totals.credit), COLORS.credit],
           ["Debit (payment)", inr(totals.debit), COLORS.debit],
-          ["Balance (baaki)", inr(totals.balance), COLORS.balance],
+          ["Balance (due)", inr(totals.balance), COLORS.balance],
         ].map(([label, value, color]) => (
           <Card key={label} variant="outlined" sx={{ flex: 1 }}>
             <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
@@ -299,23 +299,23 @@ const VendorGraphDashboard = () => {
       <Card variant="outlined" sx={{ mb: 2 }}>
         <CardContent>
           <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} justifyContent="space-between" alignItems={{ md: "center" }} sx={{ mb: 1 }}>
-            <Typography fontWeight={700}>Saare vendors ka graph</Typography>
+            <Typography fontWeight={700}>All vendors graph</Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               <ToggleButtonGroup size="small" exclusive value={metric} onChange={(_, v) => v && setMetric(v)}>
                 <ToggleButton value="both">Credit vs Debit</ToggleButton>
-                <ToggleButton value="balance">Baaki balance</ToggleButton>
+                <ToggleButton value="balance">Balance due</ToggleButton>
               </ToggleButtonGroup>
               <ToggleButtonGroup size="small" exclusive value={topN} onChange={(_, v) => v !== null && setTopN(v)}>
                 <ToggleButton value={10}>Top 10</ToggleButton>
                 <ToggleButton value={15}>Top 15</ToggleButton>
-                <ToggleButton value={0}>Sab</ToggleButton>
+                <ToggleButton value={0}>All</ToggleButton>
               </ToggleButtonGroup>
             </Stack>
           </Stack>
           {loading ? (
-            <Typography color="text.secondary" sx={{ py: 6, textAlign: "center" }}>Load ho raha hai…</Typography>
+            <Typography color="text.secondary" sx={{ py: 6, textAlign: "center" }}>Loading…</Typography>
           ) : chartData.length === 0 ? (
-            <Typography color="text.secondary" sx={{ py: 6, textAlign: "center" }}>Is date range mein koi vendor entry nahi hai.</Typography>
+            <Typography color="text.secondary" sx={{ py: 6, textAlign: "center" }}>No vendor entries in this date range.</Typography>
           ) : (
             <Box sx={{ width: "100%", height: Math.max(300, chartData.length * 34 + 60) }}>
               <ResponsiveContainer>
@@ -343,7 +343,7 @@ const VendorGraphDashboard = () => {
             </Box>
           )}
           <Typography variant="caption" color="text.secondary">
-            Kisi vendor ki line pe click karo → uska din-ba-din graph neeche khulega.
+            Click a vendor bar → its day-by-day graph opens below.
           </Typography>
         </CardContent>
       </Card>
@@ -376,12 +376,12 @@ const VendorGraphDashboard = () => {
       <Card variant="outlined">
         <CardContent>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} justifyContent="space-between" alignItems={{ sm: "center" }} sx={{ mb: 1 }}>
-            <Typography fontWeight={700}>Saare vendors ki list ({filteredVendors.length})</Typography>
+            <Typography fontWeight={700}>All vendors ({filteredVendors.length})</Typography>
             <Stack direction="row" spacing={1} alignItems="center">
               <ToggleButton size="small" value="others" selected={showOthers} onChange={() => setShowOthers((x) => !x)}>
-                Doosre naam bhi ({othersCount})
+                Include other names ({othersCount})
               </ToggleButton>
-              <TextField size="small" label="Vendor dhundho" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <TextField size="small" label="Search vendor" value={search} onChange={(e) => setSearch(e.target.value)} />
             </Stack>
           </Stack>
           <Box sx={{ height: 520, width: "100%" }}>

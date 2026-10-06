@@ -45,13 +45,13 @@ const main = async () => {
     process.exit(1);
   }
   if (!(await fs.pathExists(path.join(from, "manifest.json")))) {
-    console.error(`❌ ${from} mein manifest.json nahi hai. Sahi backup folder do.`);
+    console.error(`❌ manifest.json not found in ${from}. Please provide a valid backup folder.`);
     process.exit(1);
   }
 
   const isLive = process.env.DB_URL && to.trim() === process.env.DB_URL.trim();
   if (isLive && !flag("--yes-production")) {
-    console.error("⛔ Target LIVE database hai. Agar sach mein live restore karna hai to --yes-production lagao.");
+    console.error("⛔ Target is the LIVE database. To really restore into live, add --yes-production.");
     process.exit(1);
   }
 
@@ -60,10 +60,10 @@ const main = async () => {
   console.log(`\nBackup:  ${manifest.database} @ ${manifest.createdAt}`);
   console.log(`Target:  ${isLive ? "⚠️  LIVE DATABASE" : to.replace(/\/\/.*@/, "//***@")}`);
   console.log(`Collections: ${names.map((n) => `${n}(${manifest.collections[n]})`).join(", ")}\n`);
-  console.log("Ye collections target mein POORE REPLACE ho jaayenge.");
+  console.log("These collections will be FULLY REPLACED in the target.");
   const answer = await ask('Continue? Type "RESTORE" to confirm: ');
   if (answer !== "RESTORE") {
-    console.log("Cancelled. Kuch nahi badla.");
+    console.log("Cancelled. Nothing was changed.");
     process.exit(0);
   }
 

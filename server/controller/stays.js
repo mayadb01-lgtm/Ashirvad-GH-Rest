@@ -43,7 +43,7 @@ const cleanGuest = (g = {}) => ({
 stayRouter.get("/day/:date", async (req, res) => {
   try {
     const date = req.params.date;
-    if (!ok(date)) return bad(res, "Date galat");
+    if (!ok(date)) return bad(res, "Invalid date");
     const d = D(date);
     const [stays, bookings, advDocs] = await Promise.all([
       Stay.find({ startCreateDate: { $gte: d.subtract(60, "day").toDate(), $lte: d.endOf("day").toDate() } }).lean(),
@@ -74,7 +74,7 @@ stayRouter.put("/plan", async (req, res) => {
   try {
     const b = req.body || {};
     const roomNo = Number(b.roomNo) || 0;
-    if (!ok(b.startDate) || !PERIODS.includes(b.period) || !roomNo) return bad(res, "Date / period / room galat");
+    if (!ok(b.startDate) || !PERIODS.includes(b.period) || !roomNo) return bad(res, "Invalid date / period / room");
     const nights = Math.min(60, Math.max(1, Math.round(Number(b.nights) || 1)));
     const doc = await Stay.findOneAndUpdate(
       { startDate: b.startDate, period: b.period, roomNo },
@@ -96,7 +96,7 @@ stayRouter.post("/checkout", async (req, res) => {
   try {
     const b = req.body || {};
     const roomNo = Number(b.roomNo) || 0;
-    if (!ok(b.date) || !PERIODS.includes(b.period) || !roomNo) return bad(res, "Date / period / room galat");
+    if (!ok(b.date) || !PERIODS.includes(b.period) || !roomNo) return bad(res, "Invalid date / period / room");
     const d = D(b.date);
     let doc = await Stay.findOne({ startDate: b.date, period: b.period, roomNo });
     if (!doc) {
@@ -128,8 +128,8 @@ stayRouter.post("/checkout", async (req, res) => {
 stayRouter.put("/undo-checkout/:id", async (req, res) => {
   try {
     const doc = await Stay.findById(req.params.id);
-    if (!doc) return res.status(404).json({ success: false, message: "Nahi mila" });
-    if (!staffDateOk(req, doc.checkoutDate)) return res.status(403).json({ success: false, message: "Sirf aaj ka checkout wapas ho sakta hai" });
+    if (!doc) return res.status(404).json({ success: false, message: "Not found" });
+    if (!staffDateOk(req, doc.checkoutDate)) return res.status(403).json({ success: false, message: "Only today's checkout can be undone" });
     Object.assign(doc, { status: "active", checkoutDate: "", checkoutPeriod: "", checkoutTime: "", updatedBy: who(req) });
     if (req.body?.nights) doc.nights = Math.min(60, Math.max(1, Number(req.body.nights) || 1));
     await doc.save();
@@ -143,9 +143,9 @@ stayRouter.put("/undo-checkout/:id", async (req, res) => {
 stayRouter.put("/extend/:id", async (req, res) => {
   try {
     const doc = await Stay.findById(req.params.id);
-    if (!doc) return res.status(404).json({ success: false, message: "Nahi mila" });
+    if (!doc) return res.status(404).json({ success: false, message: "Not found" });
     const nights = Math.min(60, Math.max(1, Math.round(Number(req.body?.nights) || 0)));
-    if (!nights) return bad(res, "Kitni raat?");
+    if (!nights) return bad(res, "How many nights?");
     doc.nights = nights;
     doc.updatedBy = who(req);
     await doc.save();
@@ -195,13 +195,13 @@ bookingRouter.get("/upcoming", async (req, res) => {
 bookingRouter.post("/", async (req, res) => {
   try {
     const b = req.body || {};
-    if (!ok(b.checkInDate)) return bad(res, "Check-in date galat");
-    if (!clean(b.guestName)) return bad(res, "Guest ka naam likho");
-    if (D(b.checkInDate).isBefore(D(todayIst()))) return bad(res, "Check-in date aaj ya aage ki honi chahiye");
+    if (!ok(b.checkInDate)) return bad(res, "Invalid check-in date");
+    if (!clean(b.guestName)) return bad(res, "Enter the guest name");
+    if (D(b.checkInDate).isBefore(D(todayIst()))) return bad(res, "Check-in date must be today or later");
     const doc = new Booking({ ...bookingFields(b), bookingNo: await nextBookingNo(), enteredBy: who(req) });
     const amt = n(b.advance?.amount);
     if (amt > 0) {
-      if (!MODES.includes(b.advance?.mode)) return bad(res, "Advance ka payment mode chuno");
+      if (!MODES.includes(b.advance?.mode)) return bad(res, "Select the payment mode for the advance");
       doc.advances.push({ amount: amt, mode: b.advance.mode, date: todayIst(), by: who(req) });
     }
     await doc.save();
@@ -215,9 +215,9 @@ bookingRouter.post("/", async (req, res) => {
 bookingRouter.put("/:id([a-f0-9]{24})", async (req, res) => {
   try {
     const doc = await Booking.findById(req.params.id);
-    if (!doc) return res.status(404).json({ success: false, message: "Booking nahi mili" });
-    if (doc.status !== "booked") return bad(res, "Ye booking ab badal nahi sakti");
-    if (req.body?.checkInDate !== undefined && !ok(req.body.checkInDate)) return bad(res, "Check-in date galat");
+    if (!doc) return res.status(404).json({ success: false, message: "Booking not found" });
+    if (doc.status !== "booked") return bad(res, "This booking can no longer be edited");
+    if (req.body?.checkInDate !== undefined && !ok(req.body.checkInDate)) return bad(res, "Invalid check-in date");
     Object.assign(doc, bookingFields(req.body || {}), { updatedBy: who(req) });
     await doc.save();
     res.json({ success: true, data: doc });
@@ -230,10 +230,10 @@ bookingRouter.put("/:id([a-f0-9]{24})", async (req, res) => {
 bookingRouter.post("/:id([a-f0-9]{24})/advance", async (req, res) => {
   try {
     const doc = await Booking.findById(req.params.id);
-    if (!doc) return res.status(404).json({ success: false, message: "Booking nahi mili" });
-    if (doc.status === "cancelled") return bad(res, "Cancel booking pe advance nahi");
+    if (!doc) return res.status(404).json({ success: false, message: "Booking not found" });
+    if (doc.status === "cancelled") return bad(res, "Cannot add an advance to a cancelled booking");
     const amount = n(req.body?.amount);
-    if (!(amount > 0) || !MODES.includes(req.body?.mode)) return bad(res, "Amount aur payment mode bharo");
+    if (!(amount > 0) || !MODES.includes(req.body?.mode)) return bad(res, "Fill in: amount, payment mode");
     doc.advances.push({ amount, mode: req.body.mode, date: todayIst(), by: who(req), note: clean(req.body?.note, 100) });
     doc.updatedBy = who(req);
     await doc.save();
@@ -247,10 +247,10 @@ bookingRouter.post("/:id([a-f0-9]{24})/advance", async (req, res) => {
 bookingRouter.put("/:id([a-f0-9]{24})/checkin", async (req, res) => {
   try {
     const b = req.body || {};
-    if (!ok(b.date) || !PERIODS.includes(b.period) || !Number(b.roomNo)) return bad(res, "Date / period / room galat");
+    if (!ok(b.date) || !PERIODS.includes(b.period) || !Number(b.roomNo)) return bad(res, "Invalid date / period / room");
     const doc = await Booking.findById(req.params.id);
-    if (!doc) return res.status(404).json({ success: false, message: "Booking nahi mili" });
-    if (doc.status === "cancelled") return bad(res, "Booking cancel hai");
+    if (!doc) return res.status(404).json({ success: false, message: "Booking not found" });
+    if (doc.status === "cancelled") return bad(res, "Booking is cancelled");
     doc.status = "checkedin";
     doc.checkedIn = { date: b.date, period: b.period, roomNo: Number(b.roomNo) };
     doc.updatedBy = who(req);
@@ -274,11 +274,11 @@ bookingRouter.get("/for-room/:date/:roomNo", async (req, res) => {
 // PUT /booking/:id/cancel  { reason } → sirf owner
 bookingRouter.put("/:id([a-f0-9]{24})/cancel", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Booking cancel sirf owner kar sakta hai" });
+    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can cancel a booking" });
     const reason = clean(req.body?.reason, 200);
-    if (!reason) return bad(res, "Wajah likho (advance wapas diya ya nahi bhi likho)");
+    if (!reason) return bad(res, "Enter a reason (also note whether the advance was refunded)");
     const doc = await Booking.findById(req.params.id);
-    if (!doc) return res.status(404).json({ success: false, message: "Booking nahi mili" });
+    if (!doc) return res.status(404).json({ success: false, message: "Booking not found" });
     Object.assign(doc, { status: "cancelled", cancelReason: reason, updatedBy: who(req) });
     await doc.save();
     res.json({ success: true, data: doc });
@@ -290,10 +290,10 @@ bookingRouter.put("/:id([a-f0-9]{24})/cancel", async (req, res) => {
 // GET /booking/range/:start/:end → owner (check-in date ke hisaab se)
 bookingRouter.get("/range/:start/:end", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Sirf owner/admin" });
+    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can do this" });
     const s = D(req.params.start);
     const e = D(req.params.end);
-    if (!s.isValid() || !e.isValid()) return bad(res, "Date galat");
+    if (!s.isValid() || !e.isValid()) return bad(res, "Invalid date");
     const list = await Booking.find({ checkInCreateDate: { $gte: s.startOf("day").toDate(), $lte: e.endOf("day").toDate() } }).sort({ checkInCreateDate: 1 }).lean();
     res.json({ success: true, data: list });
   } catch (e) {

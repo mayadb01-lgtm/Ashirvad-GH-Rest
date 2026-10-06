@@ -129,7 +129,7 @@ const OfficeQuickEntry = ({ date }) => {
       };
       if (submitted) await axios.put(`${API}/officeBook/update-entry/${date}`, body);
       else await axios.post(`${API}/officeBook/create-entry`, body);
-      toast.success(submitted ? "Office entry update ho gayi" : "Office entry submit ho gayi");
+      toast.success(submitted ? "Office entry updated" : "Office entry submitted");
       clearDraft();
       setDraft(EMPTY);
       seededFor.current = "";
@@ -159,13 +159,13 @@ const OfficeQuickEntry = ({ date }) => {
       color={color}
       action={
         <Button size="small" startIcon={<AddIcon />} onClick={() => openNew(key)} sx={{ fontWeight: 800, color }}>
-          Jodo
+          Add
         </Button>
       }
     >
       {draft[key].length === 0 && (
         <Typography variant="body2" color={Q.muted} sx={{ py: 1 }}>
-          Kuch nahi
+          None
         </Typography>
       )}
       {draft[key].map((r, i) => {
@@ -178,7 +178,7 @@ const OfficeQuickEntry = ({ date }) => {
                 {r.fullname ? ` · ${r.fullname}` : ""}
               </Typography>
               <Typography variant="caption" color={bad ? Q.bad : Q.muted} fontWeight={bad ? 700 : 400}>
-                {bad ? "Adhoora, tap karke poora karo" : `${r.categoryName} · ${r.modeOfPayment}${r.remark ? ` · ${r.remark}` : ""}`}
+                {bad ? "Incomplete, tap to complete" : `${r.categoryName} · ${r.modeOfPayment}${r.remark ? ` · ${r.remark}` : ""}`}
               </Typography>
             </Box>
             <Typography fontWeight={800}>{inr(r.amount)}</Typography>
@@ -204,23 +204,23 @@ const OfficeQuickEntry = ({ date }) => {
             {status?.at ? ` · ${dayjs(status.at).format("hh:mm A")}` : ""}
           </StatusPill>
         ) : t.in + t.out > 0 ? (
-          <StatusPill tone="info">Draft phone mein safe hai · abhi submit nahi hua</StatusPill>
+          <StatusPill tone="info">Draft saved on this device · not submitted yet</StatusPill>
         ) : (
-          <StatusPill tone="warn">Aaj ki office entry abhi nahi hui</StatusPill>
+          <StatusPill tone="warn">Today's office entry is not done yet</StatusPill>
         )}
         {status?.updatedBy && <StatusPill tone="lock">Edit: {status.updatedBy}</StatusPill>}
       </Stack>
 
       <Grid container spacing={2}>
-        <Grid size={{ xs: 12, md: 6 }}>{side("officeIn", "Aavak (In)", "Jo paisa aaya", Q.office)}</Grid>
-        <Grid size={{ xs: 12, md: 6 }}>{side("officeOut", "Javak (Out)", "Jo paisa gaya", "#7C3AED")}</Grid>
+        <Grid size={{ xs: 12, md: 6 }}>{side("officeIn", "Money in", "Money received", Q.office)}</Grid>
+        <Grid size={{ xs: 12, md: 6 }}>{side("officeOut", "Money out", "Money paid out", "#7C3AED")}</Grid>
       </Grid>
 
       <SaveBar
         label={`In ${inr(t.in)} · Out ${inr(t.out)}`}
         amount={t.in - t.out}
-        sub={invalidCount ? { text: `${invalidCount} entry adhoori hai`, color: Q.bad } : { text: "Bacha (In − Out)" }}
-        buttonText={submitted ? "Update karo" : "Submit karo"}
+        sub={invalidCount ? { text: `${invalidCount} incomplete ${invalidCount === 1 ? "entry" : "entries"}`, color: Q.bad } : { text: "Remaining (In − Out)" }}
+        buttonText={submitted ? "Update" : "Submit"}
         color={Q.office}
         busy={busy}
         disabled={invalidCount > 0 || t.in + t.out === 0}
@@ -231,12 +231,12 @@ const OfficeQuickEntry = ({ date }) => {
         open={!!ed}
         onClose={() => setEditor(null)}
         subtitle={`Office · ${date}`}
-        title={ed ? `${ed.side === "officeIn" ? "Aavak" : "Javak"} ${ed.index === -1 ? "jodo" : "badlo"}` : ""}
+        title={ed ? `${ed.index === -1 ? "Add" : "Edit"} ${ed.side === "officeIn" ? "money in" : "money out"}` : ""}
         actions={
           <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
             {ed && ed.index !== -1 && (
               <Button color="error" onClick={removeRow} sx={{ fontWeight: 700 }}>
-                Hatao
+                Remove
               </Button>
             )}
             <Button
@@ -246,7 +246,7 @@ const OfficeQuickEntry = ({ date }) => {
               onClick={saveRow}
               sx={{ bgcolor: edColor, py: 1.4, fontWeight: 800, fontSize: 16, "&:hover": { bgcolor: edColor } }}
             >
-              Theek hai
+              Save
             </Button>
           </Stack>
         }
@@ -256,7 +256,7 @@ const OfficeQuickEntry = ({ date }) => {
             <MoneyField label="Amount" value={ed.row.amount} onChange={(v) => setRow({ amount: v })} big autoFocus />
             <ChipChoice label="Payment" options={MODES} value={ed.row.modeOfPayment} onChange={(v) => setRow({ modeOfPayment: v })} color={edColor} danger={["UnPaid"]} />
             <PickField
-              label={ed.side === "officeIn" ? "Kis cheez ki aavak" : "Kis cheez ka kharch"}
+              label={ed.side === "officeIn" ? "Income item" : "Expense item"}
               options={opts}
               value={edValue}
               onChange={(o) =>
@@ -278,14 +278,14 @@ const OfficeQuickEntry = ({ date }) => {
             />
             {staffName ? (
               <PickField
-                label="Kis staff ka"
+                label="Staff member"
                 options={lists.staff}
                 value={lists.staff.find((s) => s._id === ed.row.fullname_id) || (ed.row.fullname ? { _id: ed.row.fullname_id, fullname: ed.row.fullname } : null)}
                 onChange={(s) => setRow({ fullname: s?.fullname || "", fullname_id: s?._id || "" })}
                 getLabel={(o) => o?.fullname || ""}
               />
             ) : (
-              <TextField label="Naam (kisne diya / kisko diya)" value={ed.row.fullname || ""} onChange={(e) => setRow({ fullname: e.target.value })} fullWidth />
+              <TextField label="Name (received from / paid to)" value={ed.row.fullname || ""} onChange={(e) => setRow({ fullname: e.target.value })} fullWidth />
             )}
             <TextField label="Remark (optional)" value={ed.row.remark || ""} onChange={(e) => setRow({ remark: e.target.value })} fullWidth />
           </Stack>
@@ -295,12 +295,12 @@ const OfficeQuickEntry = ({ date }) => {
       <ConfirmDialog
         open={confirm}
         color={Q.office}
-        title={submitted ? `${date} ki office entry update karein?` : `${date} ki office entry submit karein?`}
-        confirmText={submitted ? "Haan, update karo" : "Haan, submit karo"}
+        title={submitted ? `Update office entry for ${date}?` : `Submit office entry for ${date}?`}
+        confirmText={submitted ? "Yes, update" : "Yes, submit"}
         lines={[
-          { label: "Aavak (In)", value: `${draft.officeIn.filter(rowValid).length} · ${inr(t.in)}` },
-          { label: "Javak (Out)", value: `${draft.officeOut.filter(rowValid).length} · ${inr(t.out)}` },
-          { label: "Bacha", value: inr(t.in - t.out), color: Q.ink },
+          { label: "Money in", value: `${draft.officeIn.filter(rowValid).length} · ${inr(t.in)}` },
+          { label: "Money out", value: `${draft.officeOut.filter(rowValid).length} · ${inr(t.out)}` },
+          { label: "Remaining", value: inr(t.in - t.out), color: Q.ink },
         ]}
         onCancel={() => setConfirm(false)}
         onConfirm={submit}

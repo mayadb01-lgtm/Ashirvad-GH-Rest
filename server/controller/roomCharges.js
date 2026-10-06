@@ -30,7 +30,7 @@ const canTouch = (req, doc) => isAdminLike(req.user) || allowedStaffDates().incl
 router.get("/occupied/:date", async (req, res) => {
   try {
     const date = req.params.date;
-    if (!validDate(date)) return bad(res, "Date galat");
+    if (!validDate(date)) return bad(res, "Invalid date");
     const prev = dayjs(date, F).subtract(1, "day").format(F);
     const [today, yday, rooms] = await Promise.all([
       Entry.find({ date }, { entry: 1 }).lean(),
@@ -71,7 +71,7 @@ router.get("/occupied/:date", async (req, res) => {
 // GET /rest/:restDate → restaurant ki Levana rows ka room link (reload pe dikhane ke liye)
 router.get("/rest/:restDate", async (req, res) => {
   try {
-    if (!validDate(req.params.restDate)) return bad(res, "Date galat");
+    if (!validDate(req.params.restDate)) return bad(res, "Invalid date");
     const list = await RoomCharge.find({ source: "rest", restDate: req.params.restDate }).lean();
     res.json({ success: true, data: list });
   } catch (e) {
@@ -85,7 +85,7 @@ router.get("/rest/:restDate", async (req, res) => {
 router.put("/rest-sync/:restDate", async (req, res) => {
   try {
     const restDate = req.params.restDate;
-    if (!validDate(restDate)) return bad(res, "Date galat");
+    if (!validDate(restDate)) return bad(res, "Invalid date");
     const rows = (Array.isArray(req.body?.rows) ? req.body.rows : [])
       .map((r) => ({
         rowId: Number(r.rowId) || 0,
@@ -140,7 +140,7 @@ router.put("/rest-sync/:restDate", async (req, res) => {
 // GET /day/:date → us din ke saare room charges (GH room card + editor)
 router.get("/day/:date", async (req, res) => {
   try {
-    if (!validDate(req.params.date)) return bad(res, "Date galat");
+    if (!validDate(req.params.date)) return bad(res, "Invalid date");
     const list = await RoomCharge.find({ date: req.params.date }).sort({ roomNo: 1, createdAt: 1 }).lean();
     res.json({ success: true, data: list });
   } catch (e) {
@@ -152,11 +152,11 @@ router.get("/day/:date", async (req, res) => {
 router.post("/extra", async (req, res) => {
   try {
     const b = req.body || {};
-    if (!validDate(b.date)) return bad(res, "Date galat");
+    if (!validDate(b.date)) return bad(res, "Invalid date");
     const roomNo = Number(b.roomNo) || 0;
     const amount = n(b.amount);
     const label = clean(b.label, 60);
-    if (!roomNo || amount <= 0 || !label) return bad(res, "Room, kis cheez ka aur amount bharo");
+    if (!roomNo || amount <= 0 || !label) return bad(res, "Fill in: room, item and amount");
     const doc = await RoomCharge.create({
       date: b.date,
       entryCreateDate: dayStart(b.date),
@@ -180,10 +180,10 @@ router.post("/extra", async (req, res) => {
 router.delete("/extra/:id", async (req, res) => {
   try {
     const doc = await RoomCharge.findById(req.params.id);
-    if (!doc) return res.status(404).json({ success: false, message: "Nahi mila" });
-    if (doc.source !== "gh") return bad(res, "Food bill restaurant ki entry se hatao");
-    if (!canTouch(req, doc)) return res.status(403).json({ success: false, message: "Staff sirf aaj ka badal sakta hai" });
-    if (doc.isPaid && !isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Paid charge sirf owner hata sakta hai" });
+    if (!doc) return res.status(404).json({ success: false, message: "Not found" });
+    if (doc.source !== "gh") return bad(res, "Remove the food bill from the restaurant entry");
+    if (!canTouch(req, doc)) return res.status(403).json({ success: false, message: "Staff can only edit today's entries." });
+    if (doc.isPaid && !isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can remove a paid charge" });
     await doc.deleteOne();
     res.json({ success: true });
   } catch (e) {
@@ -195,11 +195,11 @@ router.delete("/extra/:id", async (req, res) => {
 router.put("/paid/:id", async (req, res) => {
   try {
     const doc = await RoomCharge.findById(req.params.id);
-    if (!doc) return res.status(404).json({ success: false, message: "Nahi mila" });
-    if (!canTouch(req, doc)) return res.status(403).json({ success: false, message: "Staff sirf aaj ka badal sakta hai" });
+    if (!doc) return res.status(404).json({ success: false, message: "Not found" });
+    if (!canTouch(req, doc)) return res.status(403).json({ success: false, message: "Staff can only edit today's entries." });
     const isPaid = !!req.body?.isPaid;
-    if (!isPaid && doc.isPaid && !isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Paid ko wapas sirf owner kar sakta hai" });
-    if (isPaid && !PAID_MODES.includes(req.body?.paidMode)) return bad(res, "Payment mode chuno");
+    if (!isPaid && doc.isPaid && !isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can undo a paid charge" });
+    if (isPaid && !PAID_MODES.includes(req.body?.paidMode)) return bad(res, "Select a payment mode");
     doc.isPaid = isPaid;
     doc.paidMode = isPaid ? req.body.paidMode : "";
     doc.paidDate = isPaid ? dayjs(new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10)).format(F) : "";
@@ -215,10 +215,10 @@ router.put("/paid/:id", async (req, res) => {
 // GET /range/:start/:end → owner list (baaki food bills, extra charges)
 router.get("/range/:start/:end", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Sirf owner/admin" });
+    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can do this" });
     const s = dayjs(req.params.start, F, true);
     const e = dayjs(req.params.end, F, true);
-    if (!s.isValid() || !e.isValid() || e.isBefore(s)) return bad(res, "Date range galat");
+    if (!s.isValid() || !e.isValid() || e.isBefore(s)) return bad(res, "Invalid date range");
     const list = await RoomCharge.find({ entryCreateDate: { $gte: s.startOf("day").toDate(), $lte: e.endOf("day").toDate() } })
       .sort({ entryCreateDate: 1, roomNo: 1 })
       .lean();

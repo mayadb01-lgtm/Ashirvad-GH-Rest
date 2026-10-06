@@ -33,10 +33,10 @@ const roomText = (rm) => (rm ? `🛏 Room ${rm.roomNo}${rm.guestName ? ` · ${rm
 const stripRoom = (rows) => rows.map(({ room, roomMode, ...r }) => r); // eslint-disable-line no-unused-vars
 
 const SECTIONS = {
-  upad: { title: "Upaad", subtitle: "Staff ko diya advance", pickLabel: "Staff", color: "#7C3AED" },
-  pending: { title: "Levana baaki", subtitle: "Jinse paisa lena hai (udhaar diya)", pickLabel: "Kis se lena hai", color: "#0891B2" },
-  pendingUsers: { title: "Aapvana baaki", subtitle: "Vendor ko dena baaki (total mein nahi judta)", pickLabel: "Vendor", color: "#64748B" },
-  expenses: { title: "Kharch", subtitle: "Aaj ka kharch", pickLabel: "Kharch kis cheez ka", color: "#DB2777" },
+  upad: { title: "Staff advance", subtitle: "Advance given to staff", pickLabel: "Staff", color: "#7C3AED" },
+  pending: { title: "Receivables", subtitle: "Money to be collected (given on credit)", pickLabel: "Collect from", color: "#0891B2" },
+  pendingUsers: { title: "Payables", subtitle: "Amount owed to vendors (not added to total)", pickLabel: "Vendor", color: "#64748B" },
+  expenses: { title: "Expenses", subtitle: "Today's expenses", pickLabel: "Expense item", color: "#DB2777" },
 };
 
 const RowList = ({ rows, onEdit, empty, locked, render }) => (
@@ -212,9 +212,9 @@ const RestQuickEntry = ({ date }) => {
       try {
         await axios.put(`${API}/room-charges/rest-sync/${date}`, { rows: roomRowsRef.current });
       } catch (e2) {
-        toast.error("Entry save hui, par room bill GH mein nahi gaya. Dobara 'Update karo' dabao.");
+        toast.error("Entry saved, but the room bill was not sent to GH. Press 'Update' again.");
       }
-      toast.success(submitted ? "Restaurant entry update ho gayi" : "Restaurant entry submit ho gayi");
+      toast.success(submitted ? "Restaurant entry updated" : "Restaurant entry submitted");
       clearDraft();
       setDraft(EMPTY);
       seededFor.current = "";
@@ -237,7 +237,7 @@ const RestQuickEntry = ({ date }) => {
     );
 
   const blockReason =
-    t.grand <= 0 ? "Kuch bhi nahi bhara" : t.extra < 0 ? `Galla computer se ${inr(-t.extra)} kam hai, check karo` : "";
+    t.grand <= 0 ? "Nothing entered yet" : t.extra < 0 ? `Cash collection is ${inr(-t.extra)} less than computer amount, please check` : "";
 
   const sectionBlock = (key, rowsRender) => {
     const cfg = SECTIONS[key];
@@ -249,11 +249,11 @@ const RestQuickEntry = ({ date }) => {
         color={cfg.color}
         action={
           <Button size="small" startIcon={<AddIcon />} onClick={() => openNew(key)} sx={{ fontWeight: 800, color: cfg.color }}>
-            Jodo
+            Add
           </Button>
         }
       >
-        <RowList rows={draft[key]} onEdit={(i) => openEdit(key, i)} empty="Kuch nahi" render={rowsRender} />
+        <RowList rows={draft[key]} onEdit={(i) => openEdit(key, i)} empty="None" render={rowsRender} />
       </Section>
     );
   };
@@ -272,11 +272,11 @@ const RestQuickEntry = ({ date }) => {
   const roomOptions = (() => {
     const g = (occupied.guests || []).map((x) => ({
       ...x,
-      group: x.from === "today" ? "Aaj ruke guest" : "Kal raat wale guest",
-      label: `Room ${x.roomNo} · ${x.guestName || "—"}${x.from === "today" ? ` (${PERIOD_LABEL[x.fromPeriod] || x.fromPeriod})` : " (kal raat)"}`,
+      group: x.from === "today" ? "Today's guests" : "Last night's guests",
+      label: `Room ${x.roomNo} · ${x.guestName || "—"}${x.from === "today" ? ` (${PERIOD_LABEL[x.fromPeriod] || x.fromPeriod})` : " (last night)"}`,
     }));
     const have = new Set(g.map((x) => x.roomNo));
-    const rest = (occupied.rooms || []).filter((r) => !have.has(r)).map((r) => ({ roomNo: r, period: "", guestName: "", mobile: "", group: "Baaki rooms (naam nahi mila)", label: `Room ${r}` }));
+    const rest = (occupied.rooms || []).filter((r) => !have.has(r)).map((r) => ({ roomNo: r, period: "", guestName: "", mobile: "", group: "Other rooms (name not found)", label: `Room ${r}` }));
     return [...g, ...rest];
   })();
   const roomBillPerson = () => {
@@ -312,9 +312,9 @@ const RestQuickEntry = ({ date }) => {
             {status?.at ? ` · ${dayjs(status.at).format("hh:mm A")}` : ""}
           </StatusPill>
         ) : t.grand > 0 ? (
-          <StatusPill tone="info">Draft phone mein safe hai · abhi submit nahi hua</StatusPill>
+          <StatusPill tone="info">Draft saved on this device · not submitted yet</StatusPill>
         ) : (
-          <StatusPill tone="warn">Aaj ki restaurant entry abhi nahi hui</StatusPill>
+          <StatusPill tone="warn">Today's restaurant entry is not done yet</StatusPill>
         )}
         {status?.updatedBy && <StatusPill tone="lock">Edit: {status.updatedBy}</StatusPill>}
       </Stack>
@@ -322,7 +322,7 @@ const RestQuickEntry = ({ date }) => {
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 5 }}>
           <Stack spacing={2} sx={{ position: { md: "sticky" }, top: { md: 16 } }}>
-            <Section title="Galla / Bikri" subtitle="Aaj kitna aaya" color={Q.rest}>
+            <Section title="Cash collection / Sales" subtitle="Today's collection" color={Q.rest}>
               <Stack spacing={1.5}>
                 <MoneyField label="Cash" value={draft.cash} onChange={(v) => set("cash", v)} big />
                 <Stack direction="row" spacing={1.5}>
@@ -330,7 +330,7 @@ const RestQuickEntry = ({ date }) => {
                   <MoneyField label="PP (UPI)" value={draft.pp} onChange={(v) => set("pp", v)} />
                 </Stack>
                 <MoneyField
-                  label="Computer amount (billing software ka total)"
+                  label="Computer amount (billing software total)"
                   value={draft.computer}
                   onChange={(v) => set("computer", v)}
                   error={t.extra < 0}
@@ -341,9 +341,9 @@ const RestQuickEntry = ({ date }) => {
             <Box sx={{ border: `1.5px solid ${t.extra < 0 ? Q.bad : Q.line}`, borderRadius: 3, p: 2, bgcolor: t.extra < 0 ? "#FEF2F2" : "#fff" }}>
               {[
                 ["Cash + Card + PP", num(draft.cash) + num(draft.card) + num(draft.pp)],
-                ["Upaad", t.upad],
-                ["Levana baaki", t.pending],
-                ["Kharch", t.expenses],
+                ["Staff advance", t.upad],
+                ["Receivables", t.pending],
+                ["Expenses", t.expenses],
               ].map(([l, v]) => (
                 <Stack key={l} direction="row" justifyContent="space-between" sx={{ py: 0.4 }}>
                   <Typography color={Q.muted}>{l}</Typography>
@@ -360,7 +360,7 @@ const RestQuickEntry = ({ date }) => {
               </Stack>
               <Stack direction="row" justifyContent="space-between" sx={{ pt: 0.75 }}>
                 <Typography fontWeight={800} color={t.extra < 0 ? Q.bad : Q.good}>
-                  Farak (extra)
+                  Difference (extra)
                 </Typography>
                 <Typography fontWeight={800} color={t.extra < 0 ? Q.bad : Q.good}>
                   {inr(t.extra)}
@@ -368,7 +368,7 @@ const RestQuickEntry = ({ date }) => {
               </Stack>
               {t.extra < 0 && (
                 <Typography variant="caption" color={Q.bad} fontWeight={700}>
-                  Galla computer se kam hai. Koi kharch/upaad chhoot to nahi gaya?
+                  Cash collection is less than computer amount. Did you miss an expense or staff advance?
                 </Typography>
               )}
             </Box>
@@ -423,8 +423,8 @@ const RestQuickEntry = ({ date }) => {
       <SaveBar
         label="Grand total"
         amount={t.grand}
-        sub={blockReason ? { text: blockReason, color: Q.bad } : { text: `Farak ${inr(t.extra)}`, color: Q.good }}
-        buttonText={submitted ? "Update karo" : "Submit karo"}
+        sub={blockReason ? { text: blockReason, color: Q.bad } : { text: `Difference ${inr(t.extra)}`, color: Q.good }}
+        buttonText={submitted ? "Update" : "Submit"}
         color={Q.rest}
         busy={busy}
         disabled={!!blockReason}
@@ -435,12 +435,12 @@ const RestQuickEntry = ({ date }) => {
         open={!!ed}
         onClose={() => setEditor(null)}
         subtitle={`Restaurant · ${date}`}
-        title={ed ? `${edCfg.title} ${ed.index === -1 ? "jodo" : "badlo"}` : ""}
+        title={ed ? `${ed.index === -1 ? "Add" : "Edit"} ${edCfg.title.toLowerCase()}` : ""}
         actions={
           <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
             {ed && ed.index !== -1 && (
               <Button color="error" onClick={removeRow} sx={{ fontWeight: 700 }}>
-                Hatao
+                Remove
               </Button>
             )}
             <Button
@@ -450,7 +450,7 @@ const RestQuickEntry = ({ date }) => {
               onClick={() => saveRow(ed.row)}
               sx={{ bgcolor: Q.rest, py: 1.4, fontWeight: 800, fontSize: 16, "&:hover": { bgcolor: Q.rest } }}
             >
-              Theek hai
+              Save
             </Button>
           </Stack>
         }
@@ -461,8 +461,8 @@ const RestQuickEntry = ({ date }) => {
             {ed.section === "pending" && (
               <Stack direction="row" spacing={1}>
                 {[
-                  [false, "👤 Vyakti / company"],
-                  [true, "🛏 Room ka bill"],
+                  [false, "👤 Person / company"],
+                  [true, "🛏 Room bill"],
                 ].map(([v, l]) => (
                   <Button
                     key={l}
@@ -479,7 +479,7 @@ const RestQuickEntry = ({ date }) => {
             {edRoomMode ? (
               <>
                 <PickField
-                  label="Kaun sa room / guest"
+                  label="Room / guest"
                   options={roomOptions}
                   value={ed.row.room ? roomOptions.find((o) => o.roomNo === ed.row.room.roomNo && (o.guestName || "") === (ed.row.room.guestName || "")) || { ...ed.row.room, label: `Room ${ed.row.room.roomNo}${ed.row.room.guestName ? ` · ${ed.row.room.guestName}` : ""}` } : null}
                   onChange={pickRoom}
@@ -487,7 +487,7 @@ const RestQuickEntry = ({ date }) => {
                   groupBy={(o) => o.group || ""}
                 />
                 <Typography variant="caption" color={Q.muted}>
-                  Ye bill Guest House mein us room ke bill mein apne aap chala jayega (Submit / Update ke baad). Restaurant ke hisaab mein ye "{roomBillPerson().fullname.trim()}" ke naam se Levana baaki hi rahega.
+                  This amount will be added to that room's Guest House bill automatically (after Submit / Update). In restaurant accounts it stays as a receivable under "{roomBillPerson().fullname.trim()}".
                 </Typography>
               </>
             ) : (
@@ -502,7 +502,7 @@ const RestQuickEntry = ({ date }) => {
             )}
             {edIsStaffExpense && (
               <PickField
-                label="Kis staff ka (salary / overtime)"
+                label="Staff member (salary / overtime)"
                 options={lists.staff}
                 value={lists.staff.find((s) => s._id === ed.row.fullname_id) || null}
                 onChange={(s) => setEditor((e) => ({ ...e, row: { ...e.row, fullname: s?.fullname || "", fullname_id: s?._id || "" } }))}
@@ -516,16 +516,16 @@ const RestQuickEntry = ({ date }) => {
       <ConfirmDialog
         open={confirm}
         color={Q.rest}
-        title={submitted ? `${date} ki restaurant entry update karein?` : `${date} ki restaurant entry submit karein?`}
-        confirmText={submitted ? "Haan, update karo" : "Haan, submit karo"}
+        title={submitted ? `Update restaurant entry for ${date}?` : `Submit restaurant entry for ${date}?`}
+        confirmText={submitted ? "Yes, update" : "Yes, submit"}
         lines={[
           { label: "Cash / Card / PP", value: `${inr(draft.cash)} / ${inr(draft.card)} / ${inr(draft.pp)}` },
-          { label: "Upaad", value: inr(t.upad) },
-          { label: "Levana baaki", value: inr(t.pending) },
-          { label: "Kharch", value: inr(t.expenses) },
+          { label: "Staff advance", value: inr(t.upad) },
+          { label: "Receivables", value: inr(t.pending) },
+          { label: "Expenses", value: inr(t.expenses) },
           { label: "Grand total", value: inr(t.grand), color: Q.ink },
           { label: "Computer amount", value: inr(draft.computer), color: num(draft.computer) === 0 ? Q.warn : undefined },
-          { label: "Farak", value: inr(t.extra), color: Q.good },
+          { label: "Difference", value: inr(t.extra), color: Q.good },
         ]}
         onCancel={() => setConfirm(false)}
         onConfirm={submit}

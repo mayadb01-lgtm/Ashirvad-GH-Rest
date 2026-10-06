@@ -18,7 +18,7 @@ export const useDataAlerts = () => {
 
 const DataAlerts = ({ compact = false, onNavigate }) => {
   const alerts = useDataAlerts();
-  if (alerts === null) return compact ? null : <Typography color="text.secondary" sx={{ p: 2 }}>Check ho raha hai…</Typography>;
+  if (alerts === null) return compact ? null : <Typography color="text.secondary" sx={{ p: 2 }}>Checking…</Typography>;
   const list = compact ? alerts.filter((a) => a.level !== "info").slice(0, 3) : alerts;
   if (compact && !list.length) return null;
 
@@ -32,7 +32,7 @@ const DataAlerts = ({ compact = false, onNavigate }) => {
           action={
             a.link && onNavigate ? (
               <Button size="small" color="inherit" onClick={() => onNavigate(a.link)}>
-                Kholo
+                Open
               </Button>
             ) : null
           }
@@ -50,14 +50,14 @@ const DataAlerts = ({ compact = false, onNavigate }) => {
           )}
         </Alert>
       ))}
-      {!list.length && <Alert severity="success">Koi galti nahi mili. Data saaf hai 👍</Alert>}
+      {!list.length && <Alert severity="success">No errors found. Data looks clean 👍</Alert>}
     </Stack>
   );
 
   if (compact) return body;
   return (
     <Box sx={{ p: { xs: 1, md: 2 } }}>
-      <PageTitle title="Data check" sub="App ne khud dhoondha: galat date, chhoote din, aur gadbad wale amounts. Theek karne ke liye purane page kholo." />
+      <PageTitle title="Data check" sub="Found automatically: wrong dates, missing days and incorrect amounts. Open the classic view to fix them." />
       {body}
     </Box>
   );

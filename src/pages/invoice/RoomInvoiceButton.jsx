@@ -34,7 +34,7 @@ const RoomInvoiceButton = ({ date, period, roomNo, isAdmin, guestName, row, room
       setExisting(data.data.existing || []);
       setOpen(true);
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Invoice ki details load nahi hui");
+      toast.error(e?.response?.data?.message || "Could not load invoice details");
     } finally {
       setBusy(false);
     }
@@ -48,11 +48,11 @@ const RoomInvoiceButton = ({ date, period, roomNo, isAdmin, guestName, row, room
         disabled={busy || !roomNo}
         sx={{ borderColor: BROWN, color: BROWN, fontWeight: 800, py: 1.1, borderStyle: "dashed" }}
       >
-        🧾 Invoice banao (GST / Non-GST)
+        🧾 Create invoice (GST / Non-GST)
       </Button>
       {made && (
-        <Alert severity="success" action={<Button href={`/invoice/${made._id}`} target="_blank" rel="noopener" sx={{ fontWeight: 800 }}>PDF kholo</Button>}>
-          {made.invoiceNo} ban gaya
+        <Alert severity="success" action={<Button href={`/invoice/${made._id}`} target="_blank" rel="noopener" sx={{ fontWeight: 800 }}>Open PDF</Button>}>
+          {made.invoiceNo} created
         </Alert>
       )}
       <InvoiceEditor

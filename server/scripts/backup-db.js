@@ -43,7 +43,7 @@ export const backupDatabase = async (uri, label = "") => {
 if (process.argv[1] && process.argv[1].endsWith("backup-db.js")) {
   const uri = process.argv[2] || process.env.DB_URL;
   if (!uri) {
-    console.error("❌ DB_URL nahi mila. .env check karo ya URI argument do.");
+    console.error("❌ DB_URL not found. Check .env or pass the URI as an argument.");
     process.exit(1);
   }
   console.log("📦 Backup started...\n");

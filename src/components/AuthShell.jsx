@@ -4,9 +4,9 @@ import { Box, Stack, Typography } from "@mui/material";
 
 const NAME = import.meta.env.VITE_REACT_APP_BUSINESS_NAME || "Ashirvad";
 const POINTS = [
-  ["Guest House", "Rooms, guests aur payment ek jagah", "#14B8A6"],
-  ["Restaurant", "Roz ka closing, kharch aur upaad", "#F59E0B"],
-  ["Office Book", "Aavak, javak aur banquet", "#818CF8"],
+  ["Guest House", "Rooms, guests and payments in one place", "#14B8A6"],
+  ["Restaurant", "Daily closing, expenses and staff advance", "#F59E0B"],
+  ["Office Book", "Income, expenses and banquet", "#818CF8"],
 ];
 
 const AuthShell = ({ title, subtitle, children, footer }) => (
@@ -33,9 +33,9 @@ const AuthShell = ({ title, subtitle, children, footer }) => (
       </Stack>
       <Box sx={{ maxWidth: 460 }}>
         <Typography sx={{ fontSize: 40, fontWeight: 800, lineHeight: 1.1, letterSpacing: "-0.03em", mb: 2 }}>
-          Poore business ka hisaab, ek jagah.
+          Your whole business, in one place.
         </Typography>
-        <Typography sx={{ opacity: 0.75, mb: 4 }}>Roz ki entry phone se, owner ke liye saaf reports aur graphs.</Typography>
+        <Typography sx={{ opacity: 0.75, mb: 4 }}>Daily entries from your phone, clear reports and graphs for the owner.</Typography>
         <Stack spacing={2}>
           {POINTS.map(([t, s, c]) => (
             <Stack key={t} direction="row" spacing={1.5} alignItems="center">

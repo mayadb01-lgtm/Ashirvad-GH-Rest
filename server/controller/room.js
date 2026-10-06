@@ -20,15 +20,15 @@ router.get("/", async (req, res) => {
 router.put("/update-rate/:roomNumber", isAuthenticated, async (req, res) => {
   try {
     if (!(req.user?.role === "Admin" || req.user?.isSuperUser)) {
-      return res.status(403).json({ success: false, message: "Sirf owner/admin room rate badal sakta hai" });
+      return res.status(403).json({ success: false, message: "Only the owner can change room rates" });
     }
     const roomNumber = Number(req.params.roomNumber);
     const roomCost = Number(req.body?.roomCost);
     if (!Number.isFinite(roomCost) || roomCost < 100 || roomCost > 100000) {
-      return res.status(400).json({ success: false, message: "Rate ₹100 se ₹1,00,000 ke beech hona chahiye" });
+      return res.status(400).json({ success: false, message: "Rate must be between ₹100 and ₹1,00,000" });
     }
     const room = await Room.findOneAndUpdate({ roomNumber }, { $set: { roomCost: Math.round(roomCost) } }, { new: true });
-    if (!room) return res.status(404).json({ success: false, message: `Room ${roomNumber} nahi mila` });
+    if (!room) return res.status(404).json({ success: false, message: `Room ${roomNumber} not found` });
     res.status(200).json({ success: true, data: room });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

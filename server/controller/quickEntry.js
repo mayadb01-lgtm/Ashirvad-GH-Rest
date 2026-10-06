@@ -33,7 +33,7 @@ router.get("/guest/:mobile", async (req, res) => {
   try {
     const mobile = Number(String(req.params.mobile).replace(/\D/g, ""));
     if (!mobile || String(mobile).length !== 10) {
-      return res.status(400).json({ success: false, message: "10 digit mobile chahiye" });
+      return res.status(400).json({ success: false, message: "Enter a 10-digit mobile number" });
     }
     const stays = await Entry.aggregate([
       { $match: { "entry.mobileNumber": mobile } },

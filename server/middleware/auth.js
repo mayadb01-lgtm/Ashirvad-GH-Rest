@@ -54,7 +54,7 @@ export const isAuthenticated = async (req, res, next) => {
     clearAuthCookies(res);
     return res.status(401).json({
       success: false,
-      message: "Session khatam ho gaya, please dobara login karo",
+      message: "Session expired. Please log in again.",
     });
   }
 };

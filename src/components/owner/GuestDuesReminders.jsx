@@ -33,10 +33,10 @@ const REMINDED_KEY = "dues_reminded_on";
 
 const DEFAULT_TEMPLATE = `Namaste {name} ji,
 
-${BUSINESS} se yaad dilana tha ki aapka {amount} ka payment abhi baaki hai.
+This is a gentle reminder from ${BUSINESS} that a payment of {amount} is still due.
 {stays}
 
-Kripya jaldi payment kar dijiye. Dhanyavaad 🙏`;
+Kindly clear the payment at your earliest convenience. Thank you 🙏`;
 
 const inr = (n) => "₹" + Math.round(n || 0).toLocaleString("en-IN");
 const safeGet = (k, fallback) => {
@@ -155,8 +155,8 @@ const GuestDuesReminders = () => {
       <Collapse in={editTemplate}>
         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
           <Typography variant="body2" sx={{ mb: 1 }}>
-            Ye shabd apne aap badal jaayenge: <b>{"{name}"}</b> guest ka naam, <b>{"{amount}"}</b> kul baaki,{" "}
-            <b>{"{stays}"}</b> kis din kaunsa room, <b>{"{days}"}</b> kitne din purana.
+            These words are filled in automatically: <b>{"{name}"}</b> guest name, <b>{"{amount}"}</b> total due,{" "}
+            <b>{"{stays}"}</b> dates and rooms, <b>{"{days}"}</b> days since oldest due.
           </Typography>
           <TextField multiline minRows={6} fullWidth value={template} onChange={(e) => setTemplate(e.target.value)} />
           <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
@@ -260,8 +260,8 @@ const GuestDuesReminders = () => {
       </Stack>
 
       <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 2 }}>
-        "Remind" WhatsApp kholta hai message pehle se likha hua. Bhejne se pehle aap dekh sakte ho. Payment aane par
-        guest ko hamesha ki tarah Pending Jama mein mark karein, list apne aap update ho jaayegi.
+        "Remind" opens WhatsApp with the message already written. You can review it before sending. When payment is received,
+        mark it in Pending Collections as usual and this list will update automatically.
       </Typography>
     </Box>
   );

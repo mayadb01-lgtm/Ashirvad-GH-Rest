@@ -35,7 +35,7 @@ const MODULES = [
   { key: "rest", label: "Restaurant", short: "Restaurant", icon: <RestaurantIcon />, color: Q.rest, old: "/restaurant" },
   { key: "office", label: "Office Book", short: "Office", icon: <BusinessCenterIcon />, color: Q.office, old: "/office" },
 ];
-const WEEKDAY_HI = ["Ravivar", "Somvar", "Mangalvar", "Budhvar", "Guruvar", "Shukravar", "Shanivar"];
+const WEEKDAY_HI = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const readTab = () => {
   try {
@@ -102,7 +102,7 @@ const QuickEntryPage = () => {
 
   const dayLabel = useMemo(() => {
     const diff = today.diff(day, "day");
-    const rel = diff === 0 ? "Aaj" : diff === 1 ? "Kal" : diff === -1 ? "Kal (aage)" : WEEKDAY_HI[day.day()];
+    const rel = diff === 0 ? "Today" : diff === 1 ? "Yesterday" : diff === -1 ? "Tomorrow" : WEEKDAY_HI[day.day()];
     return { rel, full: day.format("D MMM YYYY") };
   }, [day, today]);
 
@@ -127,12 +127,12 @@ const QuickEntryPage = () => {
         <Paper variant="outlined" sx={{ p: 4, maxWidth: 420, textAlign: "center", borderRadius: 3 }}>
           <Typography fontSize={40}>🔒</Typography>
           <Typography variant="h6" fontWeight={800} gutterBottom>
-            Namaste {auth.name}
+            Hello {auth.name}
           </Typography>
           <Typography color={Q.muted} sx={{ mb: 3 }}>
             {auth.isActive
-              ? "Aapko abhi kisi business ki entry ka access nahi mila. Owner se kaho ki aapka department (GH / Restaurant / Office) set kar dein."
-              : "Aapka account band hai. Owner se baat karo."}
+              ? "You do not have access to any section yet. Ask the owner to assign your department (GH / Restaurant / Office)."
+              : "Your account is disabled. Please contact the owner."}
           </Typography>
           <Button variant="outlined" onClick={logout}>
             Logout
@@ -181,7 +181,7 @@ const QuickEntryPage = () => {
             {auth.isAdmin && (
               <>
                 <Button component={RouterLink} to={auth.isOwnerAdmin ? `/admin${mod.old}` : mod.old} size="small" sx={{ color: Q.muted, textTransform: "none", whiteSpace: "nowrap" }}>
-                  Purana page
+                  Classic view
                 </Button>
                 {auth.isOwnerAdmin && (
                   <IconButton component={RouterLink} to="/dashboard" aria-label="Dashboard">
@@ -206,13 +206,13 @@ const QuickEntryPage = () => {
                     onClick={() => setDay(d)}
                     sx={{ fontWeight: 800, bgcolor: d.isSame(day, "day") ? mod.color : undefined, borderColor: mod.color, color: d.isSame(day, "day") ? "#fff" : mod.color }}
                   >
-                    {d.isSame(today, "day") ? "Aaj" : "Kal (raat ki entry)"} · {d.format("D MMM")}
+                    {d.isSame(today, "day") ? "Today" : "Yesterday (night entry)"} · {d.format("D MMM")}
                   </Button>
                 ))
               ) : (
                 <Box sx={{ textAlign: "center" }}>
                   <Typography variant="caption" color={Q.muted} display="block" lineHeight={1.2}>
-                    Aaj
+                    Today
                   </Typography>
                   <Typography fontWeight={800} fontSize={18} lineHeight={1.3}>
                     {day.format("D MMM YYYY")}
@@ -222,7 +222,7 @@ const QuickEntryPage = () => {
             </Stack>
           ) : (
           <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
-            <IconButton onClick={() => setDay((d) => d.subtract(1, "day"))} disabled={!canPrev} sx={{ bgcolor: Q.bg }} aria-label="Pichhla din">
+            <IconButton onClick={() => setDay((d) => d.subtract(1, "day"))} disabled={!canPrev} sx={{ bgcolor: Q.bg }} aria-label="Previous day">
               <ChevronLeftIcon />
             </IconButton>
             <Box component="label" sx={{ flex: 1, textAlign: "center", cursor: "pointer", position: "relative" }}>
@@ -238,16 +238,16 @@ const QuickEntryPage = () => {
                 min={minDay ? minDay.format("YYYY-MM-DD") : undefined}
                 max={maxDay ? maxDay.format("YYYY-MM-DD") : undefined}
                 onChange={(e) => pickDate(e.target.value)}
-                aria-label="Date chuno"
+                aria-label="Choose date"
                 style={{ position: "absolute", inset: 0, opacity: 0, width: "100%", cursor: "pointer" }}
               />
             </Box>
-            <IconButton onClick={() => setDay((d) => d.add(1, "day"))} disabled={!canNext} sx={{ bgcolor: Q.bg }} aria-label="Agla din">
+            <IconButton onClick={() => setDay((d) => d.add(1, "day"))} disabled={!canNext} sx={{ bgcolor: Q.bg }} aria-label="Next day">
               <ChevronRightIcon />
             </IconButton>
             {!day.isSame(today, "day") && (
               <Button size="small" onClick={() => setDay(today)} sx={{ fontWeight: 700, color: mod.color }}>
-                Aaj
+                Today
               </Button>
             )}
           </Stack>

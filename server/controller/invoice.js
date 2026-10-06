@@ -57,7 +57,7 @@ router.get("/room-prefill/:date/:period/:roomNo", async (req, res) => {
   try {
     const { date, period } = req.params;
     const roomNo = Number(req.params.roomNo);
-    if (!dayjs(date, F, true).isValid() || !roomNo) return bad(res, "Date / room galat");
+    if (!dayjs(date, F, true).isValid() || !roomNo) return bad(res, "Invalid date / room");
     const [doc, room, charges, reg, existing] = await Promise.all([
       Entry.findOne({ date }, { entry: 1 }).lean(),
       Room.findOne({ roomNumber: roomNo }).lean(),
@@ -111,14 +111,14 @@ router.post("/", async (req, res) => {
     const b = req.body || {};
     const series = b.series === "NON" ? "NON" : "GST";
     const d = dayjs(b.invoiceDate, F, true);
-    if (!d.isValid()) return bad(res, "Invoice date galat");
+    if (!d.isValid()) return bad(res, "Invalid invoice date");
     const gst = series === "GST";
     const inclusive = !!b.taxInclusive;
     const items = (Array.isArray(b.items) ? b.items : [])
       .map((it) => calcItem(it, inclusive, gst))
       .filter((it) => it.desc && it.qty > 0 && it.total > 0)
       .slice(0, 40);
-    if (!items.length) return bad(res, "Kam se kam ek item (naam + amount) chahiye");
+    if (!items.length) return bad(res, "Add at least one item (name + amount)");
     const c = b.customer || {};
     const customer = {
       name: clean(c.name, 100),
@@ -128,8 +128,8 @@ router.post("/", async (req, res) => {
       mobile: clean(c.mobile, 15).replace(/[^\d+]/g, ""),
       state: clean(c.state, 40) || "Gujarat",
     };
-    if (!customer.name && !customer.company) return bad(res, "Guest ya company ka naam chahiye");
-    if (customer.gstin && !GSTIN_RE.test(customer.gstin)) return bad(res, "Company ka GST number galat lag raha hai (15 akshar, jaise 24ABCDE1234F1Z5)");
+    if (!customer.name && !customer.company) return bad(res, "Enter a guest or company name");
+    if (customer.gstin && !GSTIN_RE.test(customer.gstin)) return bad(res, "Company GSTIN looks invalid (15 characters, e.g. 24ABCDE1234F1Z5)");
 
     const taxable = r2(items.reduce((s, x) => s + x.taxable, 0));
     const cgst = r2(items.reduce((s, x) => s + x.cgst, 0));
@@ -175,8 +175,8 @@ router.post("/", async (req, res) => {
 router.get("/one/:id", async (req, res) => {
   try {
     const inv = await Invoice.findById(req.params.id).lean();
-    if (!inv) return res.status(404).json({ success: false, message: "Invoice nahi mila" });
-    if (!canSee(req, inv)) return res.status(403).json({ success: false, message: "Staff sirf aaj ke invoice dekh sakta hai" });
+    if (!inv) return res.status(404).json({ success: false, message: "Invoice not found" });
+    if (!canSee(req, inv)) return res.status(403).json({ success: false, message: "Staff can only view today's invoices." });
     res.json({ success: true, data: inv });
   } catch (e) {
     fail(res, e);
@@ -196,12 +196,12 @@ router.get("/by-room/:date/:roomNo", async (req, res) => {
 // PUT /cancel/:id (sirf owner)
 router.put("/cancel/:id", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Cancel sirf owner kar sakta hai" });
+    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can cancel an invoice" });
     const reason = clean(req.body?.reason, 200);
-    if (!reason) return bad(res, "Cancel ki wajah likho");
+    if (!reason) return bad(res, "Enter a reason for cancelling");
     const inv = await Invoice.findById(req.params.id);
-    if (!inv) return res.status(404).json({ success: false, message: "Nahi mila" });
-    if (inv.status === "cancelled") return bad(res, "Pehle se cancel hai");
+    if (!inv) return res.status(404).json({ success: false, message: "Not found" });
+    if (inv.status === "cancelled") return bad(res, "Already cancelled");
     Object.assign(inv, { status: "cancelled", cancelReason: reason, cancelledBy: who(req), cancelledAt: new Date() });
     await inv.save();
     res.json({ success: true, data: inv });
@@ -213,10 +213,10 @@ router.put("/cancel/:id", async (req, res) => {
 // GET /list/:start/:end → owner register (dono series)
 router.get("/list/:start/:end", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Sirf owner/admin" });
+    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can do this" });
     const s = dayjs(req.params.start, F, true);
     const e = dayjs(req.params.end, F, true);
-    if (!s.isValid() || !e.isValid() || e.isBefore(s)) return bad(res, "Date range galat");
+    if (!s.isValid() || !e.isValid() || e.isBefore(s)) return bad(res, "Invalid date range");
     const list = await Invoice.find({ entryCreateDate: { $gte: s.startOf("day").toDate(), $lte: e.endOf("day").toDate() } })
       .sort({ series: 1, fy: 1, seq: 1 })
       .lean();

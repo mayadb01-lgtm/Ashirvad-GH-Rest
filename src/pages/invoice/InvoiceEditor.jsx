@@ -80,16 +80,16 @@ const InvoiceEditor = ({ open, onClose, draft, existing = [], onCreated, lockDat
   const activeExisting = existing.filter((x) => x.status !== "cancelled");
 
   const save = async () => {
-    if (!d.customer.name.trim() && !d.customer.company.trim()) return toast.error("Guest ya company ka naam likho");
-    if (gstinBad) return toast.error("GST number galat hai");
-    if (!t.rows.some((r) => r.desc && r.total > 0)) return toast.error("Kam se kam ek item (naam + amount)");
+    if (!d.customer.name.trim() && !d.customer.company.trim()) return toast.error("Enter the guest or company name");
+    if (gstinBad) return toast.error("Invalid GST number");
+    if (!t.rows.some((r) => r.desc && r.total > 0)) return toast.error("Add at least one item (name + amount)");
     setBusy(true);
     try {
       const { data } = await axios.post(`${API}/invoice`, { ...d, series, taxInclusive: inclusive, customer: { ...d.customer, gstin } });
-      toast.success(`Invoice ${data.data.invoiceNo} ban gaya`);
+      toast.success(`Invoice ${data.data.invoiceNo} created`);
       onCreated?.(data.data);
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Invoice nahi bana");
+      toast.error(e?.response?.data?.message || "Could not create invoice");
     } finally {
       setBusy(false);
     }
@@ -99,7 +99,7 @@ const InvoiceEditor = ({ open, onClose, draft, existing = [], onCreated, lockDat
     <Dialog open={open} onClose={busy ? undefined : onClose} fullWidth maxWidth="md" scroll="paper">
       <DialogTitle sx={{ pb: 1 }}>
         <Typography fontWeight={800} fontSize={19}>
-          🧾 Naya invoice
+          🧾 New invoice
         </Typography>
         <ToggleButtonGroup exclusive size="small" value={series} onChange={(_, v) => v && setSeries(v)} sx={{ mt: 1 }}>
           <ToggleButton value="GST" sx={{ fontWeight: 800, px: 2 }}>
@@ -110,13 +110,13 @@ const InvoiceEditor = ({ open, onClose, draft, existing = [], onCreated, lockDat
           </ToggleButton>
         </ToggleButtonGroup>
         <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
-          {gst ? "Number: GST/26-27/0001 jaisa (alag series)" : "Number: INV/26-27/0001 jaisa (alag series, GST nahi lagega)"}
+          {gst ? "Number format: GST/26-27/0001 (separate series)" : "Number format: INV/26-27/0001 (separate series, no GST)"}
         </Typography>
       </DialogTitle>
       <DialogContent dividers>
         {activeExisting.length > 0 && (
           <Alert severity="warning" sx={{ mb: 2 }}>
-            Is room ka invoice pehle se bana hai: {activeExisting.map((x) => x.invoiceNo).join(", ")}. Dobara banana hai to hi aage badho.
+            An invoice already exists for this room: {activeExisting.map((x) => x.invoiceNo).join(", ")}. Continue only if you need another one.
           </Alert>
         )}
         <Grid container spacing={1.5}>
@@ -154,25 +154,25 @@ const InvoiceEditor = ({ open, onClose, draft, existing = [], onCreated, lockDat
 
           <Grid size={12}>
             <Typography fontWeight={800} sx={{ mt: 0.5 }}>
-              Bill kiske naam
+              Bill to
             </Typography>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth size="small" label="Company ka naam (agar company bill)" value={d.customer.company} onChange={(e) => setC("company", e.target.value)} />
+            <TextField fullWidth size="small" label="Company name (for company bill)" value={d.customer.company} onChange={(e) => setC("company", e.target.value)} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth size="small" label="Guest ka naam" value={d.customer.name} onChange={(e) => setC("name", e.target.value)} />
+            <TextField fullWidth size="small" label="Guest name" value={d.customer.name} onChange={(e) => setC("name", e.target.value)} />
           </Grid>
           {gst && (
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 size="small"
-                label="Company ka GST number (optional)"
+                label="Company GST number (optional)"
                 value={d.customer.gstin}
                 onChange={(e) => onGstin(e.target.value)}
                 error={gstinBad}
-                helperText={gstinBad ? "15 akshar, jaise 24ABCDE1234F1Z5" : gstin ? "✓ B2B invoice (company GST credit le sakti hai)" : "Khaali = B2C (aam guest)"}
+                helperText={gstinBad ? "15 characters, e.g. 24ABCDE1234F1Z5" : gstin ? "✓ B2B invoice (company can claim GST credit)" : "Blank = B2C (regular guest)"}
                 inputProps={{ style: { textTransform: "uppercase" } }}
               />
             </Grid>
@@ -216,7 +216,7 @@ const InvoiceEditor = ({ open, onClose, draft, existing = [], onCreated, lockDat
               {gst && (
                 <FormControlLabel
                   control={<Checkbox size="small" checked={inclusive} onChange={(e) => setInclusive(e.target.checked)} />}
-                  label={<Typography variant="body2">Rate mein GST shamil hai</Typography>}
+                  label={<Typography variant="body2">Rate includes GST</Typography>}
                 />
               )}
             </Stack>
@@ -226,7 +226,7 @@ const InvoiceEditor = ({ open, onClose, draft, existing = [], onCreated, lockDat
               <Box sx={{ border: "1px solid #E5E7EB", borderRadius: 2, p: 1 }}>
                 <Grid container spacing={1} alignItems="center">
                   <Grid size={{ xs: 12, sm: gst ? 4 : 6 }}>
-                    <TextField fullWidth size="small" label="Kis cheez ka" value={it.desc} onChange={(e) => setItem(i, "desc", e.target.value)} />
+                    <TextField fullWidth size="small" label="Description" value={it.desc} onChange={(e) => setItem(i, "desc", e.target.value)} />
                   </Grid>
                   {gst && (
                     <Grid size={{ xs: 6, sm: 2 }}>
@@ -272,7 +272,7 @@ const InvoiceEditor = ({ open, onClose, draft, existing = [], onCreated, lockDat
           ))}
           <Grid size={12}>
             <Button size="small" startIcon={<AddIcon />} onClick={() => setD((x) => ({ ...x, items: [...x.items, blankItem(x.business)] }))}>
-              Item jodo
+              Add item
             </Button>
           </Grid>
           <Grid size={12}>
@@ -308,10 +308,10 @@ const InvoiceEditor = ({ open, onClose, draft, existing = [], onCreated, lockDat
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={busy}>
-          Band karo
+          Close
         </Button>
         <Button variant="contained" onClick={save} disabled={busy} sx={{ bgcolor: BROWN, fontWeight: 800, "&:hover": { bgcolor: BROWN } }}>
-          {busy ? "Ban raha hai…" : "Invoice banao + PDF"}
+          {busy ? "Creating…" : "Create invoice + PDF"}
         </Button>
       </DialogActions>
     </Dialog>

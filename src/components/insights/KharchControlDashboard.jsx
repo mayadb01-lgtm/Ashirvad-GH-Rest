@@ -18,7 +18,7 @@ const KharchControlDashboard = () => {
     axios
       .get(`${API}/insights/kharch/${months}`)
       .then(({ data }) => !off && setData(data.data))
-      .catch((e) => toast.error(e?.response?.data?.message || "Kharch report load nahi hua"))
+      .catch((e) => toast.error(e?.response?.data?.message || "Could not load expense report"))
       .finally(() => !off && setLoading(false));
     return () => {
       off = true;
@@ -30,40 +30,40 @@ const KharchControlDashboard = () => {
   const avgFood = full.length ? full.reduce((s, m) => s + m.foodPct, 0) / full.length : 0;
   const last = full[full.length - 1];
   const rows = view === "items" ? data?.items || [] : (data?.categories || []).map((c) => ({ ...c, name: c.category }));
-  const chart = useMemo(() => ms.map((m) => ({ label: m.label, "Rest sales": m.restSales, "Food kharch": m.food, "Food %": m.foodPct })), [ms]);
+  const chart = useMemo(() => ms.map((m) => ({ label: m.label, "Rest sales": m.restSales, "Food expenses": m.food, "Food %": m.foodPct })), [ms]);
 
   return (
     <Box sx={{ p: { xs: 1, md: 2 } }}>
-      <PageTitle title="Kharch Control" sub="Restaurant galle ka kharch + Office Out (Personal, Loan, Upad chhod ke)." />
+      <PageTitle title="Expense control" sub="Restaurant cash collection expenses + Office Out (excluding Personal, Loan, Staff advance)." />
       <ToggleButtonGroup size="small" exclusive value={months} onChange={(_, v) => v && setMonths(v)} sx={{ mb: 2 }}>
-        <ToggleButton value={3}>3 mahine</ToggleButton>
-        <ToggleButton value={6}>6 mahine</ToggleButton>
-        <ToggleButton value={12}>12 mahine</ToggleButton>
+        <ToggleButton value={3}>3 months</ToggleButton>
+        <ToggleButton value={6}>6 months</ToggleButton>
+        <ToggleButton value={12}>12 months</ToggleButton>
       </ToggleButtonGroup>
-      {loading && <Typography color="text.secondary">Load ho raha hai…</Typography>}
+      {loading && <Typography color="text.secondary">Loading…</Typography>}
 
       <Stack direction="row" spacing={1.5} sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
-        <Kpi label={`Food cost % (${last?.label || "-"})`} value={`${last?.foodPct ?? 0}%`} sub="Restaurant sales ka" color={last && last.foodPct > avgFood + 3 ? COLORS.bad : COLORS.net} />
-        <Kpi label="Food cost % (average)" value={`${avgFood.toFixed(1)}%`} sub={`${full.length} poore mahine`} />
-        <Kpi label={`Kul kharch (${last?.label || "-"})`} value={inr(last?.total)} color={COLORS.out} />
-        <Kpi label="Alerts" value={data?.alerts?.length || 0} sub="kharch achanak badha" color={data?.alerts?.length ? COLORS.bad : COLORS.net} />
+        <Kpi label={`Food cost % (${last?.label || "-"})`} value={`${last?.foodPct ?? 0}%`} sub="of restaurant sales" color={last && last.foodPct > avgFood + 3 ? COLORS.bad : COLORS.net} />
+        <Kpi label="Food cost % (average)" value={`${avgFood.toFixed(1)}%`} sub={`${full.length} full months`} />
+        <Kpi label={`Total expenses (${last?.label || "-"})`} value={inr(last?.total)} color={COLORS.out} />
+        <Kpi label="Alerts" value={data?.alerts?.length || 0} sub="sudden expense increases" color={data?.alerts?.length ? COLORS.bad : COLORS.net} />
       </Stack>
 
       {data?.alerts?.length > 0 ? (
-        <Section title="⚠️ Achanak badha kharch (pichhla mahina vs usse pehle 3 mahine ka average)">
+        <Section title="⚠️ Sudden expense increase (last month vs average of 3 months before)">
           <Stack spacing={1}>
             {data.alerts.map((a) => (
               <Alert key={a.name} severity="warning" sx={{ py: 0 }}>
-                <b>{a.name}</b> ({a.category}): {a.month} mein {inr(a.now)} — average {inr(a.avg)} {a.changePct !== null ? `(+${a.changePct}%)` : "(naya kharch)"}
+                <b>{a.name}</b> ({a.category}): {inr(a.now)} in {a.month} — average {inr(a.avg)} {a.changePct !== null ? `(+${a.changePct}%)` : "(new expense)"}
               </Alert>
             ))}
           </Stack>
         </Section>
       ) : (
-        data && <Alert severity="success" sx={{ mb: 2 }}>Pichhle mahine koi kharch achanak nahi badha. 👍</Alert>
+        data && <Alert severity="success" sx={{ mb: 2 }}>No sudden expense increase last month. 👍</Alert>
       )}
 
-      <Section title="Restaurant sales vs Food kharch">
+      <Section title="Restaurant sales vs food expenses">
         <Box sx={{ width: "100%", height: 320 }}>
           <ResponsiveContainer>
             <ComposedChart data={chart} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
@@ -74,16 +74,16 @@ const KharchControlDashboard = () => {
               <Tooltip formatter={(v, n) => (n === "Food %" ? `${v}%` : inr(v))} />
               <Legend />
               <Bar yAxisId="l" dataKey="Rest sales" fill={COLORS.rest} />
-              <Bar yAxisId="l" dataKey="Food kharch" fill={COLORS.out} />
+              <Bar yAxisId="l" dataKey="Food expenses" fill={COLORS.out} />
               <Line yAxisId="r" dataKey="Food %" stroke={COLORS.bad} strokeWidth={3} />
             </ComposedChart>
           </ResponsiveContainer>
         </Box>
-        <Typography variant="caption" color="text.secondary">Aakhri mahina abhi chal raha hai, isliye adhoora hai.</Typography>
+        <Typography variant="caption" color="text.secondary">The latest month is still in progress, so it is incomplete.</Typography>
       </Section>
 
       <Section
-        title={view === "items" ? "Top kharch items (mahina-wise)" : "Category-wise kharch"}
+        title={view === "items" ? "Top expense items (monthly)" : "Expenses by category"}
         right={
           <ToggleButtonGroup size="small" exclusive value={view} onChange={(_, v) => v && setView(v)}>
             <ToggleButton value="items">Items</ToggleButton>

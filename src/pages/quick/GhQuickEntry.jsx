@@ -64,12 +64,12 @@ const keyOf = (period, roomNo) => `${period}|${roomNo}`;
 const rowIssues = (r) => {
   const out = [];
   if (!(num(r.rate) > 0)) out.push("rate");
-  if (!(num(r.noOfPeople) > 0)) out.push("log");
+  if (!(num(r.noOfPeople) > 0)) out.push("guests");
   if (!r.type) out.push("guest type");
   if (!r.modeOfPayment) out.push("payment");
-  if (!String(r.fullname || "").trim()) out.push("naam");
+  if (!String(r.fullname || "").trim()) out.push("name");
   const m = digits(r.mobileNumber);
-  if (m && m !== "0" && m.length !== 10) out.push("mobile 10 digit");
+  if (m && m !== "0" && m.length !== 10) out.push("10-digit mobile");
   return out;
 };
 // Checkout ke baad usi din naya guest kis slot mein
@@ -115,15 +115,15 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkou
           </Typography>
           {filled && !low && (
             <Typography variant="caption" sx={{ color: fromServer ? Q.good : Q.gh, fontWeight: 800 }}>
-              {fromServer ? "✓ Submitted" : "✓ Bhara"}
+              {fromServer ? "✓ Submitted" : "✓ Filled"}
             </Typography>
           )}
-          {low && <StatusPill tone="warn">Check karo</StatusPill>}
-          {partial && <StatusPill tone="warn">Adhoora</StatusPill>}
+          {low && <StatusPill tone="warn">Check rate</StatusPill>}
+          {partial && <StatusPill tone="warn">Incomplete</StatusPill>}
         </Stack>
         {(row?._stayDay || checkout) && (
           <Stack direction="row" spacing={0.5} sx={{ mt: 0.5 }} flexWrap="wrap" useFlexGap>
-            {row?._stayDay && <StatusPill tone="info">🔁 Din {row._stayDay}/{row._stayNights}</StatusPill>}
+            {row?._stayDay && <StatusPill tone="info">🔁 Day {row._stayDay} of {row._stayNights}</StatusPill>}
             {checkout && <StatusPill tone="good">✓ Checkout {checkout.time}</StatusPill>}
           </Stack>
         )}
@@ -134,7 +134,7 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkou
             </Typography>
             <Typography variant="caption" color={Q.muted} noWrap component="div">
               {digits(row.mobileNumber) && digits(row.mobileNumber) !== "0" ? digits(row.mobileNumber) + " · " : ""}
-              {row.noOfPeople || 0} log · {row.type || "—"}
+              {row.noOfPeople || 0} guests · {row.type || "—"}
             </Typography>
             <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 0.75 }}>
               <Box
@@ -149,21 +149,21 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkou
                   color: row.modeOfPayment === "UnPaid" ? Q.bad : "#115E59",
                 }}
               >
-                {row.modeOfPayment === "UnPaid" ? "Baaki" : row.modeOfPayment || "—"}
+                {row.modeOfPayment === "UnPaid" ? "Unpaid" : row.modeOfPayment || "—"}
               </Box>
               {/* Rate nahi, sirf guest se lena baaki (room + food + extra) */}
-              <Typography fontWeight={800} fontSize={due > 0 && row.modeOfPayment ? 17 : 14} title="Room + food + extra mein se baaki" sx={{ color: !row.modeOfPayment ? Q.warn : due > 0 ? Q.bad : Q.good }}>
-                {!row.modeOfPayment ? "Payment chuno" : due > 0 ? `Baaki ${inr(due)}` : "✓ Paid"}
+              <Typography fontWeight={800} fontSize={due > 0 && row.modeOfPayment ? 17 : 14} title="Due for room + food + extras" sx={{ color: !row.modeOfPayment ? Q.warn : due > 0 ? Q.bad : Q.good }}>
+                {!row.modeOfPayment ? "Select payment" : due > 0 ? `Due ${inr(due)}` : "✓ Paid"}
               </Typography>
             </Stack>
             {partial && (
               <Typography variant="caption" sx={{ color: Q.bad, fontWeight: 700 }}>
-                Baaki: {rowIssues(row).join(", ")}
+                Missing: {rowIssues(row).join(", ")}
               </Typography>
             )}
             {checkout && nextLabel && (
               <Typography variant="caption" component="div" sx={{ color: Q.gh, fontWeight: 800, mt: 0.5 }}>
-                Room khaali · naya guest {nextLabel} mein
+                Room vacant · new guest in {nextLabel}
               </Typography>
             )}
           </>
@@ -173,12 +173,12 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkou
               📅 {booking.guestName}
             </Typography>
             <Typography variant="caption" color={Q.muted} component="div">
-              Booking · {booking.nights} raat · Adv {inr(advOf(booking))} · tap = check-in
+              Booking · {booking.nights} nights · Adv {inr(advOf(booking))} · tap to check in
             </Typography>
           </Box>
         ) : (
           <Typography sx={{ mt: 2.5, color: locked ? Q.muted : Q.gh, fontWeight: 700 }}>
-            {locked ? "Khaali" : "+ Guest jodo"}
+            {locked ? "Vacant" : "+ Add guest"}
           </Typography>
         )}
       </Paper>
@@ -233,13 +233,13 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
       actions={
         locked ? (
           <Button fullWidth onClick={onClose} variant="outlined">
-            Band karo
+            Close
           </Button>
         ) : (
           <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
             {initial && isTouched(initial) && (
               <Button color="error" onClick={onClear} sx={{ fontWeight: 700 }}>
-                Hatao
+                Remove
               </Button>
             )}
             <Button
@@ -249,7 +249,7 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
               onClick={() => onSave(f)}
               sx={{ bgcolor: Q.gh, py: 1.4, fontSize: 16, fontWeight: 800, "&:hover": { bgcolor: Q.gh } }}
             >
-              {issues.length ? `Bharo: ${issues.join(", ")}` : `Room ${room.roomNumber} theek hai`}
+              {issues.length ? `Fill in: ${issues.join(", ")}` : `Save Room ${room.roomNumber}`}
             </Button>
           </Stack>
         )
@@ -258,7 +258,7 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
       <Stack spacing={2}>
         {locked && (
           <Alert icon={<LockIcon />} severity="info">
-            Ye din submit ho chuka hai. Badlav sirf admin kar sakta hai.
+            This day has been submitted. Only an admin can make changes.
           </Alert>
         )}
         <TextField
@@ -270,24 +270,24 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
           fullWidth
           autoFocus={!locked}
           InputProps={{ sx: { fontSize: 18 } }}
-          helperText={mobile && mobile.length !== 10 ? `${mobile.length}/10 digit` : " "}
+          helperText={mobile && mobile.length !== 10 ? `${mobile.length}/10 digits` : " "}
           error={!!mobile && mobile.length !== 10}
         />
         {guest?.found && (
           <Alert severity={guest.pendingAmount > 0 ? "warning" : "success"} sx={{ mt: -1.5 }}>
-            <b>Purana guest: {guest.fullname}</b>
+            <b>Returning guest: {guest.fullname}</b>
             <br />
-            {guest.visits} baar aa chuke · last {guest.lastVisit} (Room {guest.lastRoom}, {inr(guest.lastRate)})
+            {guest.visits} previous visits · last {guest.lastVisit} (Room {guest.lastRoom}, {inr(guest.lastRate)})
             {guest.pendingAmount > 0 && (
               <>
                 <br />
-                <b>⚠ {inr(guest.pendingAmount)} pehle ka baaki hai</b>
+                <b>⚠ Previous due: {inr(guest.pendingAmount)}</b>
               </>
             )}
           </Alert>
         )}
         <TextField
-          label="Guest ka naam"
+          label="Guest name"
           value={f.fullname || ""}
           onChange={(e) => set("fullname", e.target.value)}
           disabled={locked}
@@ -299,13 +299,13 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
             <MoneyField label="Rate" value={f.rate} onChange={(v) => set("rate", v)} big disabled={locked} />
           </Box>
           <Box sx={{ flex: 1 }}>
-            <Stepper outlined label="Kitne log" value={num(f.noOfPeople)} onChange={(v) => !locked && set("noOfPeople", v)} />
+            <Stepper outlined label="Guests" value={num(f.noOfPeople)} onChange={(v) => !locked && set("noOfPeople", v)} />
           </Box>
         </Stack>
         {low && (
           <Alert severity="warning" sx={{ mt: -1 }}>
-            Rate room ki list price ({inr(room.roomCost)}) se {Math.round((1 - num(f.rate) / room.roomCost) * 100)}% kam hai. Sahi
-            hai?
+            Rate is {Math.round((1 - num(f.rate) / room.roomCost) * 100)}% below the room list price ({inr(room.roomCost)}). Is this
+            correct?
           </Alert>
         )}
         <ChipChoice label="Guest type" options={TYPES} value={f.type} onChange={(v) => set("type", v)} color={Q.gh} disabled={locked} />
@@ -334,7 +334,7 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
             ))}
           </TextField>
         </Stack>
-        <MoneyField label="Discount (agar diya ho)" value={f.discount} onChange={(v) => set("discount", v)} disabled={locked} />
+        <MoneyField label="Discount (if any)" value={f.discount} onChange={(v) => set("discount", v)} disabled={locked} />
 
         {/* Stay: kitni raat / continue / checkout — alag collection, lock ka asar nahi */}
         {isTouched(f) && (
@@ -343,39 +343,39 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
               <>
                 <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
                   <Typography fontWeight={800} color={Q.good}>
-                    ✓ Checkout ho gaya · {stay.checkout.time}
+                    ✓ Checked out · {stay.checkout.time}
                   </Typography>
                   <Button size="small" onClick={() => onUndoCheckout?.(stay.checkout._id)}>
-                    Galti se? Wapas
+                    By mistake? Undo
                   </Button>
                 </Stack>
                 {NEXT_PERIOD[period] && (
                   <Button fullWidth variant="contained" onClick={() => onNewGuest?.()} sx={{ mt: 1, bgcolor: Q.gh, fontWeight: 800, "&:hover": { bgcolor: Q.gh } }}>
-                    + Is room mein naya guest ({PERIODS.find((p) => p.key === NEXT_PERIOD[period])?.label})
+                    + New guest in this room ({PERIODS.find((p) => p.key === NEXT_PERIOD[period])?.label})
                   </Button>
                 )}
               </>
             ) : f._stayId ? (
               <>
                 <Typography fontWeight={800}>
-                  🔁 Ruke hue guest · Din {f._stayDay} / {f._stayNights}
+                  🔁 Continuing stay · Day {f._stayDay} of {f._stayNights}
                 </Typography>
                 <Typography variant="caption" color={Q.muted} component="div" sx={{ mb: 1 }}>
-                  {f._stayStart} se. Roz apne aap bhar jaata hai — sirf payment chuno.
+                  Since {f._stayStart}. Filled automatically each day — just select payment.
                 </Typography>
                 <Stack direction="row" spacing={1}>
                   <Button size="small" variant="outlined" onClick={() => onExtend?.(f._stayId, (f._stayNights || 1) + 1)}>
-                    +1 din aur rukenge
+                    +1 more night
                   </Button>
                   <Button size="small" variant="contained" color="success" onClick={() => onCheckout?.(f)}>
-                    ✅ Checkout karo
+                    ✅ Check out
                   </Button>
                 </Stack>
               </>
             ) : (
               <Stack direction="row" spacing={1.5} alignItems="center">
                 <Box sx={{ flex: 1 }}>
-                  <Stepper outlined label="Kitni raat rukenge" value={num(f._nights) || stay?.started?.nights || 1} onChange={(v) => set("_nights", Math.max(1, v))} min={1} max={60} />
+                  <Stepper outlined label="Nights" value={num(f._nights) || stay?.started?.nights || 1} onChange={(v) => set("_nights", Math.max(1, v))} min={1} max={60} />
                 </Box>
                 <Button variant="contained" color="success" onClick={() => onCheckout?.(f)} sx={{ height: 64, fontWeight: 800 }}>
                   ✅ Checkout
@@ -384,7 +384,7 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
             )}
             {!stay?.checkout && !f._stayId && (num(f._nights) || stay?.started?.nights || 1) > 1 && (
               <Typography variant="caption" color={Q.muted} component="div" sx={{ mt: 0.75 }}>
-                Agle {(num(f._nights) || stay?.started?.nights) - 1} din ye room apne aap bhara aayega (sirf payment chunna).
+                This room will be filled automatically for the next {(num(f._nights) || stay?.started?.nights) - 1} days (just select payment).
               </Typography>
             )}
           </Paper>
@@ -591,7 +591,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
     if (jobs.length)
       Promise.all(jobs)
         .then(() => loadStay())
-        .catch((e) => toast.error(`Room bhar gaya, par stay/booking save nahi hua: ${apiError(e)}`));
+        .catch((e) => toast.error(`Room saved, but could not save stay/booking: ${apiError(e)}`));
   };
   const clearRoom = () => {
     setDraft((d) => {
@@ -617,7 +617,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       if (f._stayId && !f.modeOfPayment) clearRoom();
       else saveRoom({ ...f });
       const next = PERIODS.find((p) => p.key === NEXT_PERIOD[period])?.label;
-      toast.success(`Room ${room.roomNumber} khaali${next ? ` — naya guest ${next} mein` : ""}`);
+      toast.success(`Room ${room.roomNumber} vacant${next ? ` — new guest in ${next}` : ""}`);
       loadStay();
     } catch (e) {
       toast.error(apiError(e));
@@ -626,7 +626,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
   const undoCheckout = async (id) => {
     try {
       await axios.put(`${API}/stay/undo-checkout/${id}`, {});
-      toast.success("Checkout wapas");
+      toast.success("Checkout undone");
       loadStay();
     } catch (e) {
       toast.error(apiError(e));
@@ -640,7 +640,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         Object.keys(rooms).forEach((k) => rooms[k]?._stayId === id && (rooms[k] = { ...rooms[k], _stayNights: nights }));
         return { ...d, rooms };
       });
-      toast.success(`Ab ${nights} raat`);
+      toast.success(`Stay extended to ${nights} nights`);
       setEditing(null);
       loadStay();
     } catch (e) {
@@ -723,13 +723,13 @@ const GhQuickEntry = ({ date, isAdmin }) => {
     try {
       const entries = buildEntries();
       if (!entries.length) {
-        toast.error("Koi entry nahi bhari");
+        toast.error("No entries filled");
         return;
       }
       const body = { entries: JSON.stringify(entries), date };
       if (submitted) await axios.put(`${API}/entry/update-entry/${date}`, body);
       else await axios.post(`${API}/entry/create-entry`, body);
-      toast.success(submitted ? "GH entry update ho gayi" : "GH entry submit ho gayi");
+      toast.success(submitted ? "GH entry updated" : "GH entry submitted");
       clearDraft();
       setDraft(EMPTY);
       seededFor.current = "";
@@ -811,14 +811,14 @@ const GhQuickEntry = ({ date, isAdmin }) => {
             {status?.at ? ` · ${dayjs(status.at).format("hh:mm A")}` : ""}
           </StatusPill>
         ) : anyDraft ? (
-          <StatusPill tone="info">Draft phone mein safe hai · abhi submit nahi hua</StatusPill>
+          <StatusPill tone="info">Draft saved on this device · not submitted yet</StatusPill>
         ) : (
-          <StatusPill tone="warn">Aaj ki GH entry abhi nahi hui</StatusPill>
+          <StatusPill tone="warn">Today's GH entry not done yet</StatusPill>
         )}
         {status?.updatedBy && <StatusPill tone="lock">Edit: {status.updatedBy}</StatusPill>}
         {advToday > 0 && (
           <StatusPill tone="good">
-            💰 Aaj advance mila {inr(advToday)} (
+            💰 Advance received today {inr(advToday)} (
             {Object.entries((stayInfo?.advances || []).reduce((m, a) => ({ ...m, [a.mode]: (m[a.mode] || 0) + num(a.amount) }), {}))
               .map(([m, v]) => `${m} ${inr(v)}`)
               .join(", ")}
@@ -828,12 +828,12 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       </Stack>
       {unassignedToday.length > 0 && (
         <Alert severity="info" sx={{ mb: 1.5 }}>
-          Aaj aane wali booking (room tay nahi): {unassignedToday.map((b) => `${b.guestName} (${b.people} log)`).join(", ")} — &quot;Booking&quot; tab mein &quot;Badlo&quot; se room chuno.
+          Bookings arriving today (no room assigned): {unassignedToday.map((b) => `${b.guestName} (${b.people} guests)`).join(", ")} — assign a room via &quot;Edit&quot; in the &quot;Booking&quot; tab.
         </Alert>
       )}
       {locked && (
         <Alert severity="info" icon={<LockIcon />} sx={{ mb: 1.5 }}>
-          Is din ki entry submit ho chuki hai. Koi galti ho to admin ko batao.
+          This day's entry has been submitted. Report any mistakes to the admin.
         </Alert>
       )}
 
@@ -877,9 +877,9 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         </ToggleButton>
         <ToggleButton value="jama">
           <Box>
-            Jama
+            Collections
             <Box component="span" sx={{ display: "block", fontSize: 11, fontWeight: 600, opacity: 0.85 }}>
-              {draft.jama.length ? `${draft.jama.length} aaya` : `${unpaid.length} baaki`}
+              {draft.jama.length ? `${draft.jama.length} received` : `${unpaid.length} due`}
             </Box>
           </Box>
         </ToggleButton>
@@ -892,7 +892,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
           <Box sx={{ mb: 1.5 }}>
             <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
               <Typography variant="caption" color={Q.muted}>
-                {periodFilled(period)} / {rooms.length} rooms bhare
+                {periodFilled(period)} / {rooms.length} rooms filled
               </Typography>
             </Stack>
             <Box sx={{ height: 6, bgcolor: "#E2E8F0", borderRadius: 3 }}>
@@ -923,7 +923,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
           {draft.jama.length > 0 && (
             <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 3 }}>
               <Typography fontWeight={800} sx={{ mb: 1 }}>
-                Aaj paisa aaya ({inr(summary.jamaTotal)})
+                Received today ({inr(summary.jamaTotal)})
               </Typography>
               {draft.jama.map((j, i) => (
                 <Stack key={j.id} direction="row" alignItems="center" spacing={1} sx={{ py: 0.75, borderTop: i ? `1px solid ${Q.line}` : "none" }}>
@@ -938,7 +938,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
                   <Typography fontWeight={800}>{inr(j.rate)}</Typography>
                   {!locked && (
                     <Button size="small" color="error" onClick={() => removeJama(i)}>
-                      Hatao
+                      Remove
                     </Button>
                   )}
                 </Stack>
@@ -949,7 +949,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
             <>
               <TextField
                 size="small"
-                placeholder="Naam, mobile ya room se dhoondo"
+                placeholder="Search by name, mobile or room"
                 value={jamaQuery}
                 onChange={(e) => setJamaQuery(e.target.value)}
                 InputProps={{
@@ -961,7 +961,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
                 }}
                 sx={{ bgcolor: "#fff" }}
               />
-              {pendingList.length === 0 && <Alert severity="success">Koi baaki payment nahi 🎉</Alert>}
+              {pendingList.length === 0 && <Alert severity="success">No pending payments 🎉</Alert>}
               <Grid container spacing={1.5}>
                 {pendingList.map((u, i) => {
                   const age = dayjs().diff(dayjs(u.createDate, DATE_FMT), "day");
@@ -975,17 +975,17 @@ const GhQuickEntry = ({ date, isAdmin }) => {
                               {u.fullname || "—"}
                             </Typography>
                             <Typography variant="caption" color={Q.muted}>
-                              {u.createDate} · Room {u.roomNo} · {age} din pehle
+                              {u.createDate} · Room {u.roomNo} · {age} days ago
                             </Typography>
                           </Box>
                           <Typography fontWeight={800}>{inr(u.rate)}</Typography>
                           <Button size="small" variant={open ? "outlined" : "contained"} onClick={() => setJamaPick(open ? null : i)} sx={{ bgcolor: open ? undefined : Q.gh, fontWeight: 700 }}>
-                            {open ? "Ruko" : "Paisa aaya"}
+                            {open ? "Cancel" : "Received"}
                           </Button>
                         </Stack>
                         <Collapse in={open}>
                           <Box sx={{ pt: 1.5 }}>
-                            <ChipChoice label="Kaise aaya?" options={PAID_MODES} value="" onChange={(m) => addJama(u, m)} color={Q.gh} />
+                            <ChipChoice label="Payment mode" options={PAID_MODES} value="" onChange={(m) => addJama(u, m)} color={Q.gh} />
                           </Box>
                         </Collapse>
                       </Paper>
@@ -1000,10 +1000,10 @@ const GhQuickEntry = ({ date, isAdmin }) => {
 
       {!locked && (
         <SaveBar
-          label={`Total · ${summary.filled} rooms${summary.jamaTotal ? ` + jama ${inr(summary.jamaTotal)}` : ""}`}
+          label={`Total · ${summary.filled} rooms${summary.jamaTotal ? ` + collections ${inr(summary.jamaTotal)}` : ""}`}
           amount={summary.total + summary.jamaTotal}
-          sub={summary.incomplete.length ? { text: `Adhoore: ${summary.incomplete.slice(0, 3).join(", ")}${summary.incomplete.length > 3 ? "…" : ""}`, color: Q.bad } : null}
-          buttonText={submitted ? "Update karo" : "Din submit karo"}
+          sub={summary.incomplete.length ? { text: `Incomplete: ${summary.incomplete.slice(0, 3).join(", ")}${summary.incomplete.length > 3 ? "…" : ""}`, color: Q.bad } : null}
+          buttonText={submitted ? "Update" : "Submit day"}
           color={Q.gh}
           busy={busy}
           disabled={summary.incomplete.length > 0 || (summary.filled === 0 && draft.jama.length === 0 && others.length === 0)}
@@ -1047,13 +1047,13 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       <ConfirmDialog
         open={confirm}
         color={Q.gh}
-        title={submitted ? `${date} ki GH entry update karein?` : `${date} ki GH entry submit karein?`}
-        confirmText={submitted ? "Haan, update karo" : "Haan, submit karo"}
+        title={submitted ? `Update GH entry for ${date}?` : `Submit GH entry for ${date}?`}
+        confirmText={submitted ? "Yes, update" : "Yes, submit"}
         lines={[
           ...PERIODS.filter((p) => summary.per[p.key]).map((p) => ({ label: p.label, value: `${summary.per[p.key]} rooms` })),
-          ...(draft.jama.length ? [{ label: "Pending jama", value: `${draft.jama.length} · ${inr(summary.jamaTotal)}` }] : []),
-          { label: "Kul", value: inr(summary.total + summary.jamaTotal), color: Q.ink },
-          ...(!submitted && !isAdmin ? [{ label: "Dhyan do", value: "Submit ke baad sirf admin badal sakta hai", color: Q.warn }] : []),
+          ...(draft.jama.length ? [{ label: "Pending collections", value: `${draft.jama.length} · ${inr(summary.jamaTotal)}` }] : []),
+          { label: "Total", value: inr(summary.total + summary.jamaTotal), color: Q.ink },
+          ...(!submitted && !isAdmin ? [{ label: "Note", value: "After submitting, only an admin can make changes", color: Q.warn }] : []),
         ]}
         onCancel={() => setConfirm(false)}
         onConfirm={submit}

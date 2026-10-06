@@ -100,7 +100,7 @@ const DashboardHeader = () => {
       </Stack>
       <Stack direction="row" spacing={1} alignItems="center">
         <Button variant="contained" size="small" startIcon={<EditNoteIcon />} onClick={() => navigate("/entry")}>
-          Entry karo
+          New entry
         </Button>
       </Stack>
     </Stack>
@@ -110,16 +110,16 @@ const DashboardHeader = () => {
 // Saare purane menu items waise hi + naye items (Aaj ka hisaab, Guest Dues, Staff Access).
 // Naye tab-wale pages (Reports, Setup...) bhi "Naye combined pages" mein rakhe hain.
 const NAVIGATION = [
-  { segment: "home", title: "Aaj ka hisaab", icon: <TodayIcon /> },
+  { segment: "home", title: "Today's summary", icon: <TodayIcon /> },
   { segment: "home-classic", title: "Home", icon: <DashboardIcon /> },
   { segment: "owner-report", title: "Owner Monthly Report", icon: <InsightsIcon /> },
   { segment: "guest-dues", title: "Guest Dues & Reminders", icon: <WhatsAppIcon /> },
   { kind: "header", title: "Business Growth" },
   { segment: "profit-loss", title: "Profit & Loss", icon: <AssessmentIcon /> },
-  { segment: "cashflow", title: "Cashflow (mahina-wise)", icon: <AccountBalanceWalletIcon /> },
+  { segment: "cashflow", title: "Cashflow (monthly)", icon: <AccountBalanceWalletIcon /> },
   { segment: "gh-growth", title: "GH Growth", icon: <TrendingUpIcon /> },
-  { segment: "kharch-control", title: "Kharch Control", icon: <ReceiptLongIcon /> },
-  { segment: "data-check", title: "Data Check (galti alert)", icon: <FactCheckIcon /> },
+  { segment: "kharch-control", title: "Expense control", icon: <ReceiptLongIcon /> },
+  { segment: "data-check", title: "Data check (error alerts)", icon: <FactCheckIcon /> },
   { kind: "header", title: "Guest House" },
   { segment: "guest-house", title: "GH - Graph", icon: <PieChartIcon /> },
   { segment: "gh-dashboard", title: "GH - One Day View", icon: <LooksOneIcon /> },
@@ -131,7 +131,7 @@ const NAVIGATION = [
     children: [
       { segment: "sales-report", title: "GH - Sales Report", icon: <CurrencyRupeeIcon /> },
       { segment: "bank-books", title: "GH - Bank Books", icon: <BookOutlined /> },
-      { segment: "upaid-report", title: "GH - Upaid", icon: <PaymentsIcon /> },
+      { segment: "upaid-report", title: "GH - Unpaid", icon: <PaymentsIcon /> },
     ],
   },
   { kind: "header", title: "Restaurant" },
@@ -142,11 +142,11 @@ const NAVIGATION = [
     icon: <BarChartIcon />,
     children: [
       { segment: "sales-report", title: "Rest - Sales", icon: <CurrencyRupeeIcon /> },
-      { segment: "upaad-report", title: "Rest - Upaad", icon: <PaymentsIcon /> },
+      { segment: "upaad-report", title: "Rest - Staff advance", icon: <PaymentsIcon /> },
       { segment: "expenses-report", title: "Rest - Expenses", icon: <CreditScoreIcon /> },
       { segment: "bank-books", title: "Rest - Bank Books", icon: <BookOutlined /> },
-      { segment: "levana-report", title: "Rest - Levana", icon: <CurrencyRupeeIcon /> },
-      { segment: "aapvana-report", title: "Rest - Aapvana", icon: <CurrencyRupeeIcon /> },
+      { segment: "levana-report", title: "Rest - Receivables", icon: <CurrencyRupeeIcon /> },
+      { segment: "aapvana-report", title: "Rest - Payables", icon: <CurrencyRupeeIcon /> },
       { segment: "aapvana-levana-balance", title: "Pending Balance", icon: <CurrencyRupeeIcon /> },
     ],
   },
@@ -164,7 +164,7 @@ const NAVIGATION = [
   { segment: "merged-graph", title: "Merged Graph", icon: <PieChartIcon /> },
   { segment: "merged-reports", title: "Merged Report", icon: <BarChartIcon /> },
   { segment: "merged-vendor-report", title: "Merged Vendor Report", icon: <BarChartIcon /> },
-  { segment: "merged-vendor-graph", title: "Vendor Graph (saare vendors)", icon: <InsightsIcon /> },
+  { segment: "merged-vendor-graph", title: "Vendor Graph (all vendors)", icon: <InsightsIcon /> },
   { kind: "header", title: "Sales Goal" },
   {
     segment: "sales-goal",
@@ -175,16 +175,16 @@ const NAVIGATION = [
       { segment: "rest-sales-goal", title: "Rest - Sales Goal", icon: <StackedLineChartIcon /> },
       { segment: "office-banquet-sales-goal", title: "Banquet Sales Goal", icon: <StackedLineChartIcon /> },
       { segment: "office-bakery-baada", title: "Bakery Baada", icon: <StackedLineChartIcon /> },
-      { segment: "office-moti-baada", title: "Moti  Baada", icon: <StackedLineChartIcon /> },
+      { segment: "office-moti-baada", title: "Moti Baada", icon: <StackedLineChartIcon /> },
     ],
   },
-  { kind: "header", title: "Naye combined pages (tabs)" },
-  { segment: "gh-all-reports", title: "GH - Saare Reports", icon: <CurrencyRupeeIcon /> },
-  { segment: "rest-all-reports", title: "Rest - Saare Reports", icon: <PaymentsIcon /> },
+  { kind: "header", title: "Combined pages (tabs)" },
+  { segment: "gh-all-reports", title: "GH - All Reports", icon: <CurrencyRupeeIcon /> },
+  { segment: "rest-all-reports", title: "Rest - All Reports", icon: <PaymentsIcon /> },
   { segment: "rest-setup", title: "Rest - Staff & Setup", icon: <BadgeIcon /> },
   { segment: "office-all", title: "Office Book + Category", icon: <BookOutlined /> },
-  { segment: "merged-all", title: "Merged - Saare", icon: <StackedLineChartIcon /> },
-  { segment: "sales-goals", title: "Sales Goals - Saare", icon: <BarChartIcon /> },
+  { segment: "merged-all", title: "Merged - All", icon: <StackedLineChartIcon /> },
+  { segment: "sales-goals", title: "Sales Goals - All", icon: <BarChartIcon /> },
   { kind: "header", title: "Billing" },
   { segment: "invoices", title: "Invoices (GST / Non-GST)", icon: <ReceiptLongIcon /> },
   { kind: "header", title: "Settings" },
@@ -224,7 +224,7 @@ const DashboardPage = () => {
             { key: "range", label: "Date range", element: <GHSalesDashboardRange /> },
             { key: "sales", label: "Sales", element: <GHSalesDashboard /> },
             { key: "bank", label: "Bank books", element: <GHBankBooksDashboard /> },
-            { key: "unpaid", label: "Baaki (UnPaid)", element: <GHUpaidEntriesDashboard /> },
+            { key: "unpaid", label: "Unpaid", element: <GHUpaidEntriesDashboard /> },
           ]}
         />
       ),
@@ -237,11 +237,11 @@ const DashboardPage = () => {
           accent="#B45309"
           tabs={[
             { key: "sales", label: "Sales", element: <RestSalesDashboard /> },
-            { key: "upaad", label: "Upaad", element: <RestUpaadEntriesDashboard /> },
-            { key: "expenses", label: "Kharch", element: <RestExpensesDashboard /> },
+            { key: "upaad", label: "Staff advance", element: <RestUpaadEntriesDashboard /> },
+            { key: "expenses", label: "Expenses", element: <RestExpensesDashboard /> },
             { key: "bank", label: "Bank books", element: <BankBooksDashboard /> },
-            { key: "levana", label: "Levana", element: <RestLevanaDashboard /> },
-            { key: "aapvana", label: "Aapvana", element: <RestAapvanaDashboard /> },
+            { key: "levana", label: "Receivables", element: <RestLevanaDashboard /> },
+            { key: "aapvana", label: "Payables", element: <RestAapvanaDashboard /> },
             { key: "balance", label: "Pending balance", element: <AapvanaLevanaBalance /> },
           ]}
         />
@@ -255,8 +255,8 @@ const DashboardPage = () => {
           accent="#B45309"
           tabs={[
             { key: "staff", label: "Staff", element: <RestStaffDashboard /> },
-            { key: "categories", label: "Categories & kharch", element: <RestCategoryExpensesDashboard /> },
-            { key: "pending", label: "Levana/Aapvana log", element: <RestPendingUsersDashboard /> },
+            { key: "categories", label: "Categories & expenses", element: <RestCategoryExpensesDashboard /> },
+            { key: "pending", label: "Receivable/Payable people", element: <RestPendingUsersDashboard /> },
           ]}
         />
       ),
@@ -279,7 +279,7 @@ const DashboardPage = () => {
       element: (
         <TabbedPage
           title="Merged reports"
-          subtitle="Guest House + Restaurant + Office ek saath"
+          subtitle="Guest House + Restaurant + Office together"
           tabs={[
             { key: "graph", label: "Graph", element: <OfficeMergedGraph /> },
             { key: "report", label: "Report", element: <OfficeMerged /> },

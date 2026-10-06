@@ -30,7 +30,7 @@ const keyOf = (req, res) => {
   const period = req.params.period;
   const roomNo = Number(req.params.roomNo);
   if (!dayjs(date, F, true).isValid() || !PERIODS.includes(period) || !roomNo) {
-    res.status(400).json({ success: false, message: "Date / period / room galat hai" });
+    res.status(400).json({ success: false, message: "Invalid date / period / room" });
     return null;
   }
   return { date, period, roomNo };
@@ -39,7 +39,7 @@ const keyOf = (req, res) => {
 // Ek din ke saare records (Nayi Entry mein room card pe 📄 dikhane ke liye)
 router.get("/day/:date", async (req, res) => {
   try {
-    if (!dayjs(req.params.date, F, true).isValid()) return res.status(400).json({ success: false, message: "Date galat" });
+    if (!dayjs(req.params.date, F, true).isValid()) return res.status(400).json({ success: false, message: "Invalid date" });
     const list = await GuestRegister.find({ date: req.params.date }).lean();
     res.json({ success: true, data: list });
   } catch (e) {
@@ -96,15 +96,15 @@ router.post("/one/:date/:period/:roomNo/photo", async (req, res) => {
     const k = keyOf(req, res);
     if (!k) return;
     const m = String(req.body?.image || "").match(/^data:image\/(jpeg|png|webp);base64,(.+)$/);
-    if (!m) return res.status(400).json({ success: false, message: "Photo JPG/PNG honi chahiye" });
+    if (!m) return res.status(400).json({ success: false, message: "Photo must be JPG/PNG" });
     const buf = Buffer.from(m[2], "base64");
-    if (buf.length > 3 * 1024 * 1024) return res.status(400).json({ success: false, message: "Photo bahut badi hai (3MB max)" });
+    if (buf.length > 3 * 1024 * 1024) return res.status(400).json({ success: false, message: "Photo is too large (3MB max)" });
     const doc = await GuestRegister.findOneAndUpdate(
       k,
       { $setOnInsert: { ...k, entryCreateDate: dayjs(k.date, F).toDate(), enteredBy: who(req) } },
       { new: true, upsert: true }
     );
-    if (doc.documentImages.length >= 4) return res.status(400).json({ success: false, message: "Ek guest ki 4 photo tak hi" });
+    if (doc.documentImages.length >= 4) return res.status(400).json({ success: false, message: "Maximum 4 photos per guest" });
     const name = `${doc._id}-${crypto.randomBytes(4).toString("hex")}.${m[1] === "jpeg" ? "jpg" : m[1]}`;
     fs.writeFileSync(path.join(PHOTO_DIR, name), buf);
     doc.documentImages.push(name);
@@ -118,17 +118,17 @@ router.post("/one/:date/:period/:roomNo/photo", async (req, res) => {
 
 // Photo dekhna: sirf owner/admin (staff sirf upload kar sakta hai)
 router.get("/photo/:name", (req, res) => {
-  if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Sirf owner/admin photo dekh sakta hai" });
+  if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can view photos" });
   const name = path.basename(req.params.name);
   const file = path.join(PHOTO_DIR, name);
-  if (!fs.existsSync(file)) return res.status(404).json({ success: false, message: "Photo nahi mili" });
+  if (!fs.existsSync(file)) return res.status(404).json({ success: false, message: "Photo not found" });
   res.sendFile(file);
 });
 
 // Photo hatana: sirf owner/admin
 router.delete("/one/:date/:period/:roomNo/photo/:name", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Sirf owner/admin" });
+    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can do this" });
     const k = keyOf(req, res);
     if (!k) return;
     const name = path.basename(req.params.name);
@@ -155,7 +155,7 @@ const rangeQuery = (req, res) => {
   const s = dayjs(req.params.start, F, true);
   const e = dayjs(req.params.end, F, true);
   if (!s.isValid() || !e.isValid() || e.isBefore(s)) {
-    res.status(400).json({ success: false, message: "Date range galat hai" });
+    res.status(400).json({ success: false, message: "Invalid date range" });
     return null;
   }
   return { entryCreateDate: { $gte: s.startOf("day").toDate(), $lte: e.endOf("day").toDate() } };
@@ -163,7 +163,7 @@ const rangeQuery = (req, res) => {
 
 router.get("/range/:start/:end", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Sirf owner/admin" });
+    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can do this" });
     const q = rangeQuery(req, res);
     if (!q) return;
     const list = await GuestRegister.find(q).sort({ entryCreateDate: 1, roomNo: 1 }).lean();
@@ -175,7 +175,7 @@ router.get("/range/:start/:end", async (req, res) => {
 
 router.get("/csv/:start/:end", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Sirf owner/admin" });
+    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can do this" });
     const q = rangeQuery(req, res);
     if (!q) return;
     const list = await GuestRegister.find(q).sort({ entryCreateDate: 1, roomNo: 1 }).lean();

@@ -14,7 +14,7 @@ router.post("/create-entry", async (req, res) => {
     if (already) {
       return res.status(400).json({
         success: false,
-        message: "Is din ki entry pehle se hai. Edit karke badlo.",
+        message: "An entry already exists for this date. Edit it instead.",
       });
     }
 

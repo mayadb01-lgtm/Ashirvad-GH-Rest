@@ -11,7 +11,7 @@ import { API, PageTitle, Section, MonthStepBar } from "../insights/shared";
 const F = "DD-MM-YYYY";
 const fullName = (r) => [r.firstName, r.middleName, r.lastName].filter(Boolean).join(" ");
 const missing = (r) => {
-  const need = { "Naam": r.firstName, Mobile: r.mobile, Address: r.address, State: r.state, City: r.city, "Doc type": r.documentType, "Doc no.": r.documentNumber, "Coming from": r.comingFrom, "Going to": r.goingTo };
+  const need = { "Name": r.firstName, Mobile: r.mobile, Address: r.address, State: r.state, City: r.city, "Doc type": r.documentType, "Doc no.": r.documentNumber, "Coming from": r.comingFrom, "Going to": r.goingTo };
   return Object.entries(need).filter(([, v]) => !String(v || "").trim()).map(([k]) => k);
 };
 
@@ -28,7 +28,7 @@ const GuestRegisterDashboard = () => {
     axios
       .get(`${API}/guest-register/range/${start.format(F)}/${end.format(F)}`)
       .then(({ data }) => !off && setList(data.data || []))
-      .catch((e) => toast.error(e?.response?.data?.message || "List load nahi hui"))
+      .catch((e) => toast.error(e?.response?.data?.message || "Could not load list"))
       .finally(() => !off && setLoading(false));
     return () => {
       off = true;
@@ -45,7 +45,7 @@ const GuestRegisterDashboard = () => {
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 2000);
     } catch (e) {
-      toast.error("CSV download nahi hui");
+      toast.error("Could not download CSV");
     }
   };
 
@@ -54,19 +54,19 @@ const GuestRegisterDashboard = () => {
       const { data } = await axios.get(`${API}/guest-register/photo/${name}`, { responseType: "blob" });
       setPhoto(URL.createObjectURL(data));
     } catch {
-      toast.error("Photo nahi mili");
+      toast.error("Could not load photo");
     }
   };
 
   return (
     <Box sx={{ p: { xs: 1, md: 2 } }}>
-      <PageTitle title="Guest Register (Govt)" sub="Staff ne room entry ke saath jo Govt/Police details bhari — yahan se CSV nikal ke govt website pe daalo." />
+      <PageTitle title="Guest Register (Govt)" sub="Govt/Police details entered by staff with room entries. Download the CSV here and upload it to the govt website." />
       <MonthStepBar start={start} end={end} setStart={setStart} setEnd={setEnd} format={F}>
         <Button size="small" variant="outlined" onClick={() => { setStart(dayjs()); setEnd(dayjs()); }}>
-          Aaj
+          Today
         </Button>
         <Button size="small" variant="outlined" onClick={() => { const y = dayjs().subtract(1, "day"); setStart(y); setEnd(y); }}>
-          Kal
+          Yesterday
         </Button>
         <Button variant="contained" startIcon={<DownloadIcon />} onClick={downloadCsv} disabled={!list.length}>
           CSV download
@@ -74,16 +74,16 @@ const GuestRegisterDashboard = () => {
       </MonthStepBar>
 
       <Alert severity="info" sx={{ mb: 2 }}>
-        Ye details alag rakhi jaati hain — purani GH entry / hisaab pe koi asar nahi. Jo guest ki details nahi bhari, wo yahan nahi dikhega. CSV ka column order govt form jaisa hai.
+        These details are stored separately and do not affect GH entries or accounts. Guests without registration details are not shown here. The CSV column order matches the govt form.
       </Alert>
-      {loading && <Typography color="text.secondary">Load ho raha hai…</Typography>}
+      {loading && <Typography color="text.secondary">Loading…</Typography>}
 
       <Section title={`Guests — ${list.length}`}>
         <TableContainer>
           <Table size="small">
             <TableHead>
               <TableRow>
-                {["Date", "Room", "Naam", "Mobile", "Shehar / State", "Document", "Log", "Photo", "Kami"].map((h) => (
+                {["Date", "Room", "Name", "Mobile", "City / State", "Document", "Guests", "Photo", "Missing"].map((h) => (
                   <TableCell key={h} sx={{ fontWeight: 700, whiteSpace: "nowrap" }}>
                     {h}
                   </TableCell>
@@ -110,7 +110,7 @@ const GuestRegisterDashboard = () => {
                     </TableCell>
                     <TableCell>
                       {(Number(r.adults) || 0) + (Number(r.children) || 0) || ""}
-                      {r.otherGuests?.length ? ` (+${r.otherGuests.length} naam)` : ""}
+                      {r.otherGuests?.length ? ` (+${r.otherGuests.length} names)` : ""}
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={0.5}>
@@ -119,14 +119,14 @@ const GuestRegisterDashboard = () => {
                         ))}
                       </Stack>
                     </TableCell>
-                    <TableCell>{miss.length ? <Typography variant="caption" color="error">{miss.join(", ")}</Typography> : <Chip size="small" color="success" label="Poora" />}</TableCell>
+                    <TableCell>{miss.length ? <Typography variant="caption" color="error">{miss.join(", ")}</Typography> : <Chip size="small" color="success" label="Complete" />}</TableCell>
                   </TableRow>
                 );
               })}
               {!loading && !list.length && (
                 <TableRow>
                   <TableCell colSpan={9}>
-                    <Typography color="text.secondary">Is date range mein koi Govt details nahi bhari gayi.</Typography>
+                    <Typography color="text.secondary">No Govt details entered in this date range.</Typography>
                   </TableCell>
                 </TableRow>
               )}

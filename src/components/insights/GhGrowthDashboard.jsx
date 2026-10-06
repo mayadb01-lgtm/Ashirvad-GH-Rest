@@ -38,7 +38,7 @@ const GhGrowthDashboard = () => {
   const [end, setEnd] = useState(dayjs());
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("Namaste {name} ji 🙏 Ashirvad Guest House mein aapka phir se swagat hai. Aapke liye is baar special rate rakha hai. Booking ke liye isi number pe message karein.");
+  const [msg, setMsg] = useState("Hello {name} 🙏 Welcome back to Ashirvad Guest House. We have a special rate for you this time. Message us on this number to book.");
 
   useEffect(() => {
     let off = false;
@@ -46,7 +46,7 @@ const GhGrowthDashboard = () => {
     axios
       .get(`${API}/insights/gh-growth/${start.format(F)}/${end.format(F)}`)
       .then(({ data }) => !off && setData(data.data))
-      .catch((e) => toast.error(e?.response?.data?.message || "GH report load nahi hua"))
+      .catch((e) => toast.error(e?.response?.data?.message || "Could not load GH report"))
       .finally(() => !off && setLoading(false));
     return () => {
       off = true;
@@ -62,38 +62,38 @@ const GhGrowthDashboard = () => {
   const exportGuests = () => {
     if (!data?.topGuests?.length) return;
     const ws = XLSX.utils.json_to_sheet(
-      data.topGuests.map((g) => ({ Naam: g.name, Mobile: g.mobile, Type: g.type, Stays: g.stays, "Total kharch": g.spent, "Pehli baar": g.first, "Aakhri baar": g.last, "Kitne din pehle": g.daysSinceLast }))
+      data.topGuests.map((g) => ({ Name: g.name, Mobile: g.mobile, Type: g.type, Stays: g.stays, "Total spent": g.spent, "First visit": g.first, "Last visit": g.last, "Days since last visit": g.daysSinceLast }))
     );
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Purane guests");
-    XLSX.writeFile(wb, "GH_purane_guests.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, "Repeat guests");
+    XLSX.writeFile(wb, "GH_repeat_guests.xlsx");
   };
 
   return (
     <Box sx={{ p: { xs: 1, md: 2 } }}>
-      <PageTitle title="Guest House Growth" sub="Rooms kitne bharte hain, kis rate pe, kaun se guest aate hain — aur kahan se zyada kamai ho sakti hai." />
+      <PageTitle title="Guest House Growth" sub="How full the rooms are, at what rate, which guests come — and where revenue can grow." />
       <MonthStepBar start={start} end={end} setStart={setStart} setEnd={setEnd} format={F} />
 
-      {loading && <Typography color="text.secondary">Load ho raha hai…</Typography>}
+      {loading && <Typography color="text.secondary">Loading…</Typography>}
 
       <Stack direction="row" spacing={1.5} sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
-        <Kpi label="Kamai" value={lakh(k.revenue)} sub={`${k.stays || 0} stays`} color={COLORS.gh} />
-        <Kpi label="Occupancy" value={`${k.occupancy || 0}%`} sub={`${data?.rooms || 0} rooms · ${data?.days || 0} din`} />
+        <Kpi label="Revenue" value={lakh(k.revenue)} sub={`${k.stays || 0} stays`} color={COLORS.gh} />
+        <Kpi label="Occupancy" value={`${k.occupancy || 0}%`} sub={`${data?.rooms || 0} rooms · ${data?.days || 0} days`} />
         <Kpi label="Average rate (ADR)" value={inr(k.adr)} sub={`RevPAR ${inr(k.revPar)}`} />
-        <Kpi label="Khaali room-nights" value={(k.emptyRoomNights || 0).toLocaleString("en-IN")} sub={k.adr ? `Mauka ≈ ${lakh((k.emptyRoomNights || 0) * k.adr * 0.2)} (20% bhi bhare to)` : ""} color={COLORS.bad} />
-        <Kpi label="List rate se discount" value={lakh(k.discount)} />
-        <Kpi label="Purane guest" value={`${k.repeatShare || 0}%`} sub={`${k.repeatGuests || 0} / ${k.guests || 0} guests`} color={COLORS.net} />
+        <Kpi label="Vacant room-nights" value={(k.emptyRoomNights || 0).toLocaleString("en-IN")} sub={k.adr ? `Potential ≈ ${lakh((k.emptyRoomNights || 0) * k.adr * 0.2)} (if 20% are filled)` : ""} color={COLORS.bad} />
+        <Kpi label="Discount from list rate" value={lakh(k.discount)} />
+        <Kpi label="Repeat guests" value={`${k.repeatShare || 0}%`} sub={`${k.repeatGuests || 0} / ${k.guests || 0} guests`} color={COLORS.net} />
       </Stack>
 
       {data && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          <b>Sujhav:</b> {bestDay && worstDay && `Sabse bhara din ${bestDay.day} (${bestDay.occupancy}%), sabse khaali ${worstDay.day} (${worstDay.occupancy}%) — khaali din pe offer/company tie-up. `}
-          {lowRooms.length > 0 && `Sabse kam bharne wale rooms: ${lowRooms.map((r) => `${r.roomNo} (${r.occupancy}%)`).join(", ")}. `}
-          Purane guests ko neeche list se WhatsApp offer bhejo.
+          <b>Tip:</b> {bestDay && worstDay && `Busiest day ${bestDay.day} (${bestDay.occupancy}%), quietest ${worstDay.day} (${worstDay.occupancy}%) — try offers or company tie-ups on quiet days. `}
+          {lowRooms.length > 0 && `Least occupied rooms: ${lowRooms.map((r) => `${r.roomNo} (${r.occupancy}%)`).join(", ")}. `}
+          Send WhatsApp offers to repeat guests from the list below.
         </Alert>
       )}
 
-      <Section title="Mahina-wise occupancy aur rate">
+      <Section title="Monthly occupancy and rate">
         <Box sx={{ width: "100%", height: 320 }}>
           <ResponsiveContainer>
             <ComposedChart data={data?.monthly || []} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
@@ -103,7 +103,7 @@ const GhGrowthDashboard = () => {
               <YAxis yAxisId="r" orientation="right" unit="%" domain={[0, 100]} />
               <Tooltip formatter={(v, name) => (name === "Occupancy %" ? `${v}%` : inr(v))} />
               <Legend />
-              <Bar yAxisId="l" dataKey="revenue" name="Kamai" fill={COLORS.gh} />
+              <Bar yAxisId="l" dataKey="revenue" name="Revenue" fill={COLORS.gh} />
               <Line yAxisId="r" dataKey="occupancy" name="Occupancy %" stroke={COLORS.out} strokeWidth={3} />
               <Line yAxisId="l" dataKey="adr" name="Avg rate" stroke={COLORS.in} strokeDasharray="4 4" />
             </ComposedChart>
@@ -112,7 +112,7 @@ const GhGrowthDashboard = () => {
       </Section>
 
       <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-        <Section title="Hafte ke din: occupancy %" sx={{ flex: 1 }}>
+        <Section title="Day of week: occupancy %" sx={{ flex: 1 }}>
           <Box sx={{ width: "100%", height: 240 }}>
             <ResponsiveContainer>
               <BarChart data={data?.weekday || []}>
@@ -125,10 +125,10 @@ const GhGrowthDashboard = () => {
             </ResponsiveContainer>
           </Box>
         </Section>
-        <Section title="Kaun se guest (kamai)" sx={{ flex: 1 }}>
+        <Section title="Guest types (revenue)" sx={{ flex: 1 }}>
           <Split obj={data?.byType} />
         </Section>
-        <Section title="Payment kaise" sx={{ flex: 1 }}>
+        <Section title="Payment modes" sx={{ flex: 1 }}>
           <Split obj={data?.byMode} />
         </Section>
       </Stack>
@@ -138,7 +138,7 @@ const GhGrowthDashboard = () => {
           <Table size="small">
             <TableHead>
               <TableRow>
-                {["Room", "Type", "List rate", "Avg rate", "Stays", "Occupancy", "Kamai"].map((h) => (
+                {["Room", "Type", "List rate", "Avg rate", "Stays", "Occupancy", "Revenue"].map((h) => (
                   <TableCell key={h} sx={{ fontWeight: 700 }} align={h === "Room" || h === "Type" ? "left" : "right"}>
                     {h}
                   </TableCell>
@@ -163,19 +163,19 @@ const GhGrowthDashboard = () => {
       </Section>
 
       <Section
-        title={`Purane guests (2+ baar aaye) — ${data?.topGuests?.length || 0}`}
+        title={`Repeat guests (2+ visits) — ${data?.topGuests?.length || 0}`}
         right={
           <Button size="small" variant="outlined" startIcon={<DownloadIcon />} onClick={exportGuests}>
             Excel
           </Button>
         }
       >
-        <TextField fullWidth multiline minRows={2} size="small" label="WhatsApp message ({name} ki jagah naam aayega)" value={msg} onChange={(e) => setMsg(e.target.value)} sx={{ mb: 1.5 }} />
+        <TextField fullWidth multiline minRows={2} size="small" label="WhatsApp message ({name} is replaced with the guest name)" value={msg} onChange={(e) => setMsg(e.target.value)} sx={{ mb: 1.5 }} />
         <TableContainer sx={{ maxHeight: 480 }}>
           <Table size="small" stickyHeader>
             <TableHead>
               <TableRow>
-                {["Naam", "Mobile", "Type", "Stays", "Total kharch", "Aakhri baar", ""].map((h) => (
+                {["Name", "Mobile", "Type", "Stays", "Total spent", "Last visit", ""].map((h) => (
                   <TableCell key={h} sx={{ fontWeight: 700 }}>
                     {h}
                   </TableCell>
@@ -191,7 +191,7 @@ const GhGrowthDashboard = () => {
                   <TableCell>{g.stays}</TableCell>
                   <TableCell>{inr(g.spent)}</TableCell>
                   <TableCell sx={{ color: g.daysSinceLast > 90 ? COLORS.bad : "inherit" }}>
-                    {g.last} ({g.daysSinceLast} din)
+                    {g.last} ({g.daysSinceLast} days)
                   </TableCell>
                   <TableCell>
                     <Button size="small" color="success" startIcon={<WhatsAppIcon />} href={wa(g)} target="_blank" rel="noopener">
@@ -204,7 +204,7 @@ const GhGrowthDashboard = () => {
           </Table>
         </TableContainer>
         <Typography variant="caption" color="text.secondary">
-          Laal = 90 din se nahi aaye. "Offer" dabane pe WhatsApp khulega, message aap khud bhejoge.
+          Red = not visited in 90 days. Tapping "Offer" opens WhatsApp; you send the message yourself.
         </Typography>
       </Section>
     </Box>

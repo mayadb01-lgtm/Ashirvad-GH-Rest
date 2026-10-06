@@ -40,7 +40,7 @@ const officeTotals = (doc) => ({
 });
 
 const Change = ({ now, before }) => {
-  if (!before) return <Typography variant="caption" color="text.secondary">Pichhle hafte isi din: koi entry nahi</Typography>;
+  if (!before) return <Typography variant="caption" color="text.secondary">Same day last week: no entry</Typography>;
   const pct = ((now - before) / before) * 100;
   const up = pct >= 0;
   return (
@@ -48,7 +48,7 @@ const Change = ({ now, before }) => {
       <Box component="span" sx={{ color: up ? BRAND.good : BRAND.bad, fontWeight: 800, mr: 0.5 }}>
         {up ? "▲" : "▼"} {Math.abs(pct).toFixed(0)}%
       </Box>
-      pichhle {dayjs().format("dddd")} se ({inr(before)})
+      vs last {dayjs().format("dddd")} ({inr(before)})
     </Typography>
   );
 };
@@ -173,9 +173,9 @@ const TodayHome = ({ onNavigate }) => {
 
   const st = data.status || {};
   const checklist = [
-    { label: "Guest House", ok: st.gh?.done, sub: st.gh?.done ? `${st.gh.by || "—"} · ${st.gh.at ? dayjs(st.gh.at).format("hh:mm A") : ""}` : "Abhi entry nahi hui" },
-    { label: "Restaurant", ok: st.rest?.done, sub: st.rest?.done ? `${st.rest.by || "—"} · ${st.rest.at ? dayjs(st.rest.at).format("hh:mm A") : ""}` : "Abhi entry nahi hui" },
-    { label: "Office Book", ok: st.office?.done, sub: st.office?.done ? `${st.office.by || "—"} · ${st.office.at ? dayjs(st.office.at).format("hh:mm A") : ""}` : "Aaj koi entry nahi" },
+    { label: "Guest House", ok: st.gh?.done, sub: st.gh?.done ? `${st.gh.by || "—"} · ${st.gh.at ? dayjs(st.gh.at).format("hh:mm A") : ""}` : "No entry yet" },
+    { label: "Restaurant", ok: st.rest?.done, sub: st.rest?.done ? `${st.rest.by || "—"} · ${st.rest.at ? dayjs(st.rest.at).format("hh:mm A") : ""}` : "No entry yet" },
+    { label: "Office Book", ok: st.office?.done, sub: st.office?.done ? `${st.office.by || "—"} · ${st.office.at ? dayjs(st.office.at).format("hh:mm A") : ""}` : "No entry today" },
   ];
   const insights = v.m?.insights || [];
   const toneColor = { good: BRAND.good, bad: BRAND.bad, warn: "#D97706", info: BRAND.muted };
@@ -186,14 +186,14 @@ const TodayHome = ({ onNavigate }) => {
       {/* Heading */}
       <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ sm: "flex-end" }} spacing={1} sx={{ mb: 2.5 }}>
         <Box>
-          <Typography color="text.secondary">Aaj ka hisaab</Typography>
+          <Typography color="text.secondary">Today's summary</Typography>
           <Typography variant="h4" sx={{ fontSize: { xs: 26, md: 32 } }}>
             {today.format("dddd, D MMMM YYYY")}
           </Typography>
         </Box>
         <Stack direction="row" spacing={1} alignItems="center">
           <Typography variant="caption" color="text.secondary">
-            {loading ? "Update ho raha hai…" : `Update: ${dayjs().format("hh:mm A")}`}
+            {loading ? "Updating…" : `Updated: ${dayjs().format("hh:mm A")}`}
           </Typography>
           <Button size="small" variant="outlined" startIcon={<RefreshIcon />} onClick={() => setStamp((s) => s + 1)}>
             Refresh
@@ -206,24 +206,24 @@ const TodayHome = ({ onNavigate }) => {
         <Grid size={{ xs: 12, md: 4 }}>
           <BizCard
             color={BRAND.gh}
-            title="Guest House · aaj"
+            title="Guest House · today"
             right={`${v.occupied} / ${data.rooms.length} rooms`}
             value={v.g.total}
             change={<Change now={v.g.total} before={v.gLw.total} />}
             onClick={() => go("gh-dashboard")}
             stats={[
-              ["Bhare (raat)", v.occupied],
-              ["Khaali", Math.max(data.rooms.length - v.occupied, 0)],
+              ["Filled (night)", v.occupied],
+              ["Vacant", Math.max(data.rooms.length - v.occupied, 0)],
               ["Avg rate", v.g.sold ? inr(v.g.total / v.g.sold) : "—"],
-              ["Baaki", inr(v.g.unpaid), v.g.unpaid ? BRAND.bad : undefined],
+              ["Due", inr(v.g.unpaid), v.g.unpaid ? BRAND.bad : undefined],
             ]}
           />
         </Grid>
         <Grid size={{ xs: 12, md: 4 }}>
           <BizCard
             color={BRAND.rest}
-            title="Restaurant · aaj"
-            right={data.rest ? "closing ho gaya" : "abhi tak nahi"}
+            title="Restaurant · today"
+            right={data.rest ? "closing done" : "not done yet"}
             value={restTotal}
             change={<Change now={restTotal} before={data.restLw?.grandTotal || 0} />}
             onClick={() => go("rest-all-reports")}
@@ -231,14 +231,14 @@ const TodayHome = ({ onNavigate }) => {
               ["Cash", inr(data.rest?.totalCash)],
               ["Card", inr(data.rest?.totalCard)],
               ["PP", inr(data.rest?.totalPP)],
-              ["Kharch", inr(data.rest?.totalExpenses)],
+              ["Expenses", inr(data.rest?.totalExpenses)],
             ]}
           />
         </Grid>
         <Grid size={{ xs: 12, md: 4 }}>
           <BizCard
             color={BRAND.office}
-            title="Office / Banquet · aaj"
+            title="Office / Banquet · today"
             right={`${v.o.rows} entries`}
             value={v.o.in}
             change={<Change now={v.o.in} before={v.oLw.in} />}
@@ -246,7 +246,7 @@ const TodayHome = ({ onNavigate }) => {
             stats={[
               ["In", inr(v.o.in)],
               ["Out", inr(v.o.out)],
-              ["Is mahine", v.m ? inr(v.m.kpis.officeIn) : "—"],
+              ["This month", v.m ? inr(v.m.kpis.officeIn) : "—"],
             ]}
           />
         </Grid>
@@ -255,10 +255,10 @@ const TodayHome = ({ onNavigate }) => {
         <Grid size={{ xs: 12, lg: 8 }}>
           <Paper variant="outlined" sx={{ p: 2.25, borderRadius: 3.5, height: "100%" }}>
             <Typography fontWeight={800} fontSize={17}>
-              Rooms abhi
+              Rooms now
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Aaj raat ki sthiti
+              Tonight's status
             </Typography>
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(4, 1fr)", sm: "repeat(8, 1fr)" }, gap: 1, mt: 1.5 }}>
               {data.rooms.map((r) => {
@@ -270,19 +270,19 @@ const TodayHome = ({ onNavigate }) => {
                   empty: { bgcolor: "#fff", color: BRAND.muted, border: "1.5px dashed #CBD5E1" },
                 }[state];
                 return (
-                  <Tooltip key={r.roomNumber} arrow title={s ? `${s.name || "Guest"}${s.unpaid ? " · payment baaki" : ""}` : "Khaali"}>
+                  <Tooltip key={r.roomNumber} arrow title={s ? `${s.name || "Guest"}${s.unpaid ? " · payment due" : ""}` : "Vacant"}>
                     <Box sx={{ ...style, borderRadius: 2.25, p: 1, minHeight: 72, boxShadow: s?.unpaid ? `inset 0 0 0 3px ${BRAND.bad}` : "none" }}>
                       <Stack direction="row" justifyContent="space-between" alignItems="center">
                         <Typography fontWeight={800} fontSize={15} color="inherit">
                           {r.roomNumber}
                         </Typography>
-                        {s?.unpaid && <Box sx={{ bgcolor: BRAND.bad, color: "#fff", fontSize: 9, fontWeight: 800, px: 0.6, borderRadius: 1 }}>Baaki</Box>}
+                        {s?.unpaid && <Box sx={{ bgcolor: BRAND.bad, color: "#fff", fontSize: 9, fontWeight: 800, px: 0.6, borderRadius: 1 }}>Due</Box>}
                       </Stack>
                       <Typography fontSize={10} sx={{ opacity: 0.8 }} color="inherit">
                         {r.roomType}
                       </Typography>
                       <Typography fontSize={11} noWrap sx={{ mt: 0.5 }} color="inherit">
-                        {state === "empty" ? "Khaali" : state === "day" ? "Day use" : s.name || "Bhara"}
+                        {state === "empty" ? "Vacant" : state === "day" ? "Day use" : s.name || "Filled"}
                       </Typography>
                     </Box>
                   </Tooltip>
@@ -291,10 +291,10 @@ const TodayHome = ({ onNavigate }) => {
             </Box>
             <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap sx={{ mt: 1.5, fontSize: 12, color: "text.secondary" }}>
               {[
-                ["Bhara (raat)", { bgcolor: BRAND.gh }],
-                ["Sirf day use", { bgcolor: "#99F6E4" }],
-                ["Khaali", { bgcolor: "#fff", border: "1.5px dashed #CBD5E1" }],
-                ["Payment baaki", { bgcolor: BRAND.gh, boxShadow: `inset 0 0 0 2px ${BRAND.bad}` }],
+                ["Filled (night)", { bgcolor: BRAND.gh }],
+                ["Day use only", { bgcolor: "#99F6E4" }],
+                ["Vacant", { bgcolor: "#fff", border: "1.5px dashed #CBD5E1" }],
+                ["Payment due", { bgcolor: BRAND.gh, boxShadow: `inset 0 0 0 2px ${BRAND.bad}` }],
               ].map(([l, sx]) => (
                 <Stack key={l} direction="row" spacing={0.75} alignItems="center">
                   <Box sx={{ width: 12, height: 12, borderRadius: 0.75, ...sx }} />
@@ -309,10 +309,10 @@ const TodayHome = ({ onNavigate }) => {
         <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
           <Paper variant="outlined" sx={{ p: 2.25, borderRadius: 3.5, height: "100%" }}>
             <Typography fontWeight={800} fontSize={17}>
-              Aaj ki entry hui?
+              Today's entries done?
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Staff ne bhari ya bhool gaya
+              Did staff fill them in?
             </Typography>
             <Stack sx={{ mt: 1 }}>
               {checklist.map((c, i) => (
@@ -336,20 +336,20 @@ const TodayHome = ({ onNavigate }) => {
         <Grid size={{ xs: 12, sm: 6, lg: 5 }}>
           <Paper variant="outlined" sx={{ p: 2.25, borderRadius: 3.5, height: "100%" }}>
             <Typography fontWeight={800} fontSize={17}>
-              {today.format("MMMM")} ab tak
+              {today.format("MMMM")} so far
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {v.m ? `${v.m.period.daysCounted} din guzre, ${v.m.period.daysInMonth - v.m.period.daysCounted} baaki` : "Monthly data nahi mila"}
+              {v.m ? `${v.m.period.daysCounted} days done, ${v.m.period.daysInMonth - v.m.period.daysCounted} left` : "Monthly data not found"}
             </Typography>
             {v.m && (
               <>
                 <Typography sx={{ fontSize: 30, fontWeight: 800, mt: 1, letterSpacing: "-0.02em" }}>{inr(v.m.kpis.totalRevenue)}</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                  Isi raftaar se mahina khatam hone tak <b style={{ color: BRAND.ink }}>{inr(v.proj)}</b>
+                  Month-end projection at this pace: <b style={{ color: BRAND.ink }}>{inr(v.proj)}</b>
                   {v.m.prevKpis.totalRevenue ? (
                     <>
                       {" "}
-                      · pichhla mahina {inr(v.m.prevKpis.totalRevenue)}{" "}
+                      · last month {inr(v.m.prevKpis.totalRevenue)}{" "}
                       <b style={{ color: v.proj >= v.m.prevKpis.totalRevenue ? BRAND.good : BRAND.bad }}>
                         ({v.proj >= v.m.prevKpis.totalRevenue ? "▲" : "▼"} {Math.abs(((v.proj - v.m.prevKpis.totalRevenue) / v.m.prevKpis.totalRevenue) * 100).toFixed(0)}%)
                       </b>
@@ -380,19 +380,19 @@ const TodayHome = ({ onNavigate }) => {
         <Grid size={{ xs: 12, md: 7, lg: 4 }}>
           <Paper variant="outlined" sx={{ p: 2.25, borderRadius: 3.5, height: "100%" }}>
             <Typography fontWeight={800} fontSize={17}>
-              Dhyan dene layak
+              Needs attention
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              App ne khud dhoondha
+              Found automatically by the app
             </Typography>
             <Stack spacing={1} sx={{ mt: 1.5 }}>
               <DataAlerts compact onNavigate={go} />
               {v.m?.unpaid?.total > 0 && (
                 <ButtonBase onClick={() => go("guest-dues")} sx={{ textAlign: "left", borderRadius: 2.5, bgcolor: "#FEF2F2", color: "#7F1D1D", p: 1.5, display: "flex", gap: 1 }}>
                   <Box sx={{ flex: 1 }}>
-                    <b>{inr(v.m.unpaid.total)} guest dues baaki</b>
+                    <b>{inr(v.m.unpaid.total)} guest dues pending</b>
                     <Typography variant="caption" display="block">
-                      {inr((v.m.unpaid.aging["31-90 days"] || 0) + (v.m.unpaid.aging["90+ days"] || 0))} 30 din se purane
+                      {inr((v.m.unpaid.aging["31-90 days"] || 0) + (v.m.unpaid.aging["90+ days"] || 0))} older than 30 days
                     </Typography>
                   </Box>
                   <b style={{ whiteSpace: "nowrap" }}>Remind →</b>
@@ -406,7 +406,7 @@ const TodayHome = ({ onNavigate }) => {
               ))}
               {!insights.length && !(v.m?.unpaid?.total > 0) && (
                 <Typography variant="body2" color="text.secondary">
-                  Sab theek lag raha hai 👍
+                  Everything looks fine 👍
                 </Typography>
               )}
             </Stack>
@@ -417,12 +417,12 @@ const TodayHome = ({ onNavigate }) => {
         <Grid size={{ xs: 12, md: 5, lg: 3 }}>
           <Paper variant="outlined" sx={{ p: 2.25, borderRadius: 3.5, height: "100%" }}>
             <Typography fontWeight={800} fontSize={17} sx={{ mb: 1.5 }}>
-              Jaldi kaam
+              Quick actions
             </Typography>
             <Stack spacing={1}>
               {[
-                ["Entry karo", <EditNoteIcon key="e" />, BRAND.gh, () => navigate("/entry")],
-                ["Mahine ki report", <InsightsIcon key="r" />, BRAND.ink, () => go("owner-report")],
+                ["New entry", <EditNoteIcon key="e" />, BRAND.gh, () => navigate("/entry")],
+                ["Monthly report", <InsightsIcon key="r" />, BRAND.ink, () => go("owner-report")],
                 ["Dues reminder", <WhatsAppIcon key="w" />, "#1DA851", () => go("guest-dues")],
                 ["Excel import", <UploadFileIcon key="u" />, BRAND.office, () => go("data-import")],
               ].map(([l, icon, c, fn]) => (

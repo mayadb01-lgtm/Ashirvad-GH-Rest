@@ -49,8 +49,8 @@ export const num = (v) => {
   const n = Number(String(v ?? "").replace(/[^\d.]/g, ""));
   return Number.isFinite(n) ? n : 0;
 };
-export const apiError = (e, fallback = "Kuch galat hua, dobara koshish karo") =>
-  e?.response?.data?.message || (e?.message === "Network Error" ? "Internet nahi hai, check karo" : fallback);
+export const apiError = (e, fallback = "Something went wrong. Please try again.") =>
+  e?.response?.data?.message || (e?.message === "Network Error" ? "No internet connection. Please check." : fallback);
 
 export const useIsDesktop = () => {
   const theme = useTheme();
@@ -135,7 +135,7 @@ export const ChipChoice = ({ label, options, value, onChange, color = Q.ink, dan
         return (
           <Chip
             key={o}
-            label={o === "UnPaid" ? "Baaki (UnPaid)" : o}
+            label={o === "UnPaid" ? "Unpaid" : o}
             onClick={disabled ? undefined : () => onChange(o)}
             sx={{
               height: 40,
@@ -229,7 +229,7 @@ export const EditorDialog = ({ open, onClose, title, subtitle, children, actions
         <Typography fontWeight={800} fontSize={19}>
           {title}
         </Typography>
-        <IconButton onClick={onClose} sx={{ position: "absolute", right: 10, top: 12, bgcolor: Q.bg }} aria-label="Band karo">
+        <IconButton onClick={onClose} sx={{ position: "absolute", right: 10, top: 12, bgcolor: Q.bg }} aria-label="Close">
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -297,14 +297,14 @@ export const SaveBar = ({ label, amount, sub, buttonText, onClick, disabled, col
         disabled={disabled || busy}
         sx={{ bgcolor: color, px: 3, py: 1.4, fontSize: 16, fontWeight: 800, borderRadius: 2.5, "&:hover": { bgcolor: color } }}
       >
-        {busy ? "Save ho raha hai…" : buttonText}
+        {busy ? "Saving…" : buttonText}
       </Button>
     </Stack>
   </Paper>
 );
 
 /* Pakka karo? dialog */
-export const ConfirmDialog = ({ open, title, lines = [], onCancel, onConfirm, confirmText = "Haan, save karo", color = Q.ink }) => (
+export const ConfirmDialog = ({ open, title, lines = [], onCancel, onConfirm, confirmText = "Yes, save", color = Q.ink }) => (
   <Dialog open={open} onClose={onCancel} fullWidth maxWidth="xs">
     <DialogTitle fontWeight={800}>{title}</DialogTitle>
     <DialogContent>
@@ -319,7 +319,7 @@ export const ConfirmDialog = ({ open, title, lines = [], onCancel, onConfirm, co
     </DialogContent>
     <DialogActions sx={{ p: 2 }}>
       <Button onClick={onCancel} sx={{ color: Q.muted }}>
-        Ruko
+        Cancel
       </Button>
       <Button variant="contained" onClick={onConfirm} sx={{ bgcolor: color, fontWeight: 800, "&:hover": { bgcolor: color } }}>
         {confirmText}

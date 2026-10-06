@@ -48,13 +48,13 @@ const AdminLoginPage = () => {
   return (
     <AuthShell
       title="Owner / Admin login"
-      subtitle="Dashboard aur reports ke liye."
+      subtitle="For the dashboard and reports."
       footer={
         <AuthLinks
           links={[
             ["Staff login", () => navigate("/login")],
-            ["Admin password bhool gaye?", () => navigate("/admin-reset-password")],
-            ["Naya admin (referral code)", () => navigate("/admin-signup")],
+            ["Forgot admin password?", () => navigate("/admin-reset-password")],
+            ["New admin (referral code)", () => navigate("/admin-signup")],
           ]}
         />
       }
@@ -63,7 +63,7 @@ const AdminLoginPage = () => {
         <TextField name="email" label="Email" type="email" fullWidth value={form.email} onChange={handleChange} required autoComplete="email" />
         <PasswordField name="password" label="Password" type="password" fullWidth value={form.password} onChange={handleChange} required autoComplete="current-password" />
         <Button type="submit" variant="contained" size="large" fullWidth disabled={loading} sx={{ mt: 0.5, bgcolor: "#0F172A", "&:hover": { bgcolor: "#1E293B" } }}>
-          {loading ? "Login ho raha hai…" : "Admin login"}
+          {loading ? "Logging in…" : "Admin login"}
         </Button>
       </Box>
     </AuthShell>

@@ -47,12 +47,12 @@ const LoginPage = () => {
   return (
     <AuthShell
       title="Login"
-      subtitle="Apne staff account se login karo."
+      subtitle="Log in with your staff account."
       footer={
         <AuthLinks
           links={[
-            ["Naya staff account", () => navigate("/signup")],
-            ["Password bhool gaye?", () => navigate("/reset-password")],
+            ["New staff account", () => navigate("/signup")],
+            ["Forgot password?", () => navigate("/reset-password")],
             ["Owner / Admin login", () => navigate("/admin-login")],
           ]}
         />
@@ -62,7 +62,7 @@ const LoginPage = () => {
         <TextField name="email" label="Email" type="email" fullWidth value={form.email} onChange={handleChange} required autoComplete="email" />
         <PasswordField name="password" label="Password" type="password" fullWidth value={form.password} onChange={handleChange} required autoComplete="current-password" />
         <Button type="submit" variant="contained" size="large" fullWidth disabled={loading} sx={{ mt: 0.5 }}>
-          {loading ? "Login ho raha hai…" : "Login"}
+          {loading ? "Logging in…" : "Login"}
         </Button>
       </Box>
     </AuthShell>

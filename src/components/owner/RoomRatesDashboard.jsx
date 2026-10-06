@@ -23,7 +23,7 @@ const RoomRatesDashboard = () => {
         setDraft({});
         setPicked({});
       })
-      .catch(() => toast.error("Rooms load nahi hue"));
+      .catch(() => toast.error("Could not load rooms"));
   useEffect(() => {
     load();
   }, []);
@@ -35,16 +35,16 @@ const RoomRatesDashboard = () => {
 
   const applyBulk = () => {
     const v = Number(bulk);
-    if (!v) return toast.error("Pehle rate likho");
+    if (!v) return toast.error("Enter a rate first");
     const nums = Object.keys(picked).filter((k) => picked[k]);
-    if (!nums.length) return toast.error("Rooms pe tick lagao");
+    if (!nums.length) return toast.error("Select rooms first");
     setDraft((d) => ({ ...d, ...Object.fromEntries(nums.map((n) => [n, String(v)])) }));
   };
 
   const save = async () => {
     if (!changed.length) return;
     const list = changed.map((r) => `${r.roomNumber}: ${inr(r.roomCost)} → ${inr(draft[r.roomNumber])}`).join("\n");
-    if (!window.confirm(`Ye rates save karne hain?\n\n${list}\n\nPurani entries nahi badlengi.`)) return;
+    if (!window.confirm(`Save these rates?\n\n${list}\n\nPast entries will not change.`)) return;
     setSaving(true);
     let ok = 0;
     for (const r of changed) {
@@ -52,11 +52,11 @@ const RoomRatesDashboard = () => {
         await axios.put(`${API}/room/update-rate/${r.roomNumber}`, { roomCost: Number(draft[r.roomNumber]) });
         ok++;
       } catch (e) {
-        toast.error(`Room ${r.roomNumber}: ${e?.response?.data?.message || "save nahi hua"}`);
+        toast.error(`Room ${r.roomNumber}: ${e?.response?.data?.message || "could not save"}`);
       }
     }
     setSaving(false);
-    if (ok) toast.success(`${ok} room ka rate save ho gaya`);
+    if (ok) toast.success(`Rate saved for ${ok} room${ok === 1 ? "" : "s"}`);
     load();
   };
 
@@ -66,19 +66,19 @@ const RoomRatesDashboard = () => {
         Room Rates
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Room ka list rate (entry mein default rate). Purani entries nahi badalti, sirf aage ki entry mein naya rate aayega.
+        List rate for each room (default rate in entries). Past entries do not change; the new rate applies to future entries only.
       </Typography>
 
       <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mb: 2 }} alignItems={{ sm: "center" }}>
-        <TextField size="small" type="number" label="Tick wale rooms ka naya rate" value={bulk} onChange={(e) => setBulk(e.target.value)} />
+        <TextField size="small" type="number" label="New rate for selected rooms" value={bulk} onChange={(e) => setBulk(e.target.value)} />
         <Button variant="outlined" onClick={applyBulk}>
-          Tick wale rooms pe lagao
+          Apply to selected rooms
         </Button>
         <Button variant="contained" startIcon={<SaveIcon />} disabled={!changed.length || saving} onClick={save}>
           Save ({changed.length})
         </Button>
       </Stack>
-      {changed.length > 0 && <Alert severity="warning" sx={{ mb: 2 }}>{changed.length} room ka rate badla hai, abhi save nahi hua.</Alert>}
+      {changed.length > 0 && <Alert severity="warning" sx={{ mb: 2 }}>{changed.length} room rate(s) changed but not saved yet.</Alert>}
 
       <TableContainer>
         <Table size="small">
@@ -90,7 +90,7 @@ const RoomRatesDashboard = () => {
                   onChange={(e) => setPicked(Object.fromEntries(rooms.map((r) => [r.roomNumber, e.target.checked])))}
                 />
               </TableCell>
-              {["Room", "Type", "Abhi ka rate", "Naya rate"].map((h) => (
+              {["Room", "Type", "Current rate", "New rate"].map((h) => (
                 <TableCell key={h} sx={{ fontWeight: 700 }}>
                   {h}
                 </TableCell>

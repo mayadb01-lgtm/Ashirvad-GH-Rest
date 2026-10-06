@@ -11,7 +11,7 @@ export const HOTEL = {
 
 export const BUSINESSES = ["Guest House", "Restaurant", "Banquet Hall", "Other"];
 export const TAX_RATES = [0, 5, 12, 18, 28];
-export const PAY_MODES = ["Cash", "Card", "UPI", "PPS", "PPC", "Bank transfer", "Credit (baad mein)"];
+export const PAY_MODES = ["Cash", "Card", "UPI", "PPS", "PPC", "Bank transfer", "Credit (pay later)"];
 export const SAC_OPTIONS = [
   { sac: "996311", label: "996311 · Room / accommodation" },
   { sac: "996331", label: "996331 · Restaurant food" },

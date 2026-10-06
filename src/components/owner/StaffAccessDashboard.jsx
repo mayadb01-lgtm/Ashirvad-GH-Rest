@@ -18,7 +18,7 @@ import {
 
 const API = import.meta.env.VITE_REACT_APP_SERVER_URL;
 const DEPTS = [
-  { value: "none", label: "Koi access nahi", color: "#94A3B8" },
+  { value: "none", label: "No access", color: "#94A3B8" },
   { value: "gh", label: "Guest House", color: "#0F766E" },
   { value: "rest", label: "Restaurant", color: "#B45309" },
   { value: "office", label: "Office Book", color: "#4338CA" },
@@ -33,7 +33,7 @@ const StaffAccessDashboard = () => {
     axios
       .get(`${API}/staff-accounts`)
       .then(({ data }) => setUsers(data.data))
-      .catch((e) => setError(e?.response?.data?.message || "Staff list load nahi hui"));
+      .catch((e) => setError(e?.response?.data?.message || "Could not load staff list"));
   }, []);
 
   const save = async (u, patch) => {
@@ -42,10 +42,10 @@ const StaffAccessDashboard = () => {
     setUsers((list) => list.map((x) => (x._id === u._id ? { ...x, ...patch } : x)));
     try {
       await axios.put(`${API}/staff-accounts/${u._id}`, patch);
-      toast.success(`${u.name}: save ho gaya`);
+      toast.success(`${u.name}: saved`);
     } catch (e) {
       setUsers(before);
-      toast.error(e?.response?.data?.message || "Save nahi hua");
+      toast.error(e?.response?.data?.message || "Could not save");
     } finally {
       setSaving("");
     }
@@ -59,13 +59,13 @@ const StaffAccessDashboard = () => {
         Staff Access
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Har staff ko sirf uske business ki <b>aaj ki entry</b> dikhti hai. Purani dates, reports aur dusre business ka data staff
-        nahi dekh sakta, ye server pe band hai.
+        Staff can only view/edit <b>today's entries</b> for their own business. Past dates, reports and other businesses' data
+        are blocked for staff on the server.
       </Typography>
 
       {noAccess > 0 && (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          {noAccess} staff ko abhi koi access nahi hai. Wo login karke kuch nahi bhar payenge jab tak aap department na chuno.
+          {noAccess} staff {noAccess === 1 ? "member has" : "members have"} no access yet. They cannot enter anything after login until you choose a department.
         </Alert>
       )}
       {error && <Alert severity="error">{error}</Alert>}
@@ -82,17 +82,17 @@ const StaffAccessDashboard = () => {
                     <Typography fontWeight={700} noWrap>
                       {u.name}
                     </Typography>
-                    {u.isSuperUser && <Chip size="small" label="Super user · sab access" color="secondary" variant="outlined" />}
-                    {!u.isActive && <Chip size="small" label="Band" />}
+                    {u.isSuperUser && <Chip size="small" label="Super user · full access" color="secondary" variant="outlined" />}
+                    {!u.isActive && <Chip size="small" label="Disabled" />}
                   </Stack>
                   <Typography variant="caption" color="text.secondary">
-                    {u.email} · bana {u.createdAt ? dayjs(u.createdAt).format("DD-MM-YYYY") : "—"}
+                    {u.email} · created {u.createdAt ? dayjs(u.createdAt).format("DD-MM-YYYY") : "—"}
                   </Typography>
                 </Box>
                 <TextField
                   select
                   size="small"
-                  label="Kis business ki entry"
+                  label="Business access"
                   value={u.department}
                   onChange={(e) => save(u, { department: e.target.value })}
                   disabled={saving === u._id || u.isSuperUser}
@@ -107,7 +107,7 @@ const StaffAccessDashboard = () => {
                 <Stack direction="row" alignItems="center">
                   <Switch checked={u.isActive} onChange={(e) => save(u, { isActive: e.target.checked })} disabled={saving === u._id} />
                   <Typography variant="body2" sx={{ width: 52 }}>
-                    {u.isActive ? "Chalu" : "Band"}
+                    {u.isActive ? "Active" : "Off"}
                   </Typography>
                 </Stack>
               </Stack>
@@ -115,9 +115,9 @@ const StaffAccessDashboard = () => {
           );
         })}
       </Stack>
-      {users && users.length === 0 && <Alert severity="info">Abhi koi staff account nahi hai.</Alert>}
+      {users && users.length === 0 && <Alert severity="info">No staff accounts yet.</Alert>}
       <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 2 }}>
-        Staff chhod de to "Band" kar do. Uska account turant kaam karna band kar dega, purani entries waise hi rahengi.
+        When a staff member leaves, switch the account "Off". It stops working immediately; past entries stay as they are.
       </Typography>
     </Box>
   );

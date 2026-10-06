@@ -80,22 +80,22 @@ export const MonthRangeBar = ({ from, to, setFrom, setTo, children }) => {
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Stack direction="row" spacing={1} sx={{ mb: 2 }} alignItems="center" flexWrap="wrap" useFlexGap>
-        <Tooltip title="Ek mahina peeche">
-          <IconButton onClick={() => shift(-1)} sx={{ border: "1px solid #D1D5DB" }} aria-label="Pichhla mahina">
+        <Tooltip title="Previous month">
+          <IconButton onClick={() => shift(-1)} sx={{ border: "1px solid #D1D5DB" }} aria-label="Previous month">
             <ChevronLeftIcon />
           </IconButton>
         </Tooltip>
-        <DatePicker label="Se (mahina)" views={["year", "month"]} value={from} onChange={(v) => v && setFrom(v.startOf("month"))} slotProps={{ textField: { size: "small", sx: { width: 195 } } }} />
-        <DatePicker label="Tak (mahina)" views={["year", "month"]} value={to} onChange={(v) => v && setTo(v.startOf("month"))} slotProps={{ textField: { size: "small", sx: { width: 195 } } }} />
-        <Tooltip title="Ek mahina aage">
+        <DatePicker label="From (month)" views={["year", "month"]} value={from} onChange={(v) => v && setFrom(v.startOf("month"))} slotProps={{ textField: { size: "small", sx: { width: 195 } } }} />
+        <DatePicker label="To (month)" views={["year", "month"]} value={to} onChange={(v) => v && setTo(v.startOf("month"))} slotProps={{ textField: { size: "small", sx: { width: 195 } } }} />
+        <Tooltip title="Next month">
           <span>
-            <IconButton onClick={() => shift(1)} disabled={nextDisabled} sx={{ border: "1px solid #D1D5DB" }} aria-label="Agla mahina">
+            <IconButton onClick={() => shift(1)} disabled={nextDisabled} sx={{ border: "1px solid #D1D5DB" }} aria-label="Next month">
               <ChevronRightIcon />
             </IconButton>
           </span>
         </Tooltip>
         <Button size="small" variant="outlined" onClick={() => setFrom(to.startOf("month"))}>
-          Sirf ek mahina
+          Single month
         </Button>
         <Button
           size="small"
@@ -106,7 +106,7 @@ export const MonthRangeBar = ({ from, to, setFrom, setTo, children }) => {
             setFrom(end.subtract(11, "month"));
           }}
         >
-          Pichhle 12 mahine
+          Last 12 months
         </Button>
         {children}
       </Stack>
@@ -124,22 +124,22 @@ export const MonthStepBar = ({ start, end, setStart, setEnd, format = "DD-MM-YYY
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Stack direction="row" spacing={1} sx={{ mb: 2 }} alignItems="center" flexWrap="wrap" useFlexGap>
-        <Tooltip title="Pichhla mahina">
-          <IconButton onClick={() => goMonth(start.subtract(1, "month"))} sx={{ border: "1px solid #D1D5DB" }} aria-label="Pichhla mahina">
+        <Tooltip title="Previous month">
+          <IconButton onClick={() => goMonth(start.subtract(1, "month"))} sx={{ border: "1px solid #D1D5DB" }} aria-label="Previous month">
             <ChevronLeftIcon />
           </IconButton>
         </Tooltip>
-        <DatePicker label="Shuru" value={start} onChange={(v) => v && setStart(v)} format={format} slotProps={{ textField: { size: "small", sx: { width: 175 } } }} />
-        <DatePicker label="Tak" value={end} onChange={(v) => v && setEnd(v)} format={format} slotProps={{ textField: { size: "small", sx: { width: 175 } } }} />
-        <Tooltip title="Agla mahina">
+        <DatePicker label="Start" value={start} onChange={(v) => v && setStart(v)} format={format} slotProps={{ textField: { size: "small", sx: { width: 175 } } }} />
+        <DatePicker label="End" value={end} onChange={(v) => v && setEnd(v)} format={format} slotProps={{ textField: { size: "small", sx: { width: 175 } } }} />
+        <Tooltip title="Next month">
           <span>
-            <IconButton onClick={() => goMonth(start.add(1, "month"))} disabled={!start.isBefore(dayjs(), "month")} sx={{ border: "1px solid #D1D5DB" }} aria-label="Agla mahina">
+            <IconButton onClick={() => goMonth(start.add(1, "month"))} disabled={!start.isBefore(dayjs(), "month")} sx={{ border: "1px solid #D1D5DB" }} aria-label="Next month">
               <ChevronRightIcon />
             </IconButton>
           </span>
         </Tooltip>
         <Button size="small" variant="outlined" onClick={() => goMonth(dayjs())}>
-          Is mahina
+          This month
         </Button>
         <Button
           size="small"
@@ -149,7 +149,7 @@ export const MonthStepBar = ({ start, end, setStart, setEnd, format = "DD-MM-YYY
             setEnd(dayjs());
           }}
         >
-          Pichhle 6 mahine
+          Last 6 months
         </Button>
         {children}
       </Stack>

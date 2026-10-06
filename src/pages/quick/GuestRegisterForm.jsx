@@ -46,7 +46,7 @@ const shrink = (file) =>
       URL.revokeObjectURL(url);
       resolve(c.toDataURL("image/jpeg", 0.72));
     };
-    img.onerror = () => reject(new Error("Photo padhi nahi gayi"));
+    img.onerror = () => reject(new Error("Could not read photo"));
     img.src = url;
   });
 
@@ -118,9 +118,9 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved }) => 
       setG((p) => ({ ...p, ...data.data }));
       setExists(true);
       onSaved?.();
-      toast.success("Govt details save ho gayi");
+      toast.success("Guest registration details saved");
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Save nahi hua");
+      toast.error(e?.response?.data?.message || "Could not save");
     } finally {
       setBusy(false);
     }
@@ -137,21 +137,21 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved }) => 
       setG((p) => ({ ...p, documentImages: data.data.documentImages }));
       setExists(true);
       onSaved?.();
-      toast.success("Photo save ho gayi");
+      toast.success("Photo saved");
     } catch (err) {
-      toast.error(err?.response?.data?.message || err.message || "Photo save nahi hui");
+      toast.error(err?.response?.data?.message || err.message || "Could not save photo");
     } finally {
       setBusy(false);
     }
   };
 
   const removePhoto = async (name) => {
-    if (!window.confirm("Ye photo hatani hai?")) return;
+    if (!window.confirm("Remove this photo?")) return;
     try {
       const { data } = await axios.delete(`${base}/photo/${name}`);
       setG((p) => ({ ...p, documentImages: data.data?.documentImages || [] }));
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Photo nahi hati");
+      toast.error(e?.response?.data?.message || "Could not remove photo");
     }
   };
 
@@ -177,19 +177,19 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved }) => 
     <Paper variant="outlined" sx={{ borderRadius: 3, borderStyle: "dashed" }}>
       <Button fullWidth onClick={() => setOpen((o) => !o)} endIcon={open ? <ExpandLessIcon /> : <ExpandMoreIcon />} sx={{ justifyContent: "space-between", color: Q.ink, py: 1.2 }}>
         <span>
-          📄 Govt / Police details <Typography component="span" variant="caption" color={Q.muted}>(optional)</Typography>
+          📄 Guest registration (Govt / Police) <Typography component="span" variant="caption" color={Q.muted}>(optional)</Typography>
         </span>
-        {exists && <Chip size="small" color="success" label="Bhari hui" sx={{ ml: "auto", mr: 1 }} />}
+        {exists && <Chip size="small" color="success" label="Filled" sx={{ ml: "auto", mr: 1 }} />}
       </Button>
       <Collapse in={open} unmountOnExit>
         {!g ? (
           <Typography sx={{ p: 2 }} color={Q.muted}>
-            Load ho raha hai…
+            Loading…
           </Typography>
         ) : (
           <Box sx={{ p: 1.5, pt: 0 }}>
             <Alert severity="info" sx={{ mb: 1.5 }}>
-              Ye sab bharna zaroori nahi. Room dene ke liye upar ki details kaafi hain. Ye govt site ke liye CSV mein jaata hai.
+              These fields are optional. The details above are enough to give a room. This data goes into the CSV for the government site.
             </Alert>
             <Grid container spacing={1.25}>
               {T("First name", "firstName")}
@@ -216,21 +216,21 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved }) => 
               {T("Check-in time", "checkinTime", { type: "time", InputLabelProps: { shrink: true } })}
               {T("Check-out date", "checkoutDate", { type: "date", InputLabelProps: { shrink: true } })}
               {T("Check-out time", "checkoutTime", { type: "time", InputLabelProps: { shrink: true } })}
-              {T("No. of adult", "adults", { type: "number" })}
-              {T("No. of child", "children", { type: "number" })}
+              {T("No. of adults", "adults", { type: "number" })}
+              {T("No. of children", "children", { type: "number" })}
               {S("Vehicle type", "vehicleType", VEHICLES)}
               {T("Vehicle no.", "vehicleNo", { placeholder: "GJ01KP1788" })}
             </Grid>
 
             <Typography fontWeight={700} sx={{ mt: 2, mb: 1 }}>
-              Saath wale guest
+              Accompanying guests
             </Typography>
             <Stack spacing={1}>
               {(g.otherGuests || []).map((o, i) => (
                 <Paper key={i} variant="outlined" sx={{ p: 1, borderRadius: 2 }}>
                   <Grid container spacing={1}>
                     <Grid size={{ xs: 12, sm: 6 }}>
-                      <TextField size="small" fullWidth label="Poora naam" value={o.fullName} onChange={(e) => setOther(i, "fullName", e.target.value)} />
+                      <TextField size="small" fullWidth label="Full name" value={o.fullName} onChange={(e) => setOther(i, "fullName", e.target.value)} />
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField size="small" fullWidth label="Mobile" value={o.mobile} onChange={(e) => setOther(i, "mobile", e.target.value)} />
@@ -248,7 +248,7 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved }) => 
                       <TextField size="small" fullWidth label="Document no." value={o.documentNumber} onChange={(e) => setOther(i, "documentNumber", e.target.value)} />
                     </Grid>
                     <Grid size={{ xs: 1 }}>
-                      <IconButton aria-label="Hatao" onClick={() => set("otherGuests", g.otherGuests.filter((_, j) => j !== i))}>
+                      <IconButton aria-label="Remove" onClick={() => set("otherGuests", g.otherGuests.filter((_, j) => j !== i))}>
                         <DeleteIcon />
                       </IconButton>
                     </Grid>
@@ -256,12 +256,12 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved }) => 
                 </Paper>
               ))}
               <Button size="small" onClick={() => set("otherGuests", [...(g.otherGuests || []), { ...EMPTY_GUEST }])} sx={{ alignSelf: "flex-start" }}>
-                + Saath wala guest jodo
+                + Add accompanying guest
               </Button>
             </Stack>
 
             <Typography fontWeight={700} sx={{ mt: 2, mb: 1 }}>
-              Document photo ({g.documentImages?.length || 0})
+              Document photos ({g.documentImages?.length || 0})
             </Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               {(g.documentImages || []).map((name) => (
@@ -274,7 +274,7 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved }) => 
                     <Chip label="✓ Photo saved" color="success" variant="outlined" />
                   )}
                   {isAdmin && (
-                    <IconButton size="small" onClick={() => removePhoto(name)} sx={{ position: "absolute", top: -8, right: -8, bgcolor: "#fff", border: "1px solid #E5E7EB" }} aria-label="Photo hatao">
+                    <IconButton size="small" onClick={() => removePhoto(name)} sx={{ position: "absolute", top: -8, right: -8, bgcolor: "#fff", border: "1px solid #E5E7EB" }} aria-label="Remove photo">
                       <DeleteIcon fontSize="small" />
                     </IconButton>
                   )}
@@ -282,14 +282,14 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved }) => 
               ))}
               {(g.documentImages?.length || 0) < 4 && (
                 <Button variant="outlined" component="label" startIcon={<PhotoCameraIcon />} disabled={busy}>
-                  Photo lo / chuno
+                  Take / choose photo
                   <input hidden type="file" accept="image/*" capture="environment" onChange={addPhoto} />
                 </Button>
               )}
             </Stack>
 
             <Button fullWidth variant="contained" onClick={save} disabled={busy} sx={{ mt: 2, bgcolor: Q.ink, "&:hover": { bgcolor: Q.ink } }}>
-              {busy ? "Save ho raha hai…" : "Govt details save karo"}
+              {busy ? "Saving…" : "Save registration details"}
             </Button>
           </Box>
         )}

@@ -50,18 +50,18 @@ const Row = ({ c, isAdmin, onChanged }) => {
           <Box
             component={isAdmin ? "button" : "span"}
             onClick={isAdmin ? unPay : undefined}
-            title={isAdmin ? "Wapas 'Baaki' karo" : ""}
+            title={isAdmin ? "Mark as unpaid" : ""}
             sx={{ fontSize: 12, fontWeight: 700, px: 1.1, py: 0.3, borderRadius: 10, bgcolor: "#CCFBF1", color: "#115E59", border: 0, cursor: isAdmin ? "pointer" : "default" }}
           >
             ✓ {c.paidMode}
           </Box>
         ) : (
           <Button size="small" variant="outlined" color="error" disabled={busy} onClick={() => setPaying((p) => !p)} sx={{ minWidth: 0, fontWeight: 700, px: 1 }}>
-            Baaki
+            Due
           </Button>
         )}
         {c.kind === "extra" && (!c.isPaid || isAdmin) && (
-          <IconButton size="small" onClick={remove} disabled={busy} aria-label="Hatao">
+          <IconButton size="small" onClick={remove} disabled={busy} aria-label="Remove">
             <DeleteIcon fontSize="small" />
           </IconButton>
         )}
@@ -69,7 +69,7 @@ const Row = ({ c, isAdmin, onChanged }) => {
       {paying && (
         <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.75, ml: 4 }} flexWrap="wrap" useFlexGap>
           <Typography variant="caption" color={Q.muted}>
-            Paisa mila:
+            Paid via:
           </Typography>
           {PAID_MODES.map((m) => (
             <Button key={m} size="small" variant="contained" disabled={busy} onClick={() => markPaid(m)} sx={{ bgcolor: Q.gh, minWidth: 0, px: 1.25, "&:hover": { bgcolor: Q.gh } }}>
@@ -97,11 +97,11 @@ const RoomChargesPanel = ({ date, period, roomNo, guestName, mobile, charges = [
 
   const add = async () => {
     const l = label === "Other" ? other.trim() : label;
-    if (!l || !(num(amount) > 0)) return toast.error("Kis cheez ka aur amount bharo");
+    if (!l || !(num(amount) > 0)) return toast.error("Fill in: item and amount");
     setBusy(true);
     try {
       await axios.post(`${API}/room-charges/extra`, { date, period, roomNo, label: l, amount: num(amount), guestName, mobile });
-      toast.success("Extra charge jud gaya");
+      toast.success("Extra charge added");
       setAmount(0);
       setOther("");
       onChanged?.();
@@ -118,12 +118,12 @@ const RoomChargesPanel = ({ date, period, roomNo, guestName, mobile, charges = [
         🧾 Food bill + Extra charges
       </Typography>
       <Typography variant="caption" color={Q.muted} component="div" sx={{ mb: 0.5 }}>
-        Restaurant mein "Levana baaki" mein is room ka bill daala to yahan apne aap aata hai.
+        Food bills entered for this room under Restaurant "Receivables" appear here automatically.
       </Typography>
 
       {charges.length === 0 && (
         <Typography variant="body2" color={Q.muted} sx={{ py: 0.75 }}>
-          Abhi koi food bill / extra charge nahi.
+          No food bill or extra charge yet.
         </Typography>
       )}
       {[...food, ...extra].map((c) => (
@@ -138,10 +138,10 @@ const RoomChargesPanel = ({ date, period, roomNo, guestName, mobile, charges = [
             </MenuItem>
           ))}
         </TextField>
-        {label === "Other" && <TextField size="small" label="Kis cheez ka" value={other} onChange={(e) => setOther(e.target.value)} sx={{ flex: 1 }} />}
+        {label === "Other" && <TextField size="small" label="Item" value={other} onChange={(e) => setOther(e.target.value)} sx={{ flex: 1 }} />}
         <MoneyField label="Amount" value={amount} onChange={setAmount} sx={{ maxWidth: 130, "& .MuiInputBase-root": { height: 40 } }} />
         <Button variant="contained" onClick={add} disabled={busy || !roomNo} sx={{ bgcolor: Q.gh, height: 40, fontWeight: 800, "&:hover": { bgcolor: Q.gh } }}>
-          Jodo
+          Add
         </Button>
       </Stack>
 
@@ -150,7 +150,7 @@ const RoomChargesPanel = ({ date, period, roomNo, guestName, mobile, charges = [
           [`Room rent${roomPaid ? " (paid)" : ""}`, rent],
           ["Food bill", sumOf(food)],
           ["Extra charges", sumOf(extra)],
-          ...(num(advance) > 0 ? [["Booking advance (pehle mila)", -num(advance)]] : []),
+          ...(num(advance) > 0 ? [["Booking advance (received)", -num(advance)]] : []),
         ].map(([l, v]) => (
           <Stack key={l} direction="row" justifyContent="space-between">
             <Typography variant="body2" color={Q.muted}>
@@ -162,12 +162,12 @@ const RoomChargesPanel = ({ date, period, roomNo, guestName, mobile, charges = [
           </Stack>
         ))}
         <Stack direction="row" justifyContent="space-between" sx={{ mt: 0.5 }}>
-          <Typography fontWeight={800}>Kul bill</Typography>
+          <Typography fontWeight={800}>Total bill</Typography>
           <Typography fontWeight={800}>{inr(total)}</Typography>
         </Stack>
         <Stack direction="row" justifyContent="space-between">
           <Typography fontWeight={800} color={due > 0 ? Q.bad : Q.good}>
-            {due > 0 ? "Guest se lena baaki" : "Sab paid"}
+            {due > 0 ? "Balance due from guest" : "Fully paid"}
           </Typography>
           <Typography fontWeight={800} color={due > 0 ? Q.bad : Q.good}>
             {inr(due)}

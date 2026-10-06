@@ -21,7 +21,7 @@ const ProfitLossDashboard = () => {
     axios
       .get(`${API}/insights/pnl/${from.format("YYYY-MM")}/${to.format("YYYY-MM")}`)
       .then(({ data }) => !off && setData(data.data))
-      .catch((e) => toast.error(e?.response?.data?.message || "P&L load nahi hua"))
+      .catch((e) => toast.error(e?.response?.data?.message || "Could not load P&L"))
       .finally(() => !off && setLoading(false));
     return () => {
       off = true;
@@ -31,25 +31,25 @@ const ProfitLossDashboard = () => {
   const t = data?.totals || {};
   const months = data?.months || [];
   const groups = data?.groups || [];
-  const chart = useMemo(() => months.map((m) => ({ label: m.label, Kamai: m.revenue, Kharch: m.expenses, Munafa: m.profit, "Personal + Loan ke baad": m.afterLoanPersonal })), [months]);
+  const chart = useMemo(() => months.map((m) => ({ label: m.label, Revenue: m.revenue, Expenses: m.expenses, Profit: m.profit, "After personal + loan": m.afterLoanPersonal })), [months]);
 
   // P&L statement rows: [label, key|fn, style]
   const lines = [
-    ["KAMAI", null, "head"],
+    ["REVENUE", null, "head"],
     ["Guest House sales", (m) => m.ghSales],
     ["GH extra charges (extra bed, laundry…)", (m) => m.ghExtra || 0],
     ["Restaurant sales", (m) => m.restSales],
-    ["Doosri kamai (Banquet, Baada, waghera)", (m) => m.otherIncome],
-    ["Kul kamai", (m) => m.revenue, "total"],
-    ["KHARCH", null, "head"],
+    ["Other income (Banquet, Baada, etc.)", (m) => m.otherIncome],
+    ["Total revenue", (m) => m.revenue, "total"],
+    ["EXPENSES", null, "head"],
     ...groups.map((g) => [g, (m) => m.exp[g]]),
-    ["Kul kharch", (m) => m.expenses, "total"],
-    ["MUNAFA (business)", (m) => m.profit, "profit"],
+    ["Total expenses", (m) => m.expenses, "total"],
+    ["PROFIT (business)", (m) => m.profit, "profit"],
     ["Margin %", (m) => m.margin, "pct"],
-    ["NEECHE ALAG (business kharch nahi)", null, "head"],
-    ["Loan EMI / bhugtan", (m) => m.loanOut],
-    ["Personal nikala", (m) => m.personalOut],
-    ["Bacha (sab ke baad)", (m) => m.afterLoanPersonal, "profit"],
+    ["SHOWN SEPARATELY (not business expenses)", null, "head"],
+    ["Loan EMI / repayment", (m) => m.loanOut],
+    ["Personal withdrawals", (m) => m.personalOut],
+    ["Remaining (after all)", (m) => m.afterLoanPersonal, "profit"],
   ];
   const totalOf = (fn, style) => (style === "pct" ? t.margin : months.reduce((s, m) => s + (Number(fn(m)) || 0), 0));
   const fmt = (v, style) => (style === "pct" ? `${v ?? 0}%` : inr(v));
@@ -78,33 +78,33 @@ const ProfitLossDashboard = () => {
 
   return (
     <Box sx={{ p: { xs: 1, md: 2 } }}>
-      <PageTitle title="Profit & Loss" sub="Kamai − Kharch = Munafa. Personal aur Loan neeche alag, taaki business ka asli munafa dikhe." />
+      <PageTitle title="Profit & Loss" sub="Revenue − Expenses = Profit. Personal and loan are shown separately below, so the real business profit is clear." />
       <MonthRangeBar from={from} to={to} setFrom={setFrom} setTo={setTo}>
         <Button variant="contained" startIcon={<DownloadIcon />} onClick={exportExcel} disabled={!data}>
           Excel
         </Button>
       </MonthRangeBar>
-      {loading && <Typography color="text.secondary">Load ho raha hai…</Typography>}
+      {loading && <Typography color="text.secondary">Loading…</Typography>}
 
       <Stack direction="row" spacing={1.5} sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
-        <Kpi label="Kul kamai" value={lakh(t.revenue)} color={COLORS.in} />
-        <Kpi label="Kul kharch" value={lakh(t.expenses)} color={COLORS.out} />
-        <Kpi label="Munafa (business)" value={lakh(t.profit)} sub={`${t.margin || 0}% margin`} color={t.profit >= 0 ? COLORS.net : COLORS.bad} />
-        <Kpi label="Personal nikala" value={lakh(t.personalOut)} sub={t.profit > 0 ? `Munafe ka ${Math.round((100 * (t.personalOut || 0)) / t.profit)}%` : ""} color={COLORS.personal} />
-        <Kpi label="Bacha (sab ke baad)" value={lakh(t.afterLoanPersonal)} color={t.afterLoanPersonal >= 0 ? COLORS.net : COLORS.bad} />
-        <Kpi label="Guest House munafa" value={lakh(t.ghProfit)} sub="GH sales − GH ke seedhe kharch" color={COLORS.gh} />
+        <Kpi label="Total revenue" value={lakh(t.revenue)} color={COLORS.in} />
+        <Kpi label="Total expenses" value={lakh(t.expenses)} color={COLORS.out} />
+        <Kpi label="Profit (business)" value={lakh(t.profit)} sub={`${t.margin || 0}% margin`} color={t.profit >= 0 ? COLORS.net : COLORS.bad} />
+        <Kpi label="Personal withdrawals" value={lakh(t.personalOut)} sub={t.profit > 0 ? `${Math.round((100 * (t.personalOut || 0)) / t.profit)}% of profit` : ""} color={COLORS.personal} />
+        <Kpi label="Remaining (after all)" value={lakh(t.afterLoanPersonal)} color={t.afterLoanPersonal >= 0 ? COLORS.net : COLORS.bad} />
+        <Kpi label="Guest House profit" value={lakh(t.ghProfit)} sub="GH sales − GH direct expenses" color={COLORS.gh} />
       </Stack>
 
       {data && t.personalOut > t.profit && (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          Is period mein <b>Personal nikala ({lakh(t.personalOut)})</b> business ke munafe ({lakh(t.profit)}) se zyada hai. Farak {lakh(t.personalOut - t.profit)} kahin aur se (loan, purani bachat, udhaar) aaya hoga.
+          In this period, <b>personal withdrawals ({lakh(t.personalOut)})</b> are more than the business profit ({lakh(t.profit)}). The difference of {lakh(t.personalOut - t.profit)} must have come from elsewhere (loan, old savings, credit).
         </Alert>
       )}
       <Alert severity="info" sx={{ mb: 2 }}>
-        Kamai = GH saari sales (udhaar bhi) + Restaurant grand total + Office In ki doosri kamai (Loan, Personal, Pending-vasooli chhod ke). Kharch = jo paisa sach mein diya (Restaurant galle se + upad + Office Out). "GH ..." wali categories Guest House ka seedha kharch maani gayi hain.
+        Revenue = all GH sales (including credit) + Restaurant grand total + other Office In income (excluding Loan, Personal and Pending collections). Expenses = money actually paid (Restaurant cash collection + staff advance + Office Out). Categories starting with "GH ..." are counted as direct Guest House expenses.
       </Alert>
 
-      <Section title="Har mahine: kamai, kharch, munafa">
+      <Section title="Monthly revenue, expenses and profit">
         <Box sx={{ width: "100%", height: 340 }}>
           <ResponsiveContainer>
             <ComposedChart data={chart} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
@@ -114,10 +114,10 @@ const ProfitLossDashboard = () => {
               <Tooltip formatter={(v) => inr(v)} />
               <Legend />
               <ReferenceLine y={0} stroke="#94A3B8" />
-              <Bar dataKey="Kamai" fill={COLORS.in} />
-              <Bar dataKey="Kharch" fill={COLORS.out} />
-              <Line dataKey="Munafa" stroke={COLORS.net} strokeWidth={3} />
-              <Line dataKey="Personal + Loan ke baad" stroke={COLORS.personal} strokeDasharray="5 4" />
+              <Bar dataKey="Revenue" fill={COLORS.in} />
+              <Bar dataKey="Expenses" fill={COLORS.out} />
+              <Line dataKey="Profit" stroke={COLORS.net} strokeWidth={3} />
+              <Line dataKey="After personal + loan" stroke={COLORS.personal} strokeDasharray="5 4" />
             </ComposedChart>
           </ResponsiveContainer>
         </Box>

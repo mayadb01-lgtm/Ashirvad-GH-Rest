@@ -55,7 +55,7 @@ const parseSheet = (rows) => {
     if (m) period = { from: dayjs(`${m[3]}-${m[2]}-${m[1]}`), to: dayjs(`${m[6]}-${m[5]}-${m[4]}`) };
   }
   const hIdx = rows.findIndex((r) => (r || []).some((c) => /employee name/i.test(String(c))) && (r || []).some((c) => /paid day/i.test(String(c))));
-  if (hIdx === -1) throw new Error('File mein "Employee Name" aur "Paid Day" column nahi mile. Machine se "Attendance Summary" report CSV/Excel mein nikalo.');
+  if (hIdx === -1) throw new Error('Could not find "Employee Name" and "Paid Day" columns in the file. Export the "Attendance Summary" report from the machine as CSV/Excel.');
   const head = rows[hIdx].map((c) => String(c || "").trim().toLowerCase());
   const col = (name) => head.findIndex((h) => h === name);
   const ci = { code: col("code"), name: col("employee name"), present: col("present day"), half: col("half day"), absent: col("absent"), paid: col("paid day"), work: col("work hour") };
@@ -100,8 +100,8 @@ const AttendanceImportDashboard = () => {
   useEffect(() => {
     axios
       .get(`${API}/restStaff/get-staff-id-name-mobile`)
-      .then(({ data }) => setStaff((data.data || []).map((s) => ({ ...s, label: s.fullname.trim() + (s.staffStatus === "Inactive" ? " (band)" : "") }))))
-      .catch(() => toast.error("Staff list load nahi hui"));
+      .then(({ data }) => setStaff((data.data || []).map((s) => ({ ...s, label: s.fullname.trim() + (s.staffStatus === "Inactive" ? " (inactive)" : "") }))))
+      .catch(() => toast.error("Could not load staff list"));
   }, []);
 
   const month = period ? period.from.month() + 1 : null;
@@ -113,7 +113,7 @@ const AttendanceImportDashboard = () => {
     axios
       .get(`${API}/staffSalary/get-salary-sheet/${month}/${year}`)
       .then(({ data }) => setSheet(data.data))
-      .catch((e) => (e?.response?.status === 404 ? setSheet(null) : toast.error("Salary sheet load nahi hui")));
+      .catch((e) => (e?.response?.status === 404 ? setSheet(null) : toast.error("Could not load salary sheet")));
   }, [month, year]);
 
   const onFile = async (e) => {
@@ -121,7 +121,7 @@ const AttendanceImportDashboard = () => {
     e.target.value = "";
     if (!f) return;
     if (/\.pdf$/i.test(f.name)) {
-      toast.error("PDF se number theek se nahi padhe jaate. Machine software se yahi report CSV ya Excel mein export karo.");
+      toast.error("Numbers cannot be read correctly from PDF. Export this report as CSV or Excel from the machine software.");
       return;
     }
     try {
@@ -129,12 +129,12 @@ const AttendanceImportDashboard = () => {
       const ws = wb.Sheets[wb.SheetNames[0]];
       const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: false });
       const parsed = parseSheet(raw);
-      if (!parsed.period) throw new Error('File mein "Date : 01/08/2026 To 31/08/2026" jaisi line nahi mili, mahina pata nahi chala.');
+      if (!parsed.period) throw new Error('Could not find a line like "Date : 01/08/2026 To 31/08/2026" in the file, so the month is unknown.');
       const saved = readMap();
       // 1) pehle yaad wale match, 2) phir sabse achhe naam-match, har staff sirf ek baar
       const assigned = parsed.rows.map((r) => {
         const m = staff.find((s) => s._id === saved[r.code]);
-        return m ? { match: m, how: "yaad" } : { match: null, how: "" };
+        return m ? { match: m, how: "saved" } : { match: null, how: "" };
       });
       const used = new Set(assigned.filter((a) => a.match).map((a) => a.match._id));
       const pairs = [];
@@ -154,13 +154,13 @@ const AttendanceImportDashboard = () => {
       setRows(parsed.rows.map((r, i) => ({ ...r, ...assigned[i] })));
       setPeriod(parsed.period);
       setFile(f.name);
-      toast.success(`${parsed.rows.length} staff ki attendance padhi (${parsed.period.from.format("MMMM YYYY")})`);
+      toast.success(`Attendance read for ${parsed.rows.length} staff (${parsed.period.from.format("MMMM YYYY")})`);
     } catch (err) {
-      toast.error(err.message || "File padhi nahi ja saki");
+      toast.error(err.message || "Could not read file");
     }
   };
 
-  const setMatch = (i, s) => setRows((rs) => rs.map((r, j) => (j === i ? { ...r, match: s, how: s ? "haath se" : "" } : r)));
+  const setMatch = (i, s) => setRows((rs) => rs.map((r, j) => (j === i ? { ...r, match: s, how: s ? "manual" : "" } : r)));
 
   const toApply = useMemo(() => rows.filter((r) => r.match && !(skipZero && r.paidDay === 0)), [rows, skipZero]);
   const dupes = useMemo(() => {
@@ -171,10 +171,10 @@ const AttendanceImportDashboard = () => {
   const currentAtt = (staffId) => sheet?.rows?.find((x) => String(x.staffId) === String(staffId))?.attendance;
 
   const save = async () => {
-    if (!toApply.length) return toast.error("Koi staff match nahi hua");
-    if (dupes.size) return toast.error("Ek hi staff do machine naam se juda hai. Laal wali line theek karo.");
+    if (!toApply.length) return toast.error("No staff matched");
+    if (dupes.size) return toast.error("One staff member is linked to two machine names. Fix the rows marked in red.");
     const label = period.from.format("MMMM YYYY");
-    if (!window.confirm(`${label} ki Staff Salary sheet mein ${toApply.length} staff ki attendance machine ke "Paid Day" se bhar di jaayegi.\n\nPaisa (salary paid) wale khaane nahi badlenge. Aage badhein?`)) return;
+    if (!window.confirm(`Attendance for ${toApply.length} staff will be filled in the ${label} Staff Salary sheet from the machine's "Paid Day".\n\nSalary paid columns will not change. Continue?`)) return;
     setSaving(true);
     try {
       const byId = Object.fromEntries(toApply.map((r) => [String(r.match._id), r]));
@@ -189,7 +189,7 @@ const AttendanceImportDashboard = () => {
       } else {
         const active = staff.filter((s) => s.staffStatus !== "Inactive" || byId[String(s._id)]);
         payloadRows = active.map((s) => ({ staffId: s._id, fullname: s.fullname, perDayPay: s.perDayPay || 0, attendance: byId[String(s._id)]?.paidDay || 0, salaryPaid: false, salaryPaidAmount: 0 }));
-        await axios.post(`${API}/staffSalary/create-salary-sheet`, { month, year, rows: payloadRows, remarks: `Attendance machine se (${file})` });
+        await axios.post(`${API}/staffSalary/create-salary-sheet`, { month, year, rows: payloadRows, remarks: `From attendance machine (${file})` });
       }
       // machine code → staff yaad rakho, agle mahine apne aap match ho
       const map = readMap();
@@ -199,11 +199,11 @@ const AttendanceImportDashboard = () => {
       } catch {
         /* ignore */
       }
-      toast.success(`${label}: ${toApply.length} staff ki attendance save ho gayi`);
+      toast.success(`${label}: attendance saved for ${toApply.length} staff`);
       const { data } = await axios.get(`${API}/staffSalary/get-salary-sheet/${month}/${year}`);
       setSheet(data.data);
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Save nahi hua");
+      toast.error(e?.response?.data?.message || "Could not save");
     } finally {
       setSaving(false);
     }
@@ -217,42 +217,42 @@ const AttendanceImportDashboard = () => {
         Attendance machine import
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Face machine ki &quot;Attendance Summary&quot; report (CSV ya Excel) daalo → us mahine ki Staff Salary sheet mein har staff ki attendance (Paid Day) bhar jaayegi.
+        Upload the face machine&apos;s &quot;Attendance Summary&quot; report (CSV or Excel) → each staff member&apos;s attendance (Paid Day) is filled in that month&apos;s Staff Salary sheet.
       </Typography>
 
       <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ sm: "center" }} sx={{ mb: 2 }}>
         <Button variant="contained" component="label" startIcon={<UploadFileIcon />}>
-          Report file chuno (CSV / Excel)
+          Choose report file (CSV / Excel)
           <input hidden type="file" accept=".csv,.xlsx,.xls,.pdf" onChange={onFile} />
         </Button>
         {file && <Chip label={file} />}
-        {period && <Chip color="primary" label={`Mahina: ${period.from.format("MMMM YYYY")}`} />}
+        {period && <Chip color="primary" label={`Month: ${period.from.format("MMMM YYYY")}`} />}
       </Stack>
 
       {!rows.length && (
         <Alert severity="info">
-          Machine software mein <b>14. Attendance Summary</b> report kholo → mahina chuno → <b>Export: CSV ya Excel</b>. PDF mat lena, usse number theek se nahi padhe jaate.
+          In the machine software open the <b>14. Attendance Summary</b> report → choose the month → <b>Export: CSV or Excel</b>. Do not use PDF; numbers cannot be read correctly from it.
         </Alert>
       )}
 
       {rows.length > 0 && (
         <>
-          {sheet === null && <Alert severity="warning" sx={{ mb: 2 }}>{period.from.format("MMMM YYYY")} ki salary sheet abhi bani nahi hai. Save karne pe nayi sheet banegi (saare chalu staff, attendance machine se).</Alert>}
-          {sheet && <Alert severity="info" sx={{ mb: 2 }}>{period.from.format("MMMM YYYY")} ki salary sheet pehle se hai. Sirf match hue staff ki attendance badlegi, baaki sab waisa hi.</Alert>}
+          {sheet === null && <Alert severity="warning" sx={{ mb: 2 }}>The salary sheet for {period.from.format("MMMM YYYY")} does not exist yet. Saving will create a new sheet (all active staff, attendance from the machine).</Alert>}
+          {sheet && <Alert severity="info" sx={{ mb: 2 }}>The salary sheet for {period.from.format("MMMM YYYY")} already exists. Only matched staff attendance will change; everything else stays the same.</Alert>}
           <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }} flexWrap="wrap" useFlexGap>
-            <FormControlLabel control={<Checkbox checked={skipZero} onChange={(e) => setSkipZero(e.target.checked)} />} label="Machine pe 0 din wale chhodo (jo machine use nahi karte)" />
+            <FormControlLabel control={<Checkbox checked={skipZero} onChange={(e) => setSkipZero(e.target.checked)} />} label="Skip staff with 0 days on machine (not using the machine)" />
             <Typography variant="body2">
-              <b>{toApply.length}</b> staff save honge · {unmatched > 0 ? <b style={{ color: "#B91C1C" }}>{unmatched} ka match baaki</b> : "sab match"}
+              <b>{toApply.length}</b> staff will be saved · {unmatched > 0 ? <b style={{ color: "#B91C1C" }}>{unmatched} not matched yet</b> : "all matched"}
             </Typography>
             <Button variant="contained" startIcon={<SaveIcon />} disabled={saving || sheet === undefined || !toApply.length} onClick={save}>
-              Salary sheet mein save karo
+              Save to salary sheet
             </Button>
           </Stack>
           <TableContainer sx={{ maxHeight: 640 }}>
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
-                  {["Machine naam", "Present", "Half", "Absent", "Paid Day", "OT ghante", "App ka staff (match)", "Abhi sheet mein"].map((h) => (
+                  {["Machine name", "Present", "Half", "Absent", "Paid Day", "OT hours", "App staff (match)", "Currently in sheet"].map((h) => (
                     <TableCell key={h} sx={{ fontWeight: 700 }}>
                       {h}
                     </TableCell>
@@ -284,7 +284,7 @@ const AttendanceImportDashboard = () => {
                           onChange={(_, v) => setMatch(i, v)}
                           getOptionLabel={(o) => o?.label || ""}
                           isOptionEqualToValue={(a, b) => a._id === b._id}
-                          renderInput={(p) => <TextField {...p} placeholder={skipped ? "(chhoda)" : "Staff chuno"} error={!!dup} helperText={dup ? "Do baar juda hai" : r.how ? `match: ${r.how}` : ""} />}
+                          renderInput={(p) => <TextField {...p} placeholder={skipped ? "(skipped)" : "Select staff"} error={!!dup} helperText={dup ? "Linked twice" : r.how ? `match: ${r.how}` : ""} />}
                         />
                       </TableCell>
                       <TableCell>{r.match ? currentAtt(r.match._id) ?? "-" : ""}</TableCell>
@@ -295,7 +295,7 @@ const AttendanceImportDashboard = () => {
             </Table>
           </TableContainer>
           <Typography variant="caption" color="text.secondary">
-            Peela = match nahi hua (haath se chuno) · Laal = ek staff do baar · Ek baar save karne ke baad agle mahine yahi match apne aap ho jaayega (isi computer/phone pe).
+            Yellow = not matched (select manually) · Red = same staff linked twice · After you save once, the same matches are applied automatically next month (on this computer/phone).
           </Typography>
         </>
       )}

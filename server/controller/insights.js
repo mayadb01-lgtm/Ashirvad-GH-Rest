@@ -53,7 +53,7 @@ router.get("/cashflow/:from/:to", async (req, res) => {
     const from = dayjs(req.params.from, "YYYY-MM", true);
     const to = dayjs(req.params.to, "YYYY-MM", true);
     if (!from.isValid() || !to.isValid() || to.isBefore(from)) {
-      return res.status(400).json({ success: false, message: "Month format YYYY-MM chahiye (from <= to)" });
+      return res.status(400).json({ success: false, message: "Month must be in YYYY-MM format (from <= to)" });
     }
     const q = range(from.startOf("month"), to.endOf("month"));
     const [gh, rest, office] = await Promise.all([
@@ -136,7 +136,7 @@ router.get("/gh-growth/:start/:end", async (req, res) => {
     const start = dayjs(req.params.start, F, true);
     const end = dayjs(req.params.end, F, true);
     if (!start.isValid() || !end.isValid() || end.isBefore(start)) {
-      return res.status(400).json({ success: false, message: "Date format DD-MM-YYYY chahiye" });
+      return res.status(400).json({ success: false, message: "Date must be in DD-MM-YYYY format" });
     }
     const [docs, rooms, allForGuests] = await Promise.all([
       Entry.find(range(start, end), { entry: 1, date: 1, entryCreateDate: 1 }).lean(),
@@ -266,8 +266,8 @@ router.get("/kharch/:months", async (req, res) => {
     const add = (m, cat, name, amt, src) => {
       if (!(m in total)) return;
       if (/^(personal|loans?|upad)/i.test(cat || "")) return;
-      const key = norm(name).toLowerCase() || "(naam nahi)";
-      const it = (items[key] ||= { name: norm(name) || "(naam nahi)", category: cat || "Other", source: src, months: {} });
+      const key = norm(name).toLowerCase() || "(no name)";
+      const it = (items[key] ||= { name: norm(name) || "(no name)", category: cat || "Other", source: src, months: {} });
       inc(it.months, m, amt);
       inc((cats[cat || "Other"] ||= { category: cat || "Other", months: {} }).months, m, amt);
       total[m] += n(amt);
@@ -345,23 +345,23 @@ router.get("/data-alerts", async (req, res) => {
     const alerts = [];
     const fut = [...ghF.map((d) => ["Guest House", d.date]), ...restF.map((d) => ["Restaurant", d.createDate]), ...offF.map((d) => ["Office", d.createDate])];
     if (fut.length) {
-      alerts.push({ level: "error", title: "Aage ki date ki entry", text: fut.map(([b, d]) => `${b}: ${d}`).join(", "), hint: "Aaj ke baad ki date pe entry bhari hai. Galat date ho to sahi karo." });
+      alerts.push({ level: "error", title: "Entries with a future date", text: fut.map(([b, d]) => `${b}: ${d}`).join(", "), hint: "Entries exist for dates after today. If the date is wrong, please correct it." });
     }
     const missing = (docs, label, link) => {
       const have = new Set(docs.map((d) => dayjs(d.entryCreateDate).format(F)));
       const miss = [];
       for (let d = from; d.isBefore(today, "day"); d = d.add(1, "day")) if (!have.has(d.format(F))) miss.push(d.format("DD MMM"));
-      if (miss.length) alerts.push({ level: miss.length > 3 ? "error" : "warning", title: `${label}: ${miss.length} din ki entry nahi (pichhle 30 din)`, text: miss.join(", "), link });
+      if (miss.length) alerts.push({ level: miss.length > 3 ? "error" : "warning", title: `${label}: no entry for ${miss.length} days (last 30 days)`, text: miss.join(", "), link });
     };
     missing(ghR, "Guest House", "gh-dashboard");
     missing(restR, "Restaurant", "res-reports/sales-report");
     missing(offR, "Office Book", "office-book");
     const neg = sal.filter((s) => (s.rows || []).some((r) => n(r.salaryPaidAmount) < 0));
     if (neg.length) {
-      alerts.push({ level: "warning", title: "Staff Salary mein minus (−) amount", text: neg.map((s) => dayjs(`${s.year}-${String(s.month).padStart(2, "0")}-01`).format("MMM YY")).join(", "), hint: "Salary paid amount minus mein hai. Sahi hai ya galti, check karo.", link: "staff-salary" });
+      alerts.push({ level: "warning", title: "Negative (−) amount in Staff Salary", text: neg.map((s) => dayjs(`${s.year}-${String(s.month).padStart(2, "0")}-01`).format("MMM YY")).join(", "), hint: "Salary paid amount is negative. Please check whether it is correct.", link: "staff-salary" });
     }
     if (restNoPos.length) {
-      alerts.push({ level: "info", title: `Restaurant: ${restNoPos.length} din computer amount khaali (pichhle 60 din)`, text: restNoPos.map((d) => d.createDate).slice(0, 20).join(", "), hint: "Computer (POS) ka total na bharne se farak ka hisaab galat aata hai." });
+      alerts.push({ level: "info", title: `Restaurant: computer amount missing for ${restNoPos.length} days (last 60 days)`, text: restNoPos.map((d) => d.createDate).slice(0, 20).join(", "), hint: "If the computer (POS) total is not filled in, the difference is calculated wrongly." });
     }
     res.json({ success: true, data: { today: today.format(F), alerts } });
   } catch (e) {
@@ -375,14 +375,14 @@ router.get("/data-alerts", async (req, res) => {
 // Kharch (jo paisa sach mein diya): Restaurant galle se kharch + upad + Office Out
 //                  (Personal aur Loan chhod ke, wo neeche alag)
 const EXP_GROUPS = [
-  ["Khana-peena saaman (F&B)", /food|beverage|kirana/i],
-  ["Staff / Salary / Upad", /staff|salar|upad|overtime/i],
-  ["Bijli-paani-gas (Utility)", /utility|electric|gas|water|wifi/i],
+  ["Food & beverage supplies (F&B)", /food|beverage|kirana/i],
+  ["Staff / Salary / Advance", /staff|salar|upad|overtime/i],
+  ["Electricity, water, gas (Utility)", /utility|electric|gas|water|wifi/i],
   ["Maintenance / Repair", /mainten|repair/i],
-  ["Saman / Equipment", /equipment/i],
+  ["Supplies / Equipment", /equipment/i],
   ["Rent", /rent/i],
 ];
-const expGroup = (cat) => (EXP_GROUPS.find(([, re]) => re.test(cat || "")) || ["Other kharch"])[0];
+const expGroup = (cat) => (EXP_GROUPS.find(([, re]) => re.test(cat || "")) || ["Other expenses"])[0];
 const bizOf = (cat) => (/^gh\b|^gh /i.test(cat || "") ? "Guest House" : "Restaurant / common");
 
 router.get("/pnl/:from/:to", async (req, res) => {
@@ -390,7 +390,7 @@ router.get("/pnl/:from/:to", async (req, res) => {
     const from = dayjs(req.params.from, "YYYY-MM", true);
     const to = dayjs(req.params.to, "YYYY-MM", true);
     if (!from.isValid() || !to.isValid() || to.isBefore(from)) {
-      return res.status(400).json({ success: false, message: "Month format YYYY-MM chahiye (from <= to)" });
+      return res.status(400).json({ success: false, message: "Month must be in YYYY-MM format (from <= to)" });
     }
     const q = range(from.startOf("month"), to.endOf("month"));
     const [gh, rest, office, extras] = await Promise.all([
@@ -442,7 +442,7 @@ router.get("/pnl/:from/:to", async (req, res) => {
         addExp(m, c, x.amount);
       });
     });
-    const groups = [...EXP_GROUPS.map(([g]) => g), "Other kharch"];
+    const groups = [...EXP_GROUPS.map(([g]) => g), "Other expenses"];
     months.forEach((m) => {
       m.revenue = m.ghSales + m.ghExtra + m.restSales + m.otherIncome;
       m.expenses = sum(Object.values(m.exp), (v) => v);
