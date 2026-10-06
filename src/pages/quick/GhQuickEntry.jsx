@@ -24,6 +24,7 @@ import {
 import Grid from "@mui/material/Grid2";
 import GuestRegisterForm from "./GuestRegisterForm";
 import RoomChargesPanel from "./RoomChargesPanel";
+import RoomInvoiceButton from "../invoice/RoomInvoiceButton";
 import SearchIcon from "@mui/icons-material/Search";
 import LockIcon from "@mui/icons-material/Lock";
 import {
@@ -322,6 +323,7 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
           isAdmin={isAdmin}
           onChanged={onChargesChanged}
         />
+        <RoomInvoiceButton date={date} period={period} roomNo={room?.roomNumber} roomType={room?.roomType} isAdmin={isAdmin} guestName={f.fullname} row={f} />
         {/* Optional: Govt/Police register ki details — alag collection mein, room entry pe koi asar nahi */}
         <GuestRegisterForm key={`${date}-${period}-${room?.roomNumber}`} date={date} period={period} roomNo={room?.roomNumber} seed={f} isAdmin={isAdmin} />
       </Stack>

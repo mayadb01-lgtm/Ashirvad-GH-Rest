@@ -33,6 +33,7 @@ const OfficeEntryPage = lazy(
   () => import("./pages/office/OfficeEntryPage.jsx")
 );
 const QuickEntryPage = lazy(() => import("./pages/quick/QuickEntryPage.jsx"));
+const InvoicePage = lazy(() => import("./pages/invoice/InvoicePage.jsx"));
 const StaffSalaryEntryPage = lazy(
   () => import("./pages/staffSalary/StaffSalaryEntryPage.jsx")
 );
@@ -63,6 +64,8 @@ const App = () => {
           />
           {/* Nayi PC + mobile entry (staff ya admin, login khud check karta hai) */}
           <Route path="/entry" element={<QuickEntryPage />} />
+          {/* Invoice dekho / PDF (login API khud check karta hai) */}
+          <Route path="/invoice/:id" element={<InvoicePage />} />
           <Route
             path="/hotel"
             element={

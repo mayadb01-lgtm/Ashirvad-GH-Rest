@@ -51,12 +51,13 @@ import DataAlerts from "../components/insights/DataAlerts";
 import ProfitLossDashboard from "../components/insights/ProfitLossDashboard";
 import RoomRatesDashboard from "../components/owner/RoomRatesDashboard";
 import GuestRegisterDashboard from "../components/owner/GuestRegisterDashboard";
+import InvoicesDashboard from "../components/owner/InvoicesDashboard";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import BedIcon from "@mui/icons-material/Bed";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
-import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import GHUpaidEntriesDashboard from "../components/guest-house/GHUpaidEntriesDashboard";
 import OfficeHome from "../components/office/OfficeHome";
@@ -184,6 +185,8 @@ const NAVIGATION = [
   { segment: "office-all", title: "Office Book + Category", icon: <BookOutlined /> },
   { segment: "merged-all", title: "Merged - Saare", icon: <StackedLineChartIcon /> },
   { segment: "sales-goals", title: "Sales Goals - Saare", icon: <BarChartIcon /> },
+  { kind: "header", title: "Billing" },
+  { segment: "invoices", title: "Invoices (GST / Non-GST)", icon: <ReceiptLongIcon /> },
   { kind: "header", title: "Settings" },
   { segment: "staff-access", title: "Staff Access", icon: <AdminPanelSettingsIcon /> },
   { segment: "room-rates", title: "Room Rates", icon: <BedIcon /> },
@@ -343,6 +346,7 @@ const DashboardPage = () => {
     { path: "profit-loss", element: <ProfitLossDashboard /> },
     { path: "room-rates", element: <RoomRatesDashboard /> },
     { path: "guest-register", element: <GuestRegisterDashboard /> },
+    { path: "invoices", element: <InvoicesDashboard /> },
     { path: "gh-growth", element: <GhGrowthDashboard /> },
     { path: "kharch-control", element: <KharchControlDashboard /> },
     { path: "data-check", element: <DataAlerts onNavigate={router.navigate} /> },

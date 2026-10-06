@@ -56,6 +56,11 @@ const RULES = {
     R("POST", /^\/api\/v1\/room-charges\/extra$/, { dateBody: "date" }),
     R("DELETE", /^\/api\/v1\/room-charges\/extra\/[a-f0-9]{24}$/),
     R("PUT", /^\/api\/v1\/room-charges\/paid\/[a-f0-9]{24}$/),
+    // Invoice (GST / Non-GST): sirf aaj ka banana/dekhna; cancel + register sirf owner
+    R("GET", /^\/api\/v1\/invoice\/room-prefill\/([^/]+)\/[A-Za-z]+\/\d+$/, { dateParam: 1 }),
+    R("GET", /^\/api\/v1\/invoice\/by-room\/([^/]+)\/\d+$/, { dateParam: 1 }),
+    R("POST", /^\/api\/v1\/invoice$/, { dateBody: "invoiceDate" }),
+    R("GET", /^\/api\/v1\/invoice\/one\/[a-f0-9]{24}$/),
     dayStatus,
   ],
   rest: [
