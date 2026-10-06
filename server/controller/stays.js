@@ -51,19 +51,23 @@ stayRouter.get("/day/:date", async (req, res) => {
       Booking.find({ "advances.date": date }, { bookingNo: 1, guestName: 1, advances: 1, status: 1 }).lean(),
     ]);
     const continuing = [];
+    const dueOut = []; // aaj checkout hona chahiye (zyadatar subah 10 baje)
     const started = [];
     const checkouts = [];
     stays.forEach((s) => {
       const diff = d.diff(D(s.startDate), "day");
-      if (s.checkoutDate === date) checkouts.push({ _id: s._id, roomNo: s.roomNo, period: s.checkoutPeriod || s.period, time: s.checkoutTime, guest: s.guest.fullname });
+      if (s.checkoutDate === date) checkouts.push({ _id: s._id, roomNo: s.roomNo, period: s.checkoutPeriod || s.period, time: s.checkoutTime, guest: s.guest.fullname, startDate: s.startDate });
       if (diff === 0) started.push({ _id: s._id, roomNo: s.roomNo, period: s.period, nights: s.nights, status: s.status, bookingId: s.bookingId, checkoutDate: s.checkoutDate });
+      if (diff >= 1 && diff === s.nights && s.status === "active") {
+        dueOut.push({ _id: s._id, roomNo: s.roomNo, period: s.period, nights: s.nights, startDate: s.startDate, guest: s.guest, dueTime: s.guest?.checkOutTime || "10:00 AM" });
+      }
       if (diff >= 1 && diff < s.nights && s.status === "active") {
         continuing.push({ _id: s._id, roomNo: s.roomNo, dayNo: diff + 1, nights: s.nights, startDate: s.startDate, guest: s.guest, bookingId: s.bookingId });
       }
     });
     const advances = [];
     advDocs.forEach((b) => (b.advances || []).filter((a) => a.date === date).forEach((a) => advances.push({ bookingNo: b.bookingNo, guestName: b.guestName, amount: a.amount, mode: a.mode, by: a.by })));
-    res.json({ success: true, data: { continuing, started, checkouts, bookings, advances } });
+    res.json({ success: true, data: { continuing, dueOut, started, checkouts, bookings, advances } });
   } catch (e) {
     fail(res, e);
   }
@@ -98,7 +102,9 @@ stayRouter.post("/checkout", async (req, res) => {
     const roomNo = Number(b.roomNo) || 0;
     if (!ok(b.date) || !PERIODS.includes(b.period) || !roomNo) return bad(res, "Invalid date / period / room");
     const d = D(b.date);
-    let doc = await Stay.findOne({ startDate: b.date, period: b.period, roomNo });
+    // stayId diya ho to wahi stay (jaise subah 10 baje wala due-out guest)
+    let doc = b.stayId && /^[a-f0-9]{24}$/.test(String(b.stayId)) ? await Stay.findOne({ _id: b.stayId, roomNo }) : null;
+    if (!doc) doc = await Stay.findOne({ startDate: b.date, period: b.period, roomNo });
     if (!doc) {
       // kal se ruka hua (continue) guest
       const cands = await Stay.find({ roomNo, status: "active", startCreateDate: { $gte: d.subtract(60, "day").toDate(), $lt: d.startOf("day").toDate() } });
