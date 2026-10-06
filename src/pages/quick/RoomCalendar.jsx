@@ -29,7 +29,6 @@ import AddIcon from "@mui/icons-material/Add";
 import BlockIcon from "@mui/icons-material/Block";
 import { API, Q, apiError, inr } from "./shared";
 import { BookingForm } from "./BookingsPanel";
-import { computeDues } from "./checkoutGuard";
 
 dayjs.extend(customParseFormat);
 const F = "DD-MM-YYYY";
@@ -69,7 +68,6 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
   const [bar, setBar] = useState(null); // details dialog
   const [bookingForm, setBookingForm] = useState(null); // { initial }
   const [blockDlg, setBlockDlg] = useState(null);
-  const [busy, setBusy] = useState(false);
   const [drag, setDrag] = useState(null); // { key, delta } — patti ka right edge kheench rahe hain
   const justDragged = useRef(false);
 
@@ -150,30 +148,14 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
     setBookingForm({ initial: { roomNo, checkInDate: d.format(F), nights: 1 } });
   };
 
-  const [barDue, setBarDue] = useState(null);
-  const checkout = async (b, force) => {
-    const grp = (data?.groups || []).find((g) => g.mainRoom === b.roomNo || (g.rooms || []).includes(b.roomNo));
-    if (grp) return toast.error(`Merged bill (main Room ${grp.mainRoom}) — check out from the room screen of Room ${grp.mainRoom}.`);
-    setBusy(true);
-    try {
-      if (!force) {
-        const { data: up } = await axios.get(`${API}/entry/get-unpaid-entries`).catch(() => ({ data: { data: [] } }));
-        const dues = await computeDues({ roomNo: b.roomNo, from: b.from, to: today.format(F), unpaid: up.data || [] });
-        if (dues.due > 0) {
-          setBarDue(dues);
-          return;
-        }
-      }
-      const { data: r } = await axios.post(`${API}/stay/checkout`, { date: today.format(F), period: b.period || "day", roomNo: b.roomNo, stayId: b.id, guest: { fullname: b.name } });
-      toast.success(`Room ${b.roomNo} checked out${r.billedToday ? " (after 11:00 AM — today is counted)" : ""}`);
-      setBar(null);
-      setBarDue(null);
-      load();
-    } catch (e) {
-      toast.error(apiError(e));
-    } finally {
-      setBusy(false);
-    }
+  // Check-out sirf room screen se: wahin aaj ki payment chuni jaati hai aur poora hisaab (rent + food/extra) check hota hai
+  const openForCheckout = (b) => {
+    if (pageDate !== today.format(F) || !onOpenRoom) return toast.error("Open today's page to check out");
+    const grp = (data?.groups || []).find((g) => (g.rooms || []).includes(b.roomNo));
+    const rn = grp ? grp.mainRoom : b.roomNo;
+    setBar(null);
+    onOpenRoom(rn, b.from === today.format(F) ? b.period || "day" : "day");
+    toast(grp ? `Merged bill — check out from main Room ${rn} after full payment` : `Room ${rn}: select payment, then press Check out`, { icon: "💳" });
   };
   const unblock = async (b) => {
     try {
@@ -517,7 +499,7 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
       </Stack>
 
       {/* bar details */}
-      <Dialog open={!!bar} onClose={() => (setBar(null), setBarDue(null))} fullWidth maxWidth="xs">
+      <Dialog open={!!bar} onClose={() => setBar(null)} fullWidth maxWidth="xs">
         {bar && (
           <>
             <DialogTitle fontWeight={800}>
@@ -548,25 +530,13 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
                   </Typography>
                 )}
                 {bar.type === "booking" && !bar.roomNo && <Alert severity="warning">No room assigned yet — use Edit to assign one.</Alert>}
-                {barDue && (
-                  <Alert severity="error">
-                    <b>Payment pending ₹{Math.round(barDue.due)}</b> — cannot check out until paid.
-                    {barDue.lines.map((l) => (
-                      <div key={l}>• {l}</div>
-                    ))}
-                    <div style={{ marginTop: 4 }}>Open the room to collect payment (or give a discount), then check out.</div>
-                  </Alert>
-                )}
               </Stack>
             </DialogContent>
             <DialogActions sx={{ flexWrap: "wrap", gap: 1 }}>
-              {bar.type === "stay" && bar.status === "active" && !barDue && (
-                <Button variant="contained" color="success" disabled={busy} onClick={() => checkout(bar)}>
+              {bar.type === "stay" && bar.status === "active" && (
+                <Button variant="contained" color="success" onClick={() => openForCheckout(bar)}>
                   ✅ Check out
                 </Button>
-              )}
-              {bar.type === "stay" && bar.status === "active" && onOpenRoom && pageDate === today.format(F) && (
-                <Button onClick={() => (setBar(null), onOpenRoom(bar.roomNo))}>Open room</Button>
               )}
               {bar.type === "booking" && bar.roomNo && bar.from === today.format(F) && onOpenRoom && pageDate === today.format(F) && (
                 <Button variant="contained" onClick={() => (setBar(null), onOpenRoom(bar.roomNo))}>
@@ -595,7 +565,7 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
                   Unblock
                 </Button>
               )}
-              <Button onClick={() => (setBar(null), setBarDue(null))}>Close</Button>
+              <Button onClick={() => setBar(null)}>Close</Button>
             </DialogActions>
           </>
         )}

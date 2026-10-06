@@ -1089,9 +1089,9 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         <RoomCalendar
           pageDate={date}
           isAdmin={isAdmin}
-          onOpenRoom={(rn) => {
+          onOpenRoom={(rn, p) => {
             setTab("rooms");
-            setPeriod("day");
+            setPeriod(p || "day");
             setEditing(rn);
           }}
         />
