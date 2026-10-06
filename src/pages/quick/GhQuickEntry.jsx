@@ -25,6 +25,7 @@ import Grid from "@mui/material/Grid2";
 import GuestRegisterForm from "./GuestRegisterForm";
 import RoomChargesPanel from "./RoomChargesPanel";
 import RoomInvoiceButton from "../invoice/RoomInvoiceButton";
+import BookingsPanel from "./BookingsPanel";
 import SearchIcon from "@mui/icons-material/Search";
 import LockIcon from "@mui/icons-material/Lock";
 import {
@@ -70,14 +71,18 @@ const rowIssues = (r) => {
   if (m && m !== "0" && m.length !== 10) out.push("mobile 10 digit");
   return out;
 };
+// Checkout ke baad usi din naya guest kis slot mein
+const NEXT_PERIOD = { day: "extraDay", night: "extraNight" };
+const advOf = (b) => (b?.advances || []).reduce((s, a) => s + num(a.amount), 0);
 const chargesFor = (list, period, roomNo) => (list || []).filter((c) => c.roomNo === roomNo && (!c.period || c.period === period));
 const isTouched = (r) => r && (num(r.rate) > 0 || String(r.fullname || "").trim() || r.modeOfPayment || r.type);
 
 /* ---------------- Room card ---------------- */
-const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [] }) => {
-  // Room pe "baaki" dikhao: room rent (agar UnPaid) + food/extra jo abhi paid nahi
+const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkout, booking, advance = 0, period }) => {
+  // Room pe "baaki" dikhao: room rent (agar UnPaid) + food/extra jo abhi paid nahi − booking advance
   const rentDue = row?.modeOfPayment === "UnPaid" ? Math.max(0, num(row?.rate) - num(row?.discount)) : 0;
-  const due = rentDue + charges.filter((c) => !c.isPaid).reduce((s, c) => s + num(c.amount), 0);
+  const due = Math.max(0, rentDue + charges.filter((c) => !c.isPaid).reduce((s, c) => s + num(c.amount), 0) - advance);
+  const nextLabel = PERIODS.find((p) => p.key === NEXT_PERIOD[period])?.label;
   const filled = row && rowIssues(row).length === 0;
   const partial = row && !filled && isTouched(row);
   const low = filled && room.roomCost && num(row.rate) < room.roomCost * 0.7;
@@ -85,7 +90,7 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [] }) => {
   return (
     <ButtonBase
       onClick={onOpen}
-      disabled={locked && !filled}
+      disabled={locked && !filled && !checkout}
       sx={{ width: "100%", textAlign: "left", borderRadius: 3, display: "block" }}
     >
       <Paper
@@ -115,9 +120,15 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [] }) => {
           {low && <StatusPill tone="warn">Check karo</StatusPill>}
           {partial && <StatusPill tone="warn">Adhoora</StatusPill>}
         </Stack>
+        {(row?._stayDay || checkout) && (
+          <Stack direction="row" spacing={0.5} sx={{ mt: 0.5 }} flexWrap="wrap" useFlexGap>
+            {row?._stayDay && <StatusPill tone="info">🔁 Din {row._stayDay}/{row._stayNights}</StatusPill>}
+            {checkout && <StatusPill tone="good">✓ Checkout {checkout.time}</StatusPill>}
+          </Stack>
+        )}
         {filled || partial ? (
           <>
-            <Typography fontWeight={700} sx={{ mt: 0.5 }} noWrap>
+            <Typography fontWeight={700} sx={{ mt: 0.5, opacity: checkout ? 0.6 : 1 }} noWrap>
               {row.fullname || "—"}
             </Typography>
             <Typography variant="caption" color={Q.muted} noWrap component="div">
@@ -149,7 +160,21 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [] }) => {
                 Baaki: {rowIssues(row).join(", ")}
               </Typography>
             )}
+            {checkout && nextLabel && (
+              <Typography variant="caption" component="div" sx={{ color: Q.gh, fontWeight: 800, mt: 0.5 }}>
+                Room khaali · naya guest {nextLabel} mein
+              </Typography>
+            )}
           </>
+        ) : booking ? (
+          <Box sx={{ mt: 1 }}>
+            <Typography fontWeight={800} sx={{ color: "#7C3AED" }} noWrap>
+              📅 {booking.guestName}
+            </Typography>
+            <Typography variant="caption" color={Q.muted} component="div">
+              Booking · {booking.nights} raat · Adv {inr(advOf(booking))} · tap = check-in
+            </Typography>
+          </Box>
         ) : (
           <Typography sx={{ mt: 2.5, color: locked ? Q.muted : Q.gh, fontWeight: 700 }}>
             {locked ? "Khaali" : "+ Guest jodo"}
@@ -161,7 +186,7 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [] }) => {
 };
 
 /* ---------------- Room editor ---------------- */
-const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClear, locked, isAdmin, charges, onChargesChanged }) => {
+const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClear, locked, isAdmin, charges, onChargesChanged, stay, onCheckout, onUndoCheckout, onExtend, onNewGuest, advance = 0 }) => {
   const [f, setF] = useState(initial);
   const [guest, setGuest] = useState(null);
   const lastLookup = useRef("");
@@ -309,6 +334,60 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
           </TextField>
         </Stack>
         <MoneyField label="Discount (agar diya ho)" value={f.discount} onChange={(v) => set("discount", v)} disabled={locked} />
+
+        {/* Stay: kitni raat / continue / checkout — alag collection, lock ka asar nahi */}
+        {isTouched(f) && (
+          <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2.5, borderColor: "#C7D2FE", bgcolor: "#EEF2FF" }}>
+            {stay?.checkout ? (
+              <>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+                  <Typography fontWeight={800} color={Q.good}>
+                    ✓ Checkout ho gaya · {stay.checkout.time}
+                  </Typography>
+                  <Button size="small" onClick={() => onUndoCheckout?.(stay.checkout._id)}>
+                    Galti se? Wapas
+                  </Button>
+                </Stack>
+                {NEXT_PERIOD[period] && (
+                  <Button fullWidth variant="contained" onClick={() => onNewGuest?.()} sx={{ mt: 1, bgcolor: Q.gh, fontWeight: 800, "&:hover": { bgcolor: Q.gh } }}>
+                    + Is room mein naya guest ({PERIODS.find((p) => p.key === NEXT_PERIOD[period])?.label})
+                  </Button>
+                )}
+              </>
+            ) : f._stayId ? (
+              <>
+                <Typography fontWeight={800}>
+                  🔁 Ruke hue guest · Din {f._stayDay} / {f._stayNights}
+                </Typography>
+                <Typography variant="caption" color={Q.muted} component="div" sx={{ mb: 1 }}>
+                  {f._stayStart} se. Roz apne aap bhar jaata hai — sirf payment chuno.
+                </Typography>
+                <Stack direction="row" spacing={1}>
+                  <Button size="small" variant="outlined" onClick={() => onExtend?.(f._stayId, (f._stayNights || 1) + 1)}>
+                    +1 din aur rukenge
+                  </Button>
+                  <Button size="small" variant="contained" color="success" onClick={() => onCheckout?.(f)}>
+                    ✅ Checkout karo
+                  </Button>
+                </Stack>
+              </>
+            ) : (
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box sx={{ flex: 1 }}>
+                  <Stepper outlined label="Kitni raat rukenge" value={num(f._nights) || stay?.started?.nights || 1} onChange={(v) => set("_nights", Math.max(1, v))} min={1} max={60} />
+                </Box>
+                <Button variant="contained" color="success" onClick={() => onCheckout?.(f)} sx={{ height: 64, fontWeight: 800 }}>
+                  ✅ Checkout
+                </Button>
+              </Stack>
+            )}
+            {!stay?.checkout && !f._stayId && (num(f._nights) || stay?.started?.nights || 1) > 1 && (
+              <Typography variant="caption" color={Q.muted} component="div" sx={{ mt: 0.75 }}>
+                Agle {(num(f._nights) || stay?.started?.nights) - 1} din ye room apne aap bhara aayega (sirf payment chunna).
+              </Typography>
+            )}
+          </Paper>
+        )}
         {/* Food bill (restaurant se) + extra charges — alag collection, lock ka asar nahi */}
         <RoomChargesPanel
           date={date}
@@ -320,6 +399,7 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
           roomRate={f.rate}
           discount={f.discount}
           roomPaid={!!f.modeOfPayment && f.modeOfPayment !== "UnPaid"}
+          advance={advance}
           isAdmin={isAdmin}
           onChanged={onChargesChanged}
         />
@@ -338,6 +418,15 @@ const GhQuickEntry = ({ date, isAdmin }) => {
   const [status, setStatus] = useState(null);
   const [unpaid, setUnpaid] = useState([]);
   const [charges, setCharges] = useState([]);
+  const [stayInfo, setStayInfo] = useState(null); // { continuing, started, checkouts, bookings, advances }
+  const loadStay = useCallback(
+    () =>
+      axios
+        .get(`${API}/stay/day/${date}`)
+        .then(({ data }) => setStayInfo(data.data))
+        .catch(() => setStayInfo({ continuing: [], started: [], checkouts: [], bookings: [], advances: [] })),
+    [date]
+  );
   const loadCharges = useCallback(
     () =>
       axios
@@ -372,6 +461,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       setStatus(s.data?.data?.gh || null);
       setUnpaid(u.data.data || []);
       loadCharges();
+      loadStay();
     } catch (err) {
       setError(apiError(err));
       setServer({ loaded: true, entries: [] });
@@ -403,14 +493,63 @@ const GhQuickEntry = ({ date, isAdmin }) => {
     setDraft({ rooms: roomsMap, jama });
   }, [server, submitted, date, setDraft]);
 
+  // 🔁 Ruke hue guest (continue stay): aaj ke Day slot mein apne aap bharo — staff sirf payment chune
+  useEffect(() => {
+    if (!server.loaded || submitted || !stayInfo?.continuing?.length) return;
+    setDraft((d) => {
+      const dismissed = d._dismissed || [];
+      const rooms = { ...d.rooms };
+      let changed = false;
+      stayInfo.continuing.forEach((c) => {
+        const k = keyOf("day", c.roomNo);
+        if (rooms[k] || dismissed.includes(c._id)) return;
+        if (stayInfo.checkouts.some((x) => x.roomNo === c.roomNo && x._id === c._id)) return;
+        const g = c.guest || {};
+        rooms[k] = {
+          fullname: g.fullname,
+          mobileNumber: g.mobileNumber,
+          type: g.type,
+          noOfPeople: g.noOfPeople,
+          rate: g.rate,
+          discount: g.discount,
+          checkInTime: g.checkInTime || "10:00 AM",
+          checkOutTime: g.checkOutTime || "10:00 AM",
+          modeOfPayment: "",
+          _stayId: c._id,
+          _stayDay: c.dayNo,
+          _stayNights: c.nights,
+          _stayStart: c.startDate,
+        };
+        changed = true;
+      });
+      return changed ? { ...d, rooms } : d;
+    });
+  }, [server.loaded, submitted, stayInfo, setDraft]);
+
   const others = useMemo(
     () => server.entries.filter((e) => !ROOM_PERIODS.includes(e.period) && e.period !== "UnPaid"),
     [server.entries]
   );
 
   const room = rooms?.find((r) => r.roomNumber === editing);
+  const bookingFor = (roomNo) => (stayInfo?.bookings || []).find((b) => b.status === "booked" && b.roomNo === roomNo);
   const editingInitial = useMemo(() => {
     if (!room) return null;
+    const bk = !draft.rooms[keyOf(period, room.roomNumber)] && bookingFor(room.roomNumber);
+    if (bk)
+      return {
+        rate: num(bk.rate),
+        noOfPeople: bk.people || 1,
+        type: "",
+        modeOfPayment: "",
+        fullname: bk.guestName,
+        mobileNumber: bk.mobile || "",
+        checkInTime: "10:00 AM",
+        checkOutTime: "10:00 AM",
+        discount: 0,
+        _bookingId: bk._id,
+        _nights: bk.nights || 1,
+      };
     return (
       draft.rooms[keyOf(period, room.roomNumber)] || {
         rate: 0,
@@ -424,20 +563,98 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         discount: 0,
       }
     );
-  }, [room, draft.rooms, period]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room, draft.rooms, period, stayInfo]);
 
   const saveRoom = (f) => {
-    setDraft((d) => ({ ...d, rooms: { ...d.rooms, [keyOf(period, room.roomNumber)]: { ...(d.rooms[keyOf(period, room.roomNumber)] || {}), ...f } } }));
+    const roomNo = room.roomNumber;
+    setDraft((d) => ({ ...d, rooms: { ...d.rooms, [keyOf(period, roomNo)]: { ...(d.rooms[keyOf(period, roomNo)] || {}), ...f } } }));
     setEditing(null);
+    // Stay plan / booking check-in (alag collection, turant save)
+    if (f._stayId) return;
+    const started = (stayInfo?.started || []).find((x) => x.roomNo === roomNo && x.period === period);
+    const nights = num(f._nights) || started?.nights || 1;
+    const jobs = [];
+    if (f._bookingId) jobs.push(axios.put(`${API}/booking/${f._bookingId}/checkin`, { date, period, roomNo }));
+    if (nights > 1 || started || f._bookingId)
+      jobs.push(
+        axios.put(`${API}/stay/plan`, {
+          startDate: date,
+          period,
+          roomNo,
+          nights,
+          bookingId: f._bookingId || "",
+          guest: { fullname: f.fullname, mobileNumber: digits(f.mobileNumber), type: f.type, noOfPeople: num(f.noOfPeople), rate: num(f.rate), discount: num(f.discount), checkInTime: f.checkInTime, checkOutTime: f.checkOutTime },
+        })
+      );
+    if (jobs.length)
+      Promise.all(jobs)
+        .then(() => loadStay())
+        .catch((e) => toast.error(`Room bhar gaya, par stay/booking save nahi hua: ${apiError(e)}`));
   };
   const clearRoom = () => {
     setDraft((d) => {
       const next = { ...d.rooms };
+      const row = next[keyOf(period, room.roomNumber)];
       delete next[keyOf(period, room.roomNumber)];
-      return { ...d, rooms: next };
+      return { ...d, rooms: next, _dismissed: row?._stayId ? [...(d._dismissed || []), row._stayId] : d._dismissed };
     });
     setEditing(null);
   };
+
+  // ✅ Checkout: guest gaya → room khaali, usi din naya guest agle slot mein
+  const checkoutRoom = async (f) => {
+    try {
+      await axios.post(`${API}/stay/checkout`, {
+        date,
+        period,
+        roomNo: room.roomNumber,
+        time: dayjs().format("hh:mm A"),
+        guest: { fullname: f.fullname, mobileNumber: digits(f.mobileNumber), type: f.type, noOfPeople: num(f.noOfPeople), rate: num(f.rate), discount: num(f.discount) },
+      });
+      // ruka hua row abhi tak payment ke bina auto-bhara tha aur aaj ka bill nahi banta → hata do
+      if (f._stayId && !f.modeOfPayment) clearRoom();
+      else saveRoom({ ...f });
+      const next = PERIODS.find((p) => p.key === NEXT_PERIOD[period])?.label;
+      toast.success(`Room ${room.roomNumber} khaali${next ? ` — naya guest ${next} mein` : ""}`);
+      loadStay();
+    } catch (e) {
+      toast.error(apiError(e));
+    }
+  };
+  const undoCheckout = async (id) => {
+    try {
+      await axios.put(`${API}/stay/undo-checkout/${id}`, {});
+      toast.success("Checkout wapas");
+      loadStay();
+    } catch (e) {
+      toast.error(apiError(e));
+    }
+  };
+  const extendStay = async (id, nights) => {
+    try {
+      await axios.put(`${API}/stay/extend/${id}`, { nights });
+      setDraft((d) => {
+        const rooms = { ...d.rooms };
+        Object.keys(rooms).forEach((k) => rooms[k]?._stayId === id && (rooms[k] = { ...rooms[k], _stayNights: nights }));
+        return { ...d, rooms };
+      });
+      toast.success(`Ab ${nights} raat`);
+      setEditing(null);
+      loadStay();
+    } catch (e) {
+      toast.error(apiError(e));
+    }
+  };
+  const checkoutOf = (p, roomNo) => (stayInfo?.checkouts || []).find((x) => x.roomNo === roomNo && x.period === p);
+  const advanceFor = (p, roomNo) => {
+    const row = draft.rooms[keyOf(p, roomNo)];
+    return (stayInfo?.bookings || [])
+      .filter((b) => (b.status === "checkedin" && b.checkedIn?.roomNo === roomNo && b.checkedIn?.period === p) || (row?._bookingId && row._bookingId === b._id))
+      .reduce((s, b) => s + advOf(b), 0);
+  };
+  const advToday = (stayInfo?.advances || []).reduce((s, a) => s + num(a.amount), 0);
+  const unassignedToday = (stayInfo?.bookings || []).filter((b) => b.status === "booked" && !b.roomNo);
 
   /* ----- counts & totals ----- */
   const summary = useMemo(() => {
@@ -470,7 +687,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         const mode = r.modeOfPayment;
         const keepPaid = orig.modeOfPayment === "UnPaid" && mode === "UnPaid";
         // eslint-disable-next-line no-unused-vars
-        const { _orig, ...clean } = r;
+        const clean = Object.fromEntries(Object.entries(r).filter(([k]) => !k.startsWith("_")));
         list.push({
           ...orig,
           ...clean,
@@ -598,7 +815,21 @@ const GhQuickEntry = ({ date, isAdmin }) => {
           <StatusPill tone="warn">Aaj ki GH entry abhi nahi hui</StatusPill>
         )}
         {status?.updatedBy && <StatusPill tone="lock">Edit: {status.updatedBy}</StatusPill>}
+        {advToday > 0 && (
+          <StatusPill tone="good">
+            💰 Aaj advance mila {inr(advToday)} (
+            {Object.entries((stayInfo?.advances || []).reduce((m, a) => ({ ...m, [a.mode]: (m[a.mode] || 0) + num(a.amount) }), {}))
+              .map(([m, v]) => `${m} ${inr(v)}`)
+              .join(", ")}
+            )
+          </StatusPill>
+        )}
       </Stack>
+      {unassignedToday.length > 0 && (
+        <Alert severity="info" sx={{ mb: 1.5 }}>
+          Aaj aane wali booking (room tay nahi): {unassignedToday.map((b) => `${b.guestName} (${b.people} log)`).join(", ")} — &quot;Booking&quot; tab mein &quot;Badlo&quot; se room chuno.
+        </Alert>
+      )}
       {locked && (
         <Alert severity="info" icon={<LockIcon />} sx={{ mb: 1.5 }}>
           Is din ki entry submit ho chuki hai. Koi galti ho to admin ko batao.
@@ -609,10 +840,10 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       <ToggleButtonGroup
         exclusive
         fullWidth
-        value={tab === "jama" ? "jama" : period}
+        value={tab === "jama" || tab === "booking" ? tab : period}
         onChange={(_, v) => {
           if (!v) return;
-          if (v === "jama") setTab("jama");
+          if (v === "jama" || v === "booking") setTab(v);
           else {
             setTab("rooms");
             setPeriod(v);
@@ -635,6 +866,14 @@ const GhQuickEntry = ({ date, isAdmin }) => {
             </Box>
           </ToggleButton>
         ))}
+        <ToggleButton value="booking">
+          <Box>
+            Booking
+            <Box component="span" sx={{ display: "block", fontSize: 11, fontWeight: 600, opacity: 0.85 }}>
+              📅 advance
+            </Box>
+          </Box>
+        </ToggleButton>
         <ToggleButton value="jama">
           <Box>
             Jama
@@ -645,7 +884,9 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         </ToggleButton>
       </ToggleButtonGroup>
 
-      {tab === "rooms" ? (
+      {tab === "booking" ? (
+        <BookingsPanel rooms={rooms} isAdmin={isAdmin} onChanged={loadStay} />
+      ) : tab === "rooms" ? (
         <>
           <Box sx={{ mb: 1.5 }}>
             <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
@@ -667,6 +908,10 @@ const GhQuickEntry = ({ date, isAdmin }) => {
                   fromServer={submitted && !!draft.rooms[keyOf(period, rm.roomNumber)]?._orig}
                   onOpen={() => setEditing(rm.roomNumber)}
                   charges={chargesFor(charges, period, rm.roomNumber)}
+                  checkout={checkoutOf(period, rm.roomNumber)}
+                  booking={!draft.rooms[keyOf(period, rm.roomNumber)] ? bookingFor(rm.roomNumber) : null}
+                  advance={advanceFor(period, rm.roomNumber)}
+                  period={period}
                 />
               </Grid>
             ))}
@@ -778,6 +1023,24 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         isAdmin={isAdmin}
         charges={charges}
         onChargesChanged={loadCharges}
+        stay={
+          room
+            ? {
+                checkout: checkoutOf(period, room.roomNumber),
+                started: (stayInfo?.started || []).find((x) => x.roomNo === room.roomNumber && x.period === period),
+              }
+            : null
+        }
+        onCheckout={checkoutRoom}
+        onUndoCheckout={undoCheckout}
+        onExtend={extendStay}
+        onNewGuest={() => {
+          const rn = room?.roomNumber;
+          setEditing(null);
+          setPeriod(NEXT_PERIOD[period]);
+          setTimeout(() => setEditing(rn), 0);
+        }}
+        advance={room ? advanceFor(period, room.roomNumber) : 0}
       />
 
       <ConfirmDialog

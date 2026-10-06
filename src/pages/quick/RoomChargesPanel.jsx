@@ -82,7 +82,7 @@ const Row = ({ c, isAdmin, onChanged }) => {
   );
 };
 
-const RoomChargesPanel = ({ date, period, roomNo, guestName, mobile, charges = [], roomRate = 0, discount = 0, roomPaid, isAdmin, onChanged }) => {
+const RoomChargesPanel = ({ date, period, roomNo, guestName, mobile, charges = [], roomRate = 0, discount = 0, roomPaid, isAdmin, onChanged, advance = 0 }) => {
   const [label, setLabel] = useState("Extra bed");
   const [other, setOther] = useState("");
   const [amount, setAmount] = useState(0);
@@ -93,7 +93,7 @@ const RoomChargesPanel = ({ date, period, roomNo, guestName, mobile, charges = [
   const sumOf = (l) => l.reduce((s, c) => s + num(c.amount), 0);
   const rent = Math.max(0, num(roomRate) - num(discount));
   const total = rent + sumOf(food) + sumOf(extra);
-  const due = (roomPaid ? 0 : rent) + sumOf(charges.filter((c) => !c.isPaid));
+  const due = Math.max(0, (roomPaid ? 0 : rent) + sumOf(charges.filter((c) => !c.isPaid)) - num(advance));
 
   const add = async () => {
     const l = label === "Other" ? other.trim() : label;
@@ -150,13 +150,14 @@ const RoomChargesPanel = ({ date, period, roomNo, guestName, mobile, charges = [
           [`Room rent${roomPaid ? " (paid)" : ""}`, rent],
           ["Food bill", sumOf(food)],
           ["Extra charges", sumOf(extra)],
+          ...(num(advance) > 0 ? [["Booking advance (pehle mila)", -num(advance)]] : []),
         ].map(([l, v]) => (
           <Stack key={l} direction="row" justifyContent="space-between">
             <Typography variant="body2" color={Q.muted}>
               {l}
             </Typography>
             <Typography variant="body2" fontWeight={600}>
-              {inr(v)}
+              {v < 0 ? `− ${inr(-v)}` : inr(v)}
             </Typography>
           </Stack>
         ))}

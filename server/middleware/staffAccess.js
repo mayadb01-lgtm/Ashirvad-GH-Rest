@@ -61,6 +61,19 @@ const RULES = {
     R("GET", /^\/api\/v1\/invoice\/by-room\/([^/]+)\/\d+$/, { dateParam: 1 }),
     R("POST", /^\/api\/v1\/invoice$/, { dateBody: "invoiceDate" }),
     R("GET", /^\/api\/v1\/invoice\/one\/[a-f0-9]{24}$/),
+    // Continue stay / checkout
+    R("GET", /^\/api\/v1\/stay\/day\/([^/]+)$/, { dateParam: 1 }),
+    R("PUT", /^\/api\/v1\/stay\/plan$/, { dateBody: "startDate" }),
+    R("POST", /^\/api\/v1\/stay\/checkout$/, { dateBody: "date" }),
+    R("PUT", /^\/api\/v1\/stay\/undo-checkout\/[a-f0-9]{24}$/),
+    R("PUT", /^\/api\/v1\/stay\/extend\/[a-f0-9]{24}$/),
+    // Advance booking (advance hamesha aaj ki date se; cancel sirf owner)
+    R("GET", /^\/api\/v1\/booking\/upcoming$/),
+    R("POST", /^\/api\/v1\/booking$/),
+    R("PUT", /^\/api\/v1\/booking\/[a-f0-9]{24}$/),
+    R("POST", /^\/api\/v1\/booking\/[a-f0-9]{24}\/advance$/),
+    R("PUT", /^\/api\/v1\/booking\/[a-f0-9]{24}\/checkin$/, { dateBody: "date" }),
+    R("GET", /^\/api\/v1\/booking\/for-room\/([^/]+)\/\d+$/, { dateParam: 1 }),
     dayStatus,
   ],
   rest: [
