@@ -151,8 +151,8 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkou
                 {row.modeOfPayment === "UnPaid" ? "Baaki" : row.modeOfPayment || "—"}
               </Box>
               {/* Rate nahi, sirf guest se lena baaki (room + food + extra) */}
-              <Typography fontWeight={800} fontSize={due > 0 ? 17 : 14} title="Room + food + extra mein se baaki" sx={{ color: due > 0 ? Q.bad : Q.good }}>
-                {due > 0 ? `Baaki ${inr(due)}` : "✓ Paid"}
+              <Typography fontWeight={800} fontSize={due > 0 && row.modeOfPayment ? 17 : 14} title="Room + food + extra mein se baaki" sx={{ color: !row.modeOfPayment ? Q.warn : due > 0 ? Q.bad : Q.good }}>
+                {!row.modeOfPayment ? "Payment chuno" : due > 0 ? `Baaki ${inr(due)}` : "✓ Paid"}
               </Typography>
             </Stack>
             {partial && (
@@ -647,8 +647,8 @@ const GhQuickEntry = ({ date, isAdmin }) => {
     }
   };
   const checkoutOf = (p, roomNo) => (stayInfo?.checkouts || []).find((x) => x.roomNo === roomNo && x.period === p);
-  const advanceFor = (p, roomNo) => {
-    const row = draft.rooms[keyOf(p, roomNo)];
+  const advanceFor = (p, roomNo, rowOverride) => {
+    const row = rowOverride || draft.rooms[keyOf(p, roomNo)];
     return (stayInfo?.bookings || [])
       .filter((b) => (b.status === "checkedin" && b.checkedIn?.roomNo === roomNo && b.checkedIn?.period === p) || (row?._bookingId && row._bookingId === b._id))
       .reduce((s, b) => s + advOf(b), 0);
@@ -1040,7 +1040,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
           setPeriod(NEXT_PERIOD[period]);
           setTimeout(() => setEditing(rn), 0);
         }}
-        advance={room ? advanceFor(period, room.roomNumber) : 0}
+        advance={room ? advanceFor(period, room.roomNumber, editingInitial) : 0}
       />
 
       <ConfirmDialog
