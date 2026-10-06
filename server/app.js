@@ -44,6 +44,7 @@ import { apiGate } from "./middleware/security.js";
 import owner from "./controller/owner.js";
 import insights from "./controller/insights.js";
 import guestRegister from "./controller/guestRegister.js";
+import roomCharges from "./controller/roomCharges.js";
 import quickEntry from "./controller/quickEntry.js";
 import staffAccounts from "./controller/staffAccounts.js";
 
@@ -67,6 +68,7 @@ app.use("/api/v1/staffSalary", staffSalary);
 app.use("/api/v1/import", dataImport);
 app.use("/api/v1/owner", owner); // read-only owner report
 app.use("/api/v1/guest-register", guestRegister); // govt guest register (alag collection)
+app.use("/api/v1/room-charges", roomCharges); // food bill + extra charges (alag collection)
 app.use("/api/v1/insights", insights); // read-only: cashflow, GH growth, kharch control, data check
 app.use("/api/v1/backup", backup);
 app.use("/api/v1/quick", quickEntry); // mobile/PC quick entry helpers (read-only)

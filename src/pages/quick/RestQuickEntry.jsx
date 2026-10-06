@@ -28,6 +28,9 @@ import {
 
 const EMPTY = { cash: 0, card: 0, pp: 0, computer: 0, upad: [], pending: [], pendingUsers: [], expenses: [] };
 const sum = (rows) => rows.reduce((s, r) => s + num(r.amount), 0);
+const PERIOD_LABEL = { day: "Day", night: "Night", extraDay: "Extra Day", extraNight: "Extra Night" };
+const roomText = (rm) => (rm ? `🛏 Room ${rm.roomNo}${rm.guestName ? ` · ${rm.guestName}` : ""}` : "");
+const stripRoom = (rows) => rows.map(({ room, roomMode, ...r }) => r); // eslint-disable-line no-unused-vars
 
 const SECTIONS = {
   upad: { title: "Upaad", subtitle: "Staff ko diya advance", pickLabel: "Staff", color: "#7C3AED" },
@@ -58,23 +61,27 @@ const RestQuickEntry = ({ date }) => {
   const [lists, setLists] = useState(null);
   const [server, setServer] = useState({ loaded: false, doc: null });
   const [status, setStatus] = useState(null);
+  const [occupied, setOccupied] = useState({ guests: [], rooms: [] });
   const [draft, setDraft, clearDraft] = useDraft(`qe-rest-${date}`, EMPTY);
   const [editor, setEditor] = useState(null); // { section, index, row }
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const seededFor = useRef("");
+  const roomRowsRef = useRef([]);
 
   const load = useCallback(async () => {
     setError("");
     setServer({ loaded: false, doc: null });
     try {
-      const [staff, pend, cats, e, s] = await Promise.all([
+      const [staff, pend, cats, e, s, occ, links] = await Promise.all([
         axios.get(`${API}/restStaff/get-staff-id-name-mobile`),
         axios.get(`${API}/restPending/get-all-pending-users`),
         axios.get(`${API}/restCategory/get-categories`),
         axios.get(`${API}/restEntry/get-entry/${date}`),
         axios.get(`${API}/quick/day-status/${date}`).catch(() => ({ data: {} })),
+        axios.get(`${API}/room-charges/occupied/${date}`).catch(() => ({ data: { data: { guests: [], rooms: [] } } })),
+        axios.get(`${API}/room-charges/rest/${date}`).catch(() => ({ data: { data: [] } })),
       ]);
       const categories = cats.data.data || [];
       setLists({
@@ -101,7 +108,10 @@ const RestQuickEntry = ({ date }) => {
         ),
       });
       const doc = e.data.data && !Array.isArray(e.data.data) && e.data.data._id ? e.data.data : null;
-      setServer({ loaded: true, doc });
+      setOccupied(occ.data?.data || { guests: [], rooms: [] });
+      const linkMap = {};
+      (links.data?.data || []).forEach((c) => (linkMap[c.restRowId] = { roomNo: c.roomNo, period: c.period, guestName: c.guestName, mobile: c.mobile }));
+      setServer({ loaded: true, doc, links: linkMap });
       setStatus(s.data?.data?.rest || null);
     } catch (err) {
       setError(apiError(err));
@@ -126,7 +136,7 @@ const RestQuickEntry = ({ date }) => {
       pp: d.totalPP || 0,
       computer: d.computerAmount || 0,
       upad: d.upad || [],
-      pending: d.pending || [],
+      pending: (d.pending || []).map((r) => (server.links?.[r.id] ? { ...r, room: server.links[r.id] } : r)),
       pendingUsers: d.pendingUsers || [],
       expenses: d.expenses || [],
     });
@@ -168,11 +178,14 @@ const RestQuickEntry = ({ date }) => {
     const pending = renumber(draft.pending.filter((r) => num(r.amount) > 0 && r.fullname));
     const expenses = renumber(draft.expenses.filter((r) => num(r.amount) > 0 && r.expenseName));
     const pendingUsers = renumber(draft.pendingUsers.filter((r) => num(r.amount) > 0 && r.isVendor));
+    roomRowsRef.current = pending
+      .filter((r) => r.room?.roomNo)
+      .map((r) => ({ rowId: r.id, roomNo: r.room.roomNo, period: r.room.period || "", guestName: r.room.guestName || "", mobile: r.room.mobile || "", amount: num(r.amount) }));
     return {
       createDate: date,
       date,
       upad: JSON.stringify(upad),
-      pending: JSON.stringify(pending),
+      pending: JSON.stringify(stripRoom(pending)),
       expenses: JSON.stringify(expenses),
       pendingUsers: JSON.stringify(pendingUsers),
       extraAmount: t.extra,
@@ -195,6 +208,12 @@ const RestQuickEntry = ({ date }) => {
       const body = build();
       if (submitted) await axios.put(`${API}/restEntry/update-entry/${date}`, body);
       else await axios.post(`${API}/restEntry/create-entry`, body);
+      // Levana baaki ki "room" rows → GH room ke bill mein
+      try {
+        await axios.put(`${API}/room-charges/rest-sync/${date}`, { rows: roomRowsRef.current });
+      } catch (e2) {
+        toast.error("Entry save hui, par room bill GH mein nahi gaya. Dobara 'Update karo' dabao.");
+      }
       toast.success(submitted ? "Restaurant entry update ho gayi" : "Restaurant entry submit ho gayi");
       clearDraft();
       setDraft(EMPTY);
@@ -249,11 +268,39 @@ const RestQuickEntry = ({ date }) => {
   const edValue = ed ? edOptions.find((o) => o._id === ed.row._id && edLabel(o) === edLabel(ed.row)) || (ed.row._id ? ed.row : null) : null;
   const edIsStaffExpense = ed?.section === "expenses" && /staff/i.test(ed.row.categoryName || "");
   const edValid = ed && num(ed.row.amount) > 0 && (ed.section === "expenses" ? !!ed.row.expenseName : !!ed.row.fullname);
+  // Levana baaki → Room: kaun se room ka bill hai
+  const roomOptions = (() => {
+    const g = (occupied.guests || []).map((x) => ({
+      ...x,
+      group: x.from === "today" ? "Aaj ruke guest" : "Kal raat wale guest",
+      label: `Room ${x.roomNo} · ${x.guestName || "—"}${x.from === "today" ? ` (${PERIOD_LABEL[x.fromPeriod] || x.fromPeriod})` : " (kal raat)"}`,
+    }));
+    const have = new Set(g.map((x) => x.roomNo));
+    const rest = (occupied.rooms || []).filter((r) => !have.has(r)).map((r) => ({ roomNo: r, period: "", guestName: "", mobile: "", group: "Baaki rooms (naam nahi mila)", label: `Room ${r}` }));
+    return [...g, ...rest];
+  })();
+  const roomBillPerson = () => {
+    const p = (lists?.pending || []).find((x) => /room\s*bill/i.test(x.fullname || ""));
+    return p ? { _id: p._id, fullname: p.fullname, mobileNumber: p.mobileNumber || 0, category: p.category || "Pending" } : { fullname: "Room bill", mobileNumber: 0, category: "Pending" };
+  };
+  const edRoomMode = ed?.section === "pending" && (ed.row.roomMode || !!ed.row.room);
+  const setRoomMode = (on) =>
+    setEditor((e) => ({ ...e, row: on ? { amount: e.row.amount, roomMode: true } : { amount: e.row.amount, roomMode: false } }));
+  const pickRoom = (o) =>
+    setEditor((e) => ({
+      ...e,
+      row: o
+        ? { ...e.row, ...roomBillPerson(), roomMode: true, room: { roomNo: o.roomNo, period: o.period || "", guestName: o.guestName || "", mobile: o.mobile || "" } }
+        : { amount: e.row.amount, roomMode: true },
+    }));
   const pickInto = (o) => {
     if (!o) return setEditor((e) => ({ ...e, row: { amount: e.row.amount } }));
     if (ed.section === "expenses")
       setEditor((e) => ({ ...e, row: { ...e.row, _id: o._id, expenseName: o.expenseName, categoryName: o.categoryName, isVendor: o.isVendor, fullname: "", fullname_id: "" } }));
-    else setEditor((e) => ({ ...e, row: { ...e.row, ...o } }));
+    else setEditor((e) => {
+      const { room, roomMode, ...rest } = e.row; // eslint-disable-line no-unused-vars
+      return { ...e, row: { ...rest, ...o } };
+    });
   };
 
   return (
@@ -347,9 +394,17 @@ const RestQuickEntry = ({ date }) => {
               </Typography>
             ))}
             {sectionBlock("pending", (r) => (
-              <Typography fontWeight={700} noWrap>
-                {r.fullname}
-              </Typography>
+              <>
+                <Typography fontWeight={700} noWrap>
+                  {r.fullname}
+                </Typography>
+                {r.room && (
+                  <Typography variant="caption" sx={{ color: "#0F766E", fontWeight: 700 }} noWrap component="div">
+                    {roomText(r.room)}
+                    {r.room.period ? ` · ${PERIOD_LABEL[r.room.period] || r.room.period}` : ""}
+                  </Typography>
+                )}
+              </>
             ))}
             {sectionBlock("pendingUsers", (r) => (
               <>
@@ -403,6 +458,39 @@ const RestQuickEntry = ({ date }) => {
         {ed && (
           <Stack spacing={2}>
             <MoneyField label="Amount" value={ed.row.amount} onChange={(v) => setEditor((e) => ({ ...e, row: { ...e.row, amount: v } }))} big autoFocus />
+            {ed.section === "pending" && (
+              <Stack direction="row" spacing={1}>
+                {[
+                  [false, "👤 Vyakti / company"],
+                  [true, "🛏 Room ka bill"],
+                ].map(([v, l]) => (
+                  <Button
+                    key={l}
+                    fullWidth
+                    variant={!!edRoomMode === v ? "contained" : "outlined"}
+                    onClick={() => setRoomMode(v)}
+                    sx={{ fontWeight: 800, ...(!!edRoomMode === v ? { bgcolor: "#0891B2", "&:hover": { bgcolor: "#0891B2" } } : { color: "#0891B2", borderColor: "#0891B2" }) }}
+                  >
+                    {l}
+                  </Button>
+                ))}
+              </Stack>
+            )}
+            {edRoomMode ? (
+              <>
+                <PickField
+                  label="Kaun sa room / guest"
+                  options={roomOptions}
+                  value={ed.row.room ? roomOptions.find((o) => o.roomNo === ed.row.room.roomNo && (o.guestName || "") === (ed.row.room.guestName || "")) || { ...ed.row.room, label: `Room ${ed.row.room.roomNo}${ed.row.room.guestName ? ` · ${ed.row.room.guestName}` : ""}` } : null}
+                  onChange={pickRoom}
+                  getLabel={(o) => o?.label || ""}
+                  groupBy={(o) => o.group || ""}
+                />
+                <Typography variant="caption" color={Q.muted}>
+                  Ye bill Guest House mein us room ke bill mein apne aap chala jayega (Submit / Update ke baad). Restaurant ke hisaab mein ye "{roomBillPerson().fullname.trim()}" ke naam se Levana baaki hi rahega.
+                </Typography>
+              </>
+            ) : (
             <PickField
               label={edCfg.pickLabel}
               options={edOptions}
@@ -411,6 +499,7 @@ const RestQuickEntry = ({ date }) => {
               getLabel={edLabel}
               groupBy={ed.section === "expenses" || ed.section === "pendingUsers" ? (o) => o.categoryName || "" : undefined}
             />
+            )}
             {edIsStaffExpense && (
               <PickField
                 label="Kis staff ka (salary / overtime)"

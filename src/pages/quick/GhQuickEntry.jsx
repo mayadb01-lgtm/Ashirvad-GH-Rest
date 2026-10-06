@@ -23,6 +23,7 @@ import {
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import GuestRegisterForm from "./GuestRegisterForm";
+import RoomChargesPanel from "./RoomChargesPanel";
 import SearchIcon from "@mui/icons-material/Search";
 import LockIcon from "@mui/icons-material/Lock";
 import {
@@ -68,10 +69,13 @@ const rowIssues = (r) => {
   if (m && m !== "0" && m.length !== 10) out.push("mobile 10 digit");
   return out;
 };
+const chargesFor = (list, period, roomNo) => (list || []).filter((c) => c.roomNo === roomNo && (!c.period || c.period === period));
 const isTouched = (r) => r && (num(r.rate) > 0 || String(r.fullname || "").trim() || r.modeOfPayment || r.type);
 
 /* ---------------- Room card ---------------- */
-const RoomCard = ({ room, row, onOpen, locked, fromServer }) => {
+const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [] }) => {
+  const chTotal = charges.reduce((s, c) => s + num(c.amount), 0);
+  const chDue = charges.some((c) => !c.isPaid);
   const filled = row && rowIssues(row).length === 0;
   const partial = row && !filled && isTouched(row);
   const low = filled && room.roomCost && num(row.rate) < room.roomCost * 0.7;
@@ -133,6 +137,11 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer }) => {
               >
                 {row.modeOfPayment === "UnPaid" ? "Baaki" : row.modeOfPayment || "—"}
               </Box>
+              {chTotal > 0 && (
+                <Box component="span" title="Food bill + extra charges" sx={{ fontSize: 12, fontWeight: 700, px: 1, py: 0.3, borderRadius: 10, bgcolor: chDue ? "#FEF3C7" : "#CCFBF1", color: chDue ? "#92400E" : "#115E59" }}>
+                  🧾 {inr(chTotal)}
+                </Box>
+              )}
               <Typography fontWeight={800} fontSize={17} sx={{ color: low ? Q.bad : Q.ink }}>
                 {inr(row.rate)}
               </Typography>
@@ -154,7 +163,7 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer }) => {
 };
 
 /* ---------------- Room editor ---------------- */
-const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClear, locked, isAdmin }) => {
+const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClear, locked, isAdmin, charges, onChargesChanged }) => {
   const [f, setF] = useState(initial);
   const [guest, setGuest] = useState(null);
   const lastLookup = useRef("");
@@ -302,6 +311,20 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
           </TextField>
         </Stack>
         <MoneyField label="Discount (agar diya ho)" value={f.discount} onChange={(v) => set("discount", v)} disabled={locked} />
+        {/* Food bill (restaurant se) + extra charges — alag collection, lock ka asar nahi */}
+        <RoomChargesPanel
+          date={date}
+          period={period}
+          roomNo={room?.roomNumber}
+          guestName={f.fullname}
+          mobile={digits(f.mobileNumber)}
+          charges={chargesFor(charges, period, room?.roomNumber)}
+          roomRate={f.rate}
+          discount={f.discount}
+          roomPaid={!!f.modeOfPayment && f.modeOfPayment !== "UnPaid"}
+          isAdmin={isAdmin}
+          onChanged={onChargesChanged}
+        />
         {/* Optional: Govt/Police register ki details — alag collection mein, room entry pe koi asar nahi */}
         <GuestRegisterForm key={`${date}-${period}-${room?.roomNumber}`} date={date} period={period} roomNo={room?.roomNumber} seed={f} isAdmin={isAdmin} />
       </Stack>
@@ -315,6 +338,15 @@ const GhQuickEntry = ({ date, isAdmin }) => {
   const [server, setServer] = useState({ loaded: false, entries: [] });
   const [status, setStatus] = useState(null);
   const [unpaid, setUnpaid] = useState([]);
+  const [charges, setCharges] = useState([]);
+  const loadCharges = useCallback(
+    () =>
+      axios
+        .get(`${API}/room-charges/day/${date}`)
+        .then(({ data }) => setCharges(data.data || []))
+        .catch(() => setCharges([])),
+    [date]
+  );
   const [period, setPeriod] = useState("day");
   const [tab, setTab] = useState("rooms"); // rooms | jama
   const [editing, setEditing] = useState(null); // roomNo
@@ -340,6 +372,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       setServer({ loaded: true, entries: e.data.data || [] });
       setStatus(s.data?.data?.gh || null);
       setUnpaid(u.data.data || []);
+      loadCharges();
     } catch (err) {
       setError(apiError(err));
       setServer({ loaded: true, entries: [] });
@@ -634,6 +667,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
                   locked={locked}
                   fromServer={submitted && !!draft.rooms[keyOf(period, rm.roomNumber)]?._orig}
                   onOpen={() => setEditing(rm.roomNumber)}
+                  charges={chargesFor(charges, period, rm.roomNumber)}
                 />
               </Grid>
             ))}
@@ -743,6 +777,8 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         onSave={saveRoom}
         onClear={clearRoom}
         isAdmin={isAdmin}
+        charges={charges}
+        onChargesChanged={loadCharges}
       />
 
       <ConfirmDialog

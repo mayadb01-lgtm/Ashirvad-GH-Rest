@@ -37,6 +37,7 @@ const ProfitLossDashboard = () => {
   const lines = [
     ["KAMAI", null, "head"],
     ["Guest House sales", (m) => m.ghSales],
+    ["GH extra charges (extra bed, laundry…)", (m) => m.ghExtra || 0],
     ["Restaurant sales", (m) => m.restSales],
     ["Doosri kamai (Banquet, Baada, waghera)", (m) => m.otherIncome],
     ["Kul kamai", (m) => m.revenue, "total"],

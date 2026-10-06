@@ -10,6 +10,7 @@ import Room from "../model/room.js";
 import RestEntry from "../model/restEntry.js";
 import OfficeBook from "../model/officeBook.js";
 import StaffSalary from "../model/staffSalary.js";
+import RoomCharge from "../model/roomCharge.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -392,14 +393,15 @@ router.get("/pnl/:from/:to", async (req, res) => {
       return res.status(400).json({ success: false, message: "Month format YYYY-MM chahiye (from <= to)" });
     }
     const q = range(from.startOf("month"), to.endOf("month"));
-    const [gh, rest, office] = await Promise.all([
+    const [gh, rest, office, extras] = await Promise.all([
       Entry.find(q, { entry: 1, entryCreateDate: 1 }).lean(),
       RestEntry.find(q, { entryCreateDate: 1, grandTotal: 1, totalUpad: 1, expenses: 1 }).lean(),
       OfficeBook.find(q, { entryCreateDate: 1, officeIn: 1, officeOut: 1 }).lean(),
+      RoomCharge.find({ ...q, kind: "extra" }, { entryCreateDate: 1, amount: 1 }).lean(),
     ]);
     const months = monthList(from, to).map((m) => ({
       month: m, label: dayjs(m + "-01").format("MMM YY"),
-      ghSales: 0, restSales: 0, otherIncome: 0, otherByCat: {},
+      ghSales: 0, ghExtra: 0, restSales: 0, otherIncome: 0, otherByCat: {},
       exp: {}, expGh: 0, expRest: 0, loanOut: 0, personalOut: 0,
     }));
     const byM = Object.fromEntries(months.map((m) => [m.month, m]));
@@ -411,6 +413,11 @@ router.get("/pnl/:from/:to", async (req, res) => {
     gh.forEach((d) => {
       const m = byM[ymOf(d.entryCreateDate)];
       if (m) (d.entry || []).forEach((e) => SOLD.includes(e.period) && (m.ghSales += n(e.rate)));
+    });
+    // GH extra charges (extra bed, laundry...) — food bill nahi (wo restaurant sales mein pehle se hai)
+    extras.forEach((x) => {
+      const m = byM[ymOf(x.entryCreateDate)];
+      if (m) m.ghExtra += n(x.amount);
     });
     rest.forEach((d) => {
       const m = byM[ymOf(d.entryCreateDate)];
@@ -437,17 +444,17 @@ router.get("/pnl/:from/:to", async (req, res) => {
     });
     const groups = [...EXP_GROUPS.map(([g]) => g), "Other kharch"];
     months.forEach((m) => {
-      m.revenue = m.ghSales + m.restSales + m.otherIncome;
+      m.revenue = m.ghSales + m.ghExtra + m.restSales + m.otherIncome;
       m.expenses = sum(Object.values(m.exp), (v) => v);
       m.profit = m.revenue - m.expenses;
       m.margin = m.revenue ? round((100 * m.profit) / m.revenue, 1) : 0;
       m.afterLoanPersonal = m.profit - m.loanOut - m.personalOut;
-      m.ghProfit = m.ghSales - m.expGh;
+      m.ghProfit = m.ghSales + m.ghExtra - m.expGh;
       groups.forEach((g) => (m.exp[g] = round(m.exp[g] || 0)));
-      ["ghSales", "restSales", "otherIncome", "expGh", "expRest", "loanOut", "personalOut", "revenue", "expenses", "profit", "afterLoanPersonal", "ghProfit"].forEach((k) => (m[k] = round(m[k])));
+      ["ghSales", "ghExtra", "restSales", "otherIncome", "expGh", "expRest", "loanOut", "personalOut", "revenue", "expenses", "profit", "afterLoanPersonal", "ghProfit"].forEach((k) => (m[k] = round(m[k])));
     });
     const totals = {};
-    ["ghSales", "restSales", "otherIncome", "expGh", "expRest", "loanOut", "personalOut", "revenue", "expenses", "profit", "afterLoanPersonal", "ghProfit"].forEach((k) => (totals[k] = round(sum(months, (m) => m[k]))));
+    ["ghSales", "ghExtra", "restSales", "otherIncome", "expGh", "expRest", "loanOut", "personalOut", "revenue", "expenses", "profit", "afterLoanPersonal", "ghProfit"].forEach((k) => (totals[k] = round(sum(months, (m) => m[k]))));
     totals.margin = totals.revenue ? round((100 * totals.profit) / totals.revenue, 1) : 0;
     totals.exp = Object.fromEntries(groups.map((g) => [g, round(sum(months, (m) => m.exp[g]))]));
     totals.otherByCat = {};
