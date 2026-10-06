@@ -44,6 +44,14 @@ import OfficeCategoryDashboard from "../components/office/OfficeCategoryDashboar
 import OfficeMerged from "../components/office/OfficeMerged";
 import OfficeCreditDebit from "../components/office/OfficeCreditDebit";
 import VendorGraphDashboard from "../components/office/VendorGraphDashboard";
+import CashflowDashboard from "../components/insights/CashflowDashboard";
+import GhGrowthDashboard from "../components/insights/GhGrowthDashboard";
+import KharchControlDashboard from "../components/insights/KharchControlDashboard";
+import DataAlerts from "../components/insights/DataAlerts";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import FactCheckIcon from "@mui/icons-material/FactCheck";
 import GHUpaidEntriesDashboard from "../components/guest-house/GHUpaidEntriesDashboard";
 import OfficeHome from "../components/office/OfficeHome";
 import OfficeMergedGraph from "../components/office/OfficeMergedGraph";
@@ -100,6 +108,11 @@ const NAVIGATION = [
   { segment: "home-classic", title: "Home", icon: <DashboardIcon /> },
   { segment: "owner-report", title: "Owner Monthly Report", icon: <InsightsIcon /> },
   { segment: "guest-dues", title: "Guest Dues & Reminders", icon: <WhatsAppIcon /> },
+  { kind: "header", title: "Business Growth" },
+  { segment: "cashflow", title: "Cashflow (mahina-wise)", icon: <AccountBalanceWalletIcon /> },
+  { segment: "gh-growth", title: "GH Growth", icon: <TrendingUpIcon /> },
+  { segment: "kharch-control", title: "Kharch Control", icon: <ReceiptLongIcon /> },
+  { segment: "data-check", title: "Data Check (galti alert)", icon: <FactCheckIcon /> },
   { kind: "header", title: "Guest House" },
   { segment: "guest-house", title: "GH - Graph", icon: <PieChartIcon /> },
   { segment: "gh-dashboard", title: "GH - One Day View", icon: <LooksOneIcon /> },
@@ -316,6 +329,10 @@ const DashboardPage = () => {
     { path: "merged-reports", element: <OfficeMerged /> },
     { path: "merged-vendor-report", element: <OfficeCreditDebit /> },
     { path: "merged-vendor-graph", element: <VendorGraphDashboard /> },
+    { path: "cashflow", element: <CashflowDashboard /> },
+    { path: "gh-growth", element: <GhGrowthDashboard /> },
+    { path: "kharch-control", element: <KharchControlDashboard /> },
+    { path: "data-check", element: <DataAlerts onNavigate={router.navigate} /> },
     { path: "sales-goal/gh-sales-goal", element: <GHSalesGoalDashboard /> },
     { path: "sales-goal/rest-sales-goal", element: <RestSalesGoalDashboard /> },
     {

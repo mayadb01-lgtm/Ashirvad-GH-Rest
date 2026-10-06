@@ -14,6 +14,7 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { BRAND } from "../../theme";
 import BackupStatusCard from "../BackupStatusCard";
+import DataAlerts from "../insights/DataAlerts";
 
 const API = import.meta.env.VITE_REACT_APP_SERVER_URL;
 const F = "DD-MM-YYYY";
@@ -385,6 +386,7 @@ const TodayHome = ({ onNavigate }) => {
               App ne khud dhoondha
             </Typography>
             <Stack spacing={1} sx={{ mt: 1.5 }}>
+              <DataAlerts compact onNavigate={go} />
               {v.m?.unpaid?.total > 0 && (
                 <ButtonBase onClick={() => go("guest-dues")} sx={{ textAlign: "left", borderRadius: 2.5, bgcolor: "#FEF2F2", color: "#7F1D1D", p: 1.5, display: "flex", gap: 1 }}>
                   <Box sx={{ flex: 1 }}>

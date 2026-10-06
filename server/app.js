@@ -42,6 +42,7 @@ import dataImport from "./controller/import.js";
 import backup from "./controller/backup.js";
 import { apiGate } from "./middleware/security.js";
 import owner from "./controller/owner.js";
+import insights from "./controller/insights.js";
 import quickEntry from "./controller/quickEntry.js";
 import staffAccounts from "./controller/staffAccounts.js";
 
@@ -64,6 +65,7 @@ app.use("/api/v1/room", room);
 app.use("/api/v1/staffSalary", staffSalary);
 app.use("/api/v1/import", dataImport);
 app.use("/api/v1/owner", owner); // read-only owner report
+app.use("/api/v1/insights", insights); // read-only: cashflow, GH growth, kharch control, data check
 app.use("/api/v1/backup", backup);
 app.use("/api/v1/quick", quickEntry); // mobile/PC quick entry helpers (read-only)
 app.use("/api/v1/staff-accounts", staffAccounts); // owner: staff ka department / band-chalu
