@@ -10,6 +10,8 @@ const sendToken = (user, statusCode, res) => {
     secure: true,
   };
 
+  // Admin wala purana cookie hata do, warna dono cookie hone pe login loop hota hai
+  res.clearCookie("admin_token", { httpOnly: true, sameSite: "none", secure: true });
   res.status(statusCode).cookie("token", token, options).json({
     success: true,
     user,

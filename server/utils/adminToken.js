@@ -13,6 +13,8 @@ const sendAdminToken = (admin, statusCode, res) => {
   const adminProfile = admin.toObject();
   delete adminProfile.password;
 
+  // Staff wala purana "token" cookie hata do, warna dono cookie hone pe login loop hota hai
+  res.clearCookie("token", { httpOnly: true, sameSite: "none", secure: true });
   res.status(statusCode).cookie("admin_token", token, options).json({
     success: true,
     admin: adminProfile,

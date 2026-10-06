@@ -65,7 +65,10 @@ router.post("/login-admin", async (req, res) => {
     }
 
     // Find the admin
-    const admin = await Admin.findOne({ email }).select("+password");
+    const admin = await Admin.findOne({
+      // email ke aage-peeche space ya Capital letter (phone keyboard) se login fail na ho
+      email: new RegExp("^" + String(email).trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$", "i"),
+    }).select("+password");
 
     if (!admin) {
       return res.status(404).json({

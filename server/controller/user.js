@@ -59,7 +59,10 @@ router.post("/login-user", async (req, res) => {
     }
 
     // Find the user
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({
+      // email ke aage-peeche space ya Capital letter (phone keyboard) se login fail na ho
+      email: new RegExp("^" + String(email).trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$", "i"),
+    }).select("+password");
     if (!user) {
       return res.status(404).json({
         success: false,
