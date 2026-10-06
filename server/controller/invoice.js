@@ -85,7 +85,7 @@ router.get("/room-prefill/:date/:period/:roomNo", async (req, res) => {
         draft: {
           business: "Guest House",
           invoiceDate: date,
-          customer: { name: name || e?.fullname || "", company: reg?.companyName || "", gstin: "", address, mobile, state: reg?.state || "Gujarat" },
+          customer: { name: e?.fullname || name || "", company: reg?.companyName || "", gstin: "", address, mobile, state: reg?.state || "Gujarat" },
           stay: {
             roomNo: String(roomNo),
             checkIn: reg?.checkinDate ? `${dayjs(reg.checkinDate).format(F)} ${reg.checkinTime || ""}`.trim() : `${date} ${e?.checkInTime || ""}`.trim(),
