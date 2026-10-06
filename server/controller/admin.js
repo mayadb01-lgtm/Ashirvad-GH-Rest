@@ -15,6 +15,8 @@ import RestEntry from "../model/restEntry.js";
 import RestStaff from "../model/restStaff.js";
 import RestPending from "../model/restPending.js";
 import OfficeBook, { OfficeCategory } from "../model/officeBook.js";
+import RestCategory from "../model/restCategory.js";
+import StaffSalary from "../model/staffSalary.js";
 
 // Sign Up Admin
 router.post("/create-admin", async (req, res) => {
@@ -199,6 +201,8 @@ router.get("/send-backup", isAuthenticated, async (req, res) => {
       RestPending,
       OfficeBook,
       OfficeCategory,
+      RestCategory, // pehle backup mein missing tha
+      StaffSalary, // pehle backup mein missing tha
     ];
     await runBackup(backupModels);
     await sendMailWithAttachment();

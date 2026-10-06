@@ -50,6 +50,10 @@ import OfficeBakeryBaadaSalesGoalDashboard from "../components/office/OfficeBake
 import OfficeMotiBaadaSalesGoalDashboard from "../components/office/OfficeMotiBaadaSalesGoalDashboard";
 // Staff Salary
 import StaffSalaryDashboard from "../components/restaurant/StaffSalaryDashboard";
+import DataImportDashboard from "../components/import/DataImportDashboard";
+import OwnerMonthlyDashboard from "../components/owner/OwnerMonthlyDashboard";
+import InsightsIcon from "@mui/icons-material/Insights";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 
 const DashboardHeader = ({ onNavigate }) => {
   const navigate = useNavigate();
@@ -92,6 +96,11 @@ const NAVIGATION = [
     segment: "home",
     title: "Home",
     icon: <DashboardIcon />,
+  },
+  {
+    segment: "owner-report",
+    title: "Owner Monthly Report",
+    icon: <InsightsIcon />,
   },
   { kind: "header", title: "Guest House" },
   {
@@ -220,6 +229,12 @@ const NAVIGATION = [
     title: "Merged Vendor Report",
     icon: <BarChartIcon />,
   },
+  { kind: "header", title: "Data Import" },
+  {
+    segment: "data-import",
+    title: "Import Excel / CSV",
+    icon: <UploadFileIcon />,
+  },
   {
     kind: "header",
     title: "Sales Goal",
@@ -340,6 +355,8 @@ const DashboardPage = () => {
       path: "sales-goal/office-moti-baada",
       element: <OfficeMotiBaadaSalesGoalDashboard />,
     },
+    { path: "data-import", element: <DataImportDashboard /> },
+    { path: "owner-report", element: <OwnerMonthlyDashboard /> },
     { path: "*", element: <Typography>404: Page Not Found</Typography> },
   ]);
 

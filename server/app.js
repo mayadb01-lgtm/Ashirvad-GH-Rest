@@ -13,7 +13,7 @@ app.use(
   })
 );
 
-app.use(express.json());
+app.use(express.json({ limit: "10mb" })); // bulk import ke liye limit badhayi
 app.use(cookieParser());
 app.get("/test", (req, res) => {
   res.send("Hello World!");
@@ -38,6 +38,8 @@ import officeBook from "./controller/officeBook.js";
 import room from "./controller/room.js";
 import staffSalary from "./controller/staffSalary.js";
 import vendor from "./controller/vendor.js";
+import dataImport from "./controller/import.js";
+import owner from "./controller/owner.js";
 
 // Use routes
 app.use("/api/v1/user", user);
@@ -52,5 +54,7 @@ app.use("/api/v1/restPending", restPending);
 app.use("/api/v1/officeBook", officeBook);
 app.use("/api/v1/room", room);
 app.use("/api/v1/staffSalary", staffSalary);
+app.use("/api/v1/import", dataImport);
+app.use("/api/v1/owner", owner); // read-only owner report
 
 export default app;
