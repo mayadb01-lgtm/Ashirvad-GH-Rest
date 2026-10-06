@@ -164,7 +164,8 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
   }, [initial, open]);
 
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
-  const mobile = digits(f.mobileNumber);
+  // Koi room khula na ho to f = null hota hai (pehle isi se poora page safed ho jaata tha)
+  const mobile = digits(f?.mobileNumber);
 
   useEffect(() => {
     if (!open || mobile.length !== 10 || lastLookup.current === mobile) return;
@@ -184,7 +185,7 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
       .catch(() => {});
   }, [mobile, open]);
 
-  if (!room) return null;
+  if (!room || !f) return null;
   const issues = rowIssues(f);
   const low = room.roomCost && num(f.rate) > 0 && num(f.rate) < room.roomCost * 0.7;
   const periodLabel = PERIODS.find((p) => p.key === period)?.label;

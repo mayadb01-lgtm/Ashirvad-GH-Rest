@@ -1,8 +1,6 @@
 // Guest House growth: occupancy, rate, kaun se guest, kaun se room, purane guests (WhatsApp offer). Sirf padhta hai.
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, TableContainer, Typography, TextField } from "@mui/material";
-import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import DownloadIcon from "@mui/icons-material/Download";
 import { ResponsiveContainer, ComposedChart, BarChart, Bar, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from "recharts";
@@ -10,7 +8,7 @@ import dayjs from "dayjs";
 import axios from "axios";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
-import { API, COLORS, Kpi, PageTitle, Section, inr, kTick, lakh } from "./shared";
+import { API, COLORS, Kpi, PageTitle, Section, inr, kTick, lakh , MonthRangeBar, MonthStepBar } from "./shared";
 
 const F = "DD-MM-YYYY";
 const Split = ({ obj }) => {
@@ -74,12 +72,7 @@ const GhGrowthDashboard = () => {
   return (
     <Box sx={{ p: { xs: 1, md: 2 } }}>
       <PageTitle title="Guest House Growth" sub="Rooms kitne bharte hain, kis rate pe, kaun se guest aate hain — aur kahan se zyada kamai ho sakti hai." />
-      <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mb: 2 }}>
-          <DatePicker label="Shuru" value={start} onChange={(v) => v && setStart(v)} format={F} slotProps={{ textField: { size: "small" } }} />
-          <DatePicker label="Tak" value={end} onChange={(v) => v && setEnd(v)} format={F} slotProps={{ textField: { size: "small" } }} />
-        </Stack>
-      </LocalizationProvider>
+      <MonthStepBar start={start} end={end} setStart={setStart} setEnd={setEnd} format={F} />
 
       {loading && <Typography color="text.secondary">Load ho raha hai…</Typography>}
 

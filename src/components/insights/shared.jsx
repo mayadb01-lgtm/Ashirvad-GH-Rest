@@ -1,4 +1,9 @@
-import { Box, Card, CardContent, Typography } from "@mui/material";
+import { Box, Button, Card, CardContent, IconButton, Stack, Tooltip, Typography } from "@mui/material";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs from "dayjs";
 
 export const API = import.meta.env.VITE_REACT_APP_SERVER_URL;
 export const inr = (n) => "₹" + Math.round(Number(n) || 0).toLocaleString("en-IN");
@@ -63,3 +68,91 @@ export const PageTitle = ({ title, sub }) => (
     )}
   </Box>
 );
+
+// Mahina range + ◀ ▶ arrows (poori range ek mahina aage/peeche), "Sirf ek mahina" aur "Pichhle 12"
+
+export const MonthRangeBar = ({ from, to, setFrom, setTo, children }) => {
+  const shift = (n) => {
+    setFrom(from.add(n, "month").startOf("month"));
+    setTo(to.add(n, "month").startOf("month"));
+  };
+  const nextDisabled = !to.isBefore(dayjs(), "month");
+  return (
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <Stack direction="row" spacing={1} sx={{ mb: 2 }} alignItems="center" flexWrap="wrap" useFlexGap>
+        <Tooltip title="Ek mahina peeche">
+          <IconButton onClick={() => shift(-1)} sx={{ border: "1px solid #D1D5DB" }} aria-label="Pichhla mahina">
+            <ChevronLeftIcon />
+          </IconButton>
+        </Tooltip>
+        <DatePicker label="Se (mahina)" views={["year", "month"]} value={from} onChange={(v) => v && setFrom(v.startOf("month"))} slotProps={{ textField: { size: "small", sx: { width: 195 } } }} />
+        <DatePicker label="Tak (mahina)" views={["year", "month"]} value={to} onChange={(v) => v && setTo(v.startOf("month"))} slotProps={{ textField: { size: "small", sx: { width: 195 } } }} />
+        <Tooltip title="Ek mahina aage">
+          <span>
+            <IconButton onClick={() => shift(1)} disabled={nextDisabled} sx={{ border: "1px solid #D1D5DB" }} aria-label="Agla mahina">
+              <ChevronRightIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Button size="small" variant="outlined" onClick={() => setFrom(to.startOf("month"))}>
+          Sirf ek mahina
+        </Button>
+        <Button
+          size="small"
+          variant="outlined"
+          onClick={() => {
+            const end = dayjs().subtract(1, "month").startOf("month");
+            setTo(end);
+            setFrom(end.subtract(11, "month"));
+          }}
+        >
+          Pichhle 12 mahine
+        </Button>
+        {children}
+      </Stack>
+    </LocalizationProvider>
+  );
+};
+
+// Date range (GH Growth): ◀ ▶ = poora mahina aage/peeche
+export const MonthStepBar = ({ start, end, setStart, setEnd, format = "DD-MM-YYYY", children }) => {
+  const goMonth = (m) => {
+    setStart(m.startOf("month"));
+    const e = m.endOf("month");
+    setEnd(e.isAfter(dayjs()) ? dayjs() : e);
+  };
+  return (
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <Stack direction="row" spacing={1} sx={{ mb: 2 }} alignItems="center" flexWrap="wrap" useFlexGap>
+        <Tooltip title="Pichhla mahina">
+          <IconButton onClick={() => goMonth(start.subtract(1, "month"))} sx={{ border: "1px solid #D1D5DB" }} aria-label="Pichhla mahina">
+            <ChevronLeftIcon />
+          </IconButton>
+        </Tooltip>
+        <DatePicker label="Shuru" value={start} onChange={(v) => v && setStart(v)} format={format} slotProps={{ textField: { size: "small", sx: { width: 175 } } }} />
+        <DatePicker label="Tak" value={end} onChange={(v) => v && setEnd(v)} format={format} slotProps={{ textField: { size: "small", sx: { width: 175 } } }} />
+        <Tooltip title="Agla mahina">
+          <span>
+            <IconButton onClick={() => goMonth(start.add(1, "month"))} disabled={!start.isBefore(dayjs(), "month")} sx={{ border: "1px solid #D1D5DB" }} aria-label="Agla mahina">
+              <ChevronRightIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Button size="small" variant="outlined" onClick={() => goMonth(dayjs())}>
+          Is mahina
+        </Button>
+        <Button
+          size="small"
+          variant="outlined"
+          onClick={() => {
+            setStart(dayjs().subtract(5, "month").startOf("month"));
+            setEnd(dayjs());
+          }}
+        >
+          Pichhle 6 mahine
+        </Button>
+        {children}
+      </Stack>
+    </LocalizationProvider>
+  );
+};

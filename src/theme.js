@@ -134,10 +134,21 @@ export const themeOptions = {
       styleOverrides: {
         root: {
           borderRadius: 10,
-          "&.Mui-selected": { backgroundColor: BRAND.ink, color: "#fff", "& .MuiListItemIcon-root": { color: "#fff" } },
-          "&.Mui-selected:hover": { backgroundColor: BRAND.ink },
+          // Chuna hua menu: halka hara background + gaadha hara text (pehle kaala bar tha, text nahi dikhta tha)
+          "&.Mui-selected, &.Mui-selected.Mui-focusVisible": {
+            backgroundColor: "#E6F4F1",
+            color: BRAND.gh,
+            "& .MuiListItemIcon-root, & .MuiSvgIcon-root": { color: BRAND.gh },
+            "& .MuiTypography-root, & .MuiListItemText-primary": { color: BRAND.gh, fontWeight: 700 },
+          },
+          "&.Mui-selected:hover": { backgroundColor: "#D5EEE9" },
+          "& .MuiTypography-root": { color: BRAND.ink, fontWeight: 500 },
+          "& .MuiListItemIcon-root": { color: BRAND.ink2 },
         },
       },
+    },
+    MuiListSubheader: {
+      styleOverrides: { root: { color: BRAND.ink2, fontWeight: 800, fontSize: 12, letterSpacing: ".04em", textTransform: "uppercase", backgroundColor: "transparent" } },
     },
     MuiDataGrid: {
       styleOverrides: {
@@ -163,6 +174,8 @@ const appTheme = createTheme(themeOptions);
 const { palette: _p, ...restOptions } = themeOptions;
 export const dashboardTheme = createTheme({
   ...restOptions,
+  // Hamesha light (phone/PC dark mode mein bhi menu padhne layak rahe)
+  defaultColorScheme: "light",
   cssVariables: { colorSchemeSelector: "data-toolpad-color-scheme" },
   colorSchemes: { light: { palette: themeOptions.palette } },
   breakpoints: { values: { xs: 0, sm: 600, md: 960, lg: 1200, xl: 1536 } },

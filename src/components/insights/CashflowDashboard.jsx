@@ -1,15 +1,13 @@
 // Cashflow (mahina-wise): kitna aaya, kitna gaya, kitna bacha. Sirf padhta hai.
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, TableContainer, Typography } from "@mui/material";
-import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import DownloadIcon from "@mui/icons-material/Download";
 import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ReferenceLine } from "recharts";
 import dayjs from "dayjs";
 import axios from "axios";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
-import { API, COLORS, Kpi, PageTitle, Section, inr, kTick, lakh } from "./shared";
+import { API, COLORS, Kpi, PageTitle, Section, inr, kTick, lakh , MonthRangeBar, MonthStepBar } from "./shared";
 
 const CashflowDashboard = () => {
   const [from, setFrom] = useState(dayjs().subtract(11, "month").startOf("month"));
@@ -77,15 +75,11 @@ const CashflowDashboard = () => {
   return (
     <Box sx={{ p: { xs: 1, md: 2 } }}>
       <PageTitle title="Cashflow (mahina-wise)" sub="Kitna paisa aaya, kitna gaya, kitna bacha. Loan aur Personal alag dikhaye hain." />
-      <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mb: 2 }} alignItems={{ sm: "center" }}>
-          <DatePicker label="Se (mahina)" views={["year", "month"]} value={from} onChange={(v) => v && setFrom(v.startOf("month"))} slotProps={{ textField: { size: "small" } }} />
-          <DatePicker label="Tak (mahina)" views={["year", "month"]} value={to} onChange={(v) => v && setTo(v.startOf("month"))} slotProps={{ textField: { size: "small" } }} />
-          <Button variant="contained" startIcon={<DownloadIcon />} onClick={exportExcel} disabled={!data}>
-            Excel
-          </Button>
-        </Stack>
-      </LocalizationProvider>
+      <MonthRangeBar from={from} to={to} setFrom={setFrom} setTo={setTo}>
+        <Button variant="contained" startIcon={<DownloadIcon />} onClick={exportExcel} disabled={!data}>
+          Excel
+        </Button>
+      </MonthRangeBar>
 
       <Stack direction="row" spacing={1.5} sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
         <Kpi label="Aaya (business)" value={lakh(t.aaya)} sub={`Avg ${lakh((t.aaya || 0) / nMonths)} / mahina`} color={COLORS.in} />

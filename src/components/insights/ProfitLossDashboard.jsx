@@ -1,15 +1,13 @@
 // Profit & Loss (mahina-wise). Sirf padhta hai.
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, TableContainer, Typography } from "@mui/material";
-import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import DownloadIcon from "@mui/icons-material/Download";
 import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ReferenceLine } from "recharts";
 import dayjs from "dayjs";
 import axios from "axios";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
-import { API, COLORS, Kpi, PageTitle, Section, inr, kTick, lakh } from "./shared";
+import { API, COLORS, Kpi, PageTitle, Section, inr, kTick, lakh , MonthRangeBar, MonthStepBar } from "./shared";
 
 const ProfitLossDashboard = () => {
   const [from, setFrom] = useState(dayjs().subtract(12, "month").startOf("month"));
@@ -80,15 +78,11 @@ const ProfitLossDashboard = () => {
   return (
     <Box sx={{ p: { xs: 1, md: 2 } }}>
       <PageTitle title="Profit & Loss" sub="Kamai − Kharch = Munafa. Personal aur Loan neeche alag, taaki business ka asli munafa dikhe." />
-      <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mb: 2 }} alignItems={{ sm: "center" }}>
-          <DatePicker label="Se (mahina)" views={["year", "month"]} value={from} onChange={(v) => v && setFrom(v.startOf("month"))} slotProps={{ textField: { size: "small" } }} />
-          <DatePicker label="Tak (mahina)" views={["year", "month"]} value={to} onChange={(v) => v && setTo(v.startOf("month"))} slotProps={{ textField: { size: "small" } }} />
-          <Button variant="contained" startIcon={<DownloadIcon />} onClick={exportExcel} disabled={!data}>
-            Excel
-          </Button>
-        </Stack>
-      </LocalizationProvider>
+      <MonthRangeBar from={from} to={to} setFrom={setFrom} setTo={setTo}>
+        <Button variant="contained" startIcon={<DownloadIcon />} onClick={exportExcel} disabled={!data}>
+          Excel
+        </Button>
+      </MonthRangeBar>
       {loading && <Typography color="text.secondary">Load ho raha hai…</Typography>}
 
       <Stack direction="row" spacing={1.5} sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
