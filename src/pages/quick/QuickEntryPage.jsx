@@ -180,7 +180,7 @@ const QuickEntryPage = () => {
             )}
             {auth.isAdmin && (
               <>
-                <Button component={RouterLink} to={mod.old} size="small" sx={{ color: Q.muted, textTransform: "none", whiteSpace: "nowrap" }}>
+                <Button component={RouterLink} to={auth.isOwnerAdmin ? `/admin${mod.old}` : mod.old} size="small" sx={{ color: Q.muted, textTransform: "none", whiteSpace: "nowrap" }}>
                   Purana page
                 </Button>
                 {auth.isOwnerAdmin && (
