@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAppDispatch, useAppSelector } from "../redux/hooks";
 import { resetPassword } from "../redux/actions/userAction";
+import PasswordField from "../components/PasswordField";
 
 const ResetPasswordPage = () => {
   const [form, setForm] = useState({
@@ -90,7 +91,7 @@ const ResetPasswordPage = () => {
             textareaProps={{ spellCheck: "false" }}
           />
 
-          <TextField
+          <PasswordField
             name="password"
             label="New Password"
             type="password"

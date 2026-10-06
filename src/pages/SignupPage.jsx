@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../redux/hooks";
 import { createUser } from "../redux/actions/userAction";
 import toast from "react-hot-toast";
+import PasswordField from "../components/PasswordField";
 
 const SignupPage = () => {
   const [form, setForm] = useState({ name: "", email: "", password: "", signupCode: "" });
@@ -124,7 +125,7 @@ const SignupPage = () => {
             required
           />
 
-          <TextField
+          <PasswordField
             name="password"
             label="Password"
             type="password"
@@ -135,7 +136,7 @@ const SignupPage = () => {
             required
           />
 
-          <TextField
+          <PasswordField
             name="signupCode"
             label="Signup Code (owner se poochho)"
             type="password"

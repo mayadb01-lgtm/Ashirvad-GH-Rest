@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../redux/hooks";
 import toast from "react-hot-toast";
 import { createAdmin } from "../redux/actions/adminAction";
+import PasswordField from "../components/PasswordField";
 
 const AdminSignupPage = () => {
   const [form, setForm] = useState({
@@ -137,7 +138,7 @@ const AdminSignupPage = () => {
             textareaProps={{ spellCheck: "false" }}
           />
 
-          <TextField
+          <PasswordField
             name="password"
             label="Password"
             type="password"

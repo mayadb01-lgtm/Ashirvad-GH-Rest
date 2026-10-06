@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from "../redux/hooks";
 import { loginUser } from "../redux/actions/userAction";
 import toast from "react-hot-toast";
 import AuthShell, { AuthLinks } from "../components/AuthShell";
+import PasswordField from "../components/PasswordField";
 
 const LoginPage = () => {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -27,7 +28,6 @@ const LoginPage = () => {
         return toast.error("Please fill in all fields");
       }
       dispatch(loginUser(form));
-      setForm({ email: "", password: "" });
     } catch (error) {
       toast.error(error.response.data.message);
       console.log(error.response.data.message);
@@ -60,7 +60,7 @@ const LoginPage = () => {
     >
       <Box component="form" onSubmit={handleLogin} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         <TextField name="email" label="Email" type="email" fullWidth value={form.email} onChange={handleChange} required autoComplete="email" />
-        <TextField name="password" label="Password" type="password" fullWidth value={form.password} onChange={handleChange} required autoComplete="current-password" />
+        <PasswordField name="password" label="Password" type="password" fullWidth value={form.password} onChange={handleChange} required autoComplete="current-password" />
         <Button type="submit" variant="contained" size="large" fullWidth disabled={loading} sx={{ mt: 0.5 }}>
           {loading ? "Login ho raha hai…" : "Login"}
         </Button>
