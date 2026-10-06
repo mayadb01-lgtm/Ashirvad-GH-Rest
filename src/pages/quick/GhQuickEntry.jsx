@@ -22,6 +22,7 @@ import {
   Typography,
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
+import GuestRegisterForm from "./GuestRegisterForm";
 import SearchIcon from "@mui/icons-material/Search";
 import LockIcon from "@mui/icons-material/Lock";
 import {
@@ -153,7 +154,7 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer }) => {
 };
 
 /* ---------------- Room editor ---------------- */
-const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClear, locked }) => {
+const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClear, locked, isAdmin }) => {
   const [f, setF] = useState(initial);
   const [guest, setGuest] = useState(null);
   const lastLookup = useRef("");
@@ -301,6 +302,8 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
           </TextField>
         </Stack>
         <MoneyField label="Discount (agar diya ho)" value={f.discount} onChange={(v) => set("discount", v)} disabled={locked} />
+        {/* Optional: Govt/Police register ki details — alag collection mein, room entry pe koi asar nahi */}
+        <GuestRegisterForm key={`${date}-${period}-${room?.roomNumber}`} date={date} period={period} roomNo={room?.roomNumber} seed={f} isAdmin={isAdmin} />
       </Stack>
     </EditorDialog>
   );
@@ -739,6 +742,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         onClose={() => setEditing(null)}
         onSave={saveRoom}
         onClear={clearRoom}
+        isAdmin={isAdmin}
       />
 
       <ConfirmDialog

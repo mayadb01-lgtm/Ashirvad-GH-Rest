@@ -50,6 +50,8 @@ import KharchControlDashboard from "../components/insights/KharchControlDashboar
 import DataAlerts from "../components/insights/DataAlerts";
 import ProfitLossDashboard from "../components/insights/ProfitLossDashboard";
 import RoomRatesDashboard from "../components/owner/RoomRatesDashboard";
+import GuestRegisterDashboard from "../components/owner/GuestRegisterDashboard";
+import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import BedIcon from "@mui/icons-material/Bed";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
@@ -185,6 +187,7 @@ const NAVIGATION = [
   { kind: "header", title: "Settings" },
   { segment: "staff-access", title: "Staff Access", icon: <AdminPanelSettingsIcon /> },
   { segment: "room-rates", title: "Room Rates", icon: <BedIcon /> },
+  { segment: "guest-register", title: "Guest Register (Govt)", icon: <AssignmentIndIcon /> },
   { segment: "data-import", title: "Import Excel / CSV", icon: <UploadFileIcon /> },
 ];
 
@@ -339,6 +342,7 @@ const DashboardPage = () => {
     { path: "cashflow", element: <CashflowDashboard /> },
     { path: "profit-loss", element: <ProfitLossDashboard /> },
     { path: "room-rates", element: <RoomRatesDashboard /> },
+    { path: "guest-register", element: <GuestRegisterDashboard /> },
     { path: "gh-growth", element: <GhGrowthDashboard /> },
     { path: "kharch-control", element: <KharchControlDashboard /> },
     { path: "data-check", element: <DataAlerts onNavigate={router.navigate} /> },

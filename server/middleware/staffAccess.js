@@ -46,6 +46,11 @@ const RULES = {
     R("POST", /^\/api\/v1\/entry\/create-entry$/, { dateBody: "date" }),
     R("GET", /^\/api\/v1\/entry\/get-unpaid-entries$/), // Pending jama ke liye
     R("GET", /^\/api\/v1\/quick\/guest\/\d{10}$/), // purana guest
+    // Govt guest register (sirf aaj ka; photo dekhna sirf admin)
+    R("GET", /^\/api\/v1\/guest-register\/day\/([^/]+)$/, { dateParam: 1 }),
+    R("GET", /^\/api\/v1\/guest-register\/one\/([^/]+)\/[A-Za-z]+\/\d+$/, { dateParam: 1 }),
+    R("PUT", /^\/api\/v1\/guest-register\/one\/([^/]+)\/[A-Za-z]+\/\d+$/, { dateParam: 1 }),
+    R("POST", /^\/api\/v1\/guest-register\/one\/([^/]+)\/[A-Za-z]+\/\d+\/photo$/, { dateParam: 1 }),
     dayStatus,
   ],
   rest: [
