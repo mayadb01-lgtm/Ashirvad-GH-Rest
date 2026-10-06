@@ -74,8 +74,9 @@ const isTouched = (r) => r && (num(r.rate) > 0 || String(r.fullname || "").trim(
 
 /* ---------------- Room card ---------------- */
 const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [] }) => {
-  const chTotal = charges.reduce((s, c) => s + num(c.amount), 0);
-  const chDue = charges.some((c) => !c.isPaid);
+  // Room pe "baaki" dikhao: room rent (agar UnPaid) + food/extra jo abhi paid nahi
+  const rentDue = row?.modeOfPayment === "UnPaid" ? Math.max(0, num(row?.rate) - num(row?.discount)) : 0;
+  const due = rentDue + charges.filter((c) => !c.isPaid).reduce((s, c) => s + num(c.amount), 0);
   const filled = row && rowIssues(row).length === 0;
   const partial = row && !filled && isTouched(row);
   const low = filled && room.roomCost && num(row.rate) < room.roomCost * 0.7;
@@ -137,9 +138,9 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [] }) => {
               >
                 {row.modeOfPayment === "UnPaid" ? "Baaki" : row.modeOfPayment || "—"}
               </Box>
-              {chTotal > 0 && (
-                <Box component="span" title="Food bill + extra charges" sx={{ fontSize: 12, fontWeight: 700, px: 1, py: 0.3, borderRadius: 10, bgcolor: chDue ? "#FEF3C7" : "#CCFBF1", color: chDue ? "#92400E" : "#115E59" }}>
-                  🧾 {inr(chTotal)}
+              {charges.length > 0 && (
+                <Box component="span" title="Room + food + extra mein se guest se lena baaki" sx={{ fontSize: 12, fontWeight: 800, px: 1, py: 0.3, borderRadius: 10, bgcolor: due > 0 ? "#FEE2E2" : "#CCFBF1", color: due > 0 ? Q.bad : "#115E59" }}>
+                  {due > 0 ? `Baaki ${inr(due)}` : "✓ Sab paid"}
                 </Box>
               )}
               <Typography fontWeight={800} fontSize={17} sx={{ color: low ? Q.bad : Q.ink }}>
