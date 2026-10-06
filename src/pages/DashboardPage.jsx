@@ -48,6 +48,10 @@ import CashflowDashboard from "../components/insights/CashflowDashboard";
 import GhGrowthDashboard from "../components/insights/GhGrowthDashboard";
 import KharchControlDashboard from "../components/insights/KharchControlDashboard";
 import DataAlerts from "../components/insights/DataAlerts";
+import ProfitLossDashboard from "../components/insights/ProfitLossDashboard";
+import RoomRatesDashboard from "../components/owner/RoomRatesDashboard";
+import AssessmentIcon from "@mui/icons-material/Assessment";
+import BedIcon from "@mui/icons-material/Bed";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
@@ -109,6 +113,7 @@ const NAVIGATION = [
   { segment: "owner-report", title: "Owner Monthly Report", icon: <InsightsIcon /> },
   { segment: "guest-dues", title: "Guest Dues & Reminders", icon: <WhatsAppIcon /> },
   { kind: "header", title: "Business Growth" },
+  { segment: "profit-loss", title: "Profit & Loss", icon: <AssessmentIcon /> },
   { segment: "cashflow", title: "Cashflow (mahina-wise)", icon: <AccountBalanceWalletIcon /> },
   { segment: "gh-growth", title: "GH Growth", icon: <TrendingUpIcon /> },
   { segment: "kharch-control", title: "Kharch Control", icon: <ReceiptLongIcon /> },
@@ -179,6 +184,7 @@ const NAVIGATION = [
   { segment: "sales-goals", title: "Sales Goals - Saare", icon: <BarChartIcon /> },
   { kind: "header", title: "Settings" },
   { segment: "staff-access", title: "Staff Access", icon: <AdminPanelSettingsIcon /> },
+  { segment: "room-rates", title: "Room Rates", icon: <BedIcon /> },
   { segment: "data-import", title: "Import Excel / CSV", icon: <UploadFileIcon /> },
 ];
 
@@ -330,6 +336,8 @@ const DashboardPage = () => {
     { path: "merged-vendor-report", element: <OfficeCreditDebit /> },
     { path: "merged-vendor-graph", element: <VendorGraphDashboard /> },
     { path: "cashflow", element: <CashflowDashboard /> },
+    { path: "profit-loss", element: <ProfitLossDashboard /> },
+    { path: "room-rates", element: <RoomRatesDashboard /> },
     { path: "gh-growth", element: <GhGrowthDashboard /> },
     { path: "kharch-control", element: <KharchControlDashboard /> },
     { path: "data-check", element: <DataAlerts onNavigate={router.navigate} /> },

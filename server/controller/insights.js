@@ -368,4 +368,94 @@ router.get("/data-alerts", async (req, res) => {
   }
 });
 
+// ───────────────────────── 5) PROFIT & LOSS (mahina-wise) ─────────────────────────
+// Kamai (accrual): GH saari sales (udhaar bhi) + Restaurant grandTotal + Office In ki doosri kamai
+//                  (Loan, Personal, Pending-vasooli chhod ke)
+// Kharch (jo paisa sach mein diya): Restaurant galle se kharch + upad + Office Out
+//                  (Personal aur Loan chhod ke, wo neeche alag)
+const EXP_GROUPS = [
+  ["Khana-peena saaman (F&B)", /food|beverage|kirana/i],
+  ["Staff / Salary / Upad", /staff|salar|upad|overtime/i],
+  ["Bijli-paani-gas (Utility)", /utility|electric|gas|water|wifi/i],
+  ["Maintenance / Repair", /mainten|repair/i],
+  ["Saman / Equipment", /equipment/i],
+  ["Rent", /rent/i],
+];
+const expGroup = (cat) => (EXP_GROUPS.find(([, re]) => re.test(cat || "")) || ["Other kharch"])[0];
+const bizOf = (cat) => (/^gh\b|^gh /i.test(cat || "") ? "Guest House" : "Restaurant / common");
+
+router.get("/pnl/:from/:to", async (req, res) => {
+  try {
+    const from = dayjs(req.params.from, "YYYY-MM", true);
+    const to = dayjs(req.params.to, "YYYY-MM", true);
+    if (!from.isValid() || !to.isValid() || to.isBefore(from)) {
+      return res.status(400).json({ success: false, message: "Month format YYYY-MM chahiye (from <= to)" });
+    }
+    const q = range(from.startOf("month"), to.endOf("month"));
+    const [gh, rest, office] = await Promise.all([
+      Entry.find(q, { entry: 1, entryCreateDate: 1 }).lean(),
+      RestEntry.find(q, { entryCreateDate: 1, grandTotal: 1, totalUpad: 1, expenses: 1 }).lean(),
+      OfficeBook.find(q, { entryCreateDate: 1, officeIn: 1, officeOut: 1 }).lean(),
+    ]);
+    const months = monthList(from, to).map((m) => ({
+      month: m, label: dayjs(m + "-01").format("MMM YY"),
+      ghSales: 0, restSales: 0, otherIncome: 0, otherByCat: {},
+      exp: {}, expGh: 0, expRest: 0, loanOut: 0, personalOut: 0,
+    }));
+    const byM = Object.fromEntries(months.map((m) => [m.month, m]));
+    const addExp = (m, cat, amt) => {
+      inc(m.exp, expGroup(cat), amt);
+      if (bizOf(cat) === "Guest House") m.expGh += n(amt);
+      else m.expRest += n(amt);
+    };
+    gh.forEach((d) => {
+      const m = byM[ymOf(d.entryCreateDate)];
+      if (m) (d.entry || []).forEach((e) => SOLD.includes(e.period) && (m.ghSales += n(e.rate)));
+    });
+    rest.forEach((d) => {
+      const m = byM[ymOf(d.entryCreateDate)];
+      if (!m) return;
+      m.restSales += n(d.grandTotal);
+      if (n(d.totalUpad)) addExp(m, "Upad", d.totalUpad);
+      (d.expenses || []).forEach((x) => addExp(m, x.categoryName, x.amount));
+    });
+    office.forEach((d) => {
+      const m = byM[ymOf(d.entryCreateDate)];
+      if (!m) return;
+      (d.officeIn || []).forEach((x) => {
+        const c = x.categoryName || "Other";
+        if (/loan|personal|pending/i.test(c)) return;
+        m.otherIncome += n(x.amount);
+        inc(m.otherByCat, c, x.amount);
+      });
+      (d.officeOut || []).forEach((x) => {
+        const c = x.categoryName || "Other";
+        if (/^personal/i.test(c)) return (m.personalOut += n(x.amount));
+        if (/loan/i.test(c)) return (m.loanOut += n(x.amount));
+        addExp(m, c, x.amount);
+      });
+    });
+    const groups = [...EXP_GROUPS.map(([g]) => g), "Other kharch"];
+    months.forEach((m) => {
+      m.revenue = m.ghSales + m.restSales + m.otherIncome;
+      m.expenses = sum(Object.values(m.exp), (v) => v);
+      m.profit = m.revenue - m.expenses;
+      m.margin = m.revenue ? round((100 * m.profit) / m.revenue, 1) : 0;
+      m.afterLoanPersonal = m.profit - m.loanOut - m.personalOut;
+      m.ghProfit = m.ghSales - m.expGh;
+      groups.forEach((g) => (m.exp[g] = round(m.exp[g] || 0)));
+      ["ghSales", "restSales", "otherIncome", "expGh", "expRest", "loanOut", "personalOut", "revenue", "expenses", "profit", "afterLoanPersonal", "ghProfit"].forEach((k) => (m[k] = round(m[k])));
+    });
+    const totals = {};
+    ["ghSales", "restSales", "otherIncome", "expGh", "expRest", "loanOut", "personalOut", "revenue", "expenses", "profit", "afterLoanPersonal", "ghProfit"].forEach((k) => (totals[k] = round(sum(months, (m) => m[k]))));
+    totals.margin = totals.revenue ? round((100 * totals.profit) / totals.revenue, 1) : 0;
+    totals.exp = Object.fromEntries(groups.map((g) => [g, round(sum(months, (m) => m.exp[g]))]));
+    totals.otherByCat = {};
+    months.forEach((m) => Object.entries(m.otherByCat).forEach(([k, v]) => inc(totals.otherByCat, k, v)));
+    res.json({ success: true, data: { months, totals, groups } });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
 export default router;
