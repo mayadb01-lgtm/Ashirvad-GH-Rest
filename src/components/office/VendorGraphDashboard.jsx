@@ -1,4 +1,4 @@
-// Vendor Graph: saare vendors ki list + graph.
+// Vendor Graph: "Categories & Expenses" mein jin items pe Vendor tick hai, unki list + graph.
 // Data wahi purana "Merged Vendor Report" API (/vendor/get-vendor-entries) - sirf padhta hai.
 // Credit = Rest Aapvana + Office In (vendor ka maal / udhaar aaya)
 // Debit  = Rest Kharch (vendor) + Office Out (vendor ko payment)
@@ -47,6 +47,7 @@ const COLORS = { credit: "#2563EB", debit: "#16A34A", balance: "#DC2626" };
 const inr = (n) => "₹" + Math.round(n || 0).toLocaleString("en-IN");
 
 const vendorNameOf = (row) => row.expenseName || row.fullname || "NA";
+const norm = (s) => String(s || "").toLowerCase().replace(/\s+/g, " ").trim();
 
 const VendorGraphDashboard = () => {
   const [startDate, setStartDate] = useState(dayjs().startOf("month"));
@@ -58,6 +59,24 @@ const VendorGraphDashboard = () => {
   const [topN, setTopN] = useState(15);
   const [search, setSearch] = useState("");
   const [selectedVendor, setSelectedVendor] = useState(null);
+  const [vendorMaster, setVendorMaster] = useState([]); // [{name, category}]
+  const [showOthers, setShowOthers] = useState(false);
+
+  // Vendor list: Restaurant "Categories & Expenses" mein Vendor tick wale items
+  useEffect(() => {
+    axios
+      .get(`${import.meta.env.VITE_REACT_APP_SERVER_URL}/restCategory/get-categories`)
+      .then(({ data }) => {
+        const list = [];
+        for (const c of data?.data || []) {
+          for (const e of c.expense || []) {
+            if (e.isVendor && e.expenseName) list.push({ name: e.expenseName.trim(), category: c.categoryName });
+          }
+        }
+        setVendorMaster(list);
+      })
+      .catch(() => toast.error("Vendor list (Categories & Expenses) load nahi hui"));
+  }, []);
 
   const onStart = useCallback((d) => d && setStartDate(d), []);
   const onEnd = useCallback((d) => d && setEndDate(d), []);
@@ -99,34 +118,42 @@ const VendorGraphDashboard = () => {
     };
   }, [startDate, endDate]);
 
-  // Har vendor ka total
+  // Har vendor ka total. Sirf tick wale vendors (₹0 wale bhi); "Doosre naam" toggle se baaki bhi.
   const vendors = useMemo(() => {
     const map = new Map();
+    for (const vm of vendorMaster) {
+      const k = norm(vm.name);
+      if (!map.has(k))
+        map.set(k, { id: k, vendor: vm.name, category: vm.category, isVendor: true, credit: 0, debit: 0, entries: 0, lastDate: null });
+    }
     for (const r of rows) {
       const name = vendorNameOf(r);
-      const v = map.get(name) || {
-        id: name,
-        vendor: name,
-        credit: 0,
-        debit: 0,
-        entries: 0,
-        lastDate: null,
-      };
+      const k = norm(name);
+      let v = map.get(k);
+      if (!v) {
+        v = { id: k, vendor: name, category: "-", isVendor: false, credit: 0, debit: 0, entries: 0, lastDate: null };
+        map.set(k, v);
+      }
       v.credit += Number(r.credit) || 0;
       v.debit += Number(r.debit) || 0;
       v.entries += 1;
       const d = r.entryCreateDate ? dayjs(r.entryCreateDate) : dayjs(r.createDate, DATE_FORMAT);
       if (d.isValid() && (!v.lastDate || d.isAfter(v.lastDate))) v.lastDate = d;
-      map.set(name, v);
     }
     return [...map.values()]
+      .filter((v) => v.isVendor || showOthers)
       .map((v) => ({
         ...v,
         balance: v.credit - v.debit,
         lastDateText: v.lastDate ? v.lastDate.format(DATE_FORMAT) : "",
       }))
-      .sort((a, b) => b.credit + b.debit - (a.credit + a.debit));
-  }, [rows]);
+      .sort((a, b) => b.credit + b.debit - (a.credit + a.debit) || a.vendor.localeCompare(b.vendor));
+  }, [rows, vendorMaster, showOthers]);
+
+  const othersCount = useMemo(() => {
+    const master = new Set(vendorMaster.map((v) => norm(v.name)));
+    return new Set(rows.map((r) => norm(vendorNameOf(r))).filter((k) => !master.has(k))).size;
+  }, [rows, vendorMaster]);
 
   const totals = useMemo(
     () =>
@@ -161,7 +188,7 @@ const VendorGraphDashboard = () => {
     if (!selectedVendor) return [];
     const byDay = new Map();
     for (const r of rows) {
-      if (vendorNameOf(r) !== selectedVendor) continue;
+      if (norm(vendorNameOf(r)) !== norm(selectedVendor)) continue;
       const d = r.entryCreateDate ? dayjs(r.entryCreateDate) : dayjs(r.createDate, DATE_FORMAT);
       const key = d.isValid() ? d.format("YYYY-MM-DD") : "0000";
       const cur = byDay.get(key) || { credit: 0, debit: 0 };
@@ -188,6 +215,7 @@ const VendorGraphDashboard = () => {
     const sheet = XLSX.utils.json_to_sheet([
       ...vendors.map((v) => ({
         Vendor: v.vendor,
+        Category: v.category,
         "Credit (maal/udhaar)": Math.round(v.credit),
         "Debit (payment)": Math.round(v.debit),
         "Balance (baaki)": Math.round(v.balance),
@@ -208,6 +236,7 @@ const VendorGraphDashboard = () => {
 
   const columns = [
     { field: "vendor", headerName: "Vendor", flex: 1.4, minWidth: 160 },
+    { field: "category", headerName: "Category", flex: 1, minWidth: 130 },
     { field: "credit", headerName: "Credit (maal/udhaar)", flex: 1, minWidth: 140, type: "number", valueFormatter: (v) => inr(v) },
     { field: "debit", headerName: "Debit (payment)", flex: 1, minWidth: 130, type: "number", valueFormatter: (v) => inr(v) },
     {
@@ -234,6 +263,10 @@ const VendorGraphDashboard = () => {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Credit = Rest Aapvana + Office In · Debit = Rest Kharch (vendor) + Office Out · Balance = Credit − Debit
       </Typography>
+      <Alert severity="info" sx={{ mb: 2 }}>
+        Vendor list "Restaurant → Categories &amp; Expenses" se aati hai: jis expense pe <b>Vendor</b> tick hai wahi yahan dikhta hai
+        (abhi {vendorMaster.length} vendors). Naya vendor jodna ho to wahan tick lagao.
+      </Alert>
 
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ sm: "center" }} sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
@@ -344,7 +377,12 @@ const VendorGraphDashboard = () => {
         <CardContent>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} justifyContent="space-between" alignItems={{ sm: "center" }} sx={{ mb: 1 }}>
             <Typography fontWeight={700}>Saare vendors ki list ({filteredVendors.length})</Typography>
-            <TextField size="small" label="Vendor dhundho" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Stack direction="row" spacing={1} alignItems="center">
+              <ToggleButton size="small" value="others" selected={showOthers} onChange={() => setShowOthers((x) => !x)}>
+                Doosre naam bhi ({othersCount})
+              </ToggleButton>
+              <TextField size="small" label="Vendor dhundho" value={search} onChange={(e) => setSearch(e.target.value)} />
+            </Stack>
           </Stack>
           <Box sx={{ height: 520, width: "100%" }}>
             <DataGrid
