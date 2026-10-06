@@ -467,7 +467,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
     () =>
       axios
         .get(`${API}/stay/day/${date}`)
-        .then(({ data }) => setStayInfo(data.data))
+        .then(({ data }) => setStayInfo({ ...data.data, _ok: true }))
         .catch(() => setStayInfo({ continuing: [], started: [], checkouts: [], bookings: [], advances: [] })),
     [date]
   );
@@ -577,6 +577,23 @@ const GhQuickEntry = ({ date, isAdmin }) => {
   );
 
   const room = rooms?.find((r) => r.roomNumber === editing);
+  // Screen pe bache purane draft rooms jinka database mein koi check-in (stay) nahi — jaise test data hatane ke baad
+  const orphanKeys = useMemo(() => {
+    if (!server.loaded || submitted || !stayInfo?._ok) return [];
+    const ids = new Set([...(stayInfo.continuing || []), ...(stayInfo.dueOut || []), ...(stayInfo.started || [])].map((x) => String(x._id)));
+    const slots = new Set((stayInfo.started || []).map((x) => keyOf(x.period, x.roomNo)));
+    return Object.entries(draft.rooms || {})
+      .filter(([k, r]) => r && (r._stayId ? !ids.has(String(r._stayId)) : (r.fullname || num(r.rate)) && !slots.has(k)))
+      .map(([k]) => k);
+  }, [server.loaded, submitted, stayInfo, draft.rooms]);
+  const dropOrphans = () => {
+    setDraft((d) => {
+      const next = { ...d.rooms };
+      orphanKeys.forEach((k) => delete next[k]);
+      return { ...d, rooms: next };
+    });
+    toast.success(`${orphanKeys.length} old room ${orphanKeys.length === 1 ? "entry" : "entries"} removed from this screen`);
+  };
   const bookingFor = (roomNo) => (stayInfo?.bookings || []).find((b) => b.status === "booked" && b.roomNo === roomNo);
   const editingInitial = useMemo(() => {
     if (!room) return null;
@@ -999,6 +1016,19 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       {unassignedToday.length > 0 && (
         <Alert severity="info" sx={{ mb: 1.5 }}>
           Bookings arriving today (no room assigned): {unassignedToday.map((b) => `${b.guestName} (${b.people} guests)`).join(", ")} — assign a room via &quot;Edit&quot; in the &quot;Booking&quot; tab.
+        </Alert>
+      )}
+      {orphanKeys.length > 0 && (
+        <Alert
+          severity="warning"
+          sx={{ mb: 1.5 }}
+          action={
+            <Button color="inherit" size="small" onClick={dropOrphans} sx={{ fontWeight: 800 }}>
+              Remove
+            </Button>
+          }
+        >
+          {orphanKeys.length} room {orphanKeys.length === 1 ? "entry is" : "entries are"} only on this screen and {orphanKeys.length === 1 ? "has" : "have"} no check-in record in the system (Room {orphanKeys.map((k) => k.split("|")[1]).join(", ")}). Remove {orphanKeys.length === 1 ? "it" : "them"}?
         </Alert>
       )}
       {locked && (
