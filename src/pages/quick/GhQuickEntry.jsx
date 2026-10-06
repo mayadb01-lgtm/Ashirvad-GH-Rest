@@ -499,7 +499,9 @@ const GhQuickEntry = ({ date, isAdmin }) => {
 
   // 🔁 Ruke hue guest (continue stay): aaj ke Day slot mein apne aap bharo — staff sirf payment chune
   useEffect(() => {
-    if (!server.loaded || submitted || !stayInfo?.continuing?.length) return;
+    // submit ho chuke din pe sirf admin ke liye (wo Update dabayega)
+    if (!server.loaded || (submitted && !isAdmin) || !stayInfo?.continuing?.length) return;
+    if (submitted && seededFor.current !== date) return;
     setDraft((d) => {
       const dismissed = d._dismissed || [];
       const rooms = { ...d.rooms };
@@ -528,7 +530,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       });
       return changed ? { ...d, rooms } : d;
     });
-  }, [server.loaded, submitted, stayInfo, setDraft]);
+    }, [server.loaded, submitted, stayInfo, setDraft, isAdmin, date]);
 
   const others = useMemo(
     () => server.entries.filter((e) => !ROOM_PERIODS.includes(e.period) && e.period !== "UnPaid"),
