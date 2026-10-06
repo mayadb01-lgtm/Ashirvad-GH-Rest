@@ -149,7 +149,25 @@ export const ChipChoice = ({ label, options, value, onChange, color = Q.ink, dan
 );
 
 /* − 2 + stepper */
-export const Stepper = ({ label, value, onChange, min = 0, max = 50 }) => (
+export const Stepper = ({ label, value, onChange, min = 0, max = 50, outlined }) =>
+  outlined ? (
+    // TextField jaisa dikhta hai (label border pe), taaki bagal wale box ke barabar rahe
+    <Box sx={{ position: "relative", border: "1px solid rgba(0,0,0,0.23)", borderRadius: 1, height: 64, display: "flex", alignItems: "center", px: 0.75, bgcolor: "#fff" }}>
+      <Typography
+        component="span"
+        sx={{ position: "absolute", top: -9, left: 10, px: 0.5, fontSize: 12, lineHeight: "16px", color: "rgba(0,0,0,0.6)", bgcolor: "#fff" }}
+      >
+        {label}
+      </Typography>
+      <Button onClick={() => onChange(Math.max(min, (value || 0) - 1))} sx={{ minWidth: 44, height: 46, fontSize: 22, color: Q.ink, bgcolor: Q.bg }}>
+        −
+      </Button>
+      <Typography sx={{ flex: 1, textAlign: "center", fontSize: 22, fontWeight: 800 }}>{value || 0}</Typography>
+      <Button onClick={() => onChange(Math.min(max, (value || 0) + 1))} sx={{ minWidth: 44, height: 46, fontSize: 22, color: Q.ink, bgcolor: Q.bg }}>
+        +
+      </Button>
+    </Box>
+  ) : (
   <Box>
     <Typography variant="caption" sx={{ color: Q.muted, fontWeight: 700, display: "block", mb: 0.75 }}>
       {label}
@@ -164,7 +182,7 @@ export const Stepper = ({ label, value, onChange, min = 0, max = 50 }) => (
       </Button>
     </Stack>
   </Box>
-);
+  );
 
 /* Section card with title + total */
 export const Section = ({ title, subtitle, total, color = Q.ink, action, children, sx }) => (

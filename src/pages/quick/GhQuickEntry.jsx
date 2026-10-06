@@ -272,7 +272,7 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
             <MoneyField label="Rate" value={f.rate} onChange={(v) => set("rate", v)} big disabled={locked} />
           </Box>
           <Box sx={{ flex: 1 }}>
-            <Stepper label="Kitne log" value={num(f.noOfPeople)} onChange={(v) => !locked && set("noOfPeople", v)} />
+            <Stepper outlined label="Kitne log" value={num(f.noOfPeople)} onChange={(v) => !locked && set("noOfPeople", v)} />
           </Box>
         </Stack>
         {low && (
