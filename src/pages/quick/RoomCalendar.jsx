@@ -104,13 +104,16 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
   }, [roomState, data]);
 
   const rooms = (data?.rooms || []).filter((r) => filter === "all" || roomState[r.roomNo]?.has(filter));
+  // Floor ke hisaab se: 101–108, phir 201–208 (room number ke kram mein)
   const groups = useMemo(() => {
     const g = [];
-    rooms.forEach((r) => {
-      let grp = g.find((x) => x.type === r.type);
-      if (!grp) g.push((grp = { type: r.type, rooms: [] }));
+    [...rooms].sort((a, b) => a.roomNo - b.roomNo).forEach((r) => {
+      const floor = Math.floor(r.roomNo / 100);
+      let grp = g.find((x) => x.floor === floor);
+      if (!grp) g.push((grp = { floor, rooms: [] }));
       grp.rooms.push(r);
     });
+    g.forEach((x) => (x.label = `Floor ${x.floor} · ${x.rooms[0].roomNo}–${x.rooms[x.rooms.length - 1].roomNo}`));
     return g;
   }, [rooms]);
 
@@ -130,8 +133,8 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
       }),
     [dates, data]
   );
-  const typeAvail = (type, d) =>
-    (data?.rooms || []).filter((r) => r.type === type && !(data.bars || []).some((b) => b.roomNo === r.roomNo && covers(b, d))).length;
+  const groupAvail = (grp, d) =>
+    grp.rooms.filter((r) => !(data.bars || []).some((b) => b.roomNo === r.roomNo && covers(b, d))).length;
 
   const cellClick = (roomNo, d) => {
     if (d.isBefore(today, "day")) return;
@@ -305,16 +308,16 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
             </Box>
 
             {groups.map((g) => (
-              <Box key={g.type}>
+              <Box key={g.floor}>
                 {/* room type row: khaali rooms + list rate */}
                 <Box sx={{ display: "grid", gridTemplateColumns: gridCols, bgcolor: "#F8FAFC", borderBottom: `1px solid ${Q.line}` }}>
                   <Box sx={{ position: "sticky", left: 0, bgcolor: "#F8FAFC", zIndex: 3, px: 1, py: 0.5, fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", gap: 0.5 }}>
-                    <ChevronDownIcon sx={{ fontSize: 16 }} /> {g.type}
+                    <ChevronDownIcon sx={{ fontSize: 16 }} /> {g.label}
                   </Box>
                   {dates.map((d) => (
                     <Box key={d.format(F)} sx={{ ...headCell, color: Q.muted }}>
-                      <div style={{ fontWeight: 700, color: "#1E293B" }}>{typeAvail(g.type, d)}</div>
-                      {isAdmin && <div>{inr(g.rooms[0]?.rate)}</div>}
+                      <div style={{ fontWeight: 700, color: "#1E293B" }}>{groupAvail(g, d)}</div>
+                      <div>free</div>
                     </Box>
                   ))}
                 </Box>
@@ -323,9 +326,14 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
                   return (
                     <Box key={r.roomNo} sx={{ display: "grid", gridTemplateColumns: gridCols, gridTemplateRows: `${ROW_H}px`, borderBottom: `1px solid ${Q.line}` }}>
                       <Box sx={{ gridRow: 1, gridColumn: 1, position: "sticky", left: 0, bgcolor: "#fff", zIndex: 3, px: 1, display: "flex", alignItems: "center", gap: 0.75, borderRight: `1px solid ${Q.line}` }}>
-                        <Typography fontWeight={800} fontSize={14}>
-                          {r.roomNo}
-                        </Typography>
+                        <Box sx={{ lineHeight: 1.1 }}>
+                          <Typography fontWeight={800} fontSize={14} lineHeight={1.1}>
+                            {r.roomNo}
+                          </Typography>
+                          <Typography fontSize={10} color={Q.muted} noWrap>
+                            {r.type}
+                          </Typography>
+                        </Box>
                         {dirty && (
                           <Tooltip title="Dirty — tap to mark clean">
                             <Chip size="small" label="🧹 Dirty" onClick={() => markClean(r.roomNo)} sx={{ height: 20, fontSize: 10, bgcolor: "#FEF3C7" }} />
