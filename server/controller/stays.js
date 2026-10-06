@@ -392,6 +392,9 @@ stayRouter.get("/calendar/:start/:days", async (req, res) => {
         checkoutTime: st.checkoutTime,
         days: Math.max(1, last.diff(start, "day") + (dueOut ? 0 : 1)), // due-out: aaj abhi gina nahi
         dueOut,
+        nights: st.nights || 1,
+        // andaaza: kab tak rukenge (calendar mein drag se) — bill apne aap din ke hisaab se hi banta hai
+        expectedTo: st.status === "active" && start.add(Math.max(1, st.nights || 1) - 1, "day").isAfter(last, "day") ? fmtD(start.add(st.nights - 1, "day")) : null,
       });
     });
 
@@ -477,6 +480,40 @@ stayRouter.put("/clean/:roomNo", async (req, res) => {
     const dirty = !!req.body?.dirty;
     await RoomStatus.findOneAndUpdate({ roomNo }, { $set: { dirty, since: new Date(), by: who(req) } }, { upsert: true });
     res.json({ success: true });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// PUT /stay/expected/:id  { nights } → ruke hue guest ka andaaza (kab tak rukega). Bill par asar nahi.
+stayRouter.put("/expected/:id", async (req, res) => {
+  try {
+    const doc = await Stay.findById(req.params.id);
+    if (!doc) return res.status(404).json({ success: false, message: "Not found" });
+    if (doc.status !== "active") return bad(res, "Only in-house guests can be extended");
+    const nights = Math.min(60, Math.max(1, Math.round(Number(req.body?.nights) || 0)));
+    if (!nights) return bad(res, "Invalid number of nights");
+    doc.nights = nights;
+    doc.updatedBy = who(req);
+    await doc.save();
+    res.json({ success: true, data: doc });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// PUT /stay/block/:id  { to } → block badhao / ghatao (sirf owner)
+stayRouter.put("/block/:id", async (req, res) => {
+  try {
+    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can change room blocks" });
+    const doc = await RoomBlock.findById(req.params.id);
+    if (!doc) return res.status(404).json({ success: false, message: "Not found" });
+    const to = String(req.body?.to || "");
+    if (!ok(to) || D(to).isBefore(D(doc.from))) return bad(res, "Invalid end date");
+    doc.to = to;
+    doc.toDate = D(to).endOf("day").toDate();
+    await doc.save();
+    res.json({ success: true, data: doc });
   } catch (e) {
     fail(res, e);
   }

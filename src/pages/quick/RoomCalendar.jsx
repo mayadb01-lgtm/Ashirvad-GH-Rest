@@ -1,6 +1,6 @@
 // Room calendar (tape chart): rooms × dates, guest stays / bookings / blocks as bars.
 // Data: roomstays + bookings + purani GH entries (sirf padhta hai) + roomblocks/roomstatuses.
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -56,7 +56,8 @@ const FILTERS = [
 ];
 
 const D = (s) => dayjs(s, F, true);
-const covers = (b, d) => !D(b.from).isAfter(d, "day") && !D(b.to).isBefore(d, "day");
+const endOf = (b) => b.expectedTo || b.to; // ruke guest ka andaaza bhi room ghera hua maana jaata hai
+const covers = (b, d) => !D(b.from).isAfter(d, "day") && !D(endOf(b)).isBefore(d, "day");
 
 const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
   const small = useMediaQuery("(max-width:700px)");
@@ -68,6 +69,8 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
   const [bookingForm, setBookingForm] = useState(null); // { initial }
   const [blockDlg, setBlockDlg] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [drag, setDrag] = useState(null); // { key, delta } — patti ka right edge kheench rahe hain
+  const justDragged = useRef(false);
 
   const load = useCallback(() => {
     axios
@@ -182,31 +185,93 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
   const gridCols = `${LABEL_W}px repeat(${days}, ${COL_W}px)`;
   const headCell = { borderLeft: `1px solid ${Q.line}`, textAlign: "center", fontSize: 11, lineHeight: 1.25, py: 0.5 };
 
+  // Kaun si patti kheench sakte hain: booking (sab), ruke guest ka andaaza (sab), block (sirf owner)
+  const canDrag = (b) => b.type === "booking" || (b.type === "stay" && b.status === "active") || (b.type === "block" && isAdmin);
+  const commitDrag = async (b, delta) => {
+    if (!delta) return;
+    const newTo = D(endOf(b)).add(delta, "day");
+    const from = D(b.from);
+    try {
+      if (b.type === "booking") {
+        const nights = Math.max(1, newTo.diff(from, "day") + 1);
+        await axios.put(`${API}/booking/${b.id}`, { nights });
+        toast.success(`${b.name}: ${nights} night${nights > 1 ? "s" : ""}`);
+      } else if (b.type === "stay") {
+        // aaj se pehle tak nahi ghata sakte (wo din gine ja chuke)
+        const minTo = D(b.to);
+        const to = newTo.isBefore(minTo, "day") ? minTo : newTo;
+        const nights = Math.max(1, to.diff(from, "day") + 1);
+        await axios.put(`${API}/stay/expected/${b.id}`, { nights });
+        toast.success(`${b.name}: expected till ${to.format("DD MMM")}`);
+      } else if (b.type === "block") {
+        const to = newTo.isBefore(from, "day") ? from : newTo;
+        await axios.put(`${API}/stay/block/${b.id}`, { to: to.format(F) });
+        toast.success(`Room ${b.roomNo} blocked till ${to.format("DD MMM")}`);
+      }
+      load();
+    } catch (e) {
+      toast.error(apiError(e));
+    }
+  };
+  const startDrag = (ev, b) => {
+    ev.stopPropagation();
+    ev.preventDefault();
+    const key = `${b.type}-${b.id}`;
+    const x0 = ev.clientX;
+    let delta = 0;
+    setDrag({ key, delta: 0 });
+    const move = (e) => {
+      delta = Math.round((e.clientX - x0) / COL_W);
+      setDrag({ key, delta });
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      justDragged.current = true;
+      setTimeout(() => (justDragged.current = false), 300);
+      setDrag(null);
+      commitDrag(b, delta);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
   const renderBars = (roomNo) =>
     (data?.bars || [])
       .filter((b) => b.roomNo === roomNo)
       .map((b) => {
-        const s = Math.max(0, D(b.from).diff(start, "day"));
-        const e = Math.min(days - 1, D(b.to).diff(start, "day"));
+        const key = `${b.type}-${b.id}`;
+        const delta = drag?.key === key ? drag.delta : 0;
+        const s0 = Math.max(0, D(b.from).diff(start, "day"));
+        const realEnd = D(b.to).diff(start, "day");
+        const e = Math.min(days - 1, Math.max(D(b.from).diff(start, "day"), D(endOf(b)).diff(start, "day") + delta));
+        const s = s0;
         if (e < 0 || s > days - 1 || e < s) return null;
         const c = colorOf(b);
         const cutLeft = D(b.from).isBefore(start, "day");
+        const span = e - s + 1;
+        // ruke guest: asli din gaadha, andaaze wale din halke
+        const solidCols = b.type === "stay" && b.status === "active" ? Math.max(0, Math.min(span, realEnd - s + 1)) : span;
+        const bg = solidCols < span ? `linear-gradient(90deg, ${c.bg} ${(100 * solidCols) / span}%, #93C5FD ${(100 * solidCols) / span}%)` : c.bg;
+        const draggable = canDrag(b);
         return (
           <Box
-            key={`${b.type}-${b.id}`}
+            key={key}
             onClick={(ev) => {
               ev.stopPropagation();
-              setBar(b);
+              if (!drag && !justDragged.current) setBar(b);
             }}
-            title={`${b.name} · ${b.from} → ${b.to}`}
+            title={`${b.name} · ${b.from} → ${endOf(b)}${draggable ? " · drag the right edge to add/remove days" : ""}`}
             sx={{
+              position: "relative",
               gridRow: 1,
-              gridColumn: `${s + 2} / span ${e - s + 1}`,
-              zIndex: 2,
+              gridColumn: `${s + 2} / span ${span}`,
+              zIndex: delta ? 6 : 2,
               m: "5px 2px",
-              px: 0.75,
+              pl: 0.75,
+              pr: draggable ? 1.75 : 0.75,
               borderRadius: cutLeft ? "0 6px 6px 0" : "6px",
-              background: c.bg,
+              background: bg,
               color: c.fg,
               fontSize: 12,
               fontWeight: 700,
@@ -216,18 +281,39 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
               overflow: "hidden",
               whiteSpace: "nowrap",
               cursor: "pointer",
+              outline: delta ? "2px dashed #111" : "none",
               boxShadow: "0 1px 2px rgba(0,0,0,.15)",
               "&:hover": { filter: "brightness(1.08)" },
             }}
           >
-            {c.tag && e - s > 0 && (
+            {c.tag && span > 1 && (
               <Box component="span" sx={{ bgcolor: "rgba(255,255,255,.9)", color: "#111", borderRadius: "4px", fontSize: 10, px: 0.5, lineHeight: "16px", flexShrink: 0 }}>
                 {c.tag}
               </Box>
             )}
             <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis" }}>
               {b.type === "block" ? b.name.toUpperCase() : b.name}
+              {delta ? ` (${delta > 0 ? "+" : ""}${delta}d)` : ""}
             </Box>
+            {draggable && (
+              <Box
+                onPointerDown={(ev) => startDrag(ev, b)}
+                onClick={(ev) => ev.stopPropagation()}
+                sx={{
+                  position: "absolute",
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 12,
+                  cursor: "ew-resize",
+                  touchAction: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  "&::after": { content: '""', width: 3, height: 14, borderLeft: "1px solid rgba(255,255,255,.9)", borderRight: "1px solid rgba(255,255,255,.9)" },
+                }}
+              />
+            )}
           </Box>
         );
       });
@@ -394,6 +480,7 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
       <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
         {[
           [COLORS.stay, "In house"],
+          [{ bg: "#93C5FD" }, "Expected stay"],
           [COLORS.due, "Due out (before 11 AM)"],
           [COLORS.out, "Checked out"],
           [COLORS.booking, "Booking"],
@@ -406,7 +493,7 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
           </Stack>
         ))}
         <Typography variant="caption" color={Q.muted}>
-          Tap a free cell: today = check in, future = new booking.
+          Tap a free cell: today = check in, future = new booking. Drag the right edge of a bar to add or remove days.
         </Typography>
       </Stack>
 

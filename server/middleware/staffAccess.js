@@ -77,6 +77,7 @@ const RULES = {
     // Room calendar (kal se aage; handler khud check karta hai) + safai status
     R("GET", /^\/api\/v1\/stay\/calendar\/[^/]+\/\d+$/),
     R("PUT", /^\/api\/v1\/stay\/clean\/\d+$/),
+    R("PUT", /^\/api\/v1\/stay\/expected\/[a-f0-9]{24}$/),
     // Advance booking (advance hamesha aaj ki date se; cancel sirf owner)
     R("GET", /^\/api\/v1\/booking\/upcoming$/),
     R("POST", /^\/api\/v1\/booking$/),
