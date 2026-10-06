@@ -4,6 +4,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+import { LocalizationProvider, TimePicker } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import toast from "react-hot-toast";
 import {
   Alert,
@@ -56,11 +59,33 @@ const ROOM_PERIODS = PERIODS.map((p) => p.key);
 const TYPES = ["Single", "Couple", "Family", "Group", "Employee", "NRI", "Foreigner", "Other"];
 const MODES = ["Cash", "Card", "PPS", "PPC", "UnPaid"];
 const PAID_MODES = ["Cash", "Card", "PPS", "PPC"];
-const TIMES = ["06:00 AM", "08:00 AM", "10:00 AM", "12:00 PM", "02:00 PM", "04:00 PM", "06:00 PM", "08:00 PM", "10:00 PM"];
 const EMPTY = { rooms: {}, jama: [] };
 
 const digits = (v) => cleanMobile(v);
 const keyOf = (period, roomNo) => `${period}|${roomNo}`;
+dayjs.extend(customParseFormat);
+// Time "hh:mm AM/PM" format mein hi save hota hai (purane data jaisa)
+const toTime = (t) => {
+  const d = dayjs(`2000-01-01 ${String(t || "").trim()}`, ["YYYY-MM-DD hh:mm A", "YYYY-MM-DD h:mm A", "YYYY-MM-DD HH:mm"], true);
+  return d.isValid() ? d : null;
+};
+const nowTime = () => {
+  const n = dayjs();
+  return n.minute(Math.floor(n.minute() / 5) * 5).format("hh:mm A");
+};
+const TimeBox = ({ label, value, onChange, disabled }) => (
+  <LocalizationProvider dateAdapter={AdapterDayjs}>
+    <TimePicker
+      label={label}
+      ampm
+      minutesStep={5}
+      value={toTime(value)}
+      onChange={(v) => v && v.isValid() && onChange(v.format("hh:mm A"))}
+      disabled={disabled}
+      slotProps={{ textField: { fullWidth: true } }}
+    />
+  </LocalizationProvider>
+);
 const rowIssues = (r) => {
   const out = [];
   if (!(num(r.rate) > 0)) out.push("rate");
@@ -322,20 +347,8 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
           disabled={locked}
         />
         <Stack direction="row" spacing={1.5}>
-          <TextField select label="Check-in" value={f.checkInTime || "10:00 AM"} onChange={(e) => set("checkInTime", e.target.value)} fullWidth disabled={locked}>
-            {Array.from(new Set([f.checkInTime || "10:00 AM", ...TIMES])).map((t) => (
-              <MenuItem key={t} value={t}>
-                {t}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField select label="Check-out" value={f.checkOutTime || "10:00 AM"} onChange={(e) => set("checkOutTime", e.target.value)} fullWidth disabled={locked}>
-            {Array.from(new Set([f.checkOutTime || "10:00 AM", ...TIMES])).map((t) => (
-              <MenuItem key={t} value={t}>
-                {t}
-              </MenuItem>
-            ))}
-          </TextField>
+          <TimeBox label="Check-in time" value={f.checkInTime || "10:00 AM"} onChange={(v) => set("checkInTime", v)} disabled={locked} />
+          <TimeBox label="Check-out time" value={f.checkOutTime || "11:00 AM"} onChange={(v) => set("checkOutTime", v)} disabled={locked} />
         </Stack>
         <MoneyField label="Discount (if any)" value={f.discount} onChange={(v) => set("discount", v)} disabled={locked} />
 
@@ -553,8 +566,8 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         modeOfPayment: "",
         fullname: bk.guestName,
         mobileNumber: bk.mobile || "",
-        checkInTime: "10:00 AM",
-        checkOutTime: "10:00 AM",
+        checkInTime: nowTime(),
+        checkOutTime: "11:00 AM",
         discount: 0,
         _bookingId: bk._id,
       };
@@ -566,8 +579,8 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         modeOfPayment: "",
         fullname: "",
         mobileNumber: "",
-        checkInTime: "10:00 AM",
-        checkOutTime: "10:00 AM",
+        checkInTime: nowTime(),
+        checkOutTime: "11:00 AM",
         discount: 0,
       }
     );
