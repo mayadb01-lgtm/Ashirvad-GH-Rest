@@ -6,7 +6,7 @@ import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import { API, MoneyField, Q, apiError, inr, num } from "./shared";
+import { API, MoneyField, Q, apiError, cleanMobile, inr, num } from "./shared";
 
 const F = "DD-MM-YYYY";
 const MODES = ["Cash", "Card", "PPS", "PPC"];
@@ -17,7 +17,7 @@ export const BookingForm = ({ open, onClose, rooms = [], initial, onSaved }) => 
   const [b, setB] = useState(blank());
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    if (open) setB(initial ? { ...blank(), ...initial, roomNo: initial.roomNo || "", advAmount: 0 } : blank());
+    if (open) setB(initial ? { ...blank(), ...initial, mobile: cleanMobile(initial.mobile), roomNo: initial.roomNo || "", advAmount: 0 } : blank());
   }, [open, initial]);
   const set = (k, v) => setB((x) => ({ ...x, [k]: v }));
   const editing = !!initial?._id;
@@ -25,12 +25,13 @@ export const BookingForm = ({ open, onClose, rooms = [], initial, onSaved }) => 
 
   const save = async () => {
     if (!b.guestName.trim()) return toast.error("Guest ka naam likho");
-    if (b.mobile && String(b.mobile).replace(/\D/g, "").length !== 10) return toast.error("Mobile 10 digit");
+    const mob = cleanMobile(b.mobile);
+    if (mob && mob.length !== 10) return toast.error("Mobile number must be 10 digits");
     setBusy(true);
     try {
       const body = {
         guestName: b.guestName,
-        mobile: b.mobile,
+        mobile: cleanMobile(b.mobile),
         company: b.company,
         people: b.people,
         roomNo: b.roomNo ? Number(b.roomNo) : null,
@@ -58,7 +59,9 @@ export const BookingForm = ({ open, onClose, rooms = [], initial, onSaved }) => 
         <Stack spacing={1.5}>
           <TextField label="Guest ka naam" value={b.guestName} onChange={(e) => set("guestName", e.target.value)} autoFocus />
           <Stack direction="row" spacing={1.5}>
-            <TextField fullWidth label="Mobile" value={b.mobile} onChange={(e) => set("mobile", e.target.value.replace(/\D/g, "").slice(0, 10))} inputProps={{ inputMode: "numeric" }} />
+            <TextField fullWidth label="Mobile" value={b.mobile} onChange={(e) => set("mobile", cleanMobile(e.target.value))}
+              error={!!b.mobile && b.mobile.length !== 10}
+              helperText={b.mobile && b.mobile.length !== 10 ? `${b.mobile.length}/10 digits` : " "} inputProps={{ inputMode: "numeric" }} />
             <TextField sx={{ width: 110 }} type="number" label="Log" value={b.people} onChange={(e) => set("people", Number(e.target.value) || 1)} />
           </Stack>
           <TextField label="Company (agar ho)" value={b.company} onChange={(e) => set("company", e.target.value)} />

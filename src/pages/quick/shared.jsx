@@ -36,6 +36,14 @@ export const Q = {
   warn: "#B45309",
 };
 
+// Mobile: +91 / 0 hatao, sirf 10 digit; "0" = khaali
+export const cleanMobile = (v) => {
+  let d = String(v ?? "").replace(/\D/g, "");
+  if (d.length > 10 && d.startsWith("91")) d = d.slice(2);
+  if (d.length > 10 && d.startsWith("0")) d = d.slice(1);
+  if (/^0+$/.test(d)) d = "";
+  return d.slice(0, 10);
+};
 export const inr = (n) => "₹" + Math.round(Number(n) || 0).toLocaleString("en-IN");
 export const num = (v) => {
   const n = Number(String(v ?? "").replace(/[^\d.]/g, ""));

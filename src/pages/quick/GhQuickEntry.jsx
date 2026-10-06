@@ -40,6 +40,7 @@ import {
   StatusPill,
   Stepper,
   apiError,
+  cleanMobile,
   inr,
   num,
   useDraft,
@@ -58,7 +59,7 @@ const PAID_MODES = ["Cash", "Card", "PPS", "PPC"];
 const TIMES = ["06:00 AM", "08:00 AM", "10:00 AM", "12:00 PM", "02:00 PM", "04:00 PM", "06:00 PM", "08:00 PM", "10:00 PM"];
 const EMPTY = { rooms: {}, jama: [] };
 
-const digits = (v) => String(v ?? "").replace(/\D/g, "");
+const digits = (v) => cleanMobile(v);
 const keyOf = (period, roomNo) => `${period}|${roomNo}`;
 const rowIssues = (r) => {
   const out = [];
