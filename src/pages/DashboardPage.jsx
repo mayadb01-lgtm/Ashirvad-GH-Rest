@@ -43,6 +43,7 @@ import GHBankBooksDashboard from "../components/guest-house/GHBankBooksDashboard
 import OfficeCategoryDashboard from "../components/office/OfficeCategoryDashboard";
 import OfficeMerged from "../components/office/OfficeMerged";
 import OfficeCreditDebit from "../components/office/OfficeCreditDebit";
+import VendorGraphDashboard from "../components/office/VendorGraphDashboard";
 import GHUpaidEntriesDashboard from "../components/guest-house/GHUpaidEntriesDashboard";
 import OfficeHome from "../components/office/OfficeHome";
 import OfficeMergedGraph from "../components/office/OfficeMergedGraph";
@@ -142,6 +143,7 @@ const NAVIGATION = [
   { segment: "merged-graph", title: "Merged Graph", icon: <PieChartIcon /> },
   { segment: "merged-reports", title: "Merged Report", icon: <BarChartIcon /> },
   { segment: "merged-vendor-report", title: "Merged Vendor Report", icon: <BarChartIcon /> },
+  { segment: "merged-vendor-graph", title: "Vendor Graph (saare vendors)", icon: <InsightsIcon /> },
   { kind: "header", title: "Sales Goal" },
   {
     segment: "sales-goal",
@@ -257,6 +259,7 @@ const DashboardPage = () => {
             { key: "graph", label: "Graph", element: <OfficeMergedGraph /> },
             { key: "report", label: "Report", element: <OfficeMerged /> },
             { key: "vendor", label: "Vendor report", element: <OfficeCreditDebit /> },
+            { key: "vendor-graph", label: "Vendor graph", element: <VendorGraphDashboard /> },
           ]}
         />
       ),
@@ -312,6 +315,7 @@ const DashboardPage = () => {
     { path: "merged-graph", element: <OfficeMergedGraph /> },
     { path: "merged-reports", element: <OfficeMerged /> },
     { path: "merged-vendor-report", element: <OfficeCreditDebit /> },
+    { path: "merged-vendor-graph", element: <VendorGraphDashboard /> },
     { path: "sales-goal/gh-sales-goal", element: <GHSalesGoalDashboard /> },
     { path: "sales-goal/rest-sales-goal", element: <RestSalesGoalDashboard /> },
     {
