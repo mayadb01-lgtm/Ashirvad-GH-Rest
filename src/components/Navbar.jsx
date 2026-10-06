@@ -42,7 +42,7 @@ const Navbar = () => {
       <>
         {isAdminAuthenticated && isSuperUserOrAdmin && (
           <Button color="inherit" component={Link} to="/dashboard">
-            Dashboard
+            Dashboard fa
           </Button>
         )}
         <Button color="inherit" component={Link} to="/" onClick={handleLogout}>
