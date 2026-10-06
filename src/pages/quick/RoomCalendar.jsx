@@ -39,7 +39,7 @@ const ROW_H = 40;
 
 const COLORS = {
   stay: { bg: "#16A34A", fg: "#fff", tag: "C" }, // checked in = hara
-  out: { bg: "#DC2626", fg: "#fff", tag: "O" }, // checked out = laal
+  out: { bg: "#FCA5A5", fg: "#7F1D1D", tag: "O" }, // checked out = halka laal
   due: { bg: "#EA580C", fg: "#fff", tag: "D" },
   booking: { bg: "#7C3AED", fg: "#fff", tag: "B" },
   entry: { bg: "#64748B", fg: "#fff", tag: "E" },
@@ -314,7 +314,7 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
                 {c.tag}
               </Box>
             )}
-            <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+            <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis", textDecoration: b.type === "stay" && b.status === "out" ? "line-through" : "none", textDecorationThickness: "2px" }}>
               {b.type === "block" ? b.name.toUpperCase() : b.name}
               {delta ? ` (${delta > 0 ? "+" : ""}${delta}d)` : ""}
             </Box>
