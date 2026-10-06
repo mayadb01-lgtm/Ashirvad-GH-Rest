@@ -98,7 +98,8 @@ export const useDraft = (key, initial) => {
 };
 
 /* Bada number input (mobile pe number keypad khulta hai) */
-export const MoneyField = ({ label, value, onChange, big, error, helperText, autoFocus, disabled, sx }) => (
+const stepBtn = { minWidth: 36, width: 36, height: 40, p: 0, fontSize: 22, fontWeight: 800, color: Q.ink, bgcolor: Q.bg, flexShrink: 0 };
+export const MoneyField = ({ label, value, onChange, big, error, helperText, autoFocus, disabled, sx, step }) => (
   <TextField
     label={label}
     value={value === 0 || value === "0" ? "" : value ?? ""}
@@ -112,7 +113,21 @@ export const MoneyField = ({ label, value, onChange, big, error, helperText, aut
     error={!!error}
     helperText={helperText}
     InputProps={{
-      startAdornment: <Box sx={{ mr: 0.5, color: Q.muted, fontWeight: 700 }}>₹</Box>,
+      startAdornment: step ? (
+        <>
+          <Button aria-label={`minus ${step}`} disabled={disabled} onClick={() => onChange(Math.max(0, num(value) - step))} sx={{ ...stepBtn, ml: -1, mr: 0.75 }}>
+            −
+          </Button>
+          <Box sx={{ mr: 0.25, color: Q.muted, fontWeight: 700 }}>₹</Box>
+        </>
+      ) : (
+        <Box sx={{ mr: 0.5, color: Q.muted, fontWeight: 700 }}>₹</Box>
+      ),
+      endAdornment: step ? (
+        <Button aria-label={`plus ${step}`} disabled={disabled} onClick={() => onChange(num(value) + step)} sx={{ ...stepBtn, mr: -1, ml: 0.5 }}>
+          +
+        </Button>
+      ) : undefined,
       sx: { fontSize: big ? 22 : 17, fontWeight: big ? 800 : 600 },
     }}
     inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}

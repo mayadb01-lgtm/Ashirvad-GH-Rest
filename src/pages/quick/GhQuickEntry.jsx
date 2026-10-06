@@ -327,8 +327,8 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
           InputProps={{ sx: { fontSize: 17 } }}
         />
         <Stack direction="row" spacing={1.5}>
-          <Box sx={{ flex: 1.2 }}>
-            <MoneyField label="Rate" value={f.rate} onChange={(v) => set("rate", v)} big disabled={locked} />
+          <Box sx={{ flex: 1.45, minWidth: 0 }}>
+            <MoneyField label="Rate" value={f.rate} onChange={(v) => set("rate", v)} big disabled={locked} step={50} />
           </Box>
           <Box sx={{ flex: 1 }}>
             <Stepper outlined label="Guests" value={num(f.noOfPeople)} onChange={(v) => !locked && set("noOfPeople", v)} />
