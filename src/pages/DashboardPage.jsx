@@ -18,6 +18,9 @@ import { BookOutlined } from "@mui/icons-material";
 import PieChartIcon from "@mui/icons-material/PieChart";
 import StackedLineChartIcon from "@mui/icons-material/StackedLineChart";
 import LooksOneIcon from "@mui/icons-material/LooksOne";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import CategoryIcon from "@mui/icons-material/Category";
+import DateRangeIcon from "@mui/icons-material/DateRange";
 
 // Components
 import HomeDashboard from "../components/HomeDashboard";
@@ -89,29 +92,79 @@ const DashboardHeader = () => {
   );
 };
 
-// 36 purane items → 16. Purane reports tabs ke andar (TabbedPage). Purane links bhi chalte rahenge.
+// Saare purane menu items waise hi + naye items (Aaj ka hisaab, Guest Dues, Staff Access).
+// Naye tab-wale pages (Reports, Setup...) bhi "Naye combined pages" mein rakhe hain.
 const NAVIGATION = [
   { segment: "home", title: "Aaj ka hisaab", icon: <TodayIcon /> },
-  { segment: "owner-report", title: "Monthly Report", icon: <InsightsIcon /> },
-  { segment: "guest-dues", title: "Guest Dues", icon: <WhatsAppIcon /> },
+  { segment: "home-classic", title: "Home", icon: <DashboardIcon /> },
+  { segment: "owner-report", title: "Owner Monthly Report", icon: <InsightsIcon /> },
+  { segment: "guest-dues", title: "Guest Dues & Reminders", icon: <WhatsAppIcon /> },
   { kind: "header", title: "Guest House" },
-  { segment: "guest-house", title: "Overview", icon: <PieChartIcon /> },
-  { segment: "gh-dashboard", title: "Ek din ka hisaab", icon: <LooksOneIcon /> },
-  { segment: "gh-all-reports", title: "Reports", icon: <CurrencyRupeeIcon /> },
+  { segment: "guest-house", title: "GH - Graph", icon: <PieChartIcon /> },
+  { segment: "gh-dashboard", title: "GH - One Day View", icon: <LooksOneIcon /> },
+  { segment: "gh-dashboard-range", title: "GH - Date Range", icon: <DateRangeIcon /> },
+  {
+    segment: "gh-reports",
+    title: "GH - Reports",
+    icon: <BarChartIcon />,
+    children: [
+      { segment: "sales-report", title: "GH - Sales Report", icon: <CurrencyRupeeIcon /> },
+      { segment: "bank-books", title: "GH - Bank Books", icon: <BookOutlined /> },
+      { segment: "upaid-report", title: "GH - Upaid", icon: <PaymentsIcon /> },
+    ],
+  },
   { kind: "header", title: "Restaurant" },
-  { segment: "restaurant", title: "Overview", icon: <PieChartIcon /> },
-  { segment: "rest-all-reports", title: "Reports", icon: <PaymentsIcon /> },
-  { segment: "rest-setup", title: "Staff & Setup", icon: <BadgeIcon /> },
-  { kind: "header", title: "Office" },
-  { segment: "office", title: "Overview", icon: <PieChartIcon /> },
-  { segment: "office-all", title: "Office Book", icon: <BookOutlined /> },
-  { kind: "header", title: "Sab ek saath" },
-  { segment: "merged-all", title: "Merged Reports", icon: <StackedLineChartIcon /> },
-  { segment: "sales-goals", title: "Sales Goals", icon: <BarChartIcon /> },
-  { segment: "staff-salary", title: "Staff Salary", icon: <CreditScoreIcon /> },
+  { segment: "restaurant", title: "Rest - Graph", icon: <PieChartIcon /> },
+  {
+    segment: "res-reports",
+    title: "Rest - Reports",
+    icon: <BarChartIcon />,
+    children: [
+      { segment: "sales-report", title: "Rest - Sales", icon: <CurrencyRupeeIcon /> },
+      { segment: "upaad-report", title: "Rest - Upaad", icon: <PaymentsIcon /> },
+      { segment: "expenses-report", title: "Rest - Expenses", icon: <CreditScoreIcon /> },
+      { segment: "bank-books", title: "Rest - Bank Books", icon: <BookOutlined /> },
+      { segment: "levana-report", title: "Rest - Levana", icon: <CurrencyRupeeIcon /> },
+      { segment: "aapvana-report", title: "Rest - Aapvana", icon: <CurrencyRupeeIcon /> },
+      { segment: "aapvana-levana-balance", title: "Pending Balance", icon: <CurrencyRupeeIcon /> },
+    ],
+  },
+  { segment: "manage-staff", title: "Rest - Manage Staff", icon: <BadgeIcon /> },
+  { segment: "categories-expenses", title: "Categories & Expenses", icon: <CategoryIcon /> },
+  { segment: "pending-users", title: "Rest - Pending Users", icon: <BadgeIcon /> },
+  { kind: "header", title: "Office Book" },
+  { segment: "office", title: "Office Graph", icon: <PieChartIcon /> },
+  { segment: "office-book", title: "Office Book", icon: <LooksOneIcon /> },
+  { segment: "office-category", title: "Office Category", icon: <CategoryIcon /> },
+  { kind: "header", title: "Staff Salary" },
+  { segment: "staff-salary", title: "Staff Salary", icon: <BadgeIcon /> },
+  { kind: "header", title: "Merged Reports" },
+  { segment: "merged-graph", title: "Merged Graph", icon: <PieChartIcon /> },
+  { segment: "merged-reports", title: "Merged Report", icon: <BarChartIcon /> },
+  { segment: "merged-vendor-report", title: "Merged Vendor Report", icon: <BarChartIcon /> },
+  { kind: "header", title: "Sales Goal" },
+  {
+    segment: "sales-goal",
+    title: "Sales Goal",
+    icon: <StackedLineChartIcon />,
+    children: [
+      { segment: "gh-sales-goal", title: "GH - Sales Goal", icon: <StackedLineChartIcon /> },
+      { segment: "rest-sales-goal", title: "Rest - Sales Goal", icon: <StackedLineChartIcon /> },
+      { segment: "office-banquet-sales-goal", title: "Banquet Sales Goal", icon: <StackedLineChartIcon /> },
+      { segment: "office-bakery-baada", title: "Bakery Baada", icon: <StackedLineChartIcon /> },
+      { segment: "office-moti-baada", title: "Moti  Baada", icon: <StackedLineChartIcon /> },
+    ],
+  },
+  { kind: "header", title: "Naye combined pages (tabs)" },
+  { segment: "gh-all-reports", title: "GH - Saare Reports", icon: <CurrencyRupeeIcon /> },
+  { segment: "rest-all-reports", title: "Rest - Saare Reports", icon: <PaymentsIcon /> },
+  { segment: "rest-setup", title: "Rest - Staff & Setup", icon: <BadgeIcon /> },
+  { segment: "office-all", title: "Office Book + Category", icon: <BookOutlined /> },
+  { segment: "merged-all", title: "Merged - Saare", icon: <StackedLineChartIcon /> },
+  { segment: "sales-goals", title: "Sales Goals - Saare", icon: <BarChartIcon /> },
   { kind: "header", title: "Settings" },
   { segment: "staff-access", title: "Staff Access", icon: <AdminPanelSettingsIcon /> },
-  { segment: "data-import", title: "Import Excel", icon: <UploadFileIcon /> },
+  { segment: "data-import", title: "Import Excel / CSV", icon: <UploadFileIcon /> },
 ];
 
 const DashboardPage = () => {

@@ -253,39 +253,39 @@ router.get("/get-levana-entries/:startDate/:endDate", async (req, res) => {
   }
 });
 
-// Get Expenses Entries by Date Range
-// router.get("/get-expenses-entries/:startDate/:endDate", async (req, res) => {
-//   try {
-//     const start = dayjs(req.params.startDate, "DD-MM-YYYY");
-//     const end = dayjs(req.params.endDate, "DD-MM-YYYY");
+// Get Expenses Entries by Date Range (Kharch report) - 10-Aug-2026 ko galti se band ho gaya tha, wapas chalu
+router.get("/get-expenses-entries/:startDate/:endDate", async (req, res) => {
+  try {
+    const start = dayjs(req.params.startDate, "DD-MM-YYYY");
+    const end = dayjs(req.params.endDate, "DD-MM-YYYY");
 
-//     if (!start.isValid() || !end.isValid()) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Invalid date format. Please use DD-MM-YYYY.",
-//       });
-//     }
+    if (!start.isValid() || !end.isValid()) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date format. Please use DD-MM-YYYY.",
+      });
+    }
 
-//     const entries = await RestEntry.find({
-//       entryCreateDate: {
-//         $gte: start.startOf("day").toDate(),
-//         $lte: end.endOf("day").toDate(),
-//       },
-//     }).sort({ entryCreateDate: 1 });
+    const entries = await RestEntry.find({
+      entryCreateDate: {
+        $gte: start.startOf("day").toDate(),
+        $lte: end.endOf("day").toDate(),
+      },
+    }).sort({ entryCreateDate: 1 });
 
-//     const expensesEntries = entries.flatMap((entry) => entry.expenses);
+    const expensesEntries = entries.flatMap((entry) => entry.expenses);
 
-//     res.status(200).json({
-//       success: true,
-//       data: expensesEntries,
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       success: false,
-//       message: error.message,
-//     });
-//   }
-// });
+    res.status(200).json({
+      success: true,
+      data: expensesEntries,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 
 router.get(
   "/get-entries-by-payment-method/:startDate/:endDate",
