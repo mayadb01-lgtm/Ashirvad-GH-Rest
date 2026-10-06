@@ -6,6 +6,9 @@ import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import Stay from "../model/stay.js";
 import Booking from "../model/booking.js";
 import { InvoiceCounter } from "../model/invoice.js";
+import Entry from "../model/entry.js";
+import Room from "../model/room.js";
+import { RoomBlock, RoomStatus } from "../model/roomBlock.js";
 import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
@@ -141,6 +144,8 @@ stayRouter.post("/checkout", async (req, res) => {
     doc.nights = Math.max(1, diff + (diff >= 1 && billed ? 1 : 0)); // kitne din gine gaye
     doc.updatedBy = who(req);
     await doc.save();
+    // checkout ke baad room safai ke liye "dirty"
+    await RoomStatus.findOneAndUpdate({ roomNo }, { $set: { dirty: true, since: new Date(), by: who(req) } }, { upsert: true });
     res.json({ success: true, data: doc, billedToday: billed });
   } catch (e) {
     fail(res, e);
@@ -324,3 +329,156 @@ bookingRouter.get("/range/:start/:end", async (req, res) => {
     fail(res, e);
   }
 });
+
+/* ======================= ROOM CALENDAR (tape chart) ======================= */
+const SOLD = ["day", "night", "extraDay", "extraNight"];
+const normName = (v) => String(v || "").replace(/\s+/g, " ").trim().toLowerCase();
+
+// GET /stay/calendar/:start/:days → rooms + bars (stays, bookings, purani entries, blocks) + dirty rooms
+stayRouter.get("/calendar/:start/:days", async (req, res) => {
+  try {
+    const S = D(req.params.start);
+    if (!S.isValid()) return bad(res, "Invalid date");
+    const days = Math.min(31, Math.max(1, Number(req.params.days) || 14));
+    const E = S.add(days - 1, "day");
+    const today = D(todayIst());
+    const admin = isAdminLike(req.user);
+    // Staff: kal se aage hi (purane guest ki jaankari nahi)
+    if (!admin && S.isBefore(today.subtract(1, "day"), "day")) return res.status(403).json({ success: false, message: "Staff can view the calendar from yesterday onwards only" });
+
+    const [rooms, stays, bookings, entries, blocks, statuses] = await Promise.all([
+      Room.find({}, { roomNumber: 1, roomType: 1, roomCost: 1 }).lean(),
+      Stay.find({ startCreateDate: { $gte: S.subtract(90, "day").toDate(), $lte: E.endOf("day").toDate() } }).lean(),
+      Booking.find({ status: "booked", checkInCreateDate: { $gte: S.subtract(60, "day").toDate(), $lte: E.endOf("day").toDate() } }).lean(),
+      Entry.find({ entryCreateDate: { $gte: S.startOf("day").toDate(), $lte: E.endOf("day").toDate() } }, { entry: 1, date: 1 }).lean(),
+      RoomBlock.find({ fromDate: { $lte: E.endOf("day").toDate() }, toDate: { $gte: S.startOf("day").toDate() } }).lean(),
+      RoomStatus.find({ dirty: true }).lean(),
+    ]);
+    const now = nowIst();
+    const pastCutoffNow = now.hour() * 60 + now.minute() >= CUTOFF_MIN;
+    const bars = [];
+    const covered = new Set(); // room|date jahan stay bar hai
+    const fmtD = (x) => x.format(F);
+    const mark = (roomNo, from, to) => {
+      for (let x = from; !x.isAfter(to, "day"); x = x.add(1, "day")) covered.add(`${roomNo}|${fmtD(x)}`);
+    };
+
+    stays.forEach((st) => {
+      const start = D(st.startDate);
+      let last;
+      if (st.status === "out" && st.checkoutDate) {
+        const c = D(st.checkoutDate);
+        last = afterCutoff(st.checkoutTime) ? c : c.subtract(1, "day");
+        if (last.isBefore(start, "day")) last = start;
+      } else {
+        last = today.isAfter(start, "day") ? today : start;
+      }
+      if (last.isBefore(S, "day") || start.isAfter(E, "day")) return;
+      const dueOut = st.status === "active" && today.isAfter(start, "day") && !pastCutoffNow;
+      mark(st.roomNo, start, last);
+      bars.push({
+        type: "stay",
+        id: st._id,
+        roomNo: st.roomNo,
+        from: st.startDate,
+        to: fmtD(last),
+        name: st.guest?.fullname || "Guest",
+        mobile: admin ? st.guest?.mobileNumber || "" : "",
+        people: st.guest?.noOfPeople || 0,
+        rate: admin ? st.guest?.rate || 0 : undefined,
+        period: st.period,
+        status: st.status,
+        checkoutDate: st.checkoutDate,
+        checkoutTime: st.checkoutTime,
+        days: last.diff(start, "day") + 1,
+        dueOut,
+      });
+    });
+
+    bookings.forEach((b) => {
+      const from = D(b.checkInDate);
+      const to = from.add(Math.max(1, b.nights || 1) - 1, "day");
+      if (to.isBefore(S, "day") || from.isAfter(E, "day")) return;
+      const adv = (b.advances || []).reduce((t, a) => t + (Number(a.amount) || 0), 0);
+      bars.push({ type: "booking", id: b._id, roomNo: b.roomNo || null, from: b.checkInDate, to: fmtD(to), name: b.guestName, mobile: b.mobile, people: b.people, nights: b.nights, bookingNo: b.bookingNo, advance: adv, rate: b.rate });
+    });
+
+    // Purani entries (stay record ke bina) → ek-ek din ke cells, lagataar same naam ho to jod do
+    const cells = {};
+    entries.forEach((doc) =>
+      (doc.entry || []).forEach((e) => {
+        if (!SOLD.includes(e.period) || !e.roomNo || covered.has(`${e.roomNo}|${doc.date}`)) return;
+        const k = `${e.roomNo}|${doc.date}`;
+        if (!cells[k]) cells[k] = { roomNo: e.roomNo, date: doc.date, name: e.fullname || "Guest", unpaid: e.modeOfPayment === "UnPaid" };
+      })
+    );
+    const byRoom = {};
+    Object.values(cells).forEach((c) => (byRoom[c.roomNo] ||= []).push(c));
+    Object.values(byRoom).forEach((list) => {
+      list.sort((a, b) => D(a.date) - D(b.date));
+      let cur = null;
+      list.forEach((c) => {
+        if (cur && normName(cur.name) === normName(c.name) && D(cur.to).add(1, "day").isSame(D(c.date), "day")) cur.to = c.date;
+        else {
+          cur = { type: "entry", id: `${c.roomNo}-${c.date}`, roomNo: c.roomNo, from: c.date, to: c.date, name: admin || !D(c.date).isBefore(today.subtract(1, "day")) ? c.name : "Occupied" };
+          bars.push(cur);
+        }
+      });
+    });
+
+    blocks.forEach((b) => bars.push({ type: "block", id: b._id, roomNo: b.roomNo, from: b.from, to: b.to, name: b.reason || "Blocked", by: b.by }));
+
+    res.json({
+      success: true,
+      data: {
+        start: fmtD(S),
+        days,
+        today: fmtD(today),
+        rooms: rooms.sort((a, b) => a.roomNumber - b.roomNumber).map((r) => ({ roomNo: r.roomNumber, type: r.roomType, rate: r.roomCost })),
+        bars,
+        dirty: statuses.map((x) => x.roomNo),
+      },
+    });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// POST /stay/block  { roomNo, from, to, reason } → sirf owner
+stayRouter.post("/block", async (req, res) => {
+  try {
+    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can block rooms" });
+    const b = req.body || {};
+    const roomNo = Number(b.roomNo) || 0;
+    if (!roomNo || !ok(b.from) || !ok(b.to) || D(b.to).isBefore(D(b.from))) return bad(res, "Room and a valid date range are required");
+    const doc = await RoomBlock.create({ roomNo, from: b.from, to: b.to, fromDate: D(b.from).startOf("day").toDate(), toDate: D(b.to).endOf("day").toDate(), reason: clean(b.reason, 60) || "Maintenance", by: who(req) });
+    res.json({ success: true, data: doc });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// DELETE /stay/block/:id → sirf owner
+stayRouter.delete("/block/:id", async (req, res) => {
+  try {
+    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can unblock rooms" });
+    await RoomBlock.deleteOne({ _id: req.params.id });
+    res.json({ success: true });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// PUT /stay/clean/:roomNo  { dirty } → safai ho gayi (staff bhi)
+stayRouter.put("/clean/:roomNo", async (req, res) => {
+  try {
+    const roomNo = Number(req.params.roomNo) || 0;
+    if (!roomNo) return bad(res, "Invalid room");
+    const dirty = !!req.body?.dirty;
+    await RoomStatus.findOneAndUpdate({ roomNo }, { $set: { dirty, since: new Date(), by: who(req) } }, { upsert: true });
+    res.json({ success: true });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+

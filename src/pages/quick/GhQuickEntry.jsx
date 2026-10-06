@@ -29,6 +29,7 @@ import GuestRegisterForm from "./GuestRegisterForm";
 import RoomChargesPanel from "./RoomChargesPanel";
 import RoomInvoiceButton from "../invoice/RoomInvoiceButton";
 import BookingsPanel from "./BookingsPanel";
+import RoomCalendar from "./RoomCalendar";
 import SearchIcon from "@mui/icons-material/Search";
 import LockIcon from "@mui/icons-material/Lock";
 import {
@@ -859,6 +860,15 @@ const GhQuickEntry = ({ date, isAdmin }) => {
           <StatusPill tone="warn">Today's GH entry not done yet</StatusPill>
         )}
         {status?.updatedBy && <StatusPill tone="lock">Edit: {status.updatedBy}</StatusPill>}
+        <Box sx={{ flex: 1 }} />
+        <Button
+          size="small"
+          variant={tab === "calendar" ? "contained" : "outlined"}
+          onClick={() => setTab((t) => (t === "calendar" ? "rooms" : "calendar"))}
+          sx={{ fontWeight: 800, ...(tab === "calendar" ? { bgcolor: Q.gh, "&:hover": { bgcolor: Q.gh } } : { color: Q.gh, borderColor: Q.gh }) }}
+        >
+          📅 {tab === "calendar" ? "Back to rooms" : "Room calendar"}
+        </Button>
         {advToday > 0 && (
           <StatusPill tone="good">
             💰 Advance received today {inr(advToday)} (
@@ -928,7 +938,17 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         </ToggleButton>
       </ToggleButtonGroup>
 
-      {tab === "booking" ? (
+      {tab === "calendar" ? (
+        <RoomCalendar
+          pageDate={date}
+          isAdmin={isAdmin}
+          onOpenRoom={(rn) => {
+            setTab("rooms");
+            setPeriod("day");
+            setEditing(rn);
+          }}
+        />
+      ) : tab === "booking" ? (
         <BookingsPanel rooms={rooms} isAdmin={isAdmin} onChanged={loadStay} />
       ) : tab === "rooms" ? (
         <>
