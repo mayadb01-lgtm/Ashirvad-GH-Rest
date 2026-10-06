@@ -613,7 +613,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       };
     return (
       draft.rooms[keyOf(period, room.roomNumber)] || {
-        rate: 0,
+        rate: num(room.roomCost), // base price apne aap (badal sakte hain)
         noOfPeople: 0,
         type: "",
         modeOfPayment: "",
