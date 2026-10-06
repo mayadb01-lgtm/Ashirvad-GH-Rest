@@ -78,6 +78,7 @@ const RULES = {
     R("GET", /^\/api\/v1\/stay\/calendar\/[^/]+\/\d+$/),
     R("PUT", /^\/api\/v1\/stay\/clean\/\d+$/),
     R("PUT", /^\/api\/v1\/stay\/expected\/[a-f0-9]{24}$/),
+    R("GET", /^\/api\/v1\/stay\/dues\/\d+\/[^/]+\/[^/]+$/),
     // Advance booking (advance hamesha aaj ki date se; cancel sirf owner)
     R("GET", /^\/api\/v1\/booking\/upcoming$/),
     R("POST", /^\/api\/v1\/booking$/),

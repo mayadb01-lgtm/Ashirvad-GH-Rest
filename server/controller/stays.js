@@ -9,6 +9,7 @@ import { InvoiceCounter } from "../model/invoice.js";
 import Entry from "../model/entry.js";
 import Room from "../model/room.js";
 import { RoomBlock, RoomStatus } from "../model/roomBlock.js";
+import RoomCharge from "../model/roomCharge.js";
 import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
@@ -135,6 +136,14 @@ stayRouter.post("/checkout", async (req, res) => {
       doc = new Stay({ roomNo, startDate: b.date, startCreateDate: d.startOf("day").toDate(), period: b.period, nights: 1, guest: cleanGuest(b.guest), enteredBy: who(req) });
     }
     const diff = d.diff(D(doc.startDate), "day");
+    // Bina payment checkout nahi (food bill / extra charges server pe pakka check; room rent app check karta hai)
+    if (!isAdminLike(req.user)) {
+      const dates = [];
+      for (let x = D(doc.startDate); !x.isAfter(d, "day"); x = x.add(1, "day")) dates.push(x.format(F));
+      const unpaidCh = await RoomCharge.find({ roomNo, date: { $in: dates }, isPaid: false }, { amount: 1 }).lean();
+      const amt = unpaidCh.reduce((t, c) => t + (Number(c.amount) || 0), 0);
+      if (amt > 0) return bad(res, `Payment pending: food/extra charges ₹${Math.round(amt)}. Mark them paid before check-out.`);
+    }
     doc.status = "out";
     doc.checkoutDate = b.date;
     doc.checkoutPeriod = b.period;
@@ -514,6 +523,26 @@ stayRouter.put("/block/:id", async (req, res) => {
     doc.toDate = D(to).endOf("day").toDate();
     await doc.save();
     res.json({ success: true, data: doc });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// GET /stay/dues/:roomNo/:from/:to → checkout se pehle: is room ke baaki food/extra charges + booking advance
+stayRouter.get("/dues/:roomNo/:from/:to", async (req, res) => {
+  try {
+    const roomNo = Number(req.params.roomNo) || 0;
+    const from = D(req.params.from);
+    const to = D(req.params.to);
+    if (!roomNo || !from.isValid() || !to.isValid() || to.isBefore(from) || to.diff(from, "day") > 90) return bad(res, "Invalid room / dates");
+    const dates = [];
+    for (let x = from; !x.isAfter(to, "day"); x = x.add(1, "day")) dates.push(x.format(F));
+    const [charges, bookings] = await Promise.all([
+      RoomCharge.find({ roomNo, date: { $in: dates }, isPaid: false }).lean(),
+      Booking.find({ status: "checkedin", "checkedIn.roomNo": roomNo, "checkedIn.date": { $in: dates } }, { advances: 1 }).lean(),
+    ]);
+    const advance = bookings.reduce((t, b) => t + (b.advances || []).reduce((u, a) => u + (Number(a.amount) || 0), 0), 0);
+    res.json({ success: true, data: { charges: charges.map((c) => ({ _id: c._id, date: c.date, label: c.label, kind: c.kind, amount: c.amount })), advance } });
   } catch (e) {
     fail(res, e);
   }

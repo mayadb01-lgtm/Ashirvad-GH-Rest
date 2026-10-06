@@ -30,6 +30,7 @@ import RoomChargesPanel from "./RoomChargesPanel";
 import RoomInvoiceButton from "../invoice/RoomInvoiceButton";
 import BookingsPanel from "./BookingsPanel";
 import RoomCalendar from "./RoomCalendar";
+import { computeDues } from "./checkoutGuard";
 import SearchIcon from "@mui/icons-material/Search";
 import LockIcon from "@mui/icons-material/Lock";
 import {
@@ -625,7 +626,23 @@ const GhQuickEntry = ({ date, isAdmin }) => {
   };
 
   // ✅ Checkout: guest gaya → room khaali, usi din naya guest agle slot mein
-  const doCheckout = async (roomNo, p, f, stayId) => {
+  // 💰 Bina payment checkout nahi: pehle hisaab check (owner chahe to phir bhi kar sakta hai)
+  const [payBlock, setPayBlock] = useState(null);
+  const doCheckout = async (roomNo, p, f, stayId, fromDate, force) => {
+    if (!force) {
+      const dues = await computeDues({
+        roomNo,
+        from: fromDate || f._stayStart || date,
+        to: date,
+        unpaid,
+        todayRows: stayId && !f._stayId ? [] : [f],
+        jamaKeys: new Set(draft.jama.map((j) => `${j.createDate}|${j.roomNo}|${j.mobileNumber}`)),
+      });
+      if (dues.due > 0) {
+        setPayBlock({ roomNo, guest: f.fullname, dues, run: () => doCheckout(roomNo, p, f, stayId, fromDate, true) });
+        return false;
+      }
+    }
     const { data } = await axios.post(`${API}/stay/checkout`, {
       date,
       period: p,
@@ -644,13 +661,14 @@ const GhQuickEntry = ({ date, isAdmin }) => {
     const next = PERIODS.find((x) => x.key === NEXT_PERIOD[p])?.label;
     toast.success(`Room ${roomNo} checked out${f._stayId || stayId ? (data?.billedToday ? " (after 11:00 AM — today is counted)" : " (before 11:00 AM — no charge today)") : ""}${next ? ` · new guest goes in ${next}` : ""}`);
     loadStay();
+    return true;
   };
   const checkoutRoom = async (f) => {
     try {
       const roomNo = room.roomNumber;
       if (!f._stayId) saveRoom({ ...f });
       else setEditing(null);
-      await doCheckout(roomNo, period, f);
+      await doCheckout(roomNo, period, f, undefined, f._stayStart || date);
     } catch (e) {
       toast.error(apiError(e));
     }
@@ -689,7 +707,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
     return rooms
       .map((rm) => dueOutFor(rm.roomNumber))
       .filter(Boolean)
-      .map((x) => ({ roomNo: x.roomNo, stayId: x._id, nights: x.nights, dueTime: x.dueTime, row: { ...(x.guest || {}) } }));
+      .map((x) => ({ roomNo: x.roomNo, stayId: x._id, startDate: x.startDate, nights: x.nights, dueTime: x.dueTime, row: { ...(x.guest || {}) } }));
   })();
   // 📄 Kal check-in hue guests ki registration aaj ke settlement se pehle zaroori
   const regBlock = settleDay ? regPending.yesterday || [] : [];
@@ -972,7 +990,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
                     </Typography>
                   </Typography>
                   <Stack direction="row" spacing={1}>
-                    <Button size="small" variant="contained" color="success" onClick={() => doCheckout(u.roomNo, "day", u.row, u.stayId).catch((e) => toast.error(apiError(e)))} sx={{ fontWeight: 700 }}>
+                    <Button size="small" variant="contained" color="success" onClick={() => doCheckout(u.roomNo, "day", u.row, u.stayId, u.startDate).catch((e) => toast.error(apiError(e)))} sx={{ fontWeight: 700 }}>
                       ✅ Checked out
                     </Button>
                   </Stack>
@@ -1172,6 +1190,46 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         }}
         advance={room ? advanceFor(period, room.roomNumber, editingInitial) : 0}
       />
+
+      <EditorDialog
+        open={!!payBlock}
+        onClose={() => setPayBlock(null)}
+        subtitle={payBlock ? `Room ${payBlock.roomNo} · ${payBlock.guest || ""}` : ""}
+        title={payBlock ? `Payment pending ${inr(payBlock.dues.due)}` : ""}
+        actions={
+          <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
+            <Button fullWidth variant="outlined" onClick={() => setPayBlock(null)}>
+              OK
+            </Button>
+            {isAdmin && (
+              <Button
+                color="error"
+                onClick={() => {
+                  const run = payBlock.run;
+                  setPayBlock(null);
+                  run().catch((e) => toast.error(apiError(e)));
+                }}
+              >
+                Check out anyway (owner)
+              </Button>
+            )}
+          </Stack>
+        }
+      >
+        {payBlock && (
+          <Stack spacing={1}>
+            <Alert severity="error">The guest cannot be checked out until the full amount is paid.</Alert>
+            {payBlock.dues.lines.map((l) => (
+              <Typography key={l} variant="body2">
+                • {l}
+              </Typography>
+            ))}
+            <Typography variant="caption" color={Q.muted}>
+              To collect: select the payment mode for today&apos;s room, mark food/extra charges as paid in the room bill, and add earlier unpaid days under Collections. Then check out again.
+            </Typography>
+          </Stack>
+        )}
+      </EditorDialog>
 
       <EditorDialog open={!!regEdit} onClose={() => { setRegEdit(null); loadRegPending(); }} subtitle={regEdit ? `Checked in ${regEdit.date}` : ""} title={regEdit ? `Guest registration · Room ${regEdit.roomNo}` : ""} actions={<Button fullWidth variant="outlined" onClick={() => { setRegEdit(null); loadRegPending(); }}>Done</Button>}>
         {regEdit && (

@@ -29,6 +29,7 @@ import AddIcon from "@mui/icons-material/Add";
 import BlockIcon from "@mui/icons-material/Block";
 import { API, Q, apiError, inr } from "./shared";
 import { BookingForm } from "./BookingsPanel";
+import { computeDues } from "./checkoutGuard";
 
 dayjs.extend(customParseFormat);
 const F = "DD-MM-YYYY";
@@ -149,12 +150,22 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
     setBookingForm({ initial: { roomNo, checkInDate: d.format(F), nights: 1 } });
   };
 
-  const checkout = async (b) => {
+  const [barDue, setBarDue] = useState(null);
+  const checkout = async (b, force) => {
     setBusy(true);
     try {
+      if (!force) {
+        const { data: up } = await axios.get(`${API}/entry/get-unpaid-entries`).catch(() => ({ data: { data: [] } }));
+        const dues = await computeDues({ roomNo: b.roomNo, from: b.from, to: today.format(F), unpaid: up.data || [] });
+        if (dues.due > 0) {
+          setBarDue(dues);
+          return;
+        }
+      }
       const { data: r } = await axios.post(`${API}/stay/checkout`, { date: today.format(F), period: b.period || "day", roomNo: b.roomNo, stayId: b.id, guest: { fullname: b.name } });
       toast.success(`Room ${b.roomNo} checked out${r.billedToday ? " (after 11:00 AM — today is counted)" : ""}`);
       setBar(null);
+      setBarDue(null);
       load();
     } catch (e) {
       toast.error(apiError(e));
@@ -504,7 +515,7 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
       </Stack>
 
       {/* bar details */}
-      <Dialog open={!!bar} onClose={() => setBar(null)} fullWidth maxWidth="xs">
+      <Dialog open={!!bar} onClose={() => (setBar(null), setBarDue(null))} fullWidth maxWidth="xs">
         {bar && (
           <>
             <DialogTitle fontWeight={800}>
@@ -535,12 +546,26 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
                   </Typography>
                 )}
                 {bar.type === "booking" && !bar.roomNo && <Alert severity="warning">No room assigned yet — use Edit to assign one.</Alert>}
+                {barDue && (
+                  <Alert severity="error">
+                    <b>Payment pending ₹{Math.round(barDue.due)}</b> — cannot check out until paid.
+                    {barDue.lines.map((l) => (
+                      <div key={l}>• {l}</div>
+                    ))}
+                    <div style={{ marginTop: 4 }}>Open the room to collect payment, then check out.</div>
+                  </Alert>
+                )}
               </Stack>
             </DialogContent>
             <DialogActions sx={{ flexWrap: "wrap", gap: 1 }}>
-              {bar.type === "stay" && bar.status === "active" && (
+              {bar.type === "stay" && bar.status === "active" && !barDue && (
                 <Button variant="contained" color="success" disabled={busy} onClick={() => checkout(bar)}>
                   ✅ Check out
+                </Button>
+              )}
+              {barDue && isAdmin && (
+                <Button color="error" disabled={busy} onClick={() => checkout(bar, true)}>
+                  Check out anyway (owner)
                 </Button>
               )}
               {bar.type === "stay" && bar.status === "active" && onOpenRoom && pageDate === today.format(F) && (
@@ -573,7 +598,7 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
                   Unblock
                 </Button>
               )}
-              <Button onClick={() => setBar(null)}>Close</Button>
+              <Button onClick={() => (setBar(null), setBarDue(null))}>Close</Button>
             </DialogActions>
           </>
         )}
