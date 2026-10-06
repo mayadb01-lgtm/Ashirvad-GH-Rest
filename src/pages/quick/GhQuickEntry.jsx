@@ -732,16 +732,19 @@ const GhQuickEntry = ({ date, isAdmin }) => {
     setEditing(null);
     setMoveDlg({ fromRoom: room.roomNumber, period, guest: guestSnap(f) });
   };
-  const afterMove = (type, toRoom) => {
+  const afterMove = (type, toRoom, pInB, pInA) => {
     const { fromRoom, period: p } = moveDlg;
+    const pb = pInB || p;
+    const pa = pInA || p;
     const strip = (r) => (r ? Object.fromEntries(Object.entries(r).filter(([k]) => !k.startsWith("_stay"))) : r);
     setDraft((d) => {
       const rooms = { ...d.rooms };
       const a = rooms[keyOf(p, fromRoom)];
       const b = rooms[keyOf(p, toRoom)];
-      if (a) rooms[keyOf(p, toRoom)] = strip(a);
-      if (type === "swap" && b) rooms[keyOf(p, fromRoom)] = strip(b);
-      else delete rooms[keyOf(p, fromRoom)];
+      delete rooms[keyOf(p, fromRoom)];
+      if (type === "swap") delete rooms[keyOf(p, toRoom)];
+      if (a) rooms[keyOf(pb, toRoom)] = strip(a);
+      if (type === "swap" && b) rooms[keyOf(pa, fromRoom)] = strip(b);
       return { ...d, rooms };
     });
     setMoveDlg(null);

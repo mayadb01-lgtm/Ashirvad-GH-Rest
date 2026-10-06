@@ -36,7 +36,7 @@ export const RoomMoveDialog = ({ open, onClose, date, period, fromRoom, guest, r
         guestTo: target || null,
       });
       toast.success(data.data.type === "swap" ? `Rooms ${fromRoom} ⇄ ${toRoom} swapped` : `Guest shifted ${fromRoom} → ${toRoom}`);
-      onDone?.(data.data.type, Number(toRoom));
+      onDone?.(data.data.type, Number(toRoom), data.data.periodInB, data.data.periodInA);
     } catch (e) {
       toast.error(apiError(e));
     } finally {
