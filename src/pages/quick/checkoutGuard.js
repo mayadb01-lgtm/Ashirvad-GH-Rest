@@ -34,9 +34,12 @@ export const computeDues = async ({ roomNo, from, to, unpaid = [], todayRows = n
       rent += amt;
       lines.push(`Room rent ${u.createDate}: ₹${Math.round(amt)}`);
     });
+  // Aaj ka discount poore bill se ghatta hai (owner food/extra bhi discount se maaf kar sakta hai)
+  let discount = 0;
   (todayRows || []).forEach((r) => {
+    discount += num(r.discount);
     if (r.modeOfPayment && r.modeOfPayment !== "UnPaid") return;
-    const amt = Math.max(0, num(r.rate) - num(r.discount));
+    const amt = num(r.rate);
     if (!amt) return;
     rent += amt;
     lines.push(`Room rent ${to}${r.modeOfPayment ? "" : " (payment not selected)"}: ₹${Math.round(amt)}`);
@@ -53,7 +56,8 @@ export const computeDues = async ({ roomNo, from, to, unpaid = [], todayRows = n
   } catch {
     /* charges check server pe bhi hota hai */
   }
-  const due = Math.max(0, rent + charges - advance);
+  const due = Math.max(0, rent + charges - advance - discount);
   if (advance > 0) lines.push(`Booking advance: −₹${Math.round(advance)}`);
+  if (discount > 0) lines.push(`Discount: −₹${Math.round(discount)}`);
   return { rent, charges, advance, due, lines };
 };

@@ -552,7 +552,7 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
                     {barDue.lines.map((l) => (
                       <div key={l}>• {l}</div>
                     ))}
-                    <div style={{ marginTop: 4 }}>Open the room to collect payment, then check out.</div>
+                    <div style={{ marginTop: 4 }}>Open the room to collect payment (or give a discount), then check out.</div>
                   </Alert>
                 )}
               </Stack>
@@ -561,11 +561,6 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
               {bar.type === "stay" && bar.status === "active" && !barDue && (
                 <Button variant="contained" color="success" disabled={busy} onClick={() => checkout(bar)}>
                   ✅ Check out
-                </Button>
-              )}
-              {barDue && isAdmin && (
-                <Button color="error" disabled={busy} onClick={() => checkout(bar, true)}>
-                  Check out anyway (owner)
                 </Button>
               )}
               {bar.type === "stay" && bar.status === "active" && onOpenRoom && pageDate === today.format(F) && (

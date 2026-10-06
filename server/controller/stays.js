@@ -136,7 +136,8 @@ stayRouter.post("/checkout", async (req, res) => {
       doc = new Stay({ roomNo, startDate: b.date, startCreateDate: d.startOf("day").toDate(), period: b.period, nights: 1, guest: cleanGuest(b.guest), enteredBy: who(req) });
     }
     const diff = d.diff(D(doc.startDate), "day");
-    // Bina payment checkout nahi (food bill / extra charges server pe pakka check; room rent app check karta hai)
+    // Bina payment checkout nahi (food bill / extra charges server pe pakka check; room rent app check karta hai).
+    // Owner bhi bypass nahi karta — sirf app ki discount se maafi (owner ke liye discount server pe nahi dikhta, isliye wahan app ka check).
     if (!isAdminLike(req.user)) {
       const dates = [];
       for (let x = D(doc.startDate); !x.isAfter(d, "day"); x = x.add(1, "day")) dates.push(x.format(F));

@@ -639,7 +639,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         jamaKeys: new Set(draft.jama.map((j) => `${j.createDate}|${j.roomNo}|${j.mobileNumber}`)),
       });
       if (dues.due > 0) {
-        setPayBlock({ roomNo, guest: f.fullname, dues, run: () => doCheckout(roomNo, p, f, stayId, fromDate, true) });
+        setPayBlock({ roomNo, guest: f.fullname, dues });
         return false;
       }
     }
@@ -1201,18 +1201,6 @@ const GhQuickEntry = ({ date, isAdmin }) => {
             <Button fullWidth variant="outlined" onClick={() => setPayBlock(null)}>
               OK
             </Button>
-            {isAdmin && (
-              <Button
-                color="error"
-                onClick={() => {
-                  const run = payBlock.run;
-                  setPayBlock(null);
-                  run().catch((e) => toast.error(apiError(e)));
-                }}
-              >
-                Check out anyway (owner)
-              </Button>
-            )}
           </Stack>
         }
       >
@@ -1225,7 +1213,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
               </Typography>
             ))}
             <Typography variant="caption" color={Q.muted}>
-              To collect: select the payment mode for today&apos;s room, mark food/extra charges as paid in the room bill, and add earlier unpaid days under Collections. Then check out again.
+              To collect: select the payment mode for today&apos;s room, mark food/extra charges as paid in the room bill, and add earlier unpaid days under Collections. If the amount is to be waived, enter it as a Discount on the room. Then check out again.
             </Typography>
           </Stack>
         )}
