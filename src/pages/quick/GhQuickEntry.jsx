@@ -714,7 +714,8 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       if (checkoutOf(p, rm.roomNumber)) return;
       if (r._stayId && num(r._stayDay) < num(r._stayNights)) return;
       const started = (stayInfo.started || []).find((x) => x.roomNo === rm.roomNumber && x.period === p);
-      if (!r._stayId && started && num(started.nights) >= 2 && started.status === "active") return;
+      // ruka raha: plan mein 2+ raat, ya baad ke kisi din checkout hua
+      if (!r._stayId && started && ((num(started.nights) >= 2 && started.status === "active") || (started.checkoutDate && started.checkoutDate !== date))) return;
       out.push({ roomNo: rm.roomNumber, period: p, row: r });
     });
     return out;

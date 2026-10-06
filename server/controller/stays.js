@@ -56,7 +56,7 @@ stayRouter.get("/day/:date", async (req, res) => {
     stays.forEach((s) => {
       const diff = d.diff(D(s.startDate), "day");
       if (s.checkoutDate === date) checkouts.push({ _id: s._id, roomNo: s.roomNo, period: s.checkoutPeriod || s.period, time: s.checkoutTime, guest: s.guest.fullname });
-      if (diff === 0) started.push({ _id: s._id, roomNo: s.roomNo, period: s.period, nights: s.nights, status: s.status, bookingId: s.bookingId });
+      if (diff === 0) started.push({ _id: s._id, roomNo: s.roomNo, period: s.period, nights: s.nights, status: s.status, bookingId: s.bookingId, checkoutDate: s.checkoutDate });
       if (diff >= 1 && diff < s.nights && s.status === "active") {
         continuing.push({ _id: s._id, roomNo: s.roomNo, dayNo: diff + 1, nights: s.nights, startDate: s.startDate, guest: s.guest, bookingId: s.bookingId });
       }
