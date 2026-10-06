@@ -190,7 +190,7 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkou
 };
 
 /* ---------------- Room editor ---------------- */
-const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClear, locked, isAdmin, charges, onChargesChanged, stay, onCheckout, onUndoCheckout, onNewGuest, advance = 0 }) => {
+const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClear, locked, isAdmin, charges, onChargesChanged, stay, onCheckout, onUndoCheckout, onNewGuest, advance = 0, checkedIn = false }) => {
   const [f, setF] = useState(initial);
   const [guest, setGuest] = useState(null);
   const lastLookup = useRef("");
@@ -240,7 +240,7 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
           </Button>
         ) : (
           <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
-            {initial && isTouched(initial) && (!initial._stayId || isAdmin) && (
+            {checkedIn && (!initial?._stayId || isAdmin) && (
               <Button color="error" onClick={onClear} sx={{ fontWeight: 700 }}>
                 Remove
               </Button>
@@ -252,7 +252,7 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
               onClick={() => onSave(f)}
               sx={{ bgcolor: Q.gh, py: 1.4, fontSize: 16, fontWeight: 800, "&:hover": { bgcolor: Q.gh } }}
             >
-              {issues.length ? `Fill in: ${issues.join(", ")}` : `Save Room ${room.roomNumber}`}
+              {issues.length ? `Fill in: ${issues.join(", ")}` : checkedIn ? `Save changes · Room ${room.roomNumber}` : `✅ Check in · Room ${room.roomNumber}`}
             </Button>
           </Stack>
         )
@@ -340,7 +340,13 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
         <MoneyField label="Discount (if any)" value={f.discount} onChange={(v) => set("discount", v)} disabled={locked} />
 
         {/* Stay: kitni raat / continue / checkout — alag collection, lock ka asar nahi */}
-        {isTouched(f) && (
+        {/* Checkout sirf check-in ke baad; naye check-in pe sirf niyam ki jaankari */}
+        {!checkedIn && !stay?.checkout && (
+          <Typography variant="caption" color={Q.muted}>
+            Day count is automatic: check-in day = 1. If the guest is still here after 11:00 AM the next day, another day is added automatically.
+          </Typography>
+        )}
+        {(checkedIn || stay?.checkout) && (
           <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2.5, borderColor: "#C7D2FE", bgcolor: "#EEF2FF" }}>
             {stay?.checkout ? (
               <>
@@ -1063,6 +1069,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         period={period}
         date={date}
         initial={editingInitial}
+        checkedIn={!!(room && draft.rooms[keyOf(period, room.roomNumber)] && isTouched(draft.rooms[keyOf(period, room.roomNumber)]))}
         locked={locked}
         onClose={() => setEditing(null)}
         onSave={saveRoom}
