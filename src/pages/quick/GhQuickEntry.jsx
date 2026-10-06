@@ -838,6 +838,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
   /* ----- counts & totals ----- */
   const summary = useMemo(() => {
     const per = {};
+    const byMode = {};
     let total = 0;
     let incomplete = [];
     Object.entries(draft.rooms).forEach(([k, r]) => {
@@ -849,9 +850,20 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       }
       per[p] = (per[p] || 0) + 1;
       total += num(r.rate);
+      const m = r.modeOfPayment || "UnPaid";
+      byMode[m] = byMode[m] || { amt: 0, rooms: 0, jama: 0 };
+      byMode[m].amt += num(r.rate);
+      byMode[m].rooms += 1;
     });
     const jamaTotal = draft.jama.reduce((s, j) => s + num(j.rate), 0);
-    return { per, total, jamaTotal, incomplete, filled: Object.values(per).reduce((a, b) => a + b, 0) };
+    // purana baaki jo aaj mila: jis mode mein mila usi mein
+    draft.jama.forEach((j) => {
+      const m = j.modeOfPayment || "Cash";
+      byMode[m] = byMode[m] || { amt: 0, rooms: 0, jama: 0 };
+      byMode[m].amt += num(j.rate);
+      byMode[m].jama += 1;
+    });
+    return { per, total, jamaTotal, incomplete, byMode, filled: Object.values(per).reduce((a, b) => a + b, 0) };
   }, [draft]);
 
   /* ----- build payload exactly like old EntryPage ----- */
@@ -1405,6 +1417,12 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         lines={[
           ...PERIODS.filter((p) => summary.per[p.key]).map((p) => ({ label: p.label, value: `${summary.per[p.key]} rooms` })),
           ...(draft.jama.length ? [{ label: "Pending collections", value: `${draft.jama.length} · ${inr(summary.jamaTotal)}` }] : []),
+          ...MODES.filter((m) => summary.byMode[m]).map((m) => {
+            const x = summary.byMode[m];
+            const parts = [x.rooms ? `${x.rooms} room${x.rooms > 1 ? "s" : ""}` : "", x.jama ? `${x.jama} collection${x.jama > 1 ? "s" : ""}` : ""].filter(Boolean).join(" + ");
+            return { label: `${m === "UnPaid" ? "Unpaid" : m} (${parts})`, value: inr(x.amt), color: m === "UnPaid" ? Q.bad : undefined };
+          }),
+          ...(summary.byMode.UnPaid ? [{ label: "Received today", value: inr(summary.total + summary.jamaTotal - summary.byMode.UnPaid.amt), color: Q.good || Q.ink }] : []),
           { label: "Total", value: inr(summary.total + summary.jamaTotal), color: Q.ink },
           ...(!submitted && !isAdmin ? [{ label: "Note", value: "After submitting, only an admin can make changes", color: Q.warn }] : []),
         ]}
