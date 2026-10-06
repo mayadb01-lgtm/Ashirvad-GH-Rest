@@ -222,6 +222,7 @@ router.get("/pending/:date", async (req, res) => {
     const [stays, regs] = await Promise.all([Stay.find({ startDate: { $in: dates } }).lean(), GuestRegister.find({ date: { $in: dates } }).lean()]);
     const out = { yesterday: [], today: [] };
     stays.forEach((s) => {
+      if (s.shiftedFrom?.roomNo) return; // room badla — registration pehle room ke saath ho chuki
       const r = regs.find((x) => x.date === s.startDate && x.period === s.period && x.roomNo === s.roomNo);
       const missing = REQUIRED.filter(([k]) => !String(r?.[k] || "").trim()).map(([, l]) => l);
       if (!missing.length) return;

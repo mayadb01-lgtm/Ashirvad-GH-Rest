@@ -9,6 +9,7 @@ import Entry from "../model/entry.js";
 import Room from "../model/room.js";
 import RoomCharge from "../model/roomCharge.js";
 import GuestRegister from "../model/guestRegister.js";
+import { RoomGroup } from "../model/roomMove.js";
 import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
@@ -76,6 +77,23 @@ router.get("/room-prefill/:date/:period/:roomNo", async (req, res) => {
     if (food > 0) items.push({ desc: "Restaurant food & beverages", sac: SAC.food, qty: 1, rate: food, taxRate: 5 });
     ch.filter((c) => c.kind === "extra").forEach((c) => items.push({ desc: c.label, sac: SAC.room, qty: 1, rate: Number(c.amount) || 0, taxRate: 5 }));
 
+    // Bill merge: is room ka group ho to baaki rooms ka rent + food + extra bhi isi invoice mein
+    const group = await RoomGroup.findOne({ status: "active", mainRoom: roomNo }).lean();
+    const roomList = [roomNo];
+    if (group) {
+      const [rooms2, charges2] = await Promise.all([Room.find({ roomNumber: { $in: group.rooms } }).lean(), RoomCharge.find({ date, roomNo: { $in: group.rooms } }).lean()]);
+      for (const rn of group.rooms) {
+        roomList.push(rn);
+        const rm = rooms2.find((x) => x.roomNumber === rn);
+        const er = (doc?.entry || []).find((x) => x.roomNo === rn && ["day", "night", "extraDay", "extraNight"].includes(x.period));
+        if (er) items.push({ desc: `Room rent — Room ${rn}${rm?.roomType ? ` (${rm.roomType})` : ""}`, sac: SAC.room, qty: 1, rate: Math.max(0, (Number(er.rate) || 0) - (Number(er.discount) || 0)), taxRate: 5 });
+        const c2 = charges2.filter((c) => c.roomNo === rn);
+        const f2 = c2.filter((c) => c.kind === "food").reduce((t, c) => t + (Number(c.amount) || 0), 0);
+        if (f2 > 0) items.push({ desc: `Restaurant food & beverages — Room ${rn}`, sac: SAC.food, qty: 1, rate: f2, taxRate: 5 });
+        c2.filter((c) => c.kind === "extra").forEach((c) => items.push({ desc: `${c.label} — Room ${rn}`, sac: SAC.room, qty: 1, rate: Number(c.amount) || 0, taxRate: 5 }));
+      }
+    }
+
     const name = reg ? [reg.firstName, reg.middleName, reg.lastName].filter(Boolean).join(" ") : "";
     const address = reg ? [reg.houseNo, reg.address, reg.locality, reg.city, reg.district, reg.zipCode].filter(Boolean).join(", ") : "";
     const mobile = e?.mobileNumber && String(e.mobileNumber) !== "0" ? String(e.mobileNumber) : reg?.mobile || "";
@@ -87,7 +105,7 @@ router.get("/room-prefill/:date/:period/:roomNo", async (req, res) => {
           invoiceDate: date,
           customer: { name: e?.fullname || name || "", company: reg?.companyName || "", gstin: "", address, mobile, state: reg?.state || "Gujarat" },
           stay: {
-            roomNo: String(roomNo),
+            roomNo: roomList.join(", "),
             checkIn: reg?.checkinDate ? `${dayjs(reg.checkinDate).format(F)} ${reg.checkinTime || ""}`.trim() : `${date} ${e?.checkInTime || ""}`.trim(),
             checkOut: reg?.checkoutDate ? `${dayjs(reg.checkoutDate).format(F)} ${reg.checkoutTime || ""}`.trim() : e?.checkOutTime ? `${dayjs(date, F).add(1, "day").format(F)} ${e.checkOutTime}` : "",
             guests: Number(e?.noOfPeople) || 0,

@@ -10,6 +10,8 @@ import Entry from "../model/entry.js";
 import Room from "../model/room.js";
 import { RoomBlock, RoomStatus } from "../model/roomBlock.js";
 import RoomCharge from "../model/roomCharge.js";
+import GuestRegister from "../model/guestRegister.js";
+import { RoomMove, RoomGroup } from "../model/roomMove.js";
 import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
@@ -60,6 +62,7 @@ stayRouter.get("/day/:date", async (req, res) => {
     const date = req.params.date;
     if (!ok(date)) return bad(res, "Invalid date");
     const d = D(date);
+    const [groups, moves] = await Promise.all([RoomGroup.find({ status: "active" }).lean(), RoomMove.find({ date }).sort({ createdAt: 1 }).lean()]);
     const [stays, bookings, advDocs] = await Promise.all([
       Stay.find({ startCreateDate: { $gte: d.subtract(60, "day").toDate(), $lte: d.endOf("day").toDate() } }).lean(),
       Booking.find({ checkInDate: date, status: { $ne: "cancelled" } }).lean(),
@@ -89,7 +92,7 @@ stayRouter.get("/day/:date", async (req, res) => {
     });
     const advances = [];
     advDocs.forEach((b) => (b.advances || []).filter((a) => a.date === date).forEach((a) => advances.push({ bookingNo: b.bookingNo, guestName: b.guestName, amount: a.amount, mode: a.mode, by: a.by })));
-    res.json({ success: true, data: { continuing, dueOut, started, checkouts, bookings, advances } });
+    res.json({ success: true, data: { continuing, dueOut, started, checkouts, bookings, advances, groups, moves } });
   } catch (e) {
     fail(res, e);
   }
@@ -450,6 +453,7 @@ stayRouter.get("/calendar/:start/:days", async (req, res) => {
         rooms: rooms.sort((a, b) => a.roomNumber - b.roomNumber).map((r) => ({ roomNo: r.roomNumber, type: r.roomType, rate: r.roomCost })),
         bars,
         dirty: statuses.map((x) => x.roomNo),
+        groups: await RoomGroup.find({ status: "active" }, { mainRoom: 1, rooms: 1, name: 1 }).lean(),
       },
     });
   } catch (e) {
@@ -544,6 +548,120 @@ stayRouter.get("/dues/:roomNo/:from/:to", async (req, res) => {
     ]);
     const advance = bookings.reduce((t, b) => t + (b.advances || []).reduce((u, a) => u + (Number(a.amount) || 0), 0), 0);
     res.json({ success: true, data: { charges: charges.map((c) => ({ _id: c._id, date: c.date, label: c.label, kind: c.kind, amount: c.amount })), advance } });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+/* ======================= SHIFT / SWAP + BILL MERGE ======================= */
+
+// Room mein aaj ruka guest (stay jo aaj tak chal raha hai)
+const activeStayOn = async (roomNo, date) => {
+  const d = D(date);
+  const list = await Stay.find({ roomNo, status: "active", startCreateDate: { $gte: d.subtract(90, "day").toDate(), $lte: d.endOf("day").toDate() } }).lean();
+  return list.sort((a, b) => D(b.startDate) - D(a.startDate))[0] || null;
+};
+
+// Ek collection mein A ↔ B (ya sirf A → B) room number badalna, unique index ke saath (temp number se)
+const swapRoomNos = async (Model, filter, a, b, swap) => {
+  const TEMP = -100000 - a;
+  await Model.updateMany({ ...filter, roomNo: a }, { $set: { roomNo: TEMP } });
+  if (swap) await Model.updateMany({ ...filter, roomNo: b }, { $set: { roomNo: a } });
+  await Model.updateMany({ ...filter, roomNo: TEMP }, { $set: { roomNo: b } });
+};
+
+// POST /stay/move  { date, period, fromRoom, toRoom, reason, guestFrom, guestTo }
+// Khaali room mein → SHIFT. Bhare room mein → SWAP (dono guest badal jaate hain). Wajah zaroori.
+stayRouter.post("/move", async (req, res) => {
+  try {
+    const b = req.body || {};
+    const date = b.date;
+    const period = PERIODS.includes(b.period) ? b.period : "day";
+    const A = Number(b.fromRoom) || 0;
+    const B = Number(b.toRoom) || 0;
+    const reason = clean(b.reason, 200);
+    if (!ok(date) || !A || !B || A === B) return bad(res, "Choose two different rooms");
+    if (reason.length < 3) return bad(res, "Reason is required for a room change");
+    const blocked = await RoomBlock.findOne({ roomNo: B, fromDate: { $lte: D(date).endOf("day").toDate() }, toDate: { $gte: D(date).startOf("day").toDate() } }).lean();
+    if (blocked) return bad(res, `Room ${B} is blocked (${blocked.reason})`);
+
+    const [sa, sb] = await Promise.all([activeStayOn(A, date), activeStayOn(B, date)]);
+    const swap = !!(sb || b.guestTo?.fullname);
+    const by = who(req);
+    const d = D(date);
+
+    // purane din se ruka guest: purana stay aaj band (bill nahi), naye room mein aaj se naya stay
+    const splitOrMove = async (st, target, snapshot) => {
+      if (!st) {
+        if (!snapshot?.fullname) return null;
+        return { create: { roomNo: target, startDate: date, startCreateDate: d.startOf("day").toDate(), period, nights: 1, guest: cleanGuest(snapshot), shiftedFrom: { roomNo: target === B ? A : B, reason }, enteredBy: by } };
+      }
+      if (st.startDate === date) return { sameDay: st._id };
+      await Stay.updateOne({ _id: st._id }, { $set: { status: "out", checkoutDate: date, checkoutPeriod: period, checkoutTime: "SHIFT", nights: Math.max(1, d.diff(D(st.startDate), "day")), updatedBy: by } });
+      return { create: { roomNo: target, startDate: date, startCreateDate: d.startOf("day").toDate(), period, nights: 1, guest: st.guest, bookingId: st.bookingId, shiftedFrom: { roomNo: st.roomNo, stayId: String(st._id), reason }, enteredBy: by } };
+    };
+    const opA = await splitOrMove(sa, B, b.guestFrom);
+    const opB = swap ? await splitOrMove(sb, A, b.guestTo) : null;
+
+    // same-day stays: room number badlo (temp se, taaki unique index na toote)
+    const sameIds = [opA?.sameDay, opB?.sameDay].filter(Boolean);
+    if (sameIds.length) {
+      await Stay.updateMany({ _id: { $in: sameIds } }, [{ $set: { roomNo: { $subtract: [-100000, "$roomNo"] } } }]);
+      if (opA?.sameDay) await Stay.updateOne({ _id: opA.sameDay }, { $set: { roomNo: B, period, updatedBy: by } });
+      if (opB?.sameDay) await Stay.updateOne({ _id: opB.sameDay }, { $set: { roomNo: A, period, updatedBy: by } });
+    }
+    for (const op of [opA, opB]) if (op?.create) await Stay.create(op.create);
+
+    // aaj ke food/extra charges, guest registration aur booking check-in bhi saath jaate hain
+    await swapRoomNos(RoomCharge, { date }, A, B, swap);
+    await swapRoomNos(GuestRegister, { date, period }, A, B, swap);
+    const bA = await Booking.find({ "checkedIn.date": date, "checkedIn.roomNo": A }, { _id: 1 }).lean();
+    const bB = swap ? await Booking.find({ "checkedIn.date": date, "checkedIn.roomNo": B }, { _id: 1 }).lean() : [];
+    if (bA.length) await Booking.updateMany({ _id: { $in: bA.map((x) => x._id) } }, { $set: { "checkedIn.roomNo": B } });
+    if (bB.length) await Booking.updateMany({ _id: { $in: bB.map((x) => x._id) } }, { $set: { "checkedIn.roomNo": A } });
+
+    // bill merge group mein bhi room number badlo
+    const groups = await RoomGroup.find({ status: "active", $or: [{ mainRoom: { $in: [A, B] } }, { rooms: { $in: [A, B] } }] });
+    for (const g of groups) {
+      const map = (r) => (r === A ? B : swap && r === B ? A : r);
+      g.mainRoom = map(g.mainRoom);
+      g.rooms = g.rooms.map(map);
+      await g.save();
+    }
+    if (!swap) await RoomStatus.findOneAndUpdate({ roomNo: A }, { $set: { dirty: true, since: new Date(), by } }, { upsert: true });
+
+    const log = await RoomMove.create({ date, period, type: swap ? "swap" : "shift", fromRoom: A, toRoom: B, guestFrom: b.guestFrom?.fullname || sa?.guest?.fullname || "", guestTo: swap ? b.guestTo?.fullname || sb?.guest?.fullname || "" : "", reason, by });
+    res.json({ success: true, data: log });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// POST /stay/group  { date, mainRoom, rooms, name } → kai rooms ka bill ek (main room pe)
+stayRouter.post("/group", async (req, res) => {
+  try {
+    const b = req.body || {};
+    const mainRoom = Number(b.mainRoom) || 0;
+    const rooms = [...new Set((Array.isArray(b.rooms) ? b.rooms : []).map(Number).filter((r) => r && r !== mainRoom))];
+    if (!ok(b.date) || !mainRoom || !rooms.length) return bad(res, "Choose the main room and at least one more room");
+    const clash = await RoomGroup.findOne({ status: "active", $or: [{ mainRoom: { $in: [mainRoom, ...rooms] } }, { rooms: { $in: [mainRoom, ...rooms] } }] }).lean();
+    if (clash) return bad(res, `Room ${clash.mainRoom} group already has one of these rooms — unmerge it first`);
+    const g = await RoomGroup.create({ name: clean(b.name, 80), mainRoom, rooms, fromDate: b.date, by: who(req) });
+    res.json({ success: true, data: g });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// PUT /stay/group/:id/close → bill alag (unmerge) ya group checkout ke baad band
+stayRouter.put("/group/:id/close", async (req, res) => {
+  try {
+    const g = await RoomGroup.findById(req.params.id);
+    if (!g) return res.status(404).json({ success: false, message: "Not found" });
+    g.status = "closed";
+    g.closedBy = who(req);
+    await g.save();
+    res.json({ success: true });
   } catch (e) {
     fail(res, e);
   }

@@ -152,6 +152,8 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
 
   const [barDue, setBarDue] = useState(null);
   const checkout = async (b, force) => {
+    const grp = (data?.groups || []).find((g) => g.mainRoom === b.roomNo || (g.rooms || []).includes(b.roomNo));
+    if (grp) return toast.error(`Merged bill (main Room ${grp.mainRoom}) — check out from the room screen of Room ${grp.mainRoom}.`);
     setBusy(true);
     try {
       if (!force) {

@@ -31,6 +31,7 @@ import RoomInvoiceButton from "../invoice/RoomInvoiceButton";
 import BookingsPanel from "./BookingsPanel";
 import RoomCalendar from "./RoomCalendar";
 import { computeDues } from "./checkoutGuard";
+import { MergeBillDialog, RoomMoveDialog } from "./RoomMoveDialogs";
 import SearchIcon from "@mui/icons-material/Search";
 import LockIcon from "@mui/icons-material/Lock";
 import {
@@ -108,7 +109,7 @@ const chargesFor = (list, period, roomNo) => (list || []).filter((c) => c.roomNo
 const isTouched = (r) => r && (num(r.rate) > 0 || String(r.fullname || "").trim() || r.modeOfPayment || r.type);
 
 /* ---------------- Room card ---------------- */
-const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkout, booking, advance = 0, period, dueOut }) => {
+const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkout, booking, advance = 0, period, dueOut, group }) => {
   // Room pe "baaki" dikhao: room rent (agar UnPaid) + food/extra jo abhi paid nahi − booking advance
   const rentDue = row?.modeOfPayment === "UnPaid" ? Math.max(0, num(row?.rate) - num(row?.discount)) : 0;
   const due = Math.max(0, rentDue + charges.filter((c) => !c.isPaid).reduce((s, c) => s + num(c.amount), 0) - advance);
@@ -150,9 +151,10 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkou
           {low && <StatusPill tone="warn">Check rate</StatusPill>}
           {partial && <StatusPill tone="warn">Incomplete</StatusPill>}
         </Stack>
-        {(row?._stayDay || checkout || dueOut) && (
+        {(row?._stayDay || checkout || dueOut || group) && (
           <Stack direction="row" spacing={0.5} sx={{ mt: 0.5 }} flexWrap="wrap" useFlexGap>
             {dueOut && <StatusPill tone="warn">⏰ {dueOut.guest?.fullname || "Guest"} · checkout due {dueOut.dueTime}</StatusPill>}
+            {group && <StatusPill tone="info">🔗 {group.mainRoom === room.roomNumber ? `Main · ${group.rooms.length + 1} rooms` : `Bill → ${group.mainRoom}`}</StatusPill>}
             {row?._stayDay && <StatusPill tone="info">🔁 Day {row._stayDay}</StatusPill>}
             {checkout && <StatusPill tone="good">✓ Checkout {checkout.time}</StatusPill>}
           </Stack>
@@ -217,7 +219,7 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkou
 };
 
 /* ---------------- Room editor ---------------- */
-const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClear, locked, isAdmin, charges, onChargesChanged, stay, onCheckout, onUndoCheckout, onNewGuest, advance = 0, checkedIn = false }) => {
+const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClear, locked, isAdmin, charges, onChargesChanged, stay, onCheckout, onUndoCheckout, onNewGuest, advance = 0, checkedIn = false, onMove, onMerge, onUnmerge, group }) => {
   const [f, setF] = useState(initial);
   const [guest, setGuest] = useState(null);
   const lastLookup = useRef("");
@@ -398,6 +400,25 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
                   ✅ Check out
                 </Button>
               </Stack>
+            )}
+            {checkedIn && !stay?.checkout && (
+              <Stack direction="row" spacing={1} sx={{ mt: 1.25 }} flexWrap="wrap" useFlexGap>
+                <Button size="small" variant="outlined" onClick={() => onMove?.(f)} sx={{ fontWeight: 700 }}>
+                  ⇄ Shift / swap room
+                </Button>
+                {!group && (
+                  <Button size="small" variant="outlined" onClick={() => onMerge?.(f)} sx={{ fontWeight: 700 }}>
+                    🔗 Merge bills
+                  </Button>
+                )}
+              </Stack>
+            )}
+            {group && (
+              <Alert severity="info" sx={{ mt: 1.25 }} action={<Button size="small" onClick={() => onUnmerge?.(group)}>Unmerge</Button>}>
+                {group.mainRoom === room.roomNumber
+                  ? `🔗 Merged bill (main room)${group.name ? ` · ${group.name}` : ""}: also includes Room ${group.rooms.join(", ")}. Invoice and check-out from here cover all rooms.`
+                  : `🔗 This room's bill is merged with Room ${group.mainRoom}. Create the invoice and check out from Room ${group.mainRoom}.`}
+              </Alert>
             )}
           </Paper>
         )}
@@ -628,7 +649,49 @@ const GhQuickEntry = ({ date, isAdmin }) => {
   // ✅ Checkout: guest gaya → room khaali, usi din naya guest agle slot mein
   // 💰 Bina payment checkout nahi: pehle hisaab check (owner chahe to phir bhi kar sakta hai)
   const [payBlock, setPayBlock] = useState(null);
+  const [moveDlg, setMoveDlg] = useState(null); // { fromRoom, period, guest }
+  const [mergeDlg, setMergeDlg] = useState(null); // { mainRoom }
+  const groupOf = (roomNo) => (stayInfo?.groups || []).find((g) => g.mainRoom === roomNo || (g.rooms || []).includes(roomNo));
+  const rowOfRoom = (roomNo) => {
+    for (const pk of ["day", "extraDay", "night", "extraNight"]) {
+      const r = draft.rooms[keyOf(pk, roomNo)];
+      if (r && isTouched(r)) return [pk, r];
+    }
+    return [null, null];
+  };
   const doCheckout = async (roomNo, p, f, stayId, fromDate, force) => {
+    const grp = groupOf(roomNo);
+    if (grp && grp.mainRoom !== roomNo) {
+      toast.error(`Room ${roomNo}'s bill is merged with Room ${grp.mainRoom} — check out from Room ${grp.mainRoom}.`);
+      return false;
+    }
+    if (grp && !force) {
+      // poore group ka hisaab ek saath
+      const jk = new Set(draft.jama.map((j) => `${j.createDate}|${j.roomNo}|${j.mobileNumber}`));
+      const all = [{ roomNo, row: f, from: fromDate || f._stayStart || date, today: stayId && !f._stayId ? [] : [f] }];
+      grp.rooms.forEach((rn) => {
+        const [, r] = rowOfRoom(rn);
+        all.push({ roomNo: rn, row: r, from: r?._stayStart || date, today: r ? [r] : [] });
+      });
+      let due = 0;
+      const lines = [];
+      for (const x of all) {
+        const d = await computeDues({ roomNo: x.roomNo, from: x.from, to: date, unpaid, todayRows: x.today, jamaKeys: jk });
+        due += d.due;
+        d.lines.forEach((l) => lines.push(`Room ${x.roomNo}: ${l}`));
+      }
+      if (due > 0) {
+        setPayBlock({ roomNo, guest: `${f.fullname} (merged bill)`, dues: { due, lines } });
+        return false;
+      }
+      // pehle baaki rooms, phir main room
+      for (const rn of grp.rooms) {
+        const [pk, r] = rowOfRoom(rn);
+        await axios.post(`${API}/stay/checkout`, { date, period: pk || "day", roomNo: rn, stayId: r?._stayId || "", guest: { fullname: r?.fullname || "" } });
+      }
+      await axios.put(`${API}/stay/group/${grp._id}/close`, {});
+      return doCheckout(roomNo, p, f, stayId, fromDate, true);
+    }
     if (!force) {
       const dues = await computeDues({
         roomNo,
@@ -662,6 +725,39 @@ const GhQuickEntry = ({ date, isAdmin }) => {
     toast.success(`Room ${roomNo} checked out${f._stayId || stayId ? (data?.billedToday ? " (after 11:00 AM — today is counted)" : " (before 11:00 AM — no charge today)") : ""}${next ? ` · new guest goes in ${next}` : ""}`);
     loadStay();
     return true;
+  };
+  const guestSnap = (r) => (r ? { fullname: r.fullname, mobileNumber: digits(r.mobileNumber), type: r.type, noOfPeople: num(r.noOfPeople), rate: num(r.rate), discount: num(r.discount), checkInTime: r.checkInTime, checkOutTime: r.checkOutTime } : null);
+  const openMove = (f) => {
+    if (submitted && !isAdmin) return toast.error("This day is already submitted — ask the owner to change rooms.");
+    setEditing(null);
+    setMoveDlg({ fromRoom: room.roomNumber, period, guest: guestSnap(f) });
+  };
+  const afterMove = (type, toRoom) => {
+    const { fromRoom, period: p } = moveDlg;
+    const strip = (r) => (r ? Object.fromEntries(Object.entries(r).filter(([k]) => !k.startsWith("_stay"))) : r);
+    setDraft((d) => {
+      const rooms = { ...d.rooms };
+      const a = rooms[keyOf(p, fromRoom)];
+      const b = rooms[keyOf(p, toRoom)];
+      if (a) rooms[keyOf(p, toRoom)] = strip(a);
+      if (type === "swap" && b) rooms[keyOf(p, fromRoom)] = strip(b);
+      else delete rooms[keyOf(p, fromRoom)];
+      return { ...d, rooms };
+    });
+    setMoveDlg(null);
+    loadStay();
+    loadCharges();
+    loadRegPending();
+  };
+  const unmerge = async (g) => {
+    try {
+      await axios.put(`${API}/stay/group/${g._id}/close`, {});
+      toast.success("Bills unmerged");
+      setEditing(null);
+      loadStay();
+    } catch (e) {
+      toast.error(apiError(e));
+    }
   };
   const checkoutRoom = async (f) => {
     try {
@@ -1046,6 +1142,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
                   charges={chargesFor(charges, period, rm.roomNumber)}
                   checkout={checkoutOf(period, rm.roomNumber)}
                   dueOut={period === "day" ? dueOutFor(rm.roomNumber) : null}
+                  group={groupOf(rm.roomNumber)}
                   booking={!draft.rooms[keyOf(period, rm.roomNumber)] ? bookingFor(rm.roomNumber) : null}
                   advance={advanceFor(period, rm.roomNumber)}
                   period={period}
@@ -1182,6 +1279,13 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         }
         onCheckout={checkoutRoom}
         onUndoCheckout={undoCheckout}
+        onMove={openMove}
+        onMerge={() => {
+          setEditing(null);
+          setMergeDlg({ mainRoom: room.roomNumber });
+        }}
+        onUnmerge={unmerge}
+        group={room ? groupOf(room.roomNumber) : null}
         onNewGuest={() => {
           const rn = room?.roomNumber;
           setEditing(null);
@@ -1189,6 +1293,32 @@ const GhQuickEntry = ({ date, isAdmin }) => {
           setTimeout(() => setEditing(rn), 0);
         }}
         advance={room ? advanceFor(period, room.roomNumber, editingInitial) : 0}
+      />
+
+      <RoomMoveDialog
+        open={!!moveDlg}
+        onClose={() => setMoveDlg(null)}
+        date={date}
+        period={moveDlg?.period || period}
+        fromRoom={moveDlg?.fromRoom}
+        guest={moveDlg?.guest}
+        rooms={rooms || []}
+        occupant={(rn) => guestSnap(draft.rooms[keyOf(moveDlg?.period || period, rn)] && isTouched(draft.rooms[keyOf(moveDlg?.period || period, rn)]) ? draft.rooms[keyOf(moveDlg?.period || period, rn)] : null)}
+        onDone={afterMove}
+      />
+      <MergeBillDialog
+        open={!!mergeDlg}
+        onClose={() => setMergeDlg(null)}
+        date={date}
+        mainRoom={mergeDlg?.mainRoom}
+        candidates={(rooms || [])
+          .filter((rm) => rm.roomNumber !== mergeDlg?.mainRoom && !groupOf(rm.roomNumber))
+          .map((rm) => ({ roomNo: rm.roomNumber, name: rowOfRoom(rm.roomNumber)[1]?.fullname }))
+          .filter((x) => x.name !== undefined)}
+        onDone={() => {
+          setMergeDlg(null);
+          loadStay();
+        }}
       />
 
       <EditorDialog

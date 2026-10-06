@@ -25,6 +25,12 @@ const staySchema = new mongoose.Schema(
     checkoutPeriod: { type: String, default: "" },
     checkoutTime: { type: String, default: "" },
     bookingId: { type: String, default: "" },
+    // room badla (shift / swap) to naya stay: purane room / stay ka link
+    shiftedFrom: {
+      roomNo: { type: Number },
+      stayId: { type: String, default: "" },
+      reason: { type: String, default: "" },
+    },
     enteredBy: { type: String, default: "" },
     updatedBy: { type: String, default: "" },
   },
