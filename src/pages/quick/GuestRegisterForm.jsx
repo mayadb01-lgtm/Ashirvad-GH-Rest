@@ -10,7 +10,7 @@ import { Alert, Box, Button, Chip, Collapse, IconButton, MenuItem, Paper, Stack,
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
-import CollectionsIcon from "@mui/icons-material/Collections";
+import CollectionsIcon from "@mui/icons-material/UploadFile";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { API, Q } from "./shared";
 
