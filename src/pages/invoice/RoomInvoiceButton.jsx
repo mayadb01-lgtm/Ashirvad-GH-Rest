@@ -28,6 +28,19 @@ const RoomInvoiceButton = ({ date, period, roomNo, isAdmin, guestName, row, room
         dr.stay.guests = dr.stay.guests || Number(row.noOfPeople) || 0;
         const rate = Math.max(0, Number(row.rate) || 0); // Rate = final
         if (rate > 0) dr.items = [{ desc: `Room rent — Room ${roomNo}${roomType ? ` (${roomType})` : ""}`, sac: "996311", qty: 1, rate, taxRate: 5 }, ...dr.items];
+        // Discount poore bill par: sab items mein barabar hisse se ghatao
+        const disc = Math.max(0, Number(row.discount) || 0);
+        const gross = dr.items.reduce((t, it) => t + (Number(it.rate) || 0) * (Number(it.qty) || 1), 0);
+        if (disc > 0 && gross > 0) {
+          const d = Math.min(disc, gross);
+          let left = d;
+          dr.items = dr.items.map((it, i) => {
+            const share = i === dr.items.length - 1 ? left : Math.round(((d * (Number(it.rate) || 0)) / gross) * 100) / 100;
+            left = Math.round((left - share) * 100) / 100;
+            return { ...it, rate: Math.max(0, Math.round(((Number(it.rate) || 0) - share) * 100) / 100) };
+          });
+          dr.notes = `Discount ₹${Math.round(d)} on total bill (already less in the amounts above).`;
+        }
       }
       if (!dr.items.length) dr.items = [{ desc: `Room rent — Room ${roomNo}`, sac: "996311", qty: 1, rate: 0, taxRate: 5 }];
       setDraft(dr);

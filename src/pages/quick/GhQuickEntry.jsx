@@ -112,7 +112,7 @@ const isTouched = (r) => r && (num(r.rate) > 0 || String(r.fullname || "").trim(
 const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkout, booking, advance = 0, period, dueOut, group }) => {
   // Room pe "baaki" dikhao: room rent (agar UnPaid) + food/extra jo abhi paid nahi − booking advance
   const rentDue = row?.modeOfPayment === "UnPaid" ? Math.max(0, num(row?.rate)) : 0; // Rate = final
-  const due = Math.max(0, rentDue + charges.filter((c) => !c.isPaid).reduce((s, c) => s + num(c.amount), 0) - advance);
+  const due = Math.max(0, rentDue + charges.filter((c) => !c.isPaid).reduce((s, c) => s + num(c.amount), 0) - advance - num(row?.discount)); // discount poore bill par
   const nextLabel = PERIODS.find((p) => p.key === NEXT_PERIOD[period])?.label;
   const filled = row && rowIssues(row).length === 0;
   const partial = row && !filled && isTouched(row);
@@ -359,7 +359,7 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
           <TimeBox label="Check-in time" value={f.checkInTime || "10:00 AM"} onChange={(v) => set("checkInTime", v)} disabled={locked} />
           <TimeBox label="Check-out time" value={f.checkOutTime || "11:00 AM"} onChange={(v) => set("checkOutTime", v)} disabled={locked} />
         </Stack>
-        <MoneyField label="Discount (if any)" value={f.discount} onChange={(v) => set("discount", v)} disabled={locked} />
+        <MoneyField label="Discount on total bill (if any)" value={f.discount} onChange={(v) => set("discount", v)} disabled={locked} />
 
         {/* Stay: kitni raat / continue / checkout — alag collection, lock ka asar nahi */}
         {/* Checkout sirf check-in ke baad; naye check-in pe sirf niyam ki jaankari */}
@@ -1546,7 +1546,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
               </Typography>
             ))}
             <Typography variant="caption" color={Q.muted}>
-              To collect: select the payment mode for today&apos;s room, mark food/extra charges as paid in the room bill, and add earlier unpaid days under Collections. If something is to be waived, the owner can lower the room rate (rate is the final amount) or remove the extra charge. Then check out again.
+              To collect: select the payment mode for today&apos;s room, mark food/extra charges as paid in the room bill, and add earlier unpaid days under Collections. If something is to be waived, enter it as Discount — it is taken off the total bill (room + food + extra). Then check out again.
             </Typography>
           </Stack>
         )}

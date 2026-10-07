@@ -91,9 +91,11 @@ const RoomChargesPanel = ({ date, period, roomNo, guestName, mobile, charges = [
   const food = charges.filter((c) => c.kind === "food");
   const extra = charges.filter((c) => c.kind === "extra");
   const sumOf = (l) => l.reduce((s, c) => s + num(c.amount), 0);
-  const rent = Math.max(0, num(roomRate)); // Rate = final (discount ke baad)
-  const total = rent + sumOf(food) + sumOf(extra);
-  const due = Math.max(0, (roomPaid ? 0 : rent) + sumOf(charges.filter((c) => !c.isPaid)) - num(advance));
+  const rent = Math.max(0, num(roomRate)); // Rate = room ki final rakam
+  // Discount poore bill (room + food + extra) par lagta hai
+  const disc = Math.max(0, num(discount));
+  const total = Math.max(0, rent + sumOf(food) + sumOf(extra) - disc);
+  const due = Math.max(0, (roomPaid ? 0 : rent) + sumOf(charges.filter((c) => !c.isPaid)) - num(advance) - disc);
 
   const add = async () => {
     const l = label === "Other" ? other.trim() : label;
@@ -150,6 +152,7 @@ const RoomChargesPanel = ({ date, period, roomNo, guestName, mobile, charges = [
           [`Room rent${roomPaid ? " (paid)" : ""}`, rent],
           ["Food bill", sumOf(food)],
           ["Extra charges", sumOf(extra)],
+          ...(disc > 0 ? [["Discount (on total bill)", -disc]] : []),
           ...(num(advance) > 0 ? [["Booking advance (received)", -num(advance)]] : []),
         ].map(([l, v]) => (
           <Stack key={l} direction="row" justifyContent="space-between">

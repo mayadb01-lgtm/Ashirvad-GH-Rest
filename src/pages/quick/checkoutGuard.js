@@ -35,9 +35,11 @@ export const computeDues = async ({ roomNo, from, to, unpaid = [], todayRows = n
       lines.push(`Room rent ${u.createDate}: ₹${Math.round(amt)}`);
     });
   // Cash / Card / PPS / PPC = paid (valid). Sirf "UnPaid" baaki gina jaata hai. Payment chuna hi nahi → pehle chunna padega.
-  // Rate = discount ke baad ki final rakam (discount sirf jaankari ke liye, dobara nahi ghatta)
+  // Rate = room ki final rakam. Discount poore bill (room + food + extra) se ghatta hai.
   let needMode = false;
+  let discount = 0;
   (todayRows || []).forEach((r) => {
+    discount += Math.max(0, num(r.discount));
     const amt = num(r.rate);
     if (!amt) return;
     if (!r.modeOfPayment) {
@@ -60,7 +62,8 @@ export const computeDues = async ({ roomNo, from, to, unpaid = [], todayRows = n
   } catch {
     /* charges check server pe bhi hota hai */
   }
-  const due = Math.max(0, rent + charges - advance);
+  const due = Math.max(0, rent + charges - advance - discount);
   if (advance > 0) lines.push(`Booking advance: −₹${Math.round(advance)}`);
-  return { rent, charges, advance, due, lines, needMode };
+  if (discount > 0) lines.push(`Discount (on total bill): −₹${Math.round(discount)}`);
+  return { rent, charges, advance, discount, due, lines, needMode };
 };

@@ -94,6 +94,19 @@ router.get("/room-prefill/:date/:period/:roomNo", async (req, res) => {
       }
     }
 
+    // Discount poore bill par: sab items mein barabar hisse se ghatao (GST sahi rahe)
+    let disc = Math.max(0, Number(e?.discount) || 0);
+    if (group) for (const rn of group.rooms) disc += Math.max(0, Number((doc?.entry || []).find((x) => x.roomNo === rn && ["day", "night", "extraDay", "extraNight"].includes(x.period))?.discount) || 0);
+    const gross = items.reduce((t, it) => t + (Number(it.rate) || 0) * (Number(it.qty) || 1), 0);
+    if (disc > 0 && gross > 0) {
+      const d = Math.min(disc, gross);
+      let left = d;
+      items.forEach((it, i) => {
+        const share = i === items.length - 1 ? left : Math.round((d * (Number(it.rate) || 0)) / gross * 100) / 100;
+        it.rate = Math.max(0, Math.round(((Number(it.rate) || 0) - share) * 100) / 100);
+        left = Math.round((left - share) * 100) / 100;
+      });
+    }
     const name = reg ? [reg.firstName, reg.middleName, reg.lastName].filter(Boolean).join(" ") : "";
     const address = reg ? [reg.houseNo, reg.address, reg.locality, reg.city, reg.district, reg.zipCode].filter(Boolean).join(", ") : "";
     const mobile = e?.mobileNumber && String(e.mobileNumber) !== "0" ? String(e.mobileNumber) : reg?.mobile || "";
@@ -101,6 +114,7 @@ router.get("/room-prefill/:date/:period/:roomNo", async (req, res) => {
       success: true,
       data: {
         draft: {
+          ...(disc > 0 ? { notes: `Discount ₹${Math.round(disc)} on total bill (already less in the amounts above).` } : {}),
           business: "Guest House",
           invoiceDate: date,
           customer: { name: e?.fullname || name || "", company: reg?.companyName || "", gstin: "", address, mobile, state: reg?.state || "Gujarat" },
