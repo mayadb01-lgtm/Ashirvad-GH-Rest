@@ -13,7 +13,7 @@ import RoomCharge from "../model/roomCharge.js";
 import GuestRegister from "../model/guestRegister.js";
 import { RoomMove, RoomGroup } from "../model/roomMove.js";
 import GhLog from "../model/ghLog.js";
-import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
+import { allowedStaffDates, isAdminLike, dateOk as staffDateOk } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
 export const stayRouter = Router();
@@ -42,7 +42,7 @@ const afterCutoff = (t) => {
   const m = minutesOf(t);
   return m !== null && m >= CUTOFF_MIN;
 };
-const staffDateOk = (req, d) => isAdminLike(req.user) || allowedStaffDates().includes(d);
+
 
 const cleanGuest = (g = {}) => ({
   fullname: clean(g.fullname, 100),

@@ -14,6 +14,8 @@ const PUBLIC_ROUTES = new Set([
   "POST /api/v1/user/reset-password",
   "POST /api/v1/admin/create-admin",
   "POST /api/v1/admin/login-admin",
+  "POST /api/v1/admin/verify-otp",
+  "POST /api/v1/admin/reset-password/request",
   "POST /api/v1/admin/reset-password",
   // external scheduler (cron-job.org etc.) – protected by secret key inside the route
   "GET /api/v1/backup/run-scheduled",
@@ -25,6 +27,8 @@ const RATE_LIMITED = new Set([
   "POST /api/v1/user/reset-password",
   "POST /api/v1/admin/create-admin",
   "POST /api/v1/admin/login-admin",
+  "POST /api/v1/admin/verify-otp",
+  "POST /api/v1/admin/reset-password/request",
   "POST /api/v1/admin/reset-password",
   "GET /api/v1/backup/run-scheduled",
 ]);

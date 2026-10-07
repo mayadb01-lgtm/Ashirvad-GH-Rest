@@ -10,7 +10,7 @@ import GhDueReceipt, { officeReceivedGhIds } from "../model/ghDueReceipt.js";
 import CashHandover from "../model/cashHandover.js";
 import RoomCharge from "../model/roomCharge.js";
 import Booking from "../model/booking.js";
-import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
+import { allowedStaffDates, isAdminLike, dateOk as staffDateOk } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -18,7 +18,7 @@ const F = "DD-MM-YYYY";
 const bad = (res, message, code = 400) => res.status(code).json({ success: false, message });
 const fail = (res, e) => res.status(500).json({ success: false, message: e.message });
 const validDate = (d) => dayjs(d, F, true).isValid();
-const dateOk = (req, d) => isAdminLike(req.user) || allowedStaffDates().includes(d);
+const dateOk = (req, d) => staffDateOk(req, d);
 const who = (req) => req.user?.name || req.user?.email || "";
 const OFFICE_MODES = ["Cash", "PP", "PPS", "PPC"];
 

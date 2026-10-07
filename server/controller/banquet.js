@@ -7,7 +7,7 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import { BanquetItem, BanquetPackage, BanquetAddon, BanquetHall, BanquetBooking, banquetTotals } from "../model/banquet.js";
 import AppSetting from "../model/appSetting.js";
-import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
+import { allowedStaffDates, isAdminLike, dateOk as staffDateOk } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -21,6 +21,7 @@ const n = (v) => Number(v) || 0;
 const clean = (v, max = 120) => String(v ?? "").replace(/[\r\n\t]+/g, " ").trim().slice(0, max);
 const valid = (d) => dayjs(d, F, true).isValid();
 const admin = (req) => isAdminLike(req.user);
+const ownerOrReport = (req, res, next) => (admin(req) || req.reportOk === "banquet-report" ? next() : bad(res, "Only the owner can do this", 403));
 const ownerOnly = (req, res, next) => (admin(req) ? next() : bad(res, "Only the owner can do this", 403));
 const SLOTS = ["Breakfast", "Lunch", "Hi-Tea", "Dinner", "Full day"];
 const MODES = ["Cash", "PP", "PPS", "PPC", "Card"];
@@ -368,7 +369,7 @@ router.post("/bookings/:id([a-f0-9]{24})/payment", async (req, res) => {
     if (doc.status === "cancelled") return bad(res, "This booking is cancelled");
     const amount = Math.round(n(b.amount));
     const date = admin(req) && valid(b.date) ? b.date : todayIst();
-    if (!admin(req) && !allowedStaffDates().includes(date)) return bad(res, "Only today's payment can be added", 403);
+    if (!staffDateOk(req, date)) return bad(res, "Only today's payment can be added", 403);
     if (!(amount > 0)) return bad(res, "Enter the amount");
     if (!MODES.includes(b.mode)) return bad(res, "Choose the payment mode");
     const recent = doc.payments.find((p) => !p.cancelled && p.amount === amount && p.mode === b.mode && p.date === date && Date.now() - new Date(p.createdAt).getTime() < 15000);
@@ -386,7 +387,7 @@ router.put("/bookings/:id([a-f0-9]{24})/payment/:pid([a-f0-9]{24})/cancel", asyn
     const doc = await BanquetBooking.findById(req.params.id);
     const p = doc?.payments.id(req.params.pid);
     if (!p) return bad(res, "Not found", 404);
-    if (!admin(req) && !allowedStaffDates().includes(p.date)) return bad(res, "Only today's payment can be removed", 403);
+    if (!staffDateOk(req, p.date)) return bad(res, "Only today's payment can be removed", 403);
     p.cancelled = true;
     p.cancelledBy = who(req);
     doc.updatedBy = who(req);
@@ -444,7 +445,7 @@ router.put("/bookings/:id([a-f0-9]{24})/reopen", ownerOnly, async (req, res) => 
 
 /* ───────── Owner: kitchen planning + reports ───────── */
 // GET /kitchen?from&to  → har booking ke liye kaunsa item kitna banana (kg) + andaazit kharcha
-router.get("/kitchen", ownerOnly, async (req, res) => {
+router.get("/kitchen", ownerOrReport, async (req, res) => {
   try {
     const from = valid(req.query.from) ? dayjs(req.query.from, F) : dayjs();
     const to = valid(req.query.to) ? dayjs(req.query.to, F) : from.add(7, "day");
@@ -479,7 +480,7 @@ router.get("/kitchen", ownerOnly, async (req, res) => {
 });
 
 // GET /report?from&to → bookings, kamai (bill), wasooli (mode), baaki
-router.get("/report", ownerOnly, async (req, res) => {
+router.get("/report", ownerOrReport, async (req, res) => {
   try {
     const from = valid(req.query.from) ? dayjs(req.query.from, F) : dayjs().startOf("month");
     const to = valid(req.query.to) ? dayjs(req.query.to, F) : dayjs().endOf("month");

@@ -137,6 +137,10 @@ router.get("/logout-user", async (req, res) => {
 
 // Reset Password - Using one Referral Code Directly - POST
 router.post("/reset-password", async (req, res) => {
+  // 🔒 Band: referral code se kisi ka bhi password badal sakte the. Ab staff ka password Super Admin (Staff access) se.
+  if (process.env.ALLOW_CODE_RESET !== "yes") {
+    return res.status(403).json({ success: false, message: "Ask the owner to reset your password." });
+  }
   try {
     const { email, password, referralCode } = req.body;
 

@@ -7,7 +7,7 @@ import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import RestDueReceipt from "../model/restDueReceipt.js";
 import RoomCharge from "../model/roomCharge.js";
 import RestDueAdjust from "../model/restDueAdjust.js";
-import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
+import { allowedStaffDates, isAdminLike, dateOk as staffDateOk } from "../middleware/staffAccess.js";
 import { computeRestReceivables, isRoomBill } from "../utils/restReceivables.js";
 import { nk } from "../utils/officeTypes.js";
 
@@ -17,7 +17,7 @@ const F = "DD-MM-YYYY";
 const bad = (res, message, code = 400) => res.status(code).json({ success: false, message });
 const fail = (res, e) => res.status(500).json({ success: false, message: e.message });
 const validDate = (d) => dayjs(d, F, true).isValid();
-const dateOk = (req, d) => isAdminLike(req.user) || allowedStaffDates().includes(d);
+const dateOk = (req, d) => staffDateOk(req, d);
 const who = (req) => req.user?.name || req.user?.fullname || req.user?.email || "";
 
 // Kiska kitna baaki (us din tak)

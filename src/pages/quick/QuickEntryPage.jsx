@@ -94,11 +94,13 @@ const QuickEntryPage = () => {
   }, [tab]);
 
   const today = dayjs().startOf("day");
-  const staffDates = auth && !auth.isAdmin ? (auth.allowedDates || []).map((d) => dayjs(d, DATE_FMT).startOf("day")) : null;
-  const minDay = null;
-  const maxDay = null;
-  const canPrev = true;
-  const canNext = true;
+  // Super Admin ne jitne din diye: 0 din = sirf aaj (+ raat ki grace) → chips; zyada din → date chuno (seema ke andar)
+  const allowedDays = auth && !auth.isAdmin && auth.allowedDates ? auth.allowedDates.map((d) => dayjs(d, DATE_FMT).startOf("day")) : null;
+  const staffDates = allowedDays && !auth.entryDays ? allowedDays : null;
+  const minDay = allowedDays && auth.entryDays ? allowedDays[allowedDays.length - 1] : null;
+  const maxDay = allowedDays && auth.entryDays ? allowedDays[0] : null;
+  const canPrev = !minDay || day.isAfter(minDay, "day");
+  const canNext = !maxDay || day.isBefore(maxDay, "day");
   const date = day.format(DATE_FMT);
   const visibleModules = MODULES.filter((m) => auth?.modules?.includes(m.key));
   const mod = visibleModules.find((m) => m.key === tab) || visibleModules[0] || MODULES[0];
@@ -167,7 +169,7 @@ const QuickEntryPage = () => {
               </Typography>
               <Typography variant="caption" color={Q.muted} noWrap component="div">
                 {auth.name}
-                {auth.isAdmin ? " · Admin" : ""}
+                {auth.isAdmin ? " · Admin" : auth.isManager ? " · Manager" : ""}
               </Typography>
             </Box>
             {desktop && visibleModules.length > 1 && (
@@ -192,6 +194,11 @@ const QuickEntryPage = () => {
                   </IconButton>
                 )}
               </>
+            )}
+            {!auth.isOwnerAdmin && auth.reports?.length > 0 && (
+              <Button component={RouterLink} to="/my-reports" size="small" sx={{ color: Q.muted, textTransform: "none" }}>
+                Reports
+              </Button>
             )}
             <Button size="small" onClick={logout} sx={{ color: Q.muted, textTransform: "none" }}>
               Logout

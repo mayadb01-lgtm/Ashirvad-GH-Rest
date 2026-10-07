@@ -7,7 +7,7 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import PurchaseBill from "../model/purchaseBill.js";
 import PurchaseItem from "../model/purchaseItem.js";
-import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
+import { allowedStaffDates, isAdminLike, dateOk as staffDateOk } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -18,7 +18,7 @@ const clean = (v, max = 120) => String(v ?? "").replace(/[\r\n\t]+/g, " ").trim(
 const who = (req) => req.user?.name || req.user?.email || "";
 const ok = (d) => dayjs(d, F, true).isValid();
 const bad = (res, message, code = 400) => res.status(code).json({ success: false, message });
-const dateOk = (req, d) => isAdminLike(req.user) || allowedStaffDates().includes(d);
+const dateOk = (req, d) => staffDateOk(req, d);
 
 const fields = (b) => withTotals({
   billDate: clean(b.billDate, 20),

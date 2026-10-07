@@ -6,15 +6,16 @@ import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import Entry from "../model/entry.js";
 import RestEntry from "../model/restEntry.js";
 import OfficeBook from "../model/officeBook.js";
-import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
+import { isAdminLike, effectiveAccess, datesBack, MODULES, REPORTS } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
 
 // GET /api/v1/quick/me → main kaun hoon, kya kar sakta hoon (app isi se screen tay karta hai)
-router.get("/me", (req, res) => {
+router.get("/me", async (req, res) => {
   const u = req.user;
   const admin = isAdminLike(u);
+  const acc = admin ? null : await effectiveAccess(u).catch(() => null);
   res.json({
     success: true,
     me: {
@@ -23,9 +24,13 @@ router.get("/me", (req, res) => {
       isOwnerAdmin: u?.constructor?.modelName === "Admin",
       department: admin ? "all" : u?.department || "none",
       isActive: u?.isActive !== false,
-      // Banquet: owner + Office department
-      modules: admin ? ["gh", "rest", "office", "banquet"] : u?.department === "office" ? ["office", "banquet"] : ["gh", "rest"].includes(u?.department) ? [u.department] : [],
-      allowedDates: admin ? null : allowedStaffDates(), // null = koi rok nahi
+      // Super Admin ne jo diya (ya purana department)
+      modules: admin ? MODULES : acc?.modules || [],
+      isManager: !admin && (acc?.modules?.length || 0) > 1,
+      entryDays: admin ? null : acc?.entryDays ?? 0,
+      allowedDates: admin || acc?.entryDays === null ? null : datesBack(acc?.entryDays || 0), // null = koi rok nahi
+      reports: admin ? Object.keys(REPORTS) : acc?.reports || [],
+      reportDays: admin ? null : acc?.reportDays ?? 0,
     },
   });
 });

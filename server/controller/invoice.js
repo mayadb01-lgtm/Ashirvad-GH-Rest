@@ -10,7 +10,7 @@ import Room from "../model/room.js";
 import RoomCharge from "../model/roomCharge.js";
 import GuestRegister from "../model/guestRegister.js";
 import { RoomGroup } from "../model/roomMove.js";
-import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
+import { allowedStaffDates, isAdminLike, dateOk as staffDateOk } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -30,7 +30,7 @@ const fyOf = (d) => {
   const y = d.month() >= 3 ? d.year() : d.year() - 1; // April se naya saal
   return `${y}-${String((y + 1) % 100).padStart(2, "0")}`;
 };
-const canSee = (req, inv) => isAdminLike(req.user) || allowedStaffDates().includes(inv.invoiceDate);
+const canSee = (req, inv) => staffDateOk(req, inv.invoiceDate);
 
 // Ek line ka hisaab
 const calcItem = (it, inclusive, gst) => {

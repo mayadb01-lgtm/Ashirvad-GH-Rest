@@ -61,6 +61,8 @@ const fail = (res, e) => res.status(500).json({ success: false, message: e.messa
 
 router.use(isAuthenticated, (req, res, next) => {
   if (req.user?.role === "Admin" || req.user?.isSuperUser) return next();
+  // Super Admin ne is user ko yeh report di hai (staffGuard ne check + din ki seema laga di)
+  if (req.reportOk) return next();
   return res.status(403).json({ success: false, message: "Owner/Admin only" });
 });
 

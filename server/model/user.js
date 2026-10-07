@@ -63,7 +63,7 @@ const userSchema = new Schema({
   // 🔒 Staff kis business ki entry kar sakta hai. "none" = abhi kuch nahi (owner set karega)
   department: {
     type: String,
-    enum: ["none", "gh", "rest", "office"],
+    enum: ["none", "gh", "rest", "office", "manager"], // manager = chaaron business ki entry, koi bhi din (reports nahi)
     default: "none",
   },
   // false = account band (staff chhod gaya ho to)

@@ -9,7 +9,7 @@ import Entry from "../model/entry.js";
 import Room from "../model/room.js";
 import Stay from "../model/stay.js";
 import RestDueReceipt from "../model/restDueReceipt.js";
-import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
+import { allowedStaffDates, isAdminLike, dateOk as staffDateOk } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -28,7 +28,7 @@ const dayStart = (d) => dayjs(d, F, true).startOf("day").toDate();
 const fail = (res, e) => res.status(500).json({ success: false, message: e.message });
 const bad = (res, message) => res.status(400).json({ success: false, message });
 // Staff sirf aaj (aur grace time mein kal) ke charges badal sakta hai
-const canTouch = (req, doc) => isAdminLike(req.user) || allowedStaffDates().includes(doc.date);
+const canTouch = (req, doc) => staffDateOk(req, doc.date);
 
 // GET /occupied/:date → Restaurant ke liye: aaj kaun se room mein kaun ruka hai
 //   aaj ki GH entry + kal raat wale guest (jo aaj subah naashta karte hain) + saare rooms
