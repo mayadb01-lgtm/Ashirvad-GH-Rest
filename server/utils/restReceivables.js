@@ -58,7 +58,7 @@ export const computeRestReceivables = async ({ upto } = {}) => {
   receipts.forEach((x) => {
     const r = get(x.name);
     r.received += n(x.amount);
-    r.ledger.push({ date: x.date, kind: "received", amount: n(x.amount), note: `Restaurant · ${x.mode === "PP" ? "PP (UPI)" : x.mode}${x.note ? ` · ${x.note}` : ""}` });
+    r.ledger.push({ date: x.date, kind: "received", amount: n(x.amount), note: `${x.at === "office" ? "Office" : "Restaurant"} · ${x.mode === "PP" ? "PP (UPI)" : x.mode}${x.note ? ` · ${x.note}` : ""}` });
   });
   const otherRecv = new Map(); // office mein wasooli, par restaurant udhaar nahi (GH pending, staff upad jama…)
   office.forEach((d) =>

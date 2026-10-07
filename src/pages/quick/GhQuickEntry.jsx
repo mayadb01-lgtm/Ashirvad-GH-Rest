@@ -458,6 +458,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
   const [unpaid, setUnpaid] = useState([]);
   const [charges, setCharges] = useState([]);
   const [chargesPaidToday, setChargesPaidToday] = useState([]); // food / extra bill jo aaj wasool hue (kisi bhi din ke)
+  const [ghToOffice, setGhToOffice] = useState(0); // aaj GH ne Office ko cash diya (Office ne record kiya)
   const [stayInfo, setStayInfo] = useState(null); // { continuing, started, checkouts, bookings, advances }
   const [regPending, setRegPending] = useState({ yesterday: [], today: [] });
   const [regEdit, setRegEdit] = useState(null); // pending item jiska form khula hai
@@ -478,6 +479,10 @@ const GhQuickEntry = ({ date, isAdmin }) => {
     [date]
   );
   const loadCharges = useCallback(() => {
+    axios
+      .get(`${API}/counter/handover/${date}`)
+      .then(({ data }) => setGhToOffice((data.data || []).filter((h) => h.from === "gh" && !h.cancelled).reduce((t, h) => t + num(h.amount), 0)))
+      .catch(() => setGhToOffice(0));
     axios
       .get(`${API}/room-charges/paid-on/${date}`)
       .then(({ data }) => setChargesPaidToday(data.data || []))
@@ -955,6 +960,32 @@ const GhQuickEntry = ({ date, isAdmin }) => {
     return { per, total, jamaTotal, incomplete, byMode, filled: Object.values(per).reduce((a, b) => a + b, 0) };
   }, [draft]);
 
+  // 💵 GH galla: har mode mein aaj sach mein kitna aaya
+  //   rooms + purana baaki (jama) + aaj mila booking advance − aaj check-in hue room ka pehle se mila advance + extra charges (GH par wasool)
+  //   Food bill (restaurant ka) alag: Cash wala Restaurant ko dena hai, PP restaurant ke UPI mein
+  const cashBox = useMemo(() => {
+    const modes = ["Cash", "Card", "PPS", "PPC"];
+    const o = Object.fromEntries(modes.map((m) => [m, { rooms: 0, adv: 0, extra: 0 }]));
+    Object.entries(summary.byMode).forEach(([m, x]) => o[m] && (o[m].rooms += x.amt));
+    (stayInfo?.advances || []).forEach((a) => o[a.mode] && (o[a.mode].adv += num(a.amount)));
+    let advUsed = 0;
+    Object.entries(draft.rooms).forEach(([, r]) => {
+      if (!r?._bookingId || !r.modeOfPayment || r.modeOfPayment === "UnPaid" || !o[r.modeOfPayment]) return;
+      const bk = (stayInfo?.bookings || []).find((b) => b._id === r._bookingId);
+      const a = Math.min(advOf(bk), num(r.rate));
+      if (a > 0) {
+        o[r.modeOfPayment].adv -= a;
+        advUsed += a;
+      }
+    });
+    const atGh = chargesPaidToday.filter((c) => c.paidAt !== "rest" && c.paidAt !== "office");
+    atGh.filter((c) => c.kind === "extra").forEach((c) => o[c.paidMode] && (o[c.paidMode].extra += num(c.amount)));
+    const foodCash = atGh.filter((c) => c.kind === "food" && c.paidMode === "Cash").reduce((t, c) => t + num(c.amount), 0);
+    const foodCashGiven = atGh.filter((c) => c.kind === "food" && c.paidMode === "Cash" && c.handedOver).reduce((t, c) => t + num(c.amount), 0);
+    const rows = modes.map((m) => [m, o[m].rooms, o[m].adv, o[m].extra]);
+    return { rows, advUsed, foodCash, foodCashGiven, any: rows.some((r) => r[1] || r[2] || r[3]) || foodCash > 0 };
+  }, [summary, stayInfo, draft.rooms, chargesPaidToday]);
+
   /* ----- build payload exactly like old EntryPage ----- */
   const buildEntries = () => {
     const now = new Date().toString();
@@ -1352,6 +1383,61 @@ const GhQuickEntry = ({ date, isAdmin }) => {
               </Paper>
             </Grid>
           </Grid>
+          {cashBox.any && (
+            <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 3, borderColor: "#A5F3FC", bgcolor: "#ECFEFF" }}>
+              <Typography fontWeight={800}>💵 Total by payment mode (GH)</Typography>
+              <Typography variant="caption" color={Q.muted} sx={{ display: "block", mb: 1 }}>
+                Rooms & dues = today&apos;s rooms + old dues received · Advance = booking advance received today − advance already taken for today&apos;s check-ins
+              </Typography>
+              {(() => {
+                const cell = { textAlign: "right", fontVariantNumeric: "tabular-nums", minWidth: 80, pl: 1 };
+                const tot = cashBox.rows.reduce((a, r) => [0, a[1] + r[1], a[2] + r[2], a[3] + r[3]], [0, 0, 0, 0]);
+                const cashTotal = cashBox.rows[0][1] + cashBox.rows[0][2] + cashBox.rows[0][3];
+                return (
+                  <>
+                    <Stack direction="row" sx={{ py: 0.4, borderBottom: "1px solid #A5F3FC" }}>
+                      {["MODE", "ROOMS & DUES", "ADVANCE", "EXTRA", "TOTAL"].map((h, i) => (
+                        <Typography key={h} variant="caption" fontWeight={800} color={Q.muted} sx={i ? cell : { flex: 1 }}>
+                          {h}
+                        </Typography>
+                      ))}
+                    </Stack>
+                    {[...cashBox.rows, ["Total", tot[1], tot[2], tot[3]]].map(([m, a, b, c]) => (
+                      <Stack key={m} direction="row" sx={{ py: 0.4, ...(m === "Total" ? { borderTop: "1px solid #A5F3FC", mt: 0.5 } : {}) }}>
+                        <Typography fontWeight={m === "Cash" || m === "Total" ? 800 : 600} sx={{ flex: 1 }}>
+                          {m === "Cash" ? "Total cash" : m}
+                        </Typography>
+                        <Typography sx={cell}>{inr(a)}</Typography>
+                        <Typography sx={cell}>{b < 0 ? `− ${inr(-b)}` : inr(b)}</Typography>
+                        <Typography sx={cell}>{inr(c)}</Typography>
+                        <Typography fontWeight={800} sx={{ ...cell, color: "#155E75" }}>
+                          {inr(a + b + c)}
+                        </Typography>
+                      </Stack>
+                    ))}
+                    {(cashBox.foodCash > 0 || ghToOffice > 0) && (
+                      <Box sx={{ mt: 1, pt: 1, borderTop: "1px dashed #A5F3FC" }}>
+                        {cashBox.foodCash > 0 && (
+                          <Typography variant="body2" sx={{ py: 0.25 }}>
+                            + Food bill cash (restaurant&apos;s money): {inr(cashBox.foodCash)}
+                            {cashBox.foodCashGiven ? ` · given to restaurant ${inr(cashBox.foodCashGiven)}` : ""}
+                          </Typography>
+                        )}
+                        {ghToOffice > 0 && (
+                          <Typography variant="body2" sx={{ py: 0.25 }}>
+                            − Cash given to Office today (recorded by Office): {inr(ghToOffice)}
+                          </Typography>
+                        )}
+                        <Typography fontWeight={800} sx={{ color: "#155E75" }}>
+                          Cash left in GH drawer: {inr(cashTotal + cashBox.foodCash - cashBox.foodCashGiven - ghToOffice)}
+                        </Typography>
+                      </Box>
+                    )}
+                  </>
+                );
+              })()}
+            </Paper>
+          )}
           {chargesPaidToday.length > 0 && (
             <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 3, borderColor: "#99F6E4", bgcolor: "#F0FDFA" }}>
               <Typography fontWeight={800}>
@@ -1622,6 +1708,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
             return { label: `${m === "UnPaid" ? "Unpaid" : m} (${parts})`, value: inr(x.amt), color: m === "UnPaid" ? Q.bad : undefined };
           }),
           ...(summary.byMode.UnPaid ? [{ label: "Received today", value: inr(summary.total + summary.jamaTotal - summary.byMode.UnPaid.amt), color: Q.good || Q.ink }] : []),
+          ...(cashBox.advUsed > 0 ? [{ label: "Less: booking advance taken earlier (not in today's drawer)", value: `− ${inr(cashBox.advUsed)}`, color: Q.warn }] : []),
           { label: "Total", value: inr(summary.total + summary.jamaTotal), color: Q.ink },
           ...(!submitted && !isAdmin ? [{ label: "Note", value: "After submitting, only an admin can make changes", color: Q.warn }] : []),
         ]}

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import Entry from "../model/entry.js";
 import EntryLock from "../model/entryLock.js";
+import GhDueReceipt, { officeReceivedGhIds } from "../model/ghDueReceipt.js";
 import dayjs from "dayjs";
 // import { isAuthenticated } from "../middleware/auth.js";
 const router = Router();
@@ -28,6 +29,8 @@ const setPaid = (j, paid) =>
 // Naye jama: asli row atomic tarike se "paid" — pehle se paid ho to ruk jao (do baar wasooli nahi)
 const markCollected = async (list) => {
   const done = [];
+  // Office mein pehle hi wasool ho chuka ho to GH par dobara nahi
+  for (const j of list) if (j.srcId && (await GhDueReceipt.exists({ srcId: String(j.srcId), cancelled: { $ne: true } }))) return { ok: false, row: j, office: true };
   for (const j of list) {
     const r = await setPaid(j, true);
     if (!r.modifiedCount) {
@@ -38,7 +41,7 @@ const markCollected = async (list) => {
   }
   return { ok: true, done };
 };
-const collectedMsg = (j) => `Room ${j.roomNo} (${j.createDate}${j.fullname ? `, ${j.fullname}` : ""}) is already collected. Remove it from Collections and reload.`;
+const collectedMsg = (j, office) => `Room ${j.roomNo} (${j.createDate}${j.fullname ? `, ${j.fullname}` : ""}) is already collected${office ? " in the Office" : ""}. Remove it from Collections and reload.`;
 
 // Create a new Entry
 router.post("/create-entry", async (req, res) => {
@@ -118,7 +121,7 @@ router.post("/create-entry", async (req, res) => {
     );
 
     const marked = await markCollected(unpaidEntries);
-    if (!marked.ok) return res.status(409).json({ success: false, message: collectedMsg(marked.row) });
+    if (!marked.ok) return res.status(409).json({ success: false, message: collectedMsg(marked.row, marked.office) });
 
     // Create a new Entry document
     const newEntry = new Entry({
@@ -272,7 +275,7 @@ router.put("/update-entry/:date", async (req, res) => {
     const added = newJama.filter((j) => !oldKeys.has(jamaKey(j)) && !oldKeys.has(`${j.createDate}|${j.roomNo}|${j.mobileNumber}`));
     const removed = oldJama.filter((j) => !newKeys.has(`${j.createDate}|${j.roomNo}|${j.mobileNumber}`));
     const marked = await markCollected(added);
-    if (!marked.ok) return res.status(409).json({ success: false, message: collectedMsg(marked.row) });
+    if (!marked.ok) return res.status(409).json({ success: false, message: collectedMsg(marked.row, marked.office) });
 
     // Update the Entry
     entry.entry = parsedEntries;
@@ -332,11 +335,12 @@ router.delete("/delete-entry/:date", async (req, res) => {
 // Get All modeOfPayment = "Unpaid" Entries
 router.get("/get-unpaid-entries", async (req, res) => {
   try {
-    const entries = await Entry.find({});
+    const [entries, officeIds] = await Promise.all([Entry.find({}), officeReceivedGhIds()]);
 
+    // Office mein wasool hue baaki bhi hata do (GhDueReceipt)
     const unpaidEntries = entries.flatMap((entry) =>
       entry.entry.filter(
-        (item) => item.modeOfPayment === "UnPaid" && !item.isPaid
+        (item) => item.modeOfPayment === "UnPaid" && !item.isPaid && !officeIds.has(String(item._id))
       )
     );
 

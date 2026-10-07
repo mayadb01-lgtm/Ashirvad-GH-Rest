@@ -34,7 +34,9 @@ router.get("/balances/:date", async (req, res) => {
 router.get("/day/:date", async (req, res) => {
   try {
     if (!validDate(req.params.date)) return bad(res, "Invalid date");
-    const data = await RestDueReceipt.find({ date: req.params.date }).sort({ createdAt: 1 }).lean();
+    // ?at=office → Office mein wasool; warna Restaurant counter wale (Office wale Restaurant ke galle mein nahi)
+    const at = req.query.at === "office" ? "office" : { $ne: "office" };
+    const data = await RestDueReceipt.find({ date: req.params.date, at }).sort({ createdAt: 1 }).lean();
     res.json({ success: true, data });
   } catch (e) {
     fail(res, e);
@@ -51,11 +53,13 @@ router.post("/", async (req, res) => {
     if (!name) return bad(res, "Choose who paid");
     if (isRoomBill(name)) return bad(res, "Room bills are collected with the guest's room bill");
     if (!(amount > 0)) return bad(res, "Enter the amount received");
-    if (!["Cash", "Card", "PP"].includes(b.mode)) return bad(res, "Choose Cash, Card or PP (UPI)");
+    const at = b.at === "office" ? "office" : "rest";
+    const modes = at === "office" ? ["Cash", "PP", "PPS", "PPC"] : ["Cash", "Card", "PP"];
+    if (!modes.includes(b.mode)) return bad(res, `Choose ${modes.join(" / ")}`);
     // Do baar tap ho gaya to dobara na bane
     const dup = await RestDueReceipt.findOne({ date: b.date, nameKey: nk(name), amount, mode: b.mode, cancelled: { $ne: true }, createdAt: { $gte: new Date(Date.now() - 15000) } }).lean();
     if (dup) return res.json({ success: true, data: dup, duplicate: true });
-    const doc = await RestDueReceipt.create({ date: b.date, name, nameKey: nk(name), amount, mode: b.mode, note: String(b.note || "").trim().slice(0, 200), enteredBy: who(req) });
+    const doc = await RestDueReceipt.create({ date: b.date, name, nameKey: nk(name), amount, mode: b.mode, at, note: String(b.note || "").trim().slice(0, 200), enteredBy: who(req) });
     res.json({ success: true, data: doc });
   } catch (e) {
     fail(res, e);

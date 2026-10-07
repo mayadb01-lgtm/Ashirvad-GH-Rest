@@ -574,6 +574,26 @@ const RestQuickEntry = ({ date }) => {
                       {inr(tc + tl)}
                     </Typography>
                   </Stack>
+                  {dues.toOffice > 0 && (
+                    <Stack direction="row" sx={{ py: 0.4 }}>
+                      <Typography sx={{ flex: 1 }} color={Q.muted}>
+                        Cash given to Office today (recorded by Office)
+                      </Typography>
+                      <Typography fontWeight={800} sx={cell}>
+                        − {inr(dues.toOffice)}
+                      </Typography>
+                    </Stack>
+                  )}
+                  {dues.toOffice > 0 && (
+                    <Stack direction="row" sx={{ py: 0.4 }}>
+                      <Typography fontWeight={800} sx={{ flex: 1 }}>
+                        Cash left in drawer
+                      </Typography>
+                      <Typography fontWeight={800} sx={{ ...cell, color: "#155E75" }}>
+                        {inr(rows[0][1] + rows[0][2] - dues.toOffice)}
+                      </Typography>
+                    </Stack>
+                  )}
                   {tl > 0 && (
                     <Typography variant="caption" sx={{ display: "block", mt: 0.5, color: "#155E75", fontWeight: 700 }}>
                       In "Counter cash", Card and PP above enter only today's sale. Collections are added here automatically.

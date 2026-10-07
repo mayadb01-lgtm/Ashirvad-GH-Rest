@@ -14,6 +14,8 @@ import RoomCharge from "../model/roomCharge.js";
 import AppSetting from "../model/appSetting.js";
 import { computeRestReceivables } from "../utils/restReceivables.js";
 import RestDueReceipt from "../model/restDueReceipt.js";
+import GhDueReceipt from "../model/ghDueReceipt.js";
+import { bookingAdvanceMoves } from "../utils/bookingAdvance.js";
 import { loadOfficeClassifier, lineName, nk } from "../utils/officeTypes.js";
 
 // "Discount on total bill" (naya niyam) kis din se P&L mein ghatega: server pehli baar chalte hi aaj ki tareekh (IST) save karta hai.
@@ -80,6 +82,8 @@ router.get("/cashflow/:from/:to", async (req, res) => {
     ]);
     const dueReceipts = await RestDueReceipt.find({ ...q, cancelled: { $ne: true }, source: { $ne: "gh" } }, { entryCreateDate: 1, amount: 1 }).lean();
     const roomPaid = await paidRoomCharges(from, to);
+    const ghOffice = await GhDueReceipt.find({ ...q, cancelled: { $ne: true } }, { entryCreateDate: 1, amount: 1 }).lean();
+    const advMoves = await bookingAdvanceMoves();
 
     const months = monthList(from, to).map((m) => ({
       month: m,
@@ -138,6 +142,16 @@ router.get("/cashflow/:from/:to", async (req, res) => {
     dueReceipts.forEach((x) => {
       const m = byM[ymOf(x.entryCreateDate)];
       if (m) m.recoveryIn += n(x.amount);
+    });
+    // GH ka purana baaki Office mein wasool → GH jama (purane baaki ki wasooli)
+    ghOffice.forEach((x) => {
+      const m = byM[ymOf(x.entryCreateDate)];
+      if (m) m.ghJama += n(x.amount);
+    });
+    // Booking advance: jis mahine mila wahan +, check-in wale room ki wasooli se −
+    advMoves.forEach((x) => {
+      const m = byM[x.ym];
+      if (m) m.ghCash += x.amount;
     });
     // GH counter par wasooli: food bill = restaurant ka udhaar wapas (recovery), extra charge = GH kamai
     roomPaid.forEach((c) => {
@@ -545,6 +559,8 @@ router.get("/mode-balance/:from/:to", async (req, res) => {
     const classify = await loadOfficeClassifier();
     const dueReceipts = await RestDueReceipt.find({ ...q, cancelled: { $ne: true }, source: { $ne: "gh" } }, { entryCreateDate: 1, amount: 1, mode: 1 }).lean();
     const roomPaid = await paidRoomCharges(from, to);
+    const ghOffice = await GhDueReceipt.find({ ...q, cancelled: { $ne: true } }, { entryCreateDate: 1, amount: 1, mode: 1 }).lean();
+    const advMoves = await bookingAdvanceMoves();
     const blank = () => Object.fromEntries(BAL_MODES.map((k) => [k, { in: 0, out: 0, src: { gh: 0, rest: 0, office: 0, officeP: 0, restOut: 0, officeOut: 0, officeOutP: 0 } }]));
     const months = monthList(from, to).map((m) => ({ month: m, label: dayjs(m + "-01").format("MMM YY"), modes: blank() }));
     const byM = Object.fromEntries(months.map((m) => [m.month, m]));
@@ -568,6 +584,16 @@ router.get("/mode-balance/:from/:to", async (req, res) => {
     dueReceipts.forEach((x) => add(byM[ymOf(x.entryCreateDate)], MODE_OF(x.mode), "in", x.amount, "rest"));
     // GH counter par food bill (restaurant ka udhaar) aur extra charges wasool: mode ke hisaab se
     roomPaid.forEach((c) => add(byM[c.ym], MODE_OF(c.paidMode), "in", c.amount, c.kind === "food" ? "rest" : "gh"));
+    // GH ka purana baaki jo Office mein wasool hua
+    ghOffice.forEach((x) => add(byM[ymOf(x.entryCreateDate)], MODE_OF(x.mode), "in", x.amount, "gh"));
+    // Booking advance: mila us din/mode mein +, check-in room ki wasooli wale mode se − (minus bhi ho sakta hai, isliye seedha)
+    advMoves.forEach((x) => {
+      const m = byM[x.ym];
+      const mode = MODE_OF(x.mode);
+      if (!m || !mode || !x.amount) return;
+      m.modes[mode].in += x.amount;
+      m.modes[mode].src.gh += x.amount;
+    });
     office.forEach((d) => {
       const m = byM[ymOf(d.entryCreateDate)];
       // Balance mein har paisa ginta hai (account mein sach mein aaya/gaya), bas business aur personal/loan/transfer alag column mein

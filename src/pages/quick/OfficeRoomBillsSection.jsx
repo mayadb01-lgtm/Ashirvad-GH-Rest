@@ -9,7 +9,7 @@ import { API, Q, Section, StatusPill, apiError, inr, num } from "./shared";
 
 const MODES = ["Cash", "PP", "PPS", "PPC"];
 
-const OfficeRoomBillsSection = ({ date }) => {
+const OfficeRoomBillsSection = ({ date, onChanged }) => {
   const [data, setData] = useState({ due: [], paidToday: [] });
   const [open, setOpen] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -33,6 +33,7 @@ const OfficeRoomBillsSection = ({ date }) => {
       toast.success(`Room ${c.roomNo} food bill ${inr(c.amount)} received by ${mode}. Removed from Restaurant and GH dues.`);
       setOpen(null);
       load();
+      onChanged?.();
     } catch (e) {
       toast.error(apiError(e));
     } finally {

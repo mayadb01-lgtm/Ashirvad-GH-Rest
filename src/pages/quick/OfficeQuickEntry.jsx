@@ -12,6 +12,7 @@ import Grid from "@mui/material/Grid2";
 import AddIcon from "@mui/icons-material/Add";
 import PurchaseBillsSection from "./PurchaseBillsSection";
 import OfficeRoomBillsSection from "./OfficeRoomBillsSection";
+import OfficeCounterSection, { useOfficeCounter } from "./OfficeCounterSection";
 import OfficeImportDialog from "./OfficeImportDialog";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import {
@@ -97,6 +98,8 @@ const OfficeQuickEntry = ({ date, isAdmin }) => {
   }, [server, date, setDraft]);
 
   const t = useMemo(() => ({ in: sum(draft.officeIn), out: sum(draft.officeOut) }), [draft]);
+  // 🤝 GH / Restaurant dues + counter ka cash (alag collections, Money in mein nahi)
+  const counter = useOfficeCounter(date);
 
   /* ----- 🧾 Purchase bills: paid (Cash / PP / PPS / PPC) → Money out mein line; Payable → vendor ledger ----- */
   const [bills, setBills] = useState([]);
@@ -321,11 +324,55 @@ const OfficeQuickEntry = ({ date, isAdmin }) => {
           deleteNote={(b) => (b.mode === "Payable" ? "It is removed from the vendor ledger too." : "Its line in Money out is removed too.")}
         />
       </Box>
-      <OfficeRoomBillsSection date={date} />
+      <OfficeCounterSection date={date} counter={counter} />
+      <OfficeRoomBillsSection date={date} onChanged={counter.reload} />
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 6 }}>{side("officeIn", "Money in", "Money received", Q.office)}</Grid>
         <Grid size={{ xs: 12, md: 6 }}>{side("officeOut", "Money out", "Money paid out", "#7C3AED")}</Grid>
       </Grid>
+
+      {/* 💵 Office: har mode ka total — Money in + collections − Money out (+ counters se mila cash) */}
+      {(() => {
+        const MODES = ["Cash", "PP", "PPS", "PPC"];
+        const by = (rows) => rows.reduce((o, r) => ({ ...o, [r.modeOfPayment]: (o[r.modeOfPayment] || 0) + num(r.amount) }), {});
+        const mi = by(draft.officeIn);
+        const mo = by(draft.officeOut);
+        const rows = MODES.map((m) => {
+          const coll = num(counter.byMode[m]) + (m === "Cash" ? counter.handIn : 0);
+          return [m, num(mi[m]), coll, num(mo[m])];
+        });
+        const tot = rows.reduce((a, r) => [0, a[1] + r[1], a[2] + r[2], a[3] + r[3]], [0, 0, 0, 0]);
+        if (tot[1] + tot[2] + tot[3] <= 0) return null;
+        const cell = { textAlign: "right", fontVariantNumeric: "tabular-nums", minWidth: 84, pl: 1 };
+        return (
+          <Box sx={{ border: "1.5px solid #C7D2FE", borderRadius: 3, p: 2, mt: 2, bgcolor: "#EEF2FF" }}>
+            <Typography fontWeight={800}>💵 Total by payment mode</Typography>
+            <Typography variant="caption" color={Q.muted} sx={{ display: "block", mb: 1 }}>
+              Collections = GH / Restaurant dues and room food bills received in the Office{counter.handIn ? ` + cash from counters ${inr(counter.handIn)} (transfer)` : ""}
+            </Typography>
+            <Stack direction="row" sx={{ py: 0.4, borderBottom: "1px solid #C7D2FE" }}>
+              {["MODE", "MONEY IN", "COLLECTIONS", "MONEY OUT", "BALANCE"].map((h, i) => (
+                <Typography key={h} variant="caption" fontWeight={800} color={Q.muted} sx={i ? cell : { flex: 1 }}>
+                  {h}
+                </Typography>
+              ))}
+            </Stack>
+            {[...rows, ["Total", tot[1], tot[2], tot[3]]].map(([m, a, c, o]) => (
+              <Stack key={m} direction="row" sx={{ py: 0.4, ...(m === "Total" ? { borderTop: "1px solid #C7D2FE", mt: 0.5 } : {}) }}>
+                <Typography fontWeight={m === "Total" || m === "Cash" ? 800 : 600} sx={{ flex: 1 }}>
+                  {m === "Cash" ? "Total cash" : m}
+                </Typography>
+                <Typography sx={cell}>{inr(a)}</Typography>
+                <Typography sx={cell}>{inr(c)}</Typography>
+                <Typography sx={cell}>{inr(o)}</Typography>
+                <Typography fontWeight={800} sx={{ ...cell, color: a + c - o < 0 ? Q.bad : "#3730A3" }}>
+                  {inr(a + c - o)}
+                </Typography>
+              </Stack>
+            ))}
+          </Box>
+        );
+      })()}
 
       <SaveBar
         label={`In ${inr(t.in)} · Out ${inr(t.out)}`}

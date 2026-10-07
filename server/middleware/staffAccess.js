@@ -61,6 +61,7 @@ const RULES = {
     // Room charges: food bill dekhna, extra charge jodna/hatana, vasooli (id wale routes andar date check karte hain)
     R("GET", /^\/api\/v1\/room-charges\/day\/([^/]+)$/, { dateParam: 1 }),
     R("GET", /^\/api\/v1\/room-charges\/paid-on\/([^/]+)$/, { dateParam: 1 }),
+    R("GET", /^\/api\/v1\/counter\/handover\/([^/]+)$/, { dateParam: 1 }), // Office ko diya cash (dekhna)
     R("POST", /^\/api\/v1\/room-charges\/extra$/, { dateBody: "date" }),
     R("DELETE", /^\/api\/v1\/room-charges\/extra\/[a-f0-9]{24}$/),
     R("PUT", /^\/api\/v1\/room-charges\/paid\/[a-f0-9]{24}$/),
@@ -123,6 +124,7 @@ const RULES = {
     R("POST", /^\/api\/v1\/rest-dues\/gh-handover$/, { dateBody: "date" }),
     R("GET", /^\/api\/v1\/rest-dues\/room-bills\/([^/]+)$/, { dateParam: 1 }),
     R("POST", /^\/api\/v1\/rest-dues\/room-bills\/[a-f0-9]{24}\/receive$/, { dateBody: "date" }),
+    R("GET", /^\/api\/v1\/counter\/handover\/([^/]+)$/, { dateParam: 1 }), // Office ko diya cash (dekhna)
     dayStatus,
   ],
   office: [
@@ -145,6 +147,18 @@ const RULES = {
     // Room ka food bill Office mein wasool
     R("GET", /^\/api\/v1\/rest-dues\/room-bills\/([^/]+)$/, { dateParam: 1 }),
     R("POST", /^\/api\/v1\/rest-dues\/room-bills\/[a-f0-9]{24}\/receive$/, { dateBody: "date" }),
+    // Restaurant ka udhaar Office mein wasool
+    R("GET", /^\/api\/v1\/rest-dues\/balances\/([^/]+)$/, { dateParam: 1 }),
+    R("GET", /^\/api\/v1\/rest-dues\/day\/([^/]+)$/, { dateParam: 1 }),
+    R("POST", /^\/api\/v1\/rest-dues$/, { dateBody: "date" }),
+    R("PUT", /^\/api\/v1\/rest-dues\/[a-f0-9]{24}\/cancel$/),
+    // GH ka baaki Office mein wasool + counter ka cash Office ko
+    R("GET", /^\/api\/v1\/counter\/gh-dues\/([^/]+)$/, { dateParam: 1 }),
+    R("POST", /^\/api\/v1\/counter\/gh-dues\/[a-f0-9]{24}\/receive$/, { dateBody: "date" }),
+    R("PUT", /^\/api\/v1\/counter\/gh-dues\/receipt\/[a-f0-9]{24}\/cancel$/),
+    R("GET", /^\/api\/v1\/counter\/handover\/([^/]+)$/, { dateParam: 1 }),
+    R("POST", /^\/api\/v1\/counter\/handover$/, { dateBody: "date" }),
+    R("PUT", /^\/api\/v1\/counter\/handover\/[a-f0-9]{24}\/cancel$/),
     dayStatus,
   ],
 };

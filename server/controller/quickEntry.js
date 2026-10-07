@@ -1,4 +1,5 @@
 // Quick Entry helpers (READ-ONLY). Login zaroori (security.js gate).
+import { officeReceivedGhIds } from "../model/ghDueReceipt.js";
 import { Router } from "express";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat.js";
@@ -50,13 +51,15 @@ router.get("/guest/:mobile", async (req, res) => {
           rate: "$entry.rate",
           modeOfPayment: "$entry.modeOfPayment",
           isPaid: "$entry.isPaid",
+          id: "$entry._id",
           day: "$entryCreateDate",
         },
       },
       { $sort: { day: -1 } },
     ]);
     if (!stays.length) return res.json({ success: true, found: false });
-    const pending = stays.filter((s) => s.modeOfPayment === "UnPaid" && !s.isPaid);
+    const offIds = await officeReceivedGhIds(); // Office mein wasool hue baaki nahi
+    const pending = stays.filter((s) => s.modeOfPayment === "UnPaid" && !s.isPaid && !offIds.has(String(s.id)));
     const last = stays[0];
     res.json({
       success: true,

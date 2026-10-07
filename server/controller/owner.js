@@ -10,6 +10,7 @@ import RestEntry from "../model/restEntry.js";
 import OfficeBook from "../model/officeBook.js";
 import StaffSalary from "../model/staffSalary.js";
 import { loadOfficeClassifier, lineName } from "../utils/officeTypes.js";
+import { officeReceivedGhIds } from "../model/ghDueReceipt.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -250,8 +251,11 @@ router.get("/monthly-summary/:month/:year", async (req, res) => {
     const unpaid = await Entry.aggregate([
       { $unwind: "$entry" },
       { $match: { "entry.modeOfPayment": "UnPaid", "entry.isPaid": { $ne: true }, "entry.period": { $ne: "UnPaid" } } },
-      { $project: { _id: 0, date: "$entry.createDate", roomNo: "$entry.roomNo", fullname: "$entry.fullname", mobileNumber: "$entry.mobileNumber", rate: "$entry.rate" } },
-    ]);
+      { $project: { _id: 0, id: "$entry._id", date: "$entry.createDate", roomNo: "$entry.roomNo", fullname: "$entry.fullname", mobileNumber: "$entry.mobileNumber", rate: "$entry.rate" } },
+    ]).then(async (rows) => {
+      const off = await officeReceivedGhIds(); // Office mein wasool hue baaki nahi
+      return rows.filter((r) => !off.has(String(r.id)));
+    });
     const aging = { "0-7 days": 0, "8-30 days": 0, "31-90 days": 0, "90+ days": 0 };
     unpaid.forEach((u) => {
       const age = today.diff(dayjs(u.date, "DD-MM-YYYY"), "day");
@@ -322,9 +326,13 @@ router.get("/dues", async (req, res) => {
           mobileNumber: "$entry.mobileNumber",
           rate: "$entry.rate",
           period: "$entry.period",
+          id: "$entry._id",
         },
       },
-    ]);
+    ]).then(async (list) => {
+      const off = await officeReceivedGhIds(); // Office mein wasool hue baaki nahi
+      return list.filter((r) => !off.has(String(r.id)));
+    });
     const today = dayjs();
     const groups = new Map();
     rows.forEach((r) => {

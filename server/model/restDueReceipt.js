@@ -12,7 +12,8 @@ const schema = new mongoose.Schema(
     name: { type: String, required: true },
     nameKey: { type: String, required: true },
     amount: { type: Number, required: true, min: 1 },
-    mode: { type: String, enum: ["Cash", "Card", "PP"], required: true },
+    mode: { type: String, enum: ["Cash", "Card", "PP", "PPS", "PPC"], required: true },
+    at: { type: String, enum: ["rest", "office"], default: "rest" }, // kahan wasool hua (Restaurant counter / Office)
     note: { type: String, default: "" },
     // source "gh": GH cashier ne room ka food bill (Cash) wasool karke Restaurant cashier ko diya — handover.
     // Paisa GH par wasooli ke din hi reports mein gin chuka, isliye reports isse dobara nahi ginti.
