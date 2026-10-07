@@ -8,6 +8,8 @@ import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import Entry from "../model/entry.js";
 import GhDueReceipt, { officeReceivedGhIds } from "../model/ghDueReceipt.js";
 import CashHandover from "../model/cashHandover.js";
+import RoomCharge from "../model/roomCharge.js";
+import Booking from "../model/booking.js";
 import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
@@ -126,6 +128,26 @@ router.put("/handover/:id([a-f0-9]{24})/cancel", async (req, res) => {
     Object.assign(doc, { cancelled: true, cancelledBy: who(req), cancelledAt: new Date() });
     await doc.save();
     res.json({ success: true });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+/* ───────────── 3) GH ka Card (ek hi machine → Restaurant ka PP account) ───────────── */
+// GET /gh-card/:date → us din GH counter par Card se kitna aaya (saved GH entry + booking advance + food/extra bill)
+router.get("/gh-card/:date", async (req, res) => {
+  try {
+    const date = req.params.date;
+    if (!validDate(date)) return bad(res, "Invalid date");
+    const [docs, bookings, charges] = await Promise.all([
+      Entry.find({ date }, { entry: 1 }).lean(),
+      Booking.find({ "advances.date": date }, { advances: 1 }).lean(),
+      RoomCharge.find({ isPaid: true, paidDate: date, paidMode: "Card", paidAt: { $nin: ["rest", "office"] } }, { amount: 1 }).lean(),
+    ]);
+    const rooms = docs.flatMap((d) => d.entry || []).filter((e) => e.modeOfPayment === "Card").reduce((t, e) => t + (Number(e.rate) || 0), 0);
+    const adv = bookings.flatMap((b) => b.advances || []).filter((a) => a.date === date && a.mode === "Card").reduce((t, a) => t + (Number(a.amount) || 0), 0);
+    const bills = charges.reduce((t, c) => t + (Number(c.amount) || 0), 0);
+    res.json({ success: true, data: { rooms, advance: adv, bills, total: rooms + adv + bills } });
   } catch (e) {
     fail(res, e);
   }

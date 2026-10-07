@@ -22,7 +22,12 @@ export const useDueReceipts = (date) => {
   const [ghCash, setGhCash] = useState([]); // GH counter par Cash mein wasool room food bill, jo abhi Restaurant ko nahi mile
   const [roomBills, setRoomBills] = useState({ due: [], paidToday: [] }); // room ke food bill: baaki + aaj Restaurant par wasool
   const [toOffice, setToOffice] = useState(0); // aaj Office ko diya cash (Office ne record kiya)
+  const [ghCard, setGhCard] = useState(null); // GH ka Card — ek hi machine, Restaurant ke PP account mein
   const load = useCallback(() => {
+    axios
+      .get(`${API}/counter/gh-card/${date}`)
+      .then(({ data }) => setGhCard(data.data || null))
+      .catch(() => setGhCard(null));
     axios
       .get(`${API}/counter/handover/${date}`)
       .then(({ data }) => setToOffice((data.data || []).filter((h) => h.from === "rest" && !h.cancelled).reduce((t, h) => t + num(h.amount), 0)))
@@ -55,7 +60,7 @@ export const useDueReceipts = (date) => {
     roomBills.paidToday.forEach((c) => (o[c.paidMode] = (o[c.paidMode] || 0) + num(c.amount)));
     return o;
   }, [live, roomBills]);
-  return { receipts, live, due, byMode, fromGh, ghCash, roomBills, toOffice, total: byMode.Cash + byMode.Card + byMode.PP, reload: load };
+  return { receipts, live, due, byMode, fromGh, ghCash, roomBills, toOffice, ghCard, total: byMode.Cash + byMode.Card + byMode.PP, reload: load };
 };
 
 const DueCollectionsSection = ({ date, dues }) => {

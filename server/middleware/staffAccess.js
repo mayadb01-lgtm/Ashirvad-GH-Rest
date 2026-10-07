@@ -125,6 +125,7 @@ const RULES = {
     R("GET", /^\/api\/v1\/rest-dues\/room-bills\/([^/]+)$/, { dateParam: 1 }),
     R("POST", /^\/api\/v1\/rest-dues\/room-bills\/[a-f0-9]{24}\/receive$/, { dateBody: "date" }),
     R("GET", /^\/api\/v1\/counter\/handover\/([^/]+)$/, { dateParam: 1 }), // Office ko diya cash (dekhna)
+    R("GET", /^\/api\/v1\/counter\/gh-card\/([^/]+)$/, { dateParam: 1 }), // GH ka Card (same machine)
     dayStatus,
   ],
   office: [

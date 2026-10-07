@@ -574,6 +574,29 @@ const RestQuickEntry = ({ date }) => {
                       {inr(tc + tl)}
                     </Typography>
                   </Stack>
+                  {dues.ghCard?.total > 0 && (
+                    <Box sx={{ mt: 0.75, p: 1, borderRadius: 2, bgcolor: "#fff", border: "1px dashed #A5F3FC" }}>
+                      <Stack direction="row">
+                        <Typography sx={{ flex: 1 }} color={Q.muted}>
+                          + GH card on the same machine (saved GH entry)
+                        </Typography>
+                        <Typography fontWeight={700} sx={cell}>
+                          {inr(dues.ghCard.total)}
+                        </Typography>
+                      </Stack>
+                      <Stack direction="row">
+                        <Typography fontWeight={800} sx={{ flex: 1 }}>
+                          Card machine total (Restaurant + GH)
+                        </Typography>
+                        <Typography fontWeight={800} sx={{ ...cell, color: "#155E75" }}>
+                          {inr(num(draft.card) + dues.byMode.Card + dues.ghCard.total)}
+                        </Typography>
+                      </Stack>
+                      <Typography variant="caption" color={Q.muted}>
+                        Match this with the card machine settlement. GH card is GH money — it is not added to restaurant sales.
+                      </Typography>
+                    </Box>
+                  )}
                   {dues.toOffice > 0 && (
                     <Stack direction="row" sx={{ py: 0.4 }}>
                       <Typography sx={{ flex: 1 }} color={Q.muted}>

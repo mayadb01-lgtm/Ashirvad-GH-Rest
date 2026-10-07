@@ -1406,6 +1406,11 @@ const GhQuickEntry = ({ date, isAdmin }) => {
                       <Stack key={m} direction="row" sx={{ py: 0.4, ...(m === "Total" ? { borderTop: "1px solid #A5F3FC", mt: 0.5 } : {}) }}>
                         <Typography fontWeight={m === "Cash" || m === "Total" ? 800 : 600} sx={{ flex: 1 }}>
                           {m === "Cash" ? "Total cash" : m}
+                          {m === "Card" && (
+                            <Typography component="span" variant="caption" color={Q.muted} sx={{ display: "block", fontWeight: 400 }}>
+                              restaurant machine → PP account
+                            </Typography>
+                          )}
                         </Typography>
                         <Typography sx={cell}>{inr(a)}</Typography>
                         <Typography sx={cell}>{b < 0 ? `− ${inr(-b)}` : inr(b)}</Typography>
