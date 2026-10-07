@@ -31,7 +31,7 @@ import RoomInvoiceButton from "../invoice/RoomInvoiceButton";
 import BookingsPanel from "./BookingsPanel";
 import RoomCalendar from "./RoomCalendar";
 import { computeDues } from "./checkoutGuard";
-import { MergeBillDialog, RoomMoveDialog } from "./RoomMoveDialogs";
+import { MergeBillDialog, RemoveEntryDialog, RoomMoveDialog } from "./RoomMoveDialogs";
 import SearchIcon from "@mui/icons-material/Search";
 import LockIcon from "@mui/icons-material/Lock";
 import {
@@ -645,7 +645,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
           roomNo,
           nights,
           bookingId: f._bookingId || "",
-          guest: { fullname: f.fullname, mobileNumber: digits(f.mobileNumber), type: f.type, noOfPeople: num(f.noOfPeople), rate: num(f.rate), discount: num(f.discount), checkInTime: f.checkInTime, checkOutTime: f.checkOutTime },
+          guest: { fullname: f.fullname, mobileNumber: digits(f.mobileNumber), type: f.type, noOfPeople: num(f.noOfPeople), rate: num(f.rate), discount: num(f.discount), checkInTime: f.checkInTime, checkOutTime: f.checkOutTime, modeOfPayment: f.modeOfPayment || "" },
         })
       );
     if (jobs.length)
@@ -653,14 +653,26 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         .then(() => loadStay())
         .catch((e) => toast.error(`Room saved, but could not save stay/booking: ${apiError(e)}`));
   };
+  // Check-in hataana: wajah zaroori, server pe footprint (owner dekhta hai)
+  const [removeAsk, setRemoveAsk] = useState(null); // { roomNo, period, row }
   const clearRoom = () => {
+    const row = draft.rooms[keyOf(period, room.roomNumber)];
+    setRemoveAsk({ roomNo: room.roomNumber, period, row });
+  };
+  const doRemove = async (reason) => {
+    const { roomNo, period: p, row } = removeAsk;
+    // eslint-disable-next-line no-unused-vars
+    const snap = Object.fromEntries(Object.entries(row || {}).filter(([k]) => !k.startsWith("_")));
+    await axios.post(`${API}/stay/remove`, { date, period: p, roomNo, reason, stayId: row?._stayId || "", row: { ...snap, mobileNumber: digits(snap.mobileNumber), rate: num(snap.rate) } });
     setDraft((d) => {
       const next = { ...d.rooms };
-      const row = next[keyOf(period, room.roomNumber)];
-      delete next[keyOf(period, room.roomNumber)];
+      delete next[keyOf(p, roomNo)];
       return { ...d, rooms: next, _dismissed: row?._stayId ? [...(d._dismissed || []), row._stayId] : d._dismissed };
     });
+    setRemoveAsk(null);
     setEditing(null);
+    toast.success(`Room ${roomNo} entry removed (recorded for the owner)`);
+    loadStay();
   };
 
   // ✅ Checkout: guest gaya → room khaali, usi din naya guest agle slot mein
@@ -1340,6 +1352,13 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         advance={room ? advanceFor(period, room.roomNumber, editingInitial) : 0}
       />
 
+      <RemoveEntryDialog
+        open={!!removeAsk}
+        roomNo={removeAsk?.roomNo}
+        guest={removeAsk?.row}
+        onClose={() => setRemoveAsk(null)}
+        onConfirm={doRemove}
+      />
       <RoomMoveDialog
         open={!!moveDlg}
         onClose={() => setMoveDlg(null)}

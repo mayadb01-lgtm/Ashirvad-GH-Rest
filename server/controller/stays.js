@@ -12,6 +12,7 @@ import { RoomBlock, RoomStatus } from "../model/roomBlock.js";
 import RoomCharge from "../model/roomCharge.js";
 import GuestRegister from "../model/guestRegister.js";
 import { RoomMove, RoomGroup } from "../model/roomMove.js";
+import GhLog from "../model/ghLog.js";
 import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
@@ -52,7 +53,29 @@ const cleanGuest = (g = {}) => ({
   discount: n(g.discount),
   checkInTime: clean(g.checkInTime, 10),
   checkOutTime: clean(g.checkOutTime, 10),
+  ...(g.modeOfPayment !== undefined ? { modeOfPayment: clean(g.modeOfPayment, 10) } : {}),
 });
+
+// Footprint: har check-in / badlaav / hataana / check-out ka record (kabhi delete nahi hota)
+const LOG_FIELDS = { fullname: "Name", mobileNumber: "Mobile", rate: "Rate", discount: "Discount", noOfPeople: "Guests", checkInTime: "Check-in time", checkOutTime: "Check-out time", modeOfPayment: "Payment" };
+const logGh = (req, { date, period, roomNo, action, guest = {}, changes = [], reason = "", stayStatus = "" }) =>
+  GhLog.create({
+    date,
+    dateAt: D(date).isValid() ? D(date).startOf("day").toDate() : undefined,
+    period,
+    roomNo,
+    action,
+    guest: { ...cleanGuest(guest), modeOfPayment: clean(guest.modeOfPayment, 10) },
+    changes,
+    reason: clean(reason, 200),
+    stayStatus,
+    by: who(req),
+    role: isAdminLike(req.user) ? "owner" : "staff",
+  }).catch((e) => console.error("GhLog write failed:", e.message));
+const diffGuest = (a = {}, b = {}) =>
+  Object.keys(LOG_FIELDS)
+    .filter((k) => b[k] !== undefined && String(a[k] ?? "") !== String(b[k] ?? ""))
+    .map((k) => ({ field: LOG_FIELDS[k], from: String(a[k] ?? ""), to: String(b[k] ?? "") }));
 
 /* ======================= STAY ======================= */
 
@@ -105,6 +128,7 @@ stayRouter.put("/plan", async (req, res) => {
     const roomNo = Number(b.roomNo) || 0;
     if (!ok(b.startDate) || !PERIODS.includes(b.period) || !roomNo) return bad(res, "Invalid date / period / room");
     const nights = Math.min(60, Math.max(1, Math.round(Number(b.nights) || 1)));
+    const prev = await Stay.findOne({ startDate: b.startDate, period: b.period, roomNo }).lean();
     const doc = await Stay.findOneAndUpdate(
       { startDate: b.startDate, period: b.period, roomNo },
       {
@@ -113,7 +137,67 @@ stayRouter.put("/plan", async (req, res) => {
       },
       { upsert: true, new: true }
     );
+    const g = cleanGuest(b.guest);
+    if (!prev) logGh(req, { date: b.startDate, period: b.period, roomNo, action: "checkin", guest: g });
+    else {
+      const changes = diffGuest(prev.guest, cleanGuest(b.guest));
+      if (changes.length) logGh(req, { date: b.startDate, period: b.period, roomNo, action: "edit", guest: g, changes });
+    }
     res.json({ success: true, data: doc });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// POST /stay/remove  { date, period, roomNo, reason, row }
+// Check-in entry hataana: wajah zaroori, poora record footprint mein (owner dekhta hai). Slot khaali ho jaata hai.
+stayRouter.post("/remove", async (req, res) => {
+  try {
+    const b = req.body || {};
+    const roomNo = Number(b.roomNo) || 0;
+    if (!ok(b.date) || !PERIODS.includes(b.period) || !roomNo) return bad(res, "Invalid date / period / room");
+    const reason = clean(b.reason, 200);
+    if (reason.length < 3) return bad(res, "Reason is required to remove an entry");
+    if (!staffDateOk(req, b.date)) return res.status(403).json({ success: false, message: "Only today's entries can be removed" });
+    const row = b.row || {};
+    const stay = b.stayId && /^[a-f0-9]{24}$/.test(String(b.stayId)) ? await Stay.findOne({ _id: b.stayId, roomNo }) : await Stay.findOne({ startDate: b.date, period: b.period, roomNo });
+    // purane din se ruka guest (continue) sirf owner hata sakta hai
+    if (stay && stay.startDate !== b.date && !isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can remove a continuing stay" });
+    const guest = { ...(stay?.guest?.toObject?.() || stay?.guest || {}), ...cleanGuest({ ...(stay?.guest || {}), ...row }), modeOfPayment: clean(row.modeOfPayment, 10) };
+    await logGh(req, { date: b.date, period: b.period, roomNo, action: "remove", guest, reason, stayStatus: stay ? stay.status : "no-record" });
+    if (stay && stay.startDate === b.date) {
+      if (stay.bookingId && /^[a-f0-9]{24}$/.test(stay.bookingId))
+        await Booking.updateOne({ _id: stay.bookingId, status: "checkedin" }, { $set: { status: "booked", checkedIn: { date: "", period: "", roomNo: null }, updatedBy: who(req) } });
+      await Stay.deleteOne({ _id: stay._id });
+    }
+    res.json({ success: true });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// GET /stay/activity/:from/:to → owner: footprint + submit mein gayab check-in
+stayRouter.get("/activity/:from/:to", async (req, res) => {
+  try {
+    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can see the activity log" });
+    const { from, to } = req.params;
+    if (!ok(from) || !ok(to)) return bad(res, "Invalid date");
+    const s = D(from).startOf("day").toDate();
+    const e = D(to).endOf("day").toDate();
+    if (D(to).diff(D(from), "day") > 92) return bad(res, "Maximum 3 months at a time");
+    const logs = await GhLog.find({ dateAt: { $gte: s, $lte: e } }).sort({ createdAt: -1 }).limit(3000).lean();
+    // Check-in hua (stay bana) lekin submit hui entry mein us room/slot ki row nahi
+    const dates = [];
+    for (let x = D(from); !x.isAfter(D(to), "day"); x = x.add(1, "day")) dates.push(x.format(F));
+    const [stays, entries] = await Promise.all([
+      Stay.find({ startDate: { $in: dates } }).lean(),
+      Entry.find({ date: { $in: dates } }, { date: 1, "entry.roomNo": 1, "entry.period": 1 }).lean(),
+    ]);
+    const submitted = new Map(entries.map((d) => [d.date, new Set((d.entry || []).map((r) => `${r.period}|${r.roomNo}`))]));
+    const missing = stays
+      .filter((st) => submitted.has(st.startDate) && !submitted.get(st.startDate).has(`${st.period}|${st.roomNo}`))
+      .map((st) => ({ date: st.startDate, period: st.period, roomNo: st.roomNo, guest: st.guest, status: st.status, checkoutTime: st.checkoutTime, by: st.enteredBy }));
+    res.json({ success: true, data: { logs, missing } });
   } catch (e) {
     fail(res, e);
   }
@@ -159,6 +243,7 @@ stayRouter.post("/checkout", async (req, res) => {
     await doc.save();
     // checkout ke baad room safai ke liye "dirty"
     await RoomStatus.findOneAndUpdate({ roomNo }, { $set: { dirty: true, since: new Date(), by: who(req) } }, { upsert: true });
+    logGh(req, { date: b.date, period: doc.period, roomNo, action: "checkout", guest: { ...(doc.guest?.toObject?.() || {}), checkOutTime: doc.checkoutTime }, stayStatus: doc.checkoutTime === "SHIFT" ? "shift" : "" });
     res.json({ success: true, data: doc, billedToday: billed });
   } catch (e) {
     fail(res, e);
@@ -171,6 +256,7 @@ stayRouter.put("/undo-checkout/:id", async (req, res) => {
     const doc = await Stay.findById(req.params.id);
     if (!doc) return res.status(404).json({ success: false, message: "Not found" });
     if (!staffDateOk(req, doc.checkoutDate)) return res.status(403).json({ success: false, message: "Only today's checkout can be undone" });
+    logGh(req, { date: doc.checkoutDate, period: doc.period, roomNo: doc.roomNo, action: "undo-checkout", guest: doc.guest?.toObject?.() || {}, changes: [{ field: "Check-out", from: doc.checkoutTime, to: "undone" }] });
     Object.assign(doc, { status: "active", checkoutDate: "", checkoutPeriod: "", checkoutTime: "", updatedBy: who(req) });
     if (req.body?.nights) doc.nights = Math.min(60, Math.max(1, Number(req.body.nights) || 1));
     await doc.save();

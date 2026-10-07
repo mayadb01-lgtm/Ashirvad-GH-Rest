@@ -19,6 +19,7 @@ const staySchema = new mongoose.Schema(
       discount: { type: Number, default: 0 },
       checkInTime: { type: String, default: "" },
       checkOutTime: { type: String, default: "" },
+      modeOfPayment: { type: String, default: "" }, // footprint ke liye (badla to log mein dikhta hai)
     },
     status: { type: String, enum: ["active", "out"], default: "active" },
     checkoutDate: { type: String, default: "" },

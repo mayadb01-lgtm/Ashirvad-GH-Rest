@@ -51,6 +51,7 @@ import DataAlerts from "../components/insights/DataAlerts";
 import ProfitLossDashboard from "../components/insights/ProfitLossDashboard";
 import RoomRatesDashboard from "../components/owner/RoomRatesDashboard";
 import GuestRegisterDashboard from "../components/owner/GuestRegisterDashboard";
+import RoomActivityDashboard from "../components/owner/RoomActivityDashboard";
 import InvoicesDashboard from "../components/owner/InvoicesDashboard";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
@@ -191,6 +192,7 @@ const NAVIGATION = [
   { segment: "staff-access", title: "Staff Access", icon: <AdminPanelSettingsIcon /> },
   { segment: "room-rates", title: "Room Rates", icon: <BedIcon /> },
   { segment: "guest-register", title: "Guest Register (Govt)", icon: <AssignmentIndIcon /> },
+  { segment: "room-activity", title: "Room Activity (footprint)", icon: <FingerprintIcon /> },
   { segment: "data-import", title: "Import Excel / CSV", icon: <UploadFileIcon /> },
 ];
 
@@ -346,6 +348,7 @@ const DashboardPage = () => {
     { path: "profit-loss", element: <ProfitLossDashboard /> },
     { path: "room-rates", element: <RoomRatesDashboard /> },
     { path: "guest-register", element: <GuestRegisterDashboard /> },
+    { path: "room-activity", element: <RoomActivityDashboard /> },
     { path: "invoices", element: <InvoicesDashboard /> },
     { path: "gh-growth", element: <GhGrowthDashboard /> },
     { path: "kharch-control", element: <KharchControlDashboard /> },

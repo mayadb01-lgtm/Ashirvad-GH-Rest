@@ -146,3 +146,54 @@ export const MergeBillDialog = ({ open, onClose, date, mainRoom, candidates = []
     </EditorDialog>
   );
 };
+
+/* ---------- Check-in entry hataana (wajah zaroori, owner ko dikhta hai) ---------- */
+const REMOVE_REASONS = ["Wrong room selected", "Duplicate entry", "Guest cancelled before staying", "Wrong guest details"];
+export const RemoveEntryDialog = ({ open, onClose, roomNo, guest, onConfirm }) => {
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (open) setReason("");
+  }, [open]);
+  const go = async () => {
+    if (reason.trim().length < 3) return toast.error("Reason is required");
+    setBusy(true);
+    try {
+      await onConfirm(reason.trim());
+    } catch (e) {
+      toast.error(apiError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <EditorDialog
+      open={open}
+      onClose={onClose}
+      subtitle={`Room ${roomNo || ""}${guest?.fullname ? ` · ${guest.fullname}` : ""}`}
+      title="Remove check-in entry?"
+      actions={
+        <Button fullWidth variant="contained" color="error" disabled={busy || reason.trim().length < 3} onClick={go} sx={{ py: 1.3, fontWeight: 800 }}>
+          Remove entry
+        </Button>
+      }
+    >
+      <Stack spacing={2}>
+        <Alert severity="warning">
+          This removal is recorded with your name, the time, the guest details{guest?.rate ? ` (rate ₹${Math.round(Number(guest.rate) || 0)}${guest?.modeOfPayment ? `, ${guest.modeOfPayment}` : ""})` : ""} and the reason. The owner can see it.
+        </Alert>
+        <Box>
+          <Typography variant="caption" color={Q.muted} fontWeight={700}>
+            Reason (required)
+          </Typography>
+          <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ my: 1 }}>
+            {REMOVE_REASONS.map((r) => (
+              <Chip key={r} label={r} onClick={() => setReason(r)} color={reason === r ? "primary" : "default"} variant={reason === r ? "filled" : "outlined"} />
+            ))}
+          </Stack>
+          <TextField fullWidth label="Reason" value={reason} onChange={(e) => setReason(e.target.value)} required />
+        </Box>
+      </Stack>
+    </EditorDialog>
+  );
+};

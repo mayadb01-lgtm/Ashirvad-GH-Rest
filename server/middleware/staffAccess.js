@@ -72,6 +72,7 @@ const RULES = {
     R("GET", /^\/api\/v1\/stay\/day\/([^/]+)$/, { dateParam: 1 }),
     R("PUT", /^\/api\/v1\/stay\/plan$/, { dateBody: "startDate" }),
     R("POST", /^\/api\/v1\/stay\/checkout$/, { dateBody: "date" }),
+    R("POST", /^\/api\/v1\/stay\/remove$/, { dateBody: "date" }),
     R("PUT", /^\/api\/v1\/stay\/undo-checkout\/[a-f0-9]{24}$/),
     R("PUT", /^\/api\/v1\/stay\/extend\/[a-f0-9]{24}$/),
     // Room calendar (kal se aage; handler khud check karta hai) + safai status
