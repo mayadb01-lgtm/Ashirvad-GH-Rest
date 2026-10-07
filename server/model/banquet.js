@@ -29,7 +29,9 @@ const packageSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     meal: { type: String, default: "Lunch" }, // Breakfast / Lunch / Dinner / Hi-Tea
-    items: [{ itemId: String, name: String, category: String, grams: Number }],
+    items: [{ itemId: String, name: String, category: String, grams: Number }], // purana tarika (fix items)
+    // Naya: har hissa (Starter, Sabji, Sweet…) mein se customer "pick" item chunta hai; har chune item ke "grams" per person
+    sections: [{ label: String, pick: Number, grams: Number, options: [{ itemId: String, name: String, category: String }] }],
     pricePerPlate: { type: Number, default: 0 }, // customer ko yeh rate dikhta hai
     minPlates: { type: Number, default: 0 },
     description: { type: String, default: "" },
@@ -99,7 +101,13 @@ const bookingSchema = new mongoose.Schema(
     hallRent: { type: Number, default: 0 },
     guests: { type: Number, default: 0 }, // andaaz (booking ke time)
     // menu (snapshot — baad mein package ka rate badle to purani booking na badle)
-    menus: [{ packageId: String, name: String, meal: String, pricePerPlate: Number, plates: Number, items: [{ itemId: String, name: String, category: String, grams: Number }] }],
+    menus: [
+      {
+        packageId: String, name: String, meal: String, pricePerPlate: Number, plates: Number,
+        items: [{ itemId: String, name: String, category: String, grams: Number }],
+        choices: [{ label: String, grams: Number, items: [{ itemId: String, name: String, category: String }] }], // customer ka chuna menu
+      },
+    ],
     addons: [{ name: String, price: Number, unit: String, qty: Number }],
     discount: { type: Number, default: 0 },
     gstPercent: { type: Number, default: 0 },

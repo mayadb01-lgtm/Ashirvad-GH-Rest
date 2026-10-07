@@ -52,11 +52,20 @@ const blank = (setup) => ({
   notes: "",
 });
 
+// Chuna hua menu (hisse ke hisaab se) — ek line mein
+const menuText = (m) =>
+  (m.choices || []).length
+    ? m.choices.map((c) => `${c.label}: ${(c.items || []).map((x) => x.name).join(", ") || "—"}`).join(" · ")
+    : (m.items || []).map((x) => x.name).join(", ");
+// Kaunse hisse mein abhi chunav baaki
+const pendingChoices = (m, pkg) =>
+  (pkg?.sections || []).filter((sec) => (sec.options || []).length > 1 && ((m.choices || []).find((c) => c.label === sec.label)?.items || []).length < (sec.pick || 1)).map((sec) => sec.label);
+
 // 🖨 Bill print (naya window)
 const printBill = (b) => {
   const t = totalsOf(b);
   const rows = [
-    ...(b.menus || []).map((m) => [`${m.name} (${m.meal || ""})`, m.plates, m.pricePerPlate, m.plates * m.pricePerPlate]),
+    ...(b.menus || []).map((m) => [`${m.name} (${m.meal || ""})<div style="font-size:11px;color:#555">${menuText(m)}</div>`, m.plates, m.pricePerPlate, m.plates * m.pricePerPlate]),
     ...(b.addons || []).map((a) => [a.name, a.qty, a.price, a.qty * a.price]),
     ...(num(b.hallRent) ? [[`Hall rent — ${b.hall?.name || ""}${b.hours ? ` (${b.hours} hrs)` : ""}`, 1, b.hallRent, b.hallRent]] : []),
   ];
@@ -318,11 +327,21 @@ const BanquetQuickEntry = ({ isAdmin }) => {
                 value=""
                 onChange={(e) => {
                   const p = setup.packages.find((x) => x._id === e.target.value);
-                  if (p) setF({ menus: [...form.menus, { packageId: p._id, name: p.name, meal: p.meal, pricePerPlate: p.pricePerPlate, plates: form.guests || p.minPlates || 0, items: p.items }] });
+                  if (p)
+                    setF({
+                      menus: [
+                        ...form.menus,
+                        {
+                          packageId: p._id, name: p.name, meal: p.meal, pricePerPlate: p.pricePerPlate, plates: form.guests || p.minPlates || 0, items: p.items,
+                          // ek hi option wale hisse apne aap chune
+                          choices: (p.sections || []).map((sec) => ({ label: sec.label, items: sec.options.length === 1 ? [sec.options[0]] : [] })),
+                        },
+                      ],
+                    });
                 }}
                 sx={{ minWidth: 220 }}
               >
-                {setup.packages.map((p) => (
+                {setup.packages.filter((p) => p.active !== false).map((p) => (
                   <MenuItem key={p._id} value={p._id}>
                     {p.name} · {inr(p.pricePerPlate)}/plate
                   </MenuItem>
@@ -339,9 +358,55 @@ const BanquetQuickEntry = ({ isAdmin }) => {
                     <DeleteIcon fontSize="small" />
                   </IconButton>
                 </Stack>
-                <Typography variant="caption" color={Q.muted} component="div" sx={{ mb: 1 }}>
-                  {(m.items || []).map((x) => x.name).join(", ")}
-                </Typography>
+                {(() => {
+                  const pkg = setup.packages.find((x) => x._id === m.packageId);
+                  if (!pkg?.sections?.length)
+                    return (
+                      <Typography variant="caption" color={Q.muted} component="div" sx={{ mb: 1 }}>
+                        {menuText(m)}
+                      </Typography>
+                    );
+                  const pick = (label, opt, max) =>
+                    setF({
+                      menus: form.menus.map((x, j) => {
+                        if (j !== i) return x;
+                        const ch = (x.choices || []).find((c) => c.label === label) || { label, items: [] };
+                        const has = ch.items.some((y) => y.itemId === opt.itemId);
+                        let items = has ? ch.items.filter((y) => y.itemId !== opt.itemId) : [...ch.items, opt];
+                        if (items.length > max) items = items.slice(items.length - max); // zyada ho to sabse purana hatao
+                        return { ...x, choices: [...(x.choices || []).filter((c) => c.label !== label), { label, items }] };
+                      }),
+                    });
+                  return (
+                    <Stack spacing={1} sx={{ mb: 1 }}>
+                      {pkg.sections.map((sec) => {
+                        const ch = (m.choices || []).find((c) => c.label === sec.label)?.items || [];
+                        const done = ch.length >= (sec.pick || 1);
+                        return (
+                          <Box key={sec.label}>
+                            <Typography variant="caption" fontWeight={800} color={done ? Q.muted : Q.bad}>
+                              {sec.label} — choose {sec.pick} {done ? "✓" : `(${ch.length}/${sec.pick})`}
+                            </Typography>
+                            <Stack direction="row" flexWrap="wrap" useFlexGap gap={0.75} sx={{ mt: 0.5 }}>
+                              {sec.options.map((o) => {
+                                const on = ch.some((y) => y.itemId === o.itemId);
+                                return (
+                                  <Chip
+                                    key={o.itemId}
+                                    label={o.name}
+                                    size="small"
+                                    onClick={() => pick(sec.label, o, sec.pick || 1)}
+                                    sx={{ fontWeight: 600, bgcolor: on ? COLOR : "#fff", color: on ? "#fff" : Q.ink, border: `1px solid ${on ? COLOR : "#CBD5E1"}`, "&:hover": { bgcolor: on ? COLOR : "#FDF2F8" } }}
+                                  />
+                                );
+                              })}
+                            </Stack>
+                          </Box>
+                        );
+                      })}
+                    </Stack>
+                  );
+                })()}
                 <Stack direction="row" spacing={1}>
                   <TextField size="small" label="Plates" value={m.plates || ""} onChange={(e) => setF({ menus: form.menus.map((x, j) => (j === i ? { ...x, plates: num(e.target.value) } : x)) })} inputMode="numeric" />
                   <TextField
@@ -474,12 +539,22 @@ const BanquetQuickEntry = ({ isAdmin }) => {
             {open.cancelReason && <Alert severity="error">Cancelled: {open.cancelReason}</Alert>}
             <Section title="Bill" color={COLOR}>
               {(open.menus || []).map((m, i) => (
-                <Stack key={i} direction="row" justifyContent="space-between" sx={{ py: 0.4 }}>
-                  <Typography>
-                    {m.name} · {m.plates} × {inr(m.pricePerPlate)}
+                <Box key={i} sx={{ py: 0.4 }}>
+                  <Stack direction="row" justifyContent="space-between">
+                    <Typography>
+                      {m.name} · {m.plates} × {inr(m.pricePerPlate)}
+                    </Typography>
+                    <Typography>{inr(m.plates * m.pricePerPlate)}</Typography>
+                  </Stack>
+                  <Typography variant="caption" color={Q.muted} component="div">
+                    {menuText(m)}
                   </Typography>
-                  <Typography>{inr(m.plates * m.pricePerPlate)}</Typography>
-                </Stack>
+                  {pendingChoices(m, setup.packages.find((x) => x._id === m.packageId)).length > 0 && (
+                    <Typography variant="caption" color={Q.bad} fontWeight={700} component="div">
+                      Menu not final: choose {pendingChoices(m, setup.packages.find((x) => x._id === m.packageId)).join(", ")} (Edit)
+                    </Typography>
+                  )}
+                </Box>
               ))}
               {(open.addons || []).map((a, i) => (
                 <Stack key={`a${i}`} direction="row" justifyContent="space-between" sx={{ py: 0.4 }}>

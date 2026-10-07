@@ -47,12 +47,40 @@ const SEED_ITEMS = [
   ["Salad / papad", "Roasted papad, salad", 200, 60],
   ["Dessert", "Gulab jamun / Mohanthal", 330, 100], ["Dessert", "Shrikhand", 300, 80], ["Dessert", "Shahi kheer", 300, 100],
 ];
+// Package = hisse (sections). Har hisse mein se customer "pick" item chunta hai; har chune item ke "grams" per person.
+// [label, pick, grams, [options]]
 const SEED_PACKAGES = [
-  ["Breakfast (Gujarati)", "Breakfast", [["Tea", 50], ["Coffee", 50], ["Dhokla", 150], ["Poha", 150]]],
-  ["Gujarati Lunch / Dinner", "Lunch", [["Soft drink", 150], ["Khaman / dhokla", 100], ["Ringan bharthu", 100], ["Sev tameta", 100], ["Chapati", 180], ["Bhat / khichdi", 120], ["Dal kadhi", 100], ["Roasted papad, salad", 50], ["Gulab jamun / Mohanthal", 200]]],
-  ["Punjabi Lunch / Dinner", "Lunch", [["Soft drink", 200], ["Buttermilk", 200], ["Soup", 100], ["Manchurian dry", 100], ["Mix veg", 100], ["PTM", 100], ["Chapati", 240], ["Jeera rice", 100], ["Dal fry", 100], ["Roasted papad, salad", 70], ["Gulab jamun / Mohanthal", 50]]],
-  ["Diwali Dinner", "Dinner", [["Veg handi", 130], ["Chapati", 200], ["Veg pulao", 100], ["Dal fry", 100], ["Roasted papad, salad", 70], ["Shahi kheer", 100]]],
+  ["Breakfast", "Breakfast", [
+    ["Hot beverage", 2, 50, ["Tea", "Coffee", "Milk"]],
+    ["Breakfast items", 2, 150, ["Dal pakvan", "Jalebi", "Fafda", "Samosa", "Methi gota", "Patra", "Dhokla", "Thepla", "Aloo paratha", "Idli sambhar", "Dosa", "Upma", "Uttapam", "Vada sambhar", "Poha", "Misal pav", "Bread butter", "Bread jam", "Veg sandwich"]],
+  ]],
+  ["Gujarati Lunch / Dinner", "Lunch", [
+    ["Welcome drink", 1, 150, ["Soft drink", "Buttermilk", "Shakes", "Mocktail"]],
+    ["Farsan / starter", 1, 100, ["Khaman / dhokla", "Patra", "Samosa", "Methi gota", "Fafda"]],
+    ["Gujarati sabji", 2, 100, ["Ringan bharthu", "Sev tameta", "Undhiyu", "Mix veg"]],
+    ["Bread", 1, 180, ["Chapati", "Rotla / puri"]],
+    ["Rice", 1, 120, ["Bhat / khichdi", "Jeera rice", "Veg pulao"]],
+    ["Dal / kadhi", 1, 100, ["Dal kadhi", "Dal fry"]],
+    ["Salad / papad", 1, 50, ["Roasted papad, salad"]],
+    ["Sweet", 1, 200, ["Gulab jamun / Mohanthal", "Shrikhand", "Shahi kheer"]],
+  ]],
+  ["Punjabi Lunch / Dinner", "Lunch", [
+    ["Drinks", 2, 200, ["Soft drink", "Buttermilk", "Mocktail", "Shakes"]],
+    ["Soup", 1, 100, ["Soup"]],
+    ["Starter", 1, 100, ["Manchurian dry", "Paneer starter", "Crispy potato starter", "Veg Chinese nugget"]],
+    ["Punjabi sabji", 2, 100, ["Mix veg", "PTM", "PBM", "Veg handi", "Paneer maharaja"]],
+    ["Bread", 1, 240, ["Chapati", "Tandoori roti"]],
+    ["Rice", 1, 100, ["Jeera rice", "Veg pulao"]],
+    ["Dal", 1, 100, ["Dal fry", "Dal bukhara"]],
+    ["Salad / papad", 1, 70, ["Roasted papad, salad"]],
+    ["Sweet", 1, 50, ["Gulab jamun / Mohanthal", "Shrikhand", "Shahi kheer"]],
+  ]],
 ];
+const buildPackages = (byName) =>
+  SEED_PACKAGES.map(([name, meal, secs], i) => {
+    const sections = secs.map(([label, pick, grams, opts]) => ({ label, pick, grams, options: opts.filter((o) => byName[o]).map((o) => ({ itemId: String(byName[o]._id), name: o, category: byName[o].category })) }));
+    return { name, meal, sections, items: [], pricePerPlate: Math.round(rateRange({ sections }, Object.fromEntries(Object.values(byName).map((x) => [String(x._id), x.pricePerKg]))).max), sort: i };
+  });
 const SEED_ADDONS = [
   ["Stage 15' x 10'", 8000], ["Red carpet entry", 5000], ["Mandap 70' x 90'", 50000], ["Decoration (basic balloon)", 5000], ["VIP sofa (4 + 2 seating)", 4000],
   ["Chairs with cover", 3000], ["Projector", 1500], ["Sound", 1500], ["Lighting", 1000], ["Washroom", 1000], ["Parking", 1000],
@@ -64,25 +92,47 @@ const seedOnce = async () => {
   if (!flag) {
     const items = await BanquetItem.insertMany(SEED_ITEMS.map(([category, name, pricePerKg, defaultGrams], i) => ({ category, name, pricePerKg, defaultGrams, unit: category === "Beverage" ? "litre" : "kg", sort: i })));
     const byName = Object.fromEntries(items.map((x) => [x.name, x]));
-    await BanquetPackage.insertMany(
-      SEED_PACKAGES.map(([name, meal, list], i) => {
-        const its = list.map(([nm, g]) => ({ itemId: String(byName[nm]._id), name: nm, category: byName[nm].category, grams: g }));
-        const cost = its.reduce((t, x) => t + (byName[x.name].pricePerKg * x.grams) / 1000, 0);
-        return { name, meal, items: its, pricePerPlate: Math.round(cost), sort: i };
-      })
-    );
+    await BanquetPackage.insertMany(buildPackages(byName));
+    await AppSetting.updateOne({ _id: "banquetPackagesV2" }, { $set: { value: true, at: new Date() } }, { upsert: true });
     await BanquetAddon.insertMany(SEED_ADDONS.map(([name, price], i) => ({ name, price, unit: "fixed", sort: i })));
     await BanquetHall.create({ name: "Hotel Ashirvad, Songadh", rentPerHour: 2000, rentPerDay: 85000, minHours: 3 });
     await AppSetting.updateOne({ _id: "banquetSeeded" }, { $set: { value: true, at: new Date() } }, { upsert: true });
   }
+  // V2 (owner 08-10-2026): Diwali Dinner hatao, har package mein selection ke options. Purane (fix item wale) package band, naye jodo.
+  const v2 = await AppSetting.findById("banquetPackagesV2").lean();
+  if (!v2) {
+    await BanquetPackage.updateMany({ $or: [{ sections: { $exists: false } }, { sections: { $size: 0 } }] }, { $set: { active: false } });
+    const items = await BanquetItem.find({}).lean();
+    await BanquetPackage.insertMany(buildPackages(Object.fromEntries(items.map((x) => [x.name, x]))));
+    await AppSetting.updateOne({ _id: "banquetPackagesV2" }, { $set: { value: true, at: new Date() } }, { upsert: true });
+  }
   seeded = true;
 };
 
-// Package ka cost (aaj ke item rate se) — sirf owner ko
+// Sheet ka rate / plate (item rate × gram): sabse sasta chunav (min) se sabse mehnga (max)
+function rateRange(pkg, priceById) {
+  let min = 0;
+  let max = 0;
+  let grams = 0;
+  (pkg.items || []).forEach((x) => {
+    const v = (n(priceById[x.itemId]) * n(x.grams)) / 1000;
+    min += v;
+    max += v;
+    grams += n(x.grams);
+  });
+  (pkg.sections || []).forEach((s) => {
+    const prices = (s.options || []).map((o) => n(priceById[o.itemId])).sort((a, b) => a - b);
+    const k = Math.min(n(s.pick) || 1, prices.length);
+    min += (prices.slice(0, k).reduce((t, v) => t + v, 0) * n(s.grams)) / 1000;
+    max += (prices.slice(-k).reduce((t, v) => t + v, 0) * n(s.grams)) / 1000;
+    grams += k * n(s.grams);
+  });
+  return { min: Math.round(min * 100) / 100, max: Math.round(max * 100) / 100, grams };
+}
+// Package ka sheet rate (aaj ke item rate se) — sirf owner ko
 const withCost = (pkg, priceById) => {
-  const cost = (pkg.items || []).reduce((t, x) => t + (n(priceById[x.itemId]) * n(x.grams)) / 1000, 0);
-  const grams = (pkg.items || []).reduce((t, x) => t + n(x.grams), 0);
-  return { ...pkg, costPerPlate: Math.round(cost * 100) / 100, gramsPerPerson: grams };
+  const r = rateRange(pkg, priceById);
+  return { ...pkg, costPerPlate: r.max, rateMin: r.min, rateMax: r.max, gramsPerPerson: r.grams };
 };
 
 /* ───────── Setup (masters) ───────── */
@@ -103,7 +153,13 @@ router.get("/setup", async (req, res) => {
     res.json({
       success: true,
       data: {
-        packages: packages.filter((p) => p.active).map((p) => ({ _id: p._id, name: p.name, meal: p.meal, pricePerPlate: p.pricePerPlate, minPlates: p.minPlates, description: p.description, items: (p.items || []).map((x) => ({ name: x.name, category: x.category })) })),
+        packages: packages
+          .filter((p) => p.active)
+          .map((p) => ({
+            _id: p._id, name: p.name, meal: p.meal, pricePerPlate: p.pricePerPlate, minPlates: p.minPlates, description: p.description,
+            items: (p.items || []).map((x) => ({ name: x.name, category: x.category })),
+            sections: (p.sections || []).map((s) => ({ label: s.label, pick: s.pick, options: (s.options || []).map((o) => ({ itemId: o.itemId, name: o.name })) })), // gram nahi
+          })),
         addons: addons.filter((a) => a.active),
         halls: halls.filter((h) => h.active),
         isOwner: false,
@@ -124,6 +180,9 @@ const KINDS = {
       name: clean(b.name, 80),
       meal: SLOTS.includes(b.meal) ? b.meal : "Lunch",
       items: (Array.isArray(b.items) ? b.items : []).filter((x) => x.itemId && n(x.grams) >= 0).map((x) => ({ itemId: String(x.itemId), name: clean(x.name, 80), category: clean(x.category, 60), grams: n(x.grams) })),
+      sections: (Array.isArray(b.sections) ? b.sections : [])
+        .filter((x) => clean(x.label) && (x.options || []).length)
+        .map((x) => ({ label: clean(x.label, 60), pick: Math.max(1, Math.round(n(x.pick))), grams: n(x.grams), options: (x.options || []).filter((o) => o.itemId).map((o) => ({ itemId: String(o.itemId), name: clean(o.name, 80), category: clean(o.category, 60) })) })),
       pricePerPlate: n(b.pricePerPlate),
       minPlates: n(b.minPlates),
       description: clean(b.description, 300),
@@ -166,7 +225,14 @@ const readBooking = async (req, b) => {
     .filter((m) => pk[m.packageId] && n(m.plates) > 0)
     .map((m) => {
       const p = pk[m.packageId];
-      return { packageId: String(p._id), name: p.name, meal: p.meal, pricePerPlate: admin(req) && m.pricePerPlate !== undefined && m.pricePerPlate !== "" ? n(m.pricePerPlate) : p.pricePerPlate /* staff: package ka hi rate */, plates: Math.round(n(m.plates)), items: p.items };
+      // Customer ka chunav: har hisse mein package ke options mein se hi, aur "pick" se zyada nahi
+      const chosen = Object.fromEntries((m.choices || []).map((c) => [c.label, (c.items || []).map((x) => String(x.itemId || x))]));
+      const choices = (p.sections || []).map((sec) => {
+        const ok = (sec.options || []).filter((o) => (chosen[sec.label] || []).includes(String(o.itemId)));
+        const auto = (sec.options || []).length === 1 ? sec.options : ok; // ek hi option ho to apne aap
+        return { label: sec.label, grams: sec.grams, pick: sec.pick, items: auto.slice(0, Math.max(1, n(sec.pick))).map((o) => ({ itemId: o.itemId, name: o.name, category: o.category })) };
+      });
+      return { packageId: String(p._id), name: p.name, meal: p.meal, pricePerPlate: admin(req) && m.pricePerPlate !== undefined && m.pricePerPlate !== "" ? n(m.pricePerPlate) : p.pricePerPlate /* staff: package ka hi rate */, plates: Math.round(n(m.plates)), items: p.items, choices };
     });
   return {
     customer: { name: clean(b.customer?.name, 80), mobile: clean(b.customer?.mobile, 15).replace(/\D/g, ""), company: clean(b.customer?.company, 80), address: clean(b.customer?.address, 200), gstin: clean(b.customer?.gstin, 20).toUpperCase() },
@@ -343,8 +409,10 @@ router.get("/kitchen", ownerOnly, async (req, res) => {
     const price = Object.fromEntries(items.map((x) => [String(x._id), x]));
     const out = list.map((b) => {
       const lines = {};
+      // Chuna hua menu (choices) — har chune item ke us hisse ke gram; purani booking ke fix items bhi
+      const flat = (m) => [...(m.items || []), ...(m.choices || []).flatMap((c) => (c.items || []).map((x) => ({ ...x, grams: c.grams })))];
       (b.menus || []).forEach((m) =>
-        (m.items || []).forEach((x) => {
+        flat(m).forEach((x) => {
           const it = price[x.itemId] || {};
           const k = x.itemId || x.name;
           const l = (lines[k] ||= { name: x.name, category: x.category, unit: it.unit || "kg", qty: 0, cost: 0 });

@@ -43,8 +43,28 @@ const BanquetSetupDashboard = () => {
   };
 
   const itemById = useMemo(() => Object.fromEntries((data?.items || []).map((x) => [String(x._id), x])), [data]);
-  const pkgCost = (p) => (p?.items || []).reduce((t, x) => t + (n(itemById[x.itemId]?.pricePerKg) * n(x.grams)) / 1000, 0);
-  const pkgGrams = (p) => (p?.items || []).reduce((t, x) => t + n(x.grams), 0);
+  // Sheet rate / plate: fix items + har hisse ke "pick" item (sabse sasta → min, sabse mehnga → max)
+  const pkgRange = (p) => {
+    let min = 0, max = 0, grams = 0;
+    (p?.items || []).forEach((x) => {
+      const v = (n(itemById[x.itemId]?.pricePerKg) * n(x.grams)) / 1000;
+      min += v; max += v; grams += n(x.grams);
+    });
+    (p?.sections || []).forEach((sec) => {
+      const pr = (sec.options || []).map((o) => n(itemById[o.itemId]?.pricePerKg)).sort((a, b) => a - b);
+      const k = Math.min(n(sec.pick) || 1, pr.length);
+      min += (pr.slice(0, k).reduce((t, v) => t + v, 0) * n(sec.grams)) / 1000;
+      max += (pr.slice(-k).reduce((t, v) => t + v, 0) * n(sec.grams)) / 1000;
+      grams += k * n(sec.grams);
+    });
+    return { min, max, grams };
+  };
+  const pkgCost = (p) => pkgRange(p).max;
+  const pkgGrams = (p) => pkgRange(p).grams;
+  const rangeText = (p) => {
+    const r = pkgRange(p);
+    return Math.round(r.min) === Math.round(r.max) ? inr(r.max) : `${inr(r.min)} – ${inr(r.max)}`;
+  };
 
   if (!data) return <Typography sx={{ p: 4 }}>Loading…</Typography>;
   if (!data.isOwner) return <Alert severity="warning">Only the owner can see this page.</Alert>;
@@ -86,9 +106,9 @@ const BanquetSetupDashboard = () => {
 
       {tab === "packages" && (
         <Section
-          title="Packages (menu plans)"
+          title="Packages (menu plans with choices)"
           right={
-            <Button variant="contained" onClick={() => setPkg({ name: "", meal: "Lunch", items: [], pricePerPlate: 0, minPlates: 0, description: "", active: true })}>
+            <Button variant="contained" onClick={() => setPkg({ name: "", meal: "Lunch", items: [], sections: [], pricePerPlate: 0, minPlates: 0, description: "", active: true })}>
               + New package
             </Button>
           }
@@ -96,7 +116,7 @@ const BanquetSetupDashboard = () => {
           <Table size="small">
             <TableHead>
               <TableRow>
-                {["Package", "Meal", "Items", "gm / person", "Sheet rate / plate", "Final rate / plate", "Difference", "Active", ""].map((h) => (
+                {["Package", "Meal", "Choices (customer picks)", "gm / person", "Sheet rate / plate", "Final rate / plate", "Active", ""].map((h) => (
                   <TableCell key={h} sx={{ fontWeight: 800 }}>
                     {h}
                   </TableCell>
@@ -104,30 +124,33 @@ const BanquetSetupDashboard = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {data.packages.map((p) => {
-                const c = pkgCost(p);
-                return (
-                  <TableRow key={p._id} hover sx={{ opacity: p.active === false ? 0.5 : 1 }}>
-                    <TableCell sx={{ fontWeight: 700 }}>{p.name}</TableCell>
-                    <TableCell>{p.meal}</TableCell>
-                    <TableCell sx={{ maxWidth: 360 }}>
-                      <Typography variant="caption">{p.items.map((x) => `${x.name} ${x.grams}g`).join(", ")}</Typography>
-                    </TableCell>
-                    <TableCell>{pkgGrams(p)}</TableCell>
-                    <TableCell>{inr(c)}</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }}>{inr(p.pricePerPlate)}</TableCell>
-                    <TableCell sx={{ color: p.pricePerPlate - c >= 0 ? COLORS.net : COLORS.bad }}>{inr(p.pricePerPlate - c)}</TableCell>
-                    <TableCell>{activeBox("package", p)}</TableCell>
-                    <TableCell>
-                      <Button size="small" onClick={() => setPkg(JSON.parse(JSON.stringify(p)))}>
-                        Edit
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {data.packages.map((p) => (
+                <TableRow key={p._id} hover sx={{ opacity: p.active === false ? 0.45 : 1 }}>
+                  <TableCell sx={{ fontWeight: 700 }}>{p.name}</TableCell>
+                  <TableCell>{p.meal}</TableCell>
+                  <TableCell sx={{ maxWidth: 420 }}>
+                    <Typography variant="caption">
+                      {(p.sections || []).length
+                        ? p.sections.map((sec) => `${sec.label}: ${sec.pick} of ${sec.options.length} (${sec.grams}g)`).join(" · ")
+                        : (p.items || []).map((x) => `${x.name} ${x.grams}g`).join(", ")}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>{pkgGrams(p)}</TableCell>
+                  <TableCell>{rangeText(p)}</TableCell>
+                  <TableCell sx={{ fontWeight: 800 }}>{inr(p.pricePerPlate)}</TableCell>
+                  <TableCell>{activeBox("package", p)}</TableCell>
+                  <TableCell>
+                    <Button size="small" onClick={() => setPkg({ sections: [], ...JSON.parse(JSON.stringify(p)) })}>
+                      Edit
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
+          <Typography variant="caption" color="text.secondary">
+            Untick Active to hide a package from staff (old packages stay in old bookings).
+          </Typography>
 
           {pkg && (
             <Box sx={{ mt: 2, p: 2, border: "2px solid #FBCFE8", borderRadius: 2, bgcolor: "#FDF2F8" }}>
@@ -143,52 +166,43 @@ const BanquetSetupDashboard = () => {
                     </MenuItem>
                   ))}
                 </TextField>
-                <TextField size="small" label="Rate / plate (customer)" type="number" value={pkg.pricePerPlate} onChange={(e) => setPkg({ ...pkg, pricePerPlate: e.target.value })} />
+                <TextField size="small" label="Final rate / plate" type="number" value={pkg.pricePerPlate} onChange={(e) => setPkg({ ...pkg, pricePerPlate: e.target.value })} />
                 <TextField size="small" label="Min plates" type="number" value={pkg.minPlates} onChange={(e) => setPkg({ ...pkg, minPlates: e.target.value })} />
                 <TextField size="small" label="Description" value={pkg.description} onChange={(e) => setPkg({ ...pkg, description: e.target.value })} sx={{ flex: 1 }} />
               </Stack>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    {["Item", "Category", "Rate / kg", "gm / person", "Amount / plate", ""].map((h) => (
-                      <TableCell key={h} sx={{ fontWeight: 800 }}>
-                        {h}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {pkg.items.map((x, i) => {
-                    const it = itemById[x.itemId] || {};
-                    return (
-                      <TableRow key={i}>
-                        <TableCell>{x.name}</TableCell>
-                        <TableCell>{x.category}</TableCell>
-                        <TableCell>{inr(it.pricePerKg)}</TableCell>
-                        <TableCell>
-                          <TextField size="small" type="number" value={x.grams} onChange={(e) => setPkg({ ...pkg, items: pkg.items.map((y, j) => (j === i ? { ...y, grams: e.target.value } : y)) })} sx={{ width: 100 }} />
-                        </TableCell>
-                        <TableCell>{inr((n(it.pricePerKg) * n(x.grams)) / 1000)}</TableCell>
-                        <TableCell>
-                          <IconButton size="small" onClick={() => setPkg({ ...pkg, items: pkg.items.filter((_, j) => j !== i) })}>
-                            <DeleteIcon fontSize="small" />
+
+              {(pkg.sections || []).map((sec, si) => {
+                const upd = (patch) => setPkg({ ...pkg, sections: pkg.sections.map((x, j) => (j === si ? { ...x, ...patch } : x)) });
+                return (
+                  <Box key={si} sx={{ p: 1.25, mb: 1, bgcolor: "#fff", borderRadius: 2, border: "1px solid #F9A8D4" }}>
+                    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                      <TextField size="small" label="Section (e.g. Starter)" value={sec.label} onChange={(e) => upd({ label: e.target.value })} />
+                      <TextField size="small" label="Customer picks" type="number" value={sec.pick} onChange={(e) => upd({ pick: e.target.value })} sx={{ width: 120 }} />
+                      <TextField size="small" label="gm / person (each)" type="number" value={sec.grams} onChange={(e) => upd({ grams: e.target.value })} sx={{ width: 140 }} />
+                      <Box sx={{ flex: 1 }} />
+                      <IconButton size="small" onClick={() => setPkg({ ...pkg, sections: pkg.sections.filter((_, j) => j !== si) })}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Stack>
+                    <Stack direction="row" flexWrap="wrap" useFlexGap gap={0.75} sx={{ mt: 1 }} alignItems="center">
+                      {(sec.options || []).map((o) => (
+                        <Box key={o.itemId} sx={{ px: 1, py: 0.25, borderRadius: 5, bgcolor: "#FCE7F3", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 0.5 }}>
+                          {o.name} · {inr(itemById[o.itemId]?.pricePerKg)}
+                          <IconButton size="small" onClick={() => upd({ options: sec.options.filter((y) => y.itemId !== o.itemId) })} sx={{ p: 0.25 }}>
+                            <DeleteIcon sx={{ fontSize: 14 }} />
                           </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                  <TableRow>
-                    <TableCell colSpan={3}>
+                        </Box>
+                      ))}
                       <TextField
                         size="small"
                         select
-                        label="Add item"
+                        label="Add option"
                         value=""
                         onChange={(e) => {
                           const it = itemById[e.target.value];
-                          if (it) setPkg({ ...pkg, items: [...pkg.items, { itemId: String(it._id), name: it.name, category: it.category, grams: it.defaultGrams || 100 }] });
+                          if (it && !(sec.options || []).some((y) => y.itemId === String(it._id))) upd({ options: [...(sec.options || []), { itemId: String(it._id), name: it.name, category: it.category }] });
                         }}
-                        sx={{ minWidth: 260 }}
+                        sx={{ minWidth: 200 }}
                       >
                         {cats.map((c) => [
                           <MenuItem key={`h-${c}`} disabled sx={{ fontWeight: 800, opacity: "1 !important" }}>
@@ -203,18 +217,21 @@ const BanquetSetupDashboard = () => {
                             )),
                         ])}
                       </TextField>
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 800 }}>{pkgGrams(pkg)} g</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }}>{inr(pkgCost(pkg))}</TableCell>
-                    <TableCell />
-                  </TableRow>
-                </TableBody>
-              </Table>
-              <Stack direction="row" spacing={1} sx={{ mt: 1.5 }} alignItems="center">
-                <Typography sx={{ flex: 1 }} color={n(pkg.pricePerPlate) - pkgCost(pkg) >= 0 ? COLORS.net : COLORS.bad} fontWeight={700}>
-                  Sheet rate {inr(pkgCost(pkg))} / plate (item rate × gram) · Final rate {inr(pkg.pricePerPlate)} · Difference {inr(n(pkg.pricePerPlate) - pkgCost(pkg))}
+                    </Stack>
+                  </Box>
+                );
+              })}
+              <Button onClick={() => setPkg({ ...pkg, sections: [...(pkg.sections || []), { label: "", pick: 1, grams: 100, options: [] }] })}>+ Add section</Button>
+              {(pkg.items || []).length > 0 && (
+                <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 1 }}>
+                  Fixed items (old style): {pkg.items.map((x) => `${x.name} ${x.grams}g`).join(", ")}
                 </Typography>
-                <Button onClick={() => setPkg({ ...pkg, pricePerPlate: Math.round(pkgCost(pkg)) })}>Use sheet rate</Button>
+              )}
+              <Stack direction="row" spacing={1} sx={{ mt: 1.5 }} alignItems="center" flexWrap="wrap" useFlexGap>
+                <Typography sx={{ flex: 1 }} fontWeight={700}>
+                  Sheet rate {rangeText(pkg)} / plate · {pkgGrams(pkg)} g per person · Final rate {inr(pkg.pricePerPlate)}
+                </Typography>
+                <Button onClick={() => setPkg({ ...pkg, pricePerPlate: Math.round(pkgRange(pkg).max) })}>Use highest sheet rate</Button>
                 <Button onClick={() => setPkg(null)}>Close</Button>
                 <Button variant="contained" disabled={!pkg.name.trim()} onClick={async () => (await save("package", pkg)) && setPkg(null)}>
                   Save package
