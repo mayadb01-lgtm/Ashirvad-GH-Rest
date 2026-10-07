@@ -125,18 +125,20 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkou
     <ButtonBase
       onClick={onOpen}
       disabled={locked && !filled && !checkout}
-      sx={{ width: "100%", textAlign: "left", borderRadius: 3, display: "block" }}
+      sx={{ width: "100%", height: "100%", textAlign: "left", borderRadius: 3, display: "block" }}
     >
       <Paper
         variant="outlined"
         sx={{
+          height: "100%",
+          boxSizing: "border-box",
           p: 1.5,
           borderRadius: 3,
           borderWidth: filled || partial || low ? 1.5 : 1.5,
           borderStyle: state === "free" ? "dashed" : "solid",
           borderColor: border,
           bgcolor: low ? "#FFFBEB" : tint.bg,
-          minHeight: 104,
+          minHeight: 132,
         }}
       >
         <Stack direction="row" alignItems="baseline" spacing={1}>
@@ -1254,7 +1256,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
           </Box>
           <Grid container spacing={1.5}>
             {rooms.map((rm) => (
-              <Grid key={rm.roomNumber} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+              <Grid key={rm.roomNumber} size={{ xs: 12, sm: 6, md: 4, lg: 3 }} sx={{ display: "flex" }}>
                 <RoomCard
                   room={rm}
                   row={draft.rooms[keyOf(period, rm.roomNumber)]}
