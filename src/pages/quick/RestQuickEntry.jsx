@@ -359,9 +359,8 @@ const RestQuickEntry = ({ date }) => {
       group: x.from === "today" ? "Today's guests" : "Last night's guests",
       label: `Room ${x.roomNo} · ${x.guestName || "—"}${x.from === "today" ? ` (${PERIOD_LABEL[x.fromPeriod] || x.fromPeriod})` : " (last night)"}`,
     }));
-    const have = new Set(g.map((x) => x.roomNo));
-    const rest = (occupied.rooms || []).filter((r) => !have.has(r)).map((r) => ({ roomNo: r, period: "", guestName: "", mobile: "", group: "Other rooms (name not found)", label: `Room ${r}` }));
-    return [...g, ...rest];
+    // Sirf jin rooms mein guest ruka hai (aaj ke / kal raat ke). Khaali "other rooms" nahi dikhate.
+    return g;
   })();
   const roomBillPerson = () => {
     const p = (lists?.pending || []).find((x) => /room\s*bill/i.test(x.fullname || ""));
@@ -619,6 +618,11 @@ const RestQuickEntry = ({ date }) => {
                   getLabel={(o) => o?.label || ""}
                   groupBy={(o) => o.group || ""}
                 />
+                {roomOptions.length === 0 && (
+                  <Typography variant="caption" color={Q.bad} fontWeight={700}>
+                    No guest is staying in any room today. Room bill can be given only to a room with a guest.
+                  </Typography>
+                )}
                 <Typography variant="caption" color={Q.muted}>
                   This amount will be added to that room's Guest House bill automatically (after Submit / Update). In restaurant accounts it stays as a receivable under "{roomBillPerson().fullname.trim()}".
                 </Typography>
