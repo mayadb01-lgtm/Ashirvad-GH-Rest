@@ -123,6 +123,15 @@ const RULES = {
     R("GET", /^\/api\/v1\/officeBook\/get-entry\/([^/]+)$/, { dateParam: 1 }),
     R("POST", /^\/api\/v1\/officeBook\/create-entry$/, { dateBody: "createDate" }),
     R("PUT", /^\/api\/v1\/officeBook\/update-entry\/([^/]+)$/, { dateParam: 1, dateBody: "createDate" }),
+    // Purchase bills (Office Book)
+    R("GET", /^\/api\/v1\/purchase\/day\/([^/]+)$/, { dateParam: 1 }),
+    R("GET", /^\/api\/v1\/purchase\/items$/),
+    R("GET", /^\/api\/v1\/purchase\/last\/[A-Za-z0-9]+$/),
+    R("POST", /^\/api\/v1\/purchase$/, { dateBody: "date" }),
+    R("PUT", /^\/api\/v1\/purchase\/[a-f0-9]{24}$/),
+    R("DELETE", /^\/api\/v1\/purchase\/[a-f0-9]{24}$/),
+    R("POST", /^\/api\/v1\/purchase\/[a-f0-9]{24}\/photo$/),
+    R("GET", /^\/api\/v1\/purchase\/photo\/[A-Za-z0-9._-]+$/),
     dayStatus,
   ],
 };

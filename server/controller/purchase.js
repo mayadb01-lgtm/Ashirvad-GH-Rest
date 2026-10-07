@@ -31,7 +31,9 @@ const fields = (b) => withTotals({
     isVendor: !!b.vendor?.isVendor,
   },
   amount: Math.round((Number(b.amount) || 0) * 100) / 100,
-  mode: b.mode === "Payable" ? "Payable" : "Cash",
+  book: b.book === "office" ? "office" : "rest",
+  // Restaurant: sirf Cash / Payable. Office: Cash / PP / PPS / PPC / Payable
+  mode: (b.book === "office" ? ["Cash", "PP", "PPS", "PPC", "Payable"] : ["Cash", "Payable"]).includes(b.mode) ? b.mode : "Cash",
   items: (Array.isArray(b.items) ? b.items : [])
     .slice(0, 80)
     .map((x) => ({ name: clean(x.name, 80), qty: Number(x.qty) || 0, unit: clean(x.unit, 12), rate: Math.round((Number(x.rate) || 0) * 100) / 100, amount: Math.round((Number(x.amount) || 0) * 100) / 100 }))
@@ -86,7 +88,9 @@ router.get("/last/:vendorId", async (req, res) => {
 router.get("/day/:date", async (req, res) => {
   try {
     if (!ok(req.params.date)) return bad(res, "Invalid date");
-    const list = await PurchaseBill.find({ date: req.params.date }).sort({ createdAt: 1 }).lean();
+    const book = req.query.book === "office" ? "office" : "rest";
+    const q = book === "office" ? { date: req.params.date, book: "office" } : { date: req.params.date, book: { $ne: "office" } };
+    const list = await PurchaseBill.find(q).sort({ createdAt: 1 }).lean();
     res.json({ success: true, data: list });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
@@ -122,7 +126,7 @@ router.put("/:id([a-f0-9]{24})", async (req, res) => {
     if (!f.items.length) return bad(res, "Add the bill items (item, qty, rate)");
     if (!(f.amount > 0)) return bad(res, "Bill amount is required");
     if (f.mode === "Payable" && !f.vendor.isVendor) return bad(res, "For Payable, choose a listed vendor");
-    Object.assign(doc, f, { updatedBy: who(req) });
+    Object.assign(doc, f, { book: doc.book, updatedBy: who(req) });
     await doc.save();
     await rememberItems(doc);
     res.json({ success: true, data: doc });

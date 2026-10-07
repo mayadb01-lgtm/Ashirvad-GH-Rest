@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import { Alert, Box, Button, ButtonBase, Skeleton, Stack, TextField, Typography } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import AddIcon from "@mui/icons-material/Add";
+import PurchaseBillsSection from "./PurchaseBillsSection";
 import {
   API,
   ChipChoice,
@@ -94,6 +95,83 @@ const OfficeQuickEntry = ({ date }) => {
 
   const t = useMemo(() => ({ in: sum(draft.officeIn), out: sum(draft.officeOut) }), [draft]);
 
+  /* ----- 🧾 Purchase bills: paid (Cash / PP / PPS / PPC) → Money out mein line; Payable → vendor ledger ----- */
+  const [bills, setBills] = useState([]);
+  const loadBills = useCallback(
+    () =>
+      axios
+        .get(`${API}/purchase/day/${date}?book=office`)
+        .then(({ data }) => setBills(data.data || []))
+        .catch(() => setBills([])),
+    [date]
+  );
+  useEffect(() => {
+    loadBills();
+  }, [loadBills]);
+  const billRow = (bill) => {
+    const v = bill.vendor || {};
+    return {
+      amount: num(bill.amount),
+      purchaseKey: bill.rowKey,
+      _id: v._id,
+      expenseName: v.expenseName || v.name,
+      categoryName: v.categoryName,
+      isVendor: !!v.isVendor,
+      modeOfPayment: bill.mode,
+      fullname: v.name || v.expenseName,
+      remark: `Purchase bill${bill.billNo ? ` #${bill.billNo}` : ""}`,
+    };
+  };
+  const findBillRow = (rows, bill, used = new Set()) => {
+    let i = rows.findIndex((r, j) => !used.has(j) && r.purchaseKey && r.purchaseKey === bill.rowKey);
+    if (i < 0) i = rows.findIndex((r, j) => !used.has(j) && !r.purchaseKey && num(r.amount) === num(bill.amount) && r.expenseName === (bill.vendor?.expenseName || bill.vendor?.name) && /purchase bill/i.test(r.remark || ""));
+    return i;
+  };
+  // Har paid bill ki line Money out mein ho (reload / doosre phone se bill aaya ho to bhi)
+  useEffect(() => {
+    if (!server.loaded || !bills.length) return;
+    if (server.doc && seededFor.current !== date) return;
+    setDraft((d) => {
+      const rows = [...d.officeOut];
+      const used = new Set();
+      let changed = false;
+      bills
+        .filter((b) => b.mode !== "Payable")
+        .forEach((bill) => {
+          const i = findBillRow(rows, bill, used);
+          if (i >= 0) used.add(i);
+          else {
+            rows.push(billRow(bill));
+            used.add(rows.length - 1);
+            changed = true;
+          }
+        });
+      return changed ? { ...d, officeOut: rows } : d;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bills, server, date, setDraft]);
+  const billSaved = (bill) => {
+    if (bill.mode !== "Payable") setDraft((d) => ({ ...d, officeOut: [...d.officeOut, billRow(bill)] }));
+    loadBills();
+    toast.success(
+      bill.mode === "Payable"
+        ? "Bill saved → shown in the vendor ledger as payable."
+        : `Bill saved → added to Money out. Press ${submitted ? "Update" : "Submit"} to save the day.`,
+      { duration: 5000 }
+    );
+  };
+  const billDeleted = (bill) => {
+    if (bill.mode !== "Payable")
+      setDraft((d) => {
+        const rows = [...d.officeOut];
+        const i = findBillRow(rows, bill);
+        if (i >= 0) rows.splice(i, 1);
+        return { ...d, officeOut: rows };
+      });
+    loadBills();
+    toast.success(bill.mode === "Payable" ? "Bill removed." : `Bill removed. Press ${submitted ? "Update" : "Submit"} to save the day.`);
+  };
+
   const openNew = (side) => setEditor({ side, index: -1, row: { amount: 0, modeOfPayment: "", fullname: "", remark: "" } });
   const openEdit = (side, index) => setEditor({ side, index, row: { ...draft[side][index] } });
   const saveRow = () => {
@@ -119,7 +197,8 @@ const OfficeQuickEntry = ({ date }) => {
     setBusy(true);
     try {
       const prep = (rows) =>
-        rows.filter(rowValid).map((r, i) => ({ ...r, id: String(i + 1), amount: num(r.amount), fullname: String(r.fullname).trim(), createDate: r.createDate || date }));
+        // eslint-disable-next-line no-unused-vars
+        rows.filter(rowValid).map(({ purchaseKey, ...r }, i) => ({ ...r, id: String(i + 1), amount: num(r.amount), fullname: String(r.fullname).trim(), createDate: r.createDate || date }));
       const body = {
         officeIn: JSON.stringify(prep(draft.officeIn)),
         officeOut: JSON.stringify(prep(draft.officeOut)),
@@ -211,6 +290,21 @@ const OfficeQuickEntry = ({ date }) => {
         {status?.updatedBy && <StatusPill tone="lock">Edit: {status.updatedBy}</StatusPill>}
       </Stack>
 
+      <Box sx={{ mb: 2 }}>
+        <PurchaseBillsSection
+          date={date}
+          book="office"
+          modes={["Cash", "PP", "PPS", "PPC", "Payable"]}
+          color={Q.office}
+          subtitle="Scan or type a supplier bill · Cash / PP / PPS / PPC → Money out, Payable → vendor ledger"
+          vendors={lists.out.filter((x) => x.isVendor)}
+          expenses={lists.out}
+          bills={bills}
+          onSaved={billSaved}
+          onDeleted={billDeleted}
+          deleteNote={(b) => (b.mode === "Payable" ? "It is removed from the vendor ledger too." : "Its line in Money out is removed too.")}
+        />
+      </Box>
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 6 }}>{side("officeIn", "Money in", "Money received", Q.office)}</Grid>
         <Grid size={{ xs: 12, md: 6 }}>{side("officeOut", "Money out", "Money paid out", "#7C3AED")}</Grid>

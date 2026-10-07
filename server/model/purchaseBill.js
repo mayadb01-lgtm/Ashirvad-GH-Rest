@@ -18,7 +18,8 @@ const purchaseBillSchema = new mongoose.Schema(
       isVendor: { type: Boolean, default: false },
     },
     amount: { type: Number, required: true },
-    mode: { type: String, enum: ["Cash", "Payable"], required: true },
+    mode: { type: String, enum: ["Cash", "PP", "PPS", "PPC", "Payable"], required: true },
+    book: { type: String, enum: ["rest", "office"], default: "rest" }, // Restaurant ya Office Book
     items: [itemSchema],
     itemsTotal: { type: Number, default: 0 },
     extra: { type: Number, default: 0 }, // tax / round-off / transport (items ke alawa)

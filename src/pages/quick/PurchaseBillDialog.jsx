@@ -125,7 +125,7 @@ export const parseBill = (text, vendors = []) => {
 
 const EMPTY = { vendor: null, billNo: "", billDate: "", amount: 0, mode: "Cash", note: "", items: [{ ...NEW_ITEM }], extra: 0, ocrText: "" };
 
-const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], onSaved }) => {
+const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], onSaved, modes = ["Cash", "Payable"], book = "rest", color = Q.rest }) => {
   const [tab, setTab] = useState("scan");
   const [f, setF] = useState(EMPTY);
   const [photos, setPhotos] = useState([]); // dataURL
@@ -262,6 +262,7 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
         vendor: { _id: v._id || "", name: v.fullname || v.expenseName || "", expenseName: v.expenseName || v.fullname || "", categoryName: v.categoryName || "", isVendor: !!v.isVendor },
         amount: grand,
         mode: f.mode,
+        book,
         items: f.items.map((it) => ({ name: it.name.trim(), qty: num(it.qty), unit: it.unit, rate: num(it.rate), amount: num(it.amount) })),
         extra: f.items.length ? num(f.extra) : 0,
         note: f.note,
@@ -290,11 +291,11 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
     <EditorDialog
       open={open}
       onClose={onClose}
-      subtitle={`Restaurant · ${date}`}
+      subtitle={`${book === "office" ? "Office Book" : "Restaurant"} · ${date}`}
       title="🧾 Purchase bill"
       actions={
-        <Button fullWidth variant="contained" disabled={busy || ocr.busy || !valid} onClick={save} sx={{ bgcolor: Q.rest, py: 1.3, fontWeight: 800, "&:hover": { bgcolor: Q.rest } }}>
-          {busy ? "Saving…" : `Save bill${grand ? ` · ${inr(grand)}` : ""} → ${f.mode === "Payable" ? "Payables" : "Expenses"}`}
+        <Button fullWidth variant="contained" disabled={busy || ocr.busy || !valid} onClick={save} sx={{ bgcolor: color, py: 1.3, fontWeight: 800, "&:hover": { bgcolor: color } }}>
+          {busy ? "Saving…" : `Save bill${grand ? ` · ${inr(grand)}` : ""} → ${f.mode === "Payable" ? (book === "office" ? "Vendor ledger" : "Payables") : book === "office" ? "Office Out" : "Expenses"}`}
         </Button>
       }
     >
@@ -370,7 +371,7 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
         <Box sx={{ border: `1px solid ${Q.line}`, borderRadius: 2, p: 1.25, bgcolor: "#fff" }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
             <Typography fontWeight={800}>Bill items</Typography>
-            <Button size="small" onClick={() => set("items", [...f.items, { ...NEW_ITEM }])} sx={{ fontWeight: 800, color: Q.rest }}>
+            <Button size="small" onClick={() => set("items", [...f.items, { ...NEW_ITEM }])} sx={{ fontWeight: 800, color }}>
               + Add item
             </Button>
           </Stack>
@@ -446,13 +447,19 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
 
         <ChipChoice
           label="Payment"
-          options={["Cash", "Payable"]}
+          options={modes}
           value={f.mode}
           onChange={(m) => set("mode", m)}
-          color={Q.rest}
+          color={color}
         />
         <Typography variant="caption" color={Q.muted} sx={{ mt: -1 }}>
-          {f.mode === "Cash" ? "Paid in cash now → added to today's Expenses." : "Goods received on credit → added to the vendor under Payables (not in today's total)."}
+          {f.mode !== "Payable"
+            ? book === "office"
+              ? `Paid (${f.mode}) → added to today's Office Out.`
+              : "Paid in cash now → added to today's Expenses."
+            : book === "office"
+            ? "Goods received on credit → shown in the vendor ledger as payable (Office In / Out totals do not change)."
+            : "Goods received on credit → added to the vendor under Payables (not in today's total)."}
           {f.mode === "Payable" && f.vendor && !f.vendor.isVendor ? " Choose a listed vendor for Payable." : ""}
         </Typography>
         <TextField size="small" label="Note (optional)" value={f.note} onChange={(e) => set("note", e.target.value)} />

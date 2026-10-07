@@ -10,7 +10,7 @@ import toast from "react-hot-toast";
 import { Alert, Box, Button, ButtonBase, Skeleton, Stack, Typography } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import AddIcon from "@mui/icons-material/Add";
-import PurchaseBillDialog from "./PurchaseBillDialog";
+import PurchaseBillsSection from "./PurchaseBillsSection";
 import {
   API,
   ConfirmDialog,
@@ -72,8 +72,6 @@ const RestQuickEntry = ({ date }) => {
   const roomRowsRef = useRef([]);
   // 🧾 Purchase bills (alag collection) — save hote hi Expenses / Payables mein line
   const [bills, setBills] = useState([]);
-  const [billOpen, setBillOpen] = useState(false);
-  const [billView, setBillView] = useState(null); // { bill, photos: [url] }
   const loadBills = useCallback(
     () =>
       axios
@@ -235,42 +233,21 @@ const RestQuickEntry = ({ date }) => {
         ...d,
         expenses: [...d.expenses, { ...base, _id: v._id, expenseName: v.expenseName || v.fullname, categoryName: v.categoryName, isVendor: !!v.isVendor, fullname: "", fullname_id: "" }],
       }));
-    setBillOpen(false);
     loadBills();
     toast.success(`Bill saved → added to ${bill.mode === "Payable" ? "Payables" : "Expenses"}. Press ${submitted ? "Update" : "Submit"} to save the day.`, { duration: 5000 });
   };
-  const deleteBill = async (bill) => {
-    if (!window.confirm(`Remove this bill (${inr(bill.amount)})? Its line in ${bill.mode === "Payable" ? "Payables" : "Expenses"} is removed too.`)) return;
-    try {
-      await axios.delete(`${API}/purchase/${bill._id}`);
-      const sec = bill.mode === "Payable" ? "pendingUsers" : "expenses";
-      setDraft((d) => {
-        const rows = [...d[sec]];
-        let i = rows.findIndex((r) => r.purchaseKey && r.purchaseKey === bill.rowKey);
-        // submit ke baad key nahi rehti → naam + rakam se dhoondo
-        if (i < 0) i = rows.findIndex((r) => num(r.amount) === num(bill.amount) && (r.expenseName === bill.vendor?.expenseName || r.fullname === bill.vendor?.name));
-        if (i >= 0) rows.splice(i, 1);
-        return { ...d, [sec]: rows };
-      });
-      setBillView(null);
-      loadBills();
-      toast.success(`Bill removed. Press ${submitted ? "Update" : "Submit"} to save the day.`);
-    } catch (e) {
-      toast.error(apiError(e));
-    }
-  };
-  const viewBill = async (bill) => {
-    setBillView({ bill, photos: [] });
-    const urls = [];
-    for (const n of bill.photos || []) {
-      try {
-        const { data } = await axios.get(`${API}/purchase/photo/${n}`, { responseType: "blob" });
-        urls.push(URL.createObjectURL(data));
-      } catch {
-        /* photo nahi mili */
-      }
-    }
-    setBillView({ bill, photos: urls });
+  const billDeleted = (bill) => {
+    const sec = bill.mode === "Payable" ? "pendingUsers" : "expenses";
+    setDraft((d) => {
+      const rows = [...d[sec]];
+      let i = rows.findIndex((r) => r.purchaseKey && r.purchaseKey === bill.rowKey);
+      // submit ke baad key nahi rehti → naam + rakam se dhoondo
+      if (i < 0) i = rows.findIndex((r) => num(r.amount) === num(bill.amount) && (r.expenseName === bill.vendor?.expenseName || r.fullname === bill.vendor?.name));
+      if (i >= 0) rows.splice(i, 1);
+      return { ...d, [sec]: rows };
+    });
+    loadBills();
+    toast.success(`Bill removed. Press ${submitted ? "Update" : "Submit"} to save the day.`);
   };
 
   /* ----- payload: purane page ke filters jaisa ----- */
@@ -425,39 +402,19 @@ const RestQuickEntry = ({ date }) => {
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 7 }}>
           <Stack spacing={2}>
-            <Section
-              title="🧾 Purchase bills"
-              subtitle="Scan or type a supplier bill · Cash → Expenses, credit → Payables"
-              total={bills.reduce((t, b) => t + num(b.amount), 0)}
+            <PurchaseBillsSection
+              date={date}
+              book="rest"
+              modes={["Cash", "Payable"]}
               color={Q.rest}
-              action={
-                <Button size="small" startIcon={<AddIcon />} onClick={() => setBillOpen(true)} sx={{ fontWeight: 800, color: Q.rest }}>
-                  Add bill
-                </Button>
-              }
-            >
-              {bills.length === 0 && (
-                <Typography variant="body2" color={Q.muted} sx={{ py: 1 }}>
-                  No purchase bill today.
-                </Typography>
-              )}
-              {bills.map((b) => (
-                <ButtonBase key={b._id} onClick={() => viewBill(b)} sx={{ width: "100%", textAlign: "left", display: "block" }}>
-                  <Stack direction="row" alignItems="center" spacing={1} sx={{ py: 1, borderTop: `1px solid ${Q.line}` }}>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography fontWeight={700} noWrap>
-                        {b.vendor?.name || b.vendor?.expenseName}
-                      </Typography>
-                      <Typography variant="caption" color={Q.muted}>
-                        {[b.billNo && `Bill ${b.billNo}`, b.billDate, b.photos?.length ? `📷 ${b.photos.length}` : "", b.source === "scan" ? "scanned" : "manual"].filter(Boolean).join(" · ")}
-                      </Typography>
-                    </Box>
-                    <StatusPill tone={b.mode === "Payable" ? "warn" : "good"}>{b.mode}</StatusPill>
-                    <Typography fontWeight={800}>{inr(b.amount)}</Typography>
-                  </Stack>
-                </ButtonBase>
-              ))}
-            </Section>
+              subtitle="Scan or type a supplier bill · Cash → Expenses, credit → Payables"
+              vendors={lists.vendors}
+              expenses={lists.expenses}
+              bills={bills}
+              onSaved={billSaved}
+              onDeleted={billDeleted}
+              deleteNote={(b) => `Its line in ${b.mode === "Payable" ? "Payables" : "Expenses"} is removed too.`}
+            />
             {sectionBlock("expenses", (r) => (
               <>
                 <Typography fontWeight={700} noWrap>
@@ -566,75 +523,6 @@ const RestQuickEntry = ({ date }) => {
         onClick={() => setConfirm(true)}
       />
 
-      <PurchaseBillDialog open={billOpen} onClose={() => setBillOpen(false)} date={date} vendors={lists.vendors} expenses={lists.expenses} onSaved={billSaved} />
-      <EditorDialog
-        open={!!billView}
-        onClose={() => setBillView(null)}
-        subtitle={billView ? `${billView.bill.mode} · ${billView.bill.billDate || date}` : ""}
-        title={billView ? `${billView.bill.vendor?.name || billView.bill.vendor?.expenseName} · ${inr(billView.bill.amount)}` : ""}
-        actions={
-          <Button fullWidth color="error" variant="outlined" onClick={() => deleteBill(billView.bill)}>
-            Remove bill
-          </Button>
-        }
-      >
-        {billView && (
-          <Stack spacing={1.5}>
-            {billView.bill.billNo && <Typography>Bill no.: {billView.bill.billNo}</Typography>}
-            {billView.bill.note && <Typography color={Q.muted}>{billView.bill.note}</Typography>}
-            {(billView.bill.items || []).length > 0 && (
-              <Box sx={{ border: `1px solid ${Q.line}`, borderRadius: 2, p: 1.25, bgcolor: "#fff" }}>
-                <Stack direction="row" sx={{ pb: 0.5, borderBottom: `1px solid ${Q.line}` }}>
-                  {[["Item", 3], ["Qty", 1.6], ["Rate", 1.4], ["Total", 1.4]].map(([h, w]) => (
-                    <Typography key={h} variant="caption" fontWeight={800} color={Q.muted} sx={{ flex: w, textAlign: h === "Item" ? "left" : "right" }}>
-                      {h}
-                    </Typography>
-                  ))}
-                </Stack>
-                {billView.bill.items.map((it, i) => (
-                  <Stack key={i} direction="row" sx={{ py: 0.4 }}>
-                    <Typography variant="body2" sx={{ flex: 3 }} noWrap>
-                      {it.name}
-                    </Typography>
-                    <Typography variant="body2" sx={{ flex: 1.6, textAlign: "right" }}>
-                      {it.qty} {it.unit}
-                    </Typography>
-                    <Typography variant="body2" sx={{ flex: 1.4, textAlign: "right" }}>
-                      {inr(it.rate)}
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600} sx={{ flex: 1.4, textAlign: "right" }}>
-                      {inr(it.amount)}
-                    </Typography>
-                  </Stack>
-                ))}
-                <Stack direction="row" justifyContent="space-between" sx={{ pt: 0.5, borderTop: `1px solid ${Q.line}` }}>
-                  <Typography variant="body2" color={Q.muted}>Items total</Typography>
-                  <Typography variant="body2">{inr(billView.bill.itemsTotal)}</Typography>
-                </Stack>
-                {!!billView.bill.extra && (
-                  <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="body2" color={Q.muted}>Tax / round-off / transport</Typography>
-                    <Typography variant="body2">{inr(billView.bill.extra)}</Typography>
-                  </Stack>
-                )}
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography fontWeight={800}>Grand total</Typography>
-                  <Typography fontWeight={800}>{inr(billView.bill.amount)}</Typography>
-                </Stack>
-              </Box>
-            )}
-            {billView.photos.map((u, i) => (
-              <a key={i} href={u} target="_blank" rel="noopener noreferrer">
-                <img src={u} alt="bill" style={{ width: "100%", borderRadius: 8, border: `1px solid ${Q.line}` }} />
-              </a>
-            ))}
-            {billView.bill.photos?.length > 0 && billView.photos.length === 0 && <Typography color={Q.muted}>Loading photo…</Typography>}
-            <Typography variant="caption" color={Q.muted}>
-              Saved by {billView.bill.enteredBy || "—"}
-            </Typography>
-          </Stack>
-        )}
-      </EditorDialog>
       <EditorDialog
         open={!!ed}
         onClose={() => setEditor(null)}

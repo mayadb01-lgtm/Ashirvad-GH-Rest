@@ -2,6 +2,7 @@ import { Router } from "express";
 import dayjs from "dayjs";
 import RestEntry from "../model/restEntry.js";
 import OfficeBook from "../model/officeBook.js";
+import PurchaseBill from "../model/purchaseBill.js";
 import { v4 as uuidv4 } from "uuid";
 
 const router = Router();
@@ -35,13 +36,15 @@ router.get("/get-vendor-entries/:startDate/:endDate", async (req, res) => {
     };
 
     // Fetch both sources in parallel instead of sequentially.
-    const [restEntries, officeBooks] = await Promise.all([
+    const [restEntries, officeBooks, officePayables] = await Promise.all([
       RestEntry.find(dateRange, { pendingUsers: 1, expenses: 1 })
         .sort({ entryCreateDate: 1 })
         .lean(),
       OfficeBook.find(dateRange, { officeIn: 1, officeOut: 1 })
         .sort({ entryCreateDate: 1 })
         .lean(),
+      // Office Book ke udhaar (Payable) purchase bills → vendor ka credit (naya collection)
+      PurchaseBill.find({ ...dateRange, book: "office", mode: "Payable" }).lean(),
     ]);
 
     const restAapvanaEntries = restEntries.flatMap((e) => {
@@ -116,6 +119,20 @@ router.get("/get-vendor-entries/:startDate/:endDate", async (req, res) => {
           defaultMode: "Office In",
           source: "officeIn",
         })
+      ),
+      ...officePayables.map((b) =>
+        buildRow(
+          {
+            sourceId: b._id,
+            createDate: b.date,
+            entryCreateDate: b.entryCreateDate,
+            fullname: b.vendor?.name || b.vendor?.expenseName,
+            expenseName: b.vendor?.expenseName || b.vendor?.name,
+            modeOfPayment: `Payable bill${b.billNo ? ` #${b.billNo}` : ""}`,
+            amount: b.amount,
+          },
+          { isCredit: true, defaultMode: "Payable bill", source: "officePurchase" }
+        )
       ),
       ...officeOutEntries.map((e) =>
         buildRow(e, {
