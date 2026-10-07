@@ -36,7 +36,7 @@ const RestReceivableBalance = () => {
     XLSX.utils.book_append_sheet(
       wb,
       XLSX.utils.json_to_sheet(
-        data.rows.map((r) => ({ Name: r.name, Mobile: r.mobile, "Given on credit": r.given, "Received in Office": r.received, Balance: r.balance, "Last credit": r.lastGiven, "Last received": r.lastReceived, "Days since credit": r.days }))
+        data.rows.map((r) => ({ Name: r.name, Mobile: r.mobile, "Given on credit": r.given, "Received": r.received, Balance: r.balance, "Last credit": r.lastGiven, "Last received": r.lastReceived, "Days since credit": r.days }))
       ),
       "Who owes"
     );
@@ -51,15 +51,15 @@ const RestReceivableBalance = () => {
   const td = { textAlign: "right", whiteSpace: "nowrap" };
   return (
     <Box sx={{ p: { xs: 1, md: 2 } }}>
-      <PageTitle title="Restaurant receivables — who owes" sub="Credit given in the Restaurant minus money received for it in the Office Book. View only." />
+      <PageTitle title="Restaurant receivables — who owes" sub="Credit given in the Restaurant minus money received for it (Restaurant screen or Office Book). View only." />
       <Stack direction="row" spacing={1.5} sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
         <Kpi label="Still to collect" value={lakh(t.due)} sub={`${t.people || 0} people`} color={COLORS.bad} />
         <Kpi label="Credit given (all time)" value={lakh(t.given)} color={COLORS.out} />
-        <Kpi label="Received in Office (for these people)" value={lakh(t.received)} color={COLORS.net} />
+        <Kpi label="Received (Restaurant + Office)" value={lakh(t.received)} color={COLORS.net} />
         <Kpi label="Room food bills" value={lakh(data?.roomBills)} sub="Collected with the guest's room bill" />
       </Stack>
       <Alert severity="info" sx={{ mb: 2 }}>
-        Money received in the Office Book under <b>Pending</b> (old dues received) with the same person's name is subtracted here. In the reports this Office money is <b>not</b> counted as
+        Money received on the Restaurant screen (<b>Collect old dues</b>) and in the Office Book under <b>Pending</b> with the same person's name is subtracted here. In the reports this Office money is <b>not</b> counted as
         revenue again, because the sale was already counted on the day the Restaurant gave credit.
       </Alert>
 
@@ -85,7 +85,7 @@ const RestReceivableBalance = () => {
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  {["", "Name", "Given on credit", "Received in Office", "Balance", "Last credit", "Last received"].map((h, i) => (
+                  {["", "Name", "Given on credit", "Received", "Balance", "Last credit", "Last received"].map((h, i) => (
                     <TableCell key={h + i} sx={{ fontWeight: 800, whiteSpace: "nowrap", textAlign: i >= 2 ? "right" : "left" }}>
                       {h}
                     </TableCell>

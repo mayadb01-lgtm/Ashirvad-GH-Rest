@@ -55,7 +55,7 @@ const CashflowDashboard = () => {
       "Rest (excluding credit)": m.restCash,
       "Rest credit": m.restUdhaar,
       "Office In (business)": m.officeIn,
-      "Office: old dues received": m.recoveryIn,
+      "Old dues received (Office + Restaurant)": m.recoveryIn,
       "Loan received": m.loansIn,
       "Personal money in": m.personalIn,
       "Transfer between own accounts": m.transferIn,
@@ -131,7 +131,7 @@ const CashflowDashboard = () => {
           <Table size="small">
             <TableHead>
               <TableRow>
-                {["Month", "GH", "Restaurant", "Office In", "Money in", "Rest expenses + advance", "Office Out", "Money out", "Remaining", "Personal in", "Personal out", "Loan in", "Loan EMI", "Net"].map((h) => (
+                {["Month", "GH", "Restaurant", "Office In + old dues", "Money in", "Rest expenses + advance", "Office Out", "Money out", "Remaining", "Personal in", "Personal out", "Loan in", "Loan EMI", "Net"].map((h) => (
                   <TableCell key={h} align={h === "Month" ? "left" : "right"} sx={{ fontWeight: 700, whiteSpace: "nowrap" }}>
                     {h}
                   </TableCell>

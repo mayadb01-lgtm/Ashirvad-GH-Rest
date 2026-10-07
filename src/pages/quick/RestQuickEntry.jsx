@@ -11,6 +11,7 @@ import { Alert, Box, Button, ButtonBase, Skeleton, Stack, Typography } from "@mu
 import Grid from "@mui/material/Grid2";
 import AddIcon from "@mui/icons-material/Add";
 import PurchaseBillsSection from "./PurchaseBillsSection";
+import DueCollectionsSection, { useDueReceipts } from "./DueCollectionsSection";
 import {
   API,
   ConfirmDialog,
@@ -70,6 +71,8 @@ const RestQuickEntry = ({ date }) => {
   const [error, setError] = useState("");
   const seededFor = useRef("");
   const roomRowsRef = useRef([]);
+  // 💰 Purana udhaar wasool (alag collection, sale nahi)
+  const dues = useDueReceipts(date);
   // 🧾 Purchase bills (alag collection) — save hote hi Expenses / Payables mein line
   const [bills, setBills] = useState([]);
   const loadBills = useCallback(
@@ -299,6 +302,7 @@ const RestQuickEntry = ({ date }) => {
       setDraft(EMPTY);
       seededFor.current = "";
       await load();
+      dues.reload();
     } catch (err) {
       toast.error(apiError(err));
     } finally {
@@ -444,6 +448,7 @@ const RestQuickEntry = ({ date }) => {
                 )}
               </>
             ))}
+            <DueCollectionsSection date={date} dues={dues} />
             {sectionBlock("pendingUsers", (r) => (
               <>
                 <Typography fontWeight={700} noWrap>
@@ -508,6 +513,34 @@ const RestQuickEntry = ({ date }) => {
                 </Typography>
               )}
             </Box>
+            {dues.total > 0 && (
+              <Box sx={{ border: `1.5px solid #A5F3FC`, borderRadius: 3, p: 2, bgcolor: "#ECFEFF" }}>
+                <Typography fontWeight={800} sx={{ mb: 0.5 }}>
+                  💰 Old dues received today (not sales)
+                </Typography>
+                {[
+                  ["Cash", dues.byMode.Cash],
+                  ["Card", dues.byMode.Card],
+                  ["PP (UPI)", dues.byMode.PP],
+                ]
+                  .filter(([, v]) => v > 0)
+                  .map(([l, v]) => (
+                    <Stack key={l} direction="row" justifyContent="space-between" sx={{ py: 0.3 }}>
+                      <Typography color={Q.muted}>{l}</Typography>
+                      <Typography fontWeight={600}>{inr(v)}</Typography>
+                    </Stack>
+                  ))}
+                <Stack direction="row" justifyContent="space-between" sx={{ py: 0.5, mt: 0.5, borderTop: `1px solid #A5F3FC` }}>
+                  <Typography fontWeight={800}>Total</Typography>
+                  <Typography fontWeight={800}>{inr(dues.total)}</Typography>
+                </Stack>
+                {dues.byMode.Cash > 0 && (
+                  <Typography variant="body2" sx={{ mt: 0.5, color: "#155E75", fontWeight: 700 }}>
+                    Cash in drawer should be {inr(num(draft.cash) + dues.byMode.Cash)} = today's sale cash {inr(draft.cash)} + old dues cash {inr(dues.byMode.Cash)}. Enter only the sale cash in "Cash" above.
+                  </Typography>
+                )}
+              </Box>
+            )}
           </Stack>
         </Grid>
       </Grid>

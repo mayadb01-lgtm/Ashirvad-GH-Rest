@@ -44,6 +44,7 @@ import { apiGate } from "./middleware/security.js";
 import owner from "./controller/owner.js";
 import insights from "./controller/insights.js";
 import officeTypes from "./controller/officeTypes.js";
+import restDues from "./controller/restDues.js";
 import guestRegister from "./controller/guestRegister.js";
 import purchase from "./controller/purchase.js";
 import roomCharges from "./controller/roomCharges.js";
@@ -77,6 +78,7 @@ app.use("/api/v1/room-charges", roomCharges); // food bill + extra charges (alag
 app.use("/api/v1/invoice", invoice); // GST / Non-GST invoice (alag collection + numbering)
 app.use("/api/v1/stay", stayRouter); // continue stay + checkout (alag collection)
 app.use("/api/v1/booking", bookingRouter); // advance booking (alag collection)
+app.use("/api/v1/rest-dues", restDues); // restaurant: purana udhaar wasool (naya collection)
 app.use("/api/v1/office-types", officeTypes); // owner: Office category ka type (sirf reports ke liye, naya collection)
 app.use("/api/v1/insights", insights); // read-only: cashflow, GH growth, kharch control, data check
 app.use("/api/v1/backup", backup);

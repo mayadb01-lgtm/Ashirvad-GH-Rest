@@ -113,6 +113,11 @@ const RULES = {
     R("DELETE", /^\/api\/v1\/purchase\/[a-f0-9]{24}$/),
     R("POST", /^\/api\/v1\/purchase\/[a-f0-9]{24}\/photo$/),
     R("GET", /^\/api\/v1\/purchase\/photo\/[A-Za-z0-9._-]+$/),
+    // Purana udhaar wasool (Collect old dues) — sirf aaj
+    R("GET", /^\/api\/v1\/rest-dues\/balances\/([^/]+)$/, { dateParam: 1 }),
+    R("GET", /^\/api\/v1\/rest-dues\/day\/([^/]+)$/, { dateParam: 1 }),
+    R("POST", /^\/api\/v1\/rest-dues$/, { dateBody: "date" }),
+    R("PUT", /^\/api\/v1\/rest-dues\/[a-f0-9]{24}\/cancel$/),
     dayStatus,
   ],
   office: [
