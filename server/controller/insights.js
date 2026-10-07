@@ -12,7 +12,8 @@ import OfficeBook from "../model/officeBook.js";
 import StaffSalary from "../model/staffSalary.js";
 import RoomCharge from "../model/roomCharge.js";
 import AppSetting from "../model/appSetting.js";
-import { loadOfficeClassifier, lineName } from "../utils/officeTypes.js";
+import RestPending from "../model/restPending.js";
+import { loadOfficeClassifier, lineName, nk } from "../utils/officeTypes.js";
 
 // "Discount on total bill" (naya niyam) kis din se P&L mein ghatega: server pehli baar chalte hi aaj ki tareekh (IST) save karta hai.
 // Isse pehle ke din bilkul waise hi rehte hain (purane records mein Discount ka matlab alag tha).
@@ -570,6 +571,105 @@ router.get("/mode-balance/:from/:to", async (req, res) => {
       totals[k].net = round(totals[k].in - totals[k].out);
     });
     res.json({ success: true, data: { modes: BAL_MODES, months, totals, totalIn: round(sum(months, (m) => m.totalIn)), totalOut: round(sum(months, (m) => m.totalOut)) } });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// ───────────────────────── RESTAURANT RECEIVABLES (kiska kitna baaki) ─────────────────────────
+// Sirf dikhane ke liye (read-only). Diya = Restaurant "Receivables" (udhaar) rows.
+// Aaya = Office In ki "Old dues received" (Pending) lines jinka naam usi aadmi ka hai.
+// Office mein yeh paisa revenue mein nahi ginta (sale restaurant mein pehle hi gin chuki) — isliye do baar nahi ginta.
+// "Room bill" wale udhaar guest ke room bill ke saath wasool hote hain, isliye alag dikhte hain.
+router.get("/rest-receivables", async (req, res) => {
+  try {
+    const upto = req.query.to && dayjs(req.query.to, F, true).isValid() ? dayjs(req.query.to, F, true).endOf("day") : null;
+    const q = upto ? { entryCreateDate: { $lte: upto.toDate() } } : {};
+    const [rest, office, people, classify] = await Promise.all([
+      RestEntry.find(q, { pending: 1, createDate: 1, entryCreateDate: 1 }).lean(),
+      OfficeBook.find(q, { officeIn: 1, createDate: 1, entryCreateDate: 1 }).lean(),
+      RestPending.find({}, { fullname: 1, mobileNumber: 1, category: 1 }).lean(),
+      loadOfficeClassifier(),
+    ]);
+    const isRoom = (k) => /room\s*bill/.test(k);
+    const map = new Map();
+    const get = (name) => {
+      const k = nk(name) || "(no name)";
+      if (!map.has(k)) map.set(k, { key: k, name: String(name || "").trim() || "(no name)", mobile: "", given: 0, received: 0, ledger: [] });
+      return map.get(k);
+    };
+    people.forEach((p) => {
+      const r = map.get(nk(p.fullname));
+      if (r) r.mobile = p.mobileNumber || "";
+    });
+    let roomBills = 0;
+    rest.forEach((d) =>
+      (d.pending || []).forEach((x) => {
+        if (!(n(x.amount) > 0)) return;
+        if (isRoom(nk(x.fullname))) return (roomBills += n(x.amount));
+        const r = get(x.fullname);
+        r.given += n(x.amount);
+        if (!r.mobile && x.mobileNumber > 999999) r.mobile = x.mobileNumber;
+        r.ledger.push({ date: x.createDate || d.createDate, kind: "given", amount: n(x.amount), note: "Restaurant credit" });
+      })
+    );
+    const otherRecv = new Map(); // office mein wasooli, par restaurant udhaar nahi (GH pending, staff upad jama…)
+    office.forEach((d) =>
+      (d.officeIn || []).forEach((x) => {
+        if (!(n(x.amount) > 0)) return;
+        if (classify("in", x.categoryName, lineName(x)) !== "recovery") return;
+        // Pending wala naam aam ("Restaurant Pending", "Restaurant bill") ho to detail (fullname) mein asli aadmi dhundho, warna Pending wala naam.
+        // GH ke udhaar (GH pending…) restaurant ke nahi, isliye alag.
+        const k1 = nk(x.expenseName);
+        const k2 = nk(x.fullname);
+        const isGh = (k) => /^gh\b|guest\s*house/.test(k);
+        const generic = (k) => /pending|bill|restaurant|canteen/.test(k);
+        const pick = (k) => (k && !isGh(k) && map.get(k)) || null;
+        const r = generic(k1) ? pick(k2) || pick(k1) : pick(k1) || pick(k2);
+        const row = { date: x.createDate || d.createDate, kind: "received", amount: n(x.amount), note: `Office · ${x.modeOfPayment || ""}${x.fullname && nk(x.fullname) !== k1 ? ` · ${String(x.fullname).trim()}` : ""}` };
+        if (r) {
+          r.received += n(x.amount);
+          r.ledger.push(row);
+        } else {
+          const name = String(x.expenseName || x.fullname || "(no name)").trim();
+          const o = otherRecv.get(nk(name)) || { name, amount: 0, count: 0, last: "" };
+          o.amount += n(x.amount);
+          o.count += 1;
+          o.last = row.date;
+          otherRecv.set(nk(name), o);
+        }
+      })
+    );
+    const dv = (s) => String(s || "").split("-").reverse().join("");
+    const today = todayIst();
+    const rows = [...map.values()].map((r) => {
+      r.ledger.sort((a, b) => dv(a.date).localeCompare(dv(b.date)));
+      let bal = 0;
+      r.ledger.forEach((l) => (l.balance = round((bal += l.kind === "given" ? l.amount : -l.amount))));
+      const lastGiven = [...r.ledger].reverse().find((l) => l.kind === "given")?.date || "";
+      const lastRecv = [...r.ledger].reverse().find((l) => l.kind === "received")?.date || "";
+      const balance = round(r.given - r.received);
+      return {
+        ...r,
+        given: round(r.given),
+        received: round(r.received),
+        balance,
+        lastGiven,
+        lastReceived: lastRecv,
+        days: balance > 0 && lastGiven ? today.diff(dayjs(lastGiven, F), "day") : 0,
+      };
+    });
+    rows.sort((a, b) => b.balance - a.balance);
+    const due = rows.filter((r) => r.balance > 0);
+    res.json({
+      success: true,
+      data: {
+        rows,
+        totals: { given: round(sum(rows, (r) => r.given)), received: round(sum(rows, (r) => r.received)), due: round(sum(due, (r) => r.balance)), people: due.length },
+        roomBills: round(roomBills),
+        otherReceived: [...otherRecv.values()].map((o) => ({ ...o, amount: round(o.amount) })).sort((a, b) => b.amount - a.amount),
+      },
+    });
   } catch (e) {
     fail(res, e);
   }
