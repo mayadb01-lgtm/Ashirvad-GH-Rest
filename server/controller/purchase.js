@@ -6,6 +6,7 @@ import crypto from "crypto";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import PurchaseBill from "../model/purchaseBill.js";
+import PurchaseItem from "../model/purchaseItem.js";
 import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
@@ -48,6 +49,39 @@ function withTotals(f) {
   return { ...f, itemsTotal, ...(f.items.length ? { amount: Math.round((itemsTotal + f.extra) * 100) / 100 } : {}) };
 }
 
+// Items ki yaad update (bill save / badlaav par)
+const rememberItems = async (bill) => {
+  const vid = bill.vendor?._id || "";
+  for (const it of bill.items || []) {
+    const key = String(it.name || "").trim().toLowerCase().replace(/\s+/g, " ");
+    if (!key) continue;
+    const set = { name: String(it.name).trim(), unit: it.unit || "kg", lastRate: Number(it.rate) || 0, lastVendorId: vid, lastDate: bill.date };
+    if (vid && Number(it.rate)) set[`vendorRates.${vid}`] = Number(it.rate);
+    await PurchaseItem.updateOne({ key }, { $set: set, $inc: { uses: 1 } }, { upsert: true }).catch(() => {});
+  }
+};
+
+// GET /items → yaad wale items (sabse zyada use pehle)
+router.get("/items", async (req, res) => {
+  try {
+    const list = await PurchaseItem.find({}, { key: 0, __v: 0 }).sort({ uses: -1, updatedAt: -1 }).limit(1000).lean();
+    res.json({ success: true, data: list });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+// GET /last/:vendorId → us vendor ka aakhri bill (wahi items dobara)
+router.get("/last/:vendorId", async (req, res) => {
+  try {
+    const vid = clean(req.params.vendorId, 40);
+    const last = await PurchaseBill.findOne({ "vendor._id": vid, "items.0": { $exists: true } }).sort({ createdAt: -1 }).lean();
+    res.json({ success: true, data: last ? { date: last.date, items: last.items, amount: last.amount } : null });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
 // GET /day/:date → us din ke bills
 router.get("/day/:date", async (req, res) => {
   try {
@@ -66,10 +100,12 @@ router.post("/", async (req, res) => {
     if (!ok(b.date)) return bad(res, "Invalid date");
     if (!dateOk(req, b.date)) return bad(res, "Only today's bills can be added", 403);
     const f = fields(b);
+    if (!f.items.length) return bad(res, "Add the bill items (item, qty, rate)");
     if (!(f.amount > 0)) return bad(res, "Bill amount is required");
     if (!f.vendor.name && !f.vendor.expenseName) return bad(res, "Choose the vendor / expense item");
     if (f.mode === "Payable" && !f.vendor.isVendor) return bad(res, "For Payable, choose a listed vendor");
     const doc = await PurchaseBill.create({ ...f, date: b.date, entryCreateDate: dayjs(b.date, F).startOf("day").toDate(), enteredBy: who(req) });
+    await rememberItems(doc);
     res.json({ success: true, data: doc });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
@@ -83,10 +119,12 @@ router.put("/:id([a-f0-9]{24})", async (req, res) => {
     if (!doc) return bad(res, "Bill not found", 404);
     if (!dateOk(req, doc.date)) return bad(res, "Only today's bills can be changed", 403);
     const f = fields(req.body || {});
+    if (!f.items.length) return bad(res, "Add the bill items (item, qty, rate)");
     if (!(f.amount > 0)) return bad(res, "Bill amount is required");
     if (f.mode === "Payable" && !f.vendor.isVendor) return bad(res, "For Payable, choose a listed vendor");
     Object.assign(doc, f, { updatedBy: who(req) });
     await doc.save();
+    await rememberItems(doc);
     res.json({ success: true, data: doc });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });

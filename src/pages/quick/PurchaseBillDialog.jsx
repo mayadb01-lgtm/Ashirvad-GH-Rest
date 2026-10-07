@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { Alert, Box, Button, Chip, LinearProgress, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import { Alert, Autocomplete, Box, Button, Chip, LinearProgress, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import { API, ChipChoice, EditorDialog, MoneyField, PickField, Q, apiError, inr, num } from "./shared";
+import { API, ChipChoice, EditorDialog, PickField, Q, apiError, inr, num } from "./shared";
 
 // Photo chhoti (OCR ke liye thodi badi rakho: 1800px)
 const shrink = (file, max = 1800, q = 0.8) =>
@@ -123,7 +123,7 @@ export const parseBill = (text, vendors = []) => {
   return out;
 };
 
-const EMPTY = { vendor: null, billNo: "", billDate: "", amount: 0, mode: "Cash", note: "", items: [], extra: 0, ocrText: "" };
+const EMPTY = { vendor: null, billNo: "", billDate: "", amount: 0, mode: "Cash", note: "", items: [{ ...NEW_ITEM }], extra: 0, ocrText: "" };
 
 const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], onSaved }) => {
   const [tab, setTab] = useState("scan");
@@ -131,6 +131,45 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
   const [photos, setPhotos] = useState([]); // dataURL
   const [ocr, setOcr] = useState({ busy: false, progress: 0, msg: "" });
   const [busy, setBusy] = useState(false);
+  const [memory, setMemory] = useState([]); // pichhle bills ke items (naam, unit, rate)
+  const [lastBill, setLastBill] = useState(null); // chune vendor ka aakhri bill
+  useEffect(() => {
+    if (!open) return;
+    axios
+      .get(`${API}/purchase/items`)
+      .then(({ data }) => setMemory(data.data || []))
+      .catch(() => setMemory([]));
+  }, [open]);
+  const vendorId = f?.vendor?._id || "";
+  useEffect(() => {
+    setLastBill(null);
+    if (!open || !vendorId) return;
+    axios
+      .get(`${API}/purchase/last/${vendorId}`)
+      .then(({ data }) => setLastBill(data.data || null))
+      .catch(() => setLastBill(null));
+  }, [open, vendorId]);
+  const rateFor = (m) => (vendorId && m?.vendorRates?.[vendorId]) || m?.lastRate || 0;
+  const useLastBill = () =>
+    setF((x) => ({
+      ...x,
+      items: lastBill.items.map((it) => ({ name: it.name, qty: it.qty || 1, unit: it.unit || "kg", rate: it.rate || 0, amount: r2((it.qty || 1) * (it.rate || 0)) })),
+      extra: 0,
+    }));
+  // Yaad wala item chuna → unit + rate apne aap
+  const pickItem = (i, val) => {
+    const name = typeof val === "string" ? val : val?.name || "";
+    const m = typeof val === "string" ? memory.find((x) => x.name.toLowerCase() === val.trim().toLowerCase()) : val;
+    setF((x) => ({
+      ...x,
+      items: x.items.map((it, j) => {
+        if (j !== i) return it;
+        if (!m) return { ...it, name };
+        const rate = rateFor(m) || it.rate;
+        return { ...it, name: m.name, unit: m.unit || it.unit, rate, amount: r2(num(it.qty) * num(rate)) };
+      }),
+    }));
+  };
   useEffect(() => {
     if (open) {
       setTab("scan");
@@ -153,7 +192,7 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
       }),
     }));
   const itemsTotal = r2(f.items.reduce((t, it) => t + num(it.amount), 0));
-  const grand = f.items.length ? r2(itemsTotal + num(f.extra)) : num(f.amount);
+  const grand = r2(itemsTotal + num(f.extra));
 
   // Picker: pehle vendors (Payable ke liye zaroori), phir baaki kharch items
   const options = [
@@ -196,8 +235,8 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
         billDate: x.billDate || p.billDate,
         billNo: x.billNo || p.billNo,
         vendor: x.vendor || (p.vendor ? options.find((o) => o._id === p.vendor._id) || null : null),
-        items: p.items,
-        extra: p.items.length && p.amount ? r2(p.amount - p.items.reduce((t, it) => t + it.amount, 0)) : 0,
+        items: p.items.length ? p.items : x.items,
+        extra: p.items.length && p.amount ? r2(p.amount - p.items.reduce((t, it) => t + it.amount, 0)) : x.extra,
         note: x.note || (p.header && !p.vendor ? `Bill: ${p.header.slice(0, 60)}` : x.note),
       }));
       setOcr({ busy: false, progress: 100, msg: p.amount ? "Read done — please check the details below" : "Could not find the total — please type it" });
@@ -206,9 +245,10 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
     }
   };
 
-  const valid = f.vendor && grand > 0 && (f.mode === "Cash" || f.vendor?.isVendor) && f.items.every((it) => it.name.trim() && num(it.amount) > 0);
+  const valid = f.vendor && f.items.length > 0 && grand > 0 && (f.mode === "Cash" || f.vendor?.isVendor) && f.items.every((it) => it.name.trim() && num(it.amount) > 0);
   const save = async () => {
     if (!f.vendor) return toast.error("Choose the vendor / expense item");
+    if (!f.items.length || !f.items.every((it) => it.name.trim() && num(it.amount) > 0)) return toast.error("Fill every item: name, qty and rate");
     if (!(grand > 0)) return toast.error("Enter the bill amount");
     if (f.mode === "Payable" && !f.vendor.isVendor) return toast.error("For Payable, choose a listed vendor");
     setBusy(true);
@@ -334,15 +374,38 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
               + Add item
             </Button>
           </Stack>
+          {lastBill?.items?.length > 0 && (
+            <Button size="small" variant="outlined" fullWidth onClick={useLastBill} sx={{ mb: 1, fontWeight: 700 }}>
+              ↻ Same items as last bill ({lastBill.date} · {lastBill.items.length} items) — then change qty/rate
+            </Button>
+          )}
           {f.items.length === 0 && (
-            <Typography variant="caption" color={Q.muted}>
-              Optional — add items (qty, unit, rate) or just enter the bill total below.
+            <Typography variant="caption" color={Q.bad} fontWeight={700}>
+              Add at least one item (item, qty, rate).
             </Typography>
           )}
           {f.items.map((it, i) => (
             <Box key={i} sx={{ py: 1, borderTop: i ? `1px dashed ${Q.line}` : "none" }}>
               <Stack direction="row" spacing={1} alignItems="center">
-                <TextField size="small" label={`Item ${i + 1}`} value={it.name} onChange={(e) => setItem(i, "name", e.target.value)} fullWidth error={!it.name.trim()} />
+                <Autocomplete
+                  freeSolo
+                  fullWidth
+                  size="small"
+                  options={memory}
+                  getOptionLabel={(o) => (typeof o === "string" ? o : o?.name || "")}
+                  renderOption={(props, o) => (
+                    <li {...props} key={o._id || o.name}>
+                      <Box sx={{ flex: 1 }}>{o.name}</Box>
+                      <Typography variant="caption" color={Q.muted}>
+                        {inr(rateFor(o))}/{o.unit}
+                      </Typography>
+                    </li>
+                  )}
+                  inputValue={it.name}
+                  onInputChange={(e, v, reason) => reason === "input" && setItem(i, "name", v)}
+                  onChange={(e, v) => pickItem(i, v)}
+                  renderInput={(params) => <TextField {...params} label={`Item ${i + 1}`} error={!it.name.trim()} />}
+                />
                 <Button size="small" color="error" onClick={() => set("items", f.items.filter((_, j) => j !== i))} sx={{ minWidth: 36 }}>
                   ✕
                 </Button>
@@ -380,7 +443,7 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
             </Box>
           )}
         </Box>
-        {f.items.length === 0 && <MoneyField label="Bill amount (grand total)" value={f.amount} onChange={(v) => set("amount", v)} big />}
+
         <ChipChoice
           label="Payment"
           options={["Cash", "Payable"]}

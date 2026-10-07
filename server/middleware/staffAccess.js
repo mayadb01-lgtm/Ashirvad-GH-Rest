@@ -106,6 +106,8 @@ const RULES = {
     R("PUT", /^\/api\/v1\/room-charges\/rest-sync\/([^/]+)$/, { dateParam: 1 }),
     // Purchase bills (aaj ke; id wale routes andar date check karte hain)
     R("GET", /^\/api\/v1\/purchase\/day\/([^/]+)$/, { dateParam: 1 }),
+    R("GET", /^\/api\/v1\/purchase\/items$/),
+    R("GET", /^\/api\/v1\/purchase\/last\/[A-Za-z0-9]+$/),
     R("POST", /^\/api\/v1\/purchase$/, { dateBody: "date" }),
     R("PUT", /^\/api\/v1\/purchase\/[a-f0-9]{24}$/),
     R("DELETE", /^\/api\/v1\/purchase\/[a-f0-9]{24}$/),
