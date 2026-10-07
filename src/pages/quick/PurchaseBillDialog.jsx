@@ -146,7 +146,7 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
     if (!open || !vendorId) return;
     axios
       .get(`${API}/purchase/last/${vendorId}`)
-      .then(({ data }) => setLastBill(data.data || null))
+      .then(({ data }) => setLastBill(data.data ? { ...data.data, vendorId } : null))
       .catch(() => setLastBill(null));
   }, [open, vendorId]);
   const rateFor = (m) => (vendorId && m?.vendorRates?.[vendorId]) || m?.lastRate || 0;
@@ -374,7 +374,7 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
               + Add item
             </Button>
           </Stack>
-          {lastBill?.items?.length > 0 && (
+          {f.vendor && lastBill?.vendorId === vendorId && lastBill?.items?.length > 0 && (
             <Button size="small" variant="outlined" fullWidth onClick={useLastBill} sx={{ mb: 1, fontWeight: 700 }}>
               ↻ Same items as last bill ({lastBill.date} · {lastBill.items.length} items) — then change qty/rate
             </Button>
