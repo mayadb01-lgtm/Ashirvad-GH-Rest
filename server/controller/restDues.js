@@ -72,7 +72,7 @@ router.get("/gh-cash/:date", async (req, res) => {
     const days = [];
     for (let i = 0; i <= 30; i++) days.push(d.subtract(i, "day").format(F));
     const [paid, handed] = await Promise.all([
-      RoomCharge.find({ kind: "food", source: "rest", isPaid: true, paidMode: "Cash", paidDate: { $in: days } }).lean(),
+      RoomCharge.find({ kind: "food", source: "rest", isPaid: true, paidMode: "Cash", paidAt: { $ne: "rest" }, paidDate: { $in: days } }).lean(),
       RestDueReceipt.find({ source: "gh", cancelled: { $ne: true } }, { chargeId: 1 }).lean(),
     ]);
     const done = new Set(handed.map((h) => h.chargeId));
@@ -115,6 +115,49 @@ router.post("/gh-handover", async (req, res) => {
       }))
     );
     res.json({ success: true, data: docs });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// ───── Room ka food bill Restaurant counter par bhi wasool ho sakta hai ─────
+// GET /room-bills/:date → baaki room food bill (pichhle 60 din) + aaj Restaurant par wasool hue
+router.get("/room-bills/:date", async (req, res) => {
+  try {
+    if (!validDate(req.params.date)) return bad(res, "Invalid date");
+    const d = dayjs(req.params.date, F, true);
+    const days = [];
+    for (let i = 0; i <= 60; i++) days.push(d.subtract(i, "day").format(F));
+    const [due, paidToday] = await Promise.all([
+      RoomCharge.find({ kind: "food", source: "rest", isPaid: false, date: { $in: days } }).lean(),
+      RoomCharge.find({ kind: "food", isPaid: true, paidAt: "rest", paidDate: req.params.date }).lean(),
+    ]);
+    const pick = (c) => ({ _id: c._id, roomNo: c.roomNo, guestName: c.guestName, date: c.date, amount: c.amount, paidMode: c.paidMode, paidBy: c.paidBy });
+    const dv = (s) => String(s).split("-").reverse().join("");
+    res.json({ success: true, data: { due: due.sort((a, b) => dv(a.date).localeCompare(dv(b.date))).map(pick), paidToday: paidToday.map(pick) } });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// POST /room-bills/:id/receive { date, mode: Cash | Card | PP } → GH par bhi "paid" dikhega (Restaurant par wasool)
+router.post("/room-bills/:id([a-f0-9]{24})/receive", async (req, res) => {
+  try {
+    const b = req.body || {};
+    if (!validDate(b.date)) return bad(res, "Invalid date");
+    if (!dateOk(req, b.date)) return bad(res, "Only today's collection can be added", 403);
+    if (!["Cash", "Card", "PP"].includes(b.mode)) return bad(res, "Choose Cash, Card or PP (UPI)");
+    const doc = await RoomCharge.findById(req.params.id);
+    if (!doc || doc.kind !== "food") return bad(res, "Bill not found", 404);
+    if (doc.isPaid) return bad(res, "This room bill is already paid");
+    doc.isPaid = true;
+    doc.paidMode = b.mode;
+    doc.paidDate = b.date;
+    doc.paidBy = who(req);
+    doc.paidAt = "rest";
+    doc.updatedBy = who(req);
+    await doc.save();
+    res.json({ success: true, data: doc });
   } catch (e) {
     fail(res, e);
   }

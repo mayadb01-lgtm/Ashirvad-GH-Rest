@@ -54,6 +54,7 @@ const Row = ({ c, isAdmin, onChanged }) => {
             sx={{ fontSize: 12, fontWeight: 700, px: 1.1, py: 0.3, borderRadius: 10, bgcolor: "#CCFBF1", color: "#115E59", border: 0, cursor: isAdmin ? "pointer" : "default" }}
           >
             ✓ {c.paidMode}
+            {c.paidAt === "rest" ? " · at restaurant" : ""}
           </Box>
         ) : (
           <Button size="small" variant="outlined" color="error" disabled={busy} onClick={() => setPaying((p) => !p)} sx={{ minWidth: 0, fontWeight: 700, px: 1 }}>

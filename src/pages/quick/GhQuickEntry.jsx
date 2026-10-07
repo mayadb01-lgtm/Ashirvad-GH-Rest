@@ -1374,7 +1374,12 @@ const GhQuickEntry = ({ date, isAdmin }) => {
                       {c.guestName ? ` · ${c.guestName}` : ""} · {c.paidMode}
                       {c.paidBy ? ` · by ${c.paidBy}` : ""}
                     </Typography>
-                    {c.kind === "food" && c.paidMode === "Cash" && (
+                    {c.paidAt === "rest" && (
+                      <Typography variant="caption" fontWeight={700} display="block" color={Q.good}>
+                        ✓ Received at the restaurant counter (not in GH cash)
+                      </Typography>
+                    )}
+                    {c.kind === "food" && c.paidMode === "Cash" && c.paidAt !== "rest" && (
                       <Typography variant="caption" fontWeight={700} display="block" color={c.handedOver ? Q.good : "#B45309"}>
                         {c.handedOver ? `✓ Given to restaurant cashier (${c.handedOver.date})` : "⏳ Give this cash to the restaurant cashier"}
                       </Typography>

@@ -25,6 +25,7 @@ const roomChargeSchema = new mongoose.Schema(
     paidMode: { type: String, default: "" }, // Cash / Card / PPS / PPC
     paidDate: { type: String, default: "" },
     paidBy: { type: String, default: "" },
+    paidAt: { type: String, default: "" }, // "" / "gh" = GH counter, "rest" = Restaurant counter par wasool
     enteredBy: { type: String, default: "" },
     updatedBy: { type: String, default: "" },
   },

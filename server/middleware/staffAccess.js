@@ -121,6 +121,8 @@ const RULES = {
     R("PUT", /^\/api\/v1\/rest-dues\/[a-f0-9]{24}\/cancel$/),
     R("GET", /^\/api\/v1\/rest-dues\/gh-cash\/([^/]+)$/, { dateParam: 1 }),
     R("POST", /^\/api\/v1\/rest-dues\/gh-handover$/, { dateBody: "date" }),
+    R("GET", /^\/api\/v1\/rest-dues\/room-bills\/([^/]+)$/, { dateParam: 1 }),
+    R("POST", /^\/api\/v1\/rest-dues\/room-bills\/[a-f0-9]{24}\/receive$/, { dateBody: "date" }),
     dayStatus,
   ],
   office: [

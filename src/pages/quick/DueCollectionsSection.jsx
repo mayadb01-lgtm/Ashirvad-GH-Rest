@@ -20,7 +20,12 @@ export const useDueReceipts = (date) => {
   const [receipts, setReceipts] = useState([]);
   const [due, setDue] = useState({ due: [], total: 0 });
   const [ghCash, setGhCash] = useState([]); // GH counter par Cash mein wasool room food bill, jo abhi Restaurant ko nahi mile
+  const [roomBills, setRoomBills] = useState({ due: [], paidToday: [] }); // room ke food bill: baaki + aaj Restaurant par wasool
   const load = useCallback(() => {
+    axios
+      .get(`${API}/rest-dues/room-bills/${date}`)
+      .then(({ data }) => setRoomBills(data.data || { due: [], paidToday: [] }))
+      .catch(() => setRoomBills({ due: [], paidToday: [] }));
     axios
       .get(`${API}/rest-dues/gh-cash/${date}`)
       .then(({ data }) => setGhCash(data.data || []))
@@ -42,13 +47,15 @@ export const useDueReceipts = (date) => {
   const byMode = useMemo(() => {
     const o = { Cash: 0, Card: 0, PP: 0 };
     live.forEach((r) => (o[r.mode] = (o[r.mode] || 0) + num(r.amount)));
+    roomBills.paidToday.forEach((c) => (o[c.paidMode] = (o[c.paidMode] || 0) + num(c.amount)));
     return o;
-  }, [live]);
-  return { receipts, live, due, byMode, fromGh, ghCash, total: byMode.Cash + byMode.Card + byMode.PP, reload: load };
+  }, [live, roomBills]);
+  return { receipts, live, due, byMode, fromGh, ghCash, roomBills, total: byMode.Cash + byMode.Card + byMode.PP, reload: load };
 };
 
 const DueCollectionsSection = ({ date, dues }) => {
-  const { receipts, due, total, reload, ghCash, fromGh } = dues;
+  const { receipts, due, total, reload, ghCash, fromGh, roomBills } = dues;
+  const [roomPay, setRoomPay] = useState(null); // room bill _id jiska mode chun rahe hain
   const [form, setForm] = useState(null); // { person, amount, mode, note }
   const [busy, setBusy] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -85,6 +92,20 @@ const DueCollectionsSection = ({ date, dues }) => {
     }
   };
   const ghTotal = ghCash.reduce((t, c) => t + num(c.amount), 0);
+  const receiveRoom = async (c, mode) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await axios.post(`${API}/rest-dues/room-bills/${c._id}/receive`, { date, mode });
+      toast.success(`Room ${c.roomNo} food bill ${inr(c.amount)} received by ${modeLabel(mode)}. It shows as paid on the GH screen too.`);
+      setRoomPay(null);
+      reload();
+    } catch (e) {
+      toast.error(apiError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
   const cancel = async (r) => {
     if (!window.confirm(`Remove ${inr(r.amount)} received from ${r.name}?`)) return;
     try {
@@ -140,6 +161,45 @@ const DueCollectionsSection = ({ date, dues }) => {
           </Button>
         )}
 
+        {roomBills.due.length > 0 && (
+          <Box sx={{ mt: 1.5, p: 1.25, borderRadius: 2, bgcolor: "#FFF7ED", border: "1px solid #FED7AA" }}>
+            <Typography fontWeight={800}>🛏 Room food bills due · {inr(roomBills.due.reduce((t, c) => t + num(c.amount), 0))}</Typography>
+            <Typography variant="caption" color={Q.muted}>
+              Usually the GH cashier collects these with the room bill. If the guest pays here, receive it here — GH will see it as paid.
+            </Typography>
+            {roomBills.due.map((c) => (
+              <Box key={c._id} sx={{ py: 0.6, borderTop: `1px solid #FED7AA`, mt: 0.5 }}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography fontWeight={700} noWrap>
+                      Room {c.roomNo}
+                      {c.guestName ? ` · ${c.guestName}` : ""}
+                    </Typography>
+                    <Typography variant="caption" color={Q.muted}>
+                      Bill of {c.date}
+                    </Typography>
+                  </Box>
+                  <Typography fontWeight={800} sx={{ color: Q.bad }}>
+                    {inr(c.amount)}
+                  </Typography>
+                  <Button size="small" variant="outlined" disabled={busy} onClick={() => setRoomPay(roomPay === c._id ? null : c._id)} sx={{ fontWeight: 800, color: COLOR, borderColor: COLOR, minWidth: 0 }}>
+                    {roomPay === c._id ? "Cancel" : "Receive"}
+                  </Button>
+                </Stack>
+                <Collapse in={roomPay === c._id}>
+                  <Stack direction="row" spacing={1} sx={{ pt: 1 }}>
+                    {MODES.map(([v, l]) => (
+                      <Button key={v} size="small" variant="contained" disabled={busy} onClick={() => receiveRoom(c, v)} sx={{ bgcolor: COLOR, fontWeight: 800, "&:hover": { bgcolor: COLOR } }}>
+                        {l}
+                      </Button>
+                    ))}
+                  </Stack>
+                </Collapse>
+              </Box>
+            ))}
+          </Box>
+        )}
+
         {ghCash.length > 0 && (
           <Box sx={{ mt: 1.5, p: 1.25, borderRadius: 2, bgcolor: "#F0FDFA", border: "1px solid #99F6E4" }}>
             <Stack direction="row" alignItems="center" spacing={1}>
@@ -176,10 +236,27 @@ const DueCollectionsSection = ({ date, dues }) => {
           </Box>
         )}
 
-        <Collapse in={receipts.length > 0}>
+        <Collapse in={receipts.length > 0 || roomBills.paidToday.length > 0}>
           <Typography variant="caption" fontWeight={800} color={Q.muted} sx={{ display: "block", mt: 1.5, mb: 0.5 }}>
             RECEIVED TODAY
           </Typography>
+          {roomBills.paidToday.map((c) => (
+            <Stack key={c._id} direction="row" alignItems="center" sx={{ py: 0.75, borderTop: `1px solid ${Q.line}` }}>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography fontWeight={700} noWrap>
+                  Room {c.roomNo} food bill{c.guestName ? ` · ${c.guestName}` : ""}
+                </Typography>
+                <Typography variant="caption" color={Q.muted}>
+                  Bill of {c.date}
+                  {c.paidBy ? ` · by ${c.paidBy}` : ""} · paid on GH screen too (only owner can undo)
+                </Typography>
+              </Box>
+              <Stack alignItems="flex-end">
+                <Typography fontWeight={800}>{inr(c.amount)}</Typography>
+                <StatusPill tone={c.paidMode === "Cash" ? "good" : "info"}>{modeLabel(c.paidMode)}</StatusPill>
+              </Stack>
+            </Stack>
+          ))}
           {receipts.map((r) => (
             <ButtonBase
               key={r._id}

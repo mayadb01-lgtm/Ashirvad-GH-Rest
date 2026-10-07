@@ -300,6 +300,7 @@ router.put("/paid/:id", async (req, res) => {
     doc.paidMode = isPaid ? req.body.paidMode : "";
     doc.paidDate = isPaid ? dayjs(new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10)).format(F) : "";
     doc.paidBy = isPaid ? who(req) : "";
+    doc.paidAt = isPaid ? "gh" : "";
     doc.updatedBy = who(req);
     await doc.save();
     res.json({ success: true, data: doc });
