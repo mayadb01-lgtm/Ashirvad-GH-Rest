@@ -320,6 +320,49 @@ const RestQuickEntry = ({ date }) => {
       </Stack>
 
       <Grid container spacing={2}>
+        <Grid size={{ xs: 12, md: 7 }}>
+          <Stack spacing={2}>
+            {sectionBlock("expenses", (r) => (
+              <>
+                <Typography fontWeight={700} noWrap>
+                  {r.expenseName}
+                  {r.fullname ? ` · ${r.fullname}` : ""}
+                </Typography>
+                <Typography variant="caption" color={Q.muted}>
+                  {r.categoryName}
+                </Typography>
+              </>
+            ))}
+            {sectionBlock("upad", (r) => (
+              <Typography fontWeight={700} noWrap>
+                {r.fullname}
+              </Typography>
+            ))}
+            {sectionBlock("pending", (r) => (
+              <>
+                <Typography fontWeight={700} noWrap>
+                  {r.fullname}
+                </Typography>
+                {r.room && (
+                  <Typography variant="caption" sx={{ color: "#0F766E", fontWeight: 700 }} noWrap component="div">
+                    {roomText(r.room)}
+                    {r.room.period ? ` · ${PERIOD_LABEL[r.room.period] || r.room.period}` : ""}
+                  </Typography>
+                )}
+              </>
+            ))}
+            {sectionBlock("pendingUsers", (r) => (
+              <>
+                <Typography fontWeight={700} noWrap>
+                  {r.fullname}
+                </Typography>
+                <Typography variant="caption" color={Q.muted}>
+                  {r.categoryName}
+                </Typography>
+              </>
+            ))}
+          </Stack>
+        </Grid>
         <Grid size={{ xs: 12, md: 5 }}>
           <Stack spacing={2} sx={{ position: { md: "sticky" }, top: { md: 16 } }}>
             <Section title="Cash collection / Sales" subtitle="Today's collection" color={Q.rest}>
@@ -372,50 +415,6 @@ const RestQuickEntry = ({ date }) => {
                 </Typography>
               )}
             </Box>
-          </Stack>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 7 }}>
-          <Stack spacing={2}>
-            {sectionBlock("expenses", (r) => (
-              <>
-                <Typography fontWeight={700} noWrap>
-                  {r.expenseName}
-                  {r.fullname ? ` · ${r.fullname}` : ""}
-                </Typography>
-                <Typography variant="caption" color={Q.muted}>
-                  {r.categoryName}
-                </Typography>
-              </>
-            ))}
-            {sectionBlock("upad", (r) => (
-              <Typography fontWeight={700} noWrap>
-                {r.fullname}
-              </Typography>
-            ))}
-            {sectionBlock("pending", (r) => (
-              <>
-                <Typography fontWeight={700} noWrap>
-                  {r.fullname}
-                </Typography>
-                {r.room && (
-                  <Typography variant="caption" sx={{ color: "#0F766E", fontWeight: 700 }} noWrap component="div">
-                    {roomText(r.room)}
-                    {r.room.period ? ` · ${PERIOD_LABEL[r.room.period] || r.room.period}` : ""}
-                  </Typography>
-                )}
-              </>
-            ))}
-            {sectionBlock("pendingUsers", (r) => (
-              <>
-                <Typography fontWeight={700} noWrap>
-                  {r.fullname}
-                </Typography>
-                <Typography variant="caption" color={Q.muted}>
-                  {r.categoryName}
-                </Typography>
-              </>
-            ))}
           </Stack>
         </Grid>
       </Grid>
