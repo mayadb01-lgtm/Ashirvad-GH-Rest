@@ -571,6 +571,37 @@ const GhQuickEntry = ({ date, isAdmin }) => {
     });
     }, [server.loaded, submitted, stayInfo, setDraft, isAdmin, date]);
 
+  // 🔗 Aaj ke check-in jo doosre phone / computer se hue (server pe stay hai, is screen ke draft mein nahi) → yahan bhi bharo
+  useEffect(() => {
+    if (!server.loaded || (submitted && !isAdmin) || !stayInfo?._ok || !stayInfo?.started?.length) return;
+    if (submitted && seededFor.current !== date) return;
+    setDraft((d) => {
+      const dismissed = d._dismissed || [];
+      const rooms = { ...d.rooms };
+      let changed = false;
+      stayInfo.started.forEach((st) => {
+        const k = keyOf(st.period, st.roomNo);
+        if (rooms[k] || dismissed.includes(String(st._id)) || !st.guest) return;
+        // checkout hone ke baad usi slot mein naya guest ho sakta hai — wo alag slot mein aata hai, isliye yahan sirf khaali slot
+        const g = st.guest;
+        rooms[k] = {
+          fullname: g.fullname || "",
+          mobileNumber: g.mobileNumber || "",
+          type: g.type || "",
+          noOfPeople: g.noOfPeople || 0,
+          rate: g.rate || 0,
+          discount: g.discount || 0,
+          checkInTime: g.checkInTime || "",
+          checkOutTime: g.checkOutTime || "11:00 AM",
+          modeOfPayment: g.modeOfPayment || "",
+          ...(st.bookingId ? { _bookingId: st.bookingId } : {}),
+        };
+        changed = true;
+      });
+      return changed ? { ...d, rooms } : d;
+    });
+  }, [server.loaded, submitted, stayInfo, setDraft, isAdmin, date]);
+
   const others = useMemo(
     () => server.entries.filter((e) => !ROOM_PERIODS.includes(e.period) && e.period !== "UnPaid"),
     [server.entries]
@@ -706,6 +737,10 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       const lines = [];
       for (const x of all) {
         const d = await computeDues({ roomNo: x.roomNo, from: x.from, to: date, unpaid, todayRows: x.today, jamaKeys: jk });
+        if (d.needMode) {
+          toast.error(`Room ${x.roomNo}: select payment (Cash / Card / PPS / PPC / Unpaid) first`);
+          return false;
+        }
         due += d.due;
         d.lines.forEach((l) => lines.push(`Room ${x.roomNo}: ${l}`));
       }
@@ -730,6 +765,11 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         todayRows: stayId && !f._stayId ? [] : [f],
         jamaKeys: new Set(draft.jama.map((j) => `${j.createDate}|${j.roomNo}|${j.mobileNumber}`)),
       });
+      if (dues.needMode) {
+        toast.error("Select payment (Cash / Card / PPS / PPC / Unpaid) before check-out");
+        setEditing(roomNo);
+        return false;
+      }
       if (dues.due > 0) {
         setPayBlock({ roomNo, guest: f.fullname, dues });
         return false;
@@ -794,8 +834,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
   const checkoutRoom = async (f) => {
     try {
       const roomNo = room.roomNumber;
-      if (!f._stayId) saveRoom({ ...f });
-      else setEditing(null);
+      saveRoom({ ...f }); // chuna hua payment draft mein bhi (continue stay ke liye bhi)
       await doCheckout(roomNo, period, f, undefined, f._stayStart || date);
     } catch (e) {
       toast.error(apiError(e));
