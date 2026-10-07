@@ -55,7 +55,7 @@ const SEED_PACKAGES = [
     ["Breakfast items", 2, 150, ["Dal pakvan", "Jalebi", "Fafda", "Samosa", "Methi gota", "Patra", "Dhokla", "Thepla", "Aloo paratha", "Idli sambhar", "Dosa", "Upma", "Uttapam", "Vada sambhar", "Poha", "Misal pav", "Bread butter", "Bread jam", "Veg sandwich"]],
   ]],
   // Sheet ke Lunch/Dinner plan weight ke hisab se: Silver ≈ 900 gm, Gold ≈ 1100 gm, Platinum ≈ 1200 gm per person (owner 08-10-2026)
-  ["Silver (≈900 gm)", "Lunch", [
+  ["Silver", "Lunch", [
     ["Welcome drink", 1, 150, ["Soft drink", "Buttermilk"]],
     ["Starter / farsan", 1, 100, ["Khaman / dhokla", "Crispy potato starter", "Veg Chinese nugget"]],
     ["Sabji", 1, 150, ["Ringan bharthu", "Sev tameta", "Mix veg", "Veg handi", "Undhiyu"]],
@@ -65,7 +65,7 @@ const SEED_PACKAGES = [
     ["Salad / papad", 1, 50, ["Roasted papad, salad"]],
     ["Sweet", 1, 80, ["Gulab jamun / Mohanthal", "Shahi kheer"]],
   ]],
-  ["Gold (≈1100 gm)", "Lunch", [
+  ["Gold", "Lunch", [
     ["Welcome drink", 1, 200, ["Soft drink", "Buttermilk", "Mocktail"]],
     ["Starter / farsan", 1, 120, ["Khaman / dhokla", "Soup", "Manchurian dry", "Crispy potato starter", "Veg Chinese nugget", "Paneer starter"]],
     ["Sabji", 2, 100, ["Ringan bharthu", "Sev tameta", "Undhiyu", "Mix veg", "PTM", "PBM", "Veg handi", "Paneer maharaja"]],
@@ -75,7 +75,7 @@ const SEED_PACKAGES = [
     ["Salad / papad", 1, 60, ["Roasted papad, salad"]],
     ["Sweet", 1, 100, ["Gulab jamun / Mohanthal", "Shrikhand", "Shahi kheer"]],
   ]],
-  ["Platinum (≈1200 gm)", "Lunch", [
+  ["Platinum", "Lunch", [
     ["Drinks", 2, 100, ["Soft drink", "Buttermilk", "Mocktail", "Shakes"]],
     ["Soup", 1, 100, ["Soup"]],
     ["Starter / farsan", 1, 100, ["Khaman / dhokla", "Manchurian dry", "Paneer starter", "Crispy potato starter", "Veg Chinese nugget"]],
@@ -136,6 +136,8 @@ const seedOnce = async () => {
     if (add.length) await BanquetPackage.insertMany(add);
     await AppSetting.updateOne({ _id: "banquetPackagesTiers" }, { $set: { value: true, at: new Date() } }, { upsert: true });
   }
+  // Owner: package ke naam mein gram nahi (andar ki baat) — "Silver (≈900 gm)" → "Silver"
+  for (const t of ["Silver", "Gold", "Platinum"]) await BanquetPackage.updateMany({ name: new RegExp(`^${t} \\(`) }, { $set: { name: t } });
   // Owner 08-10-2026: hall rent ₹2,500 / hour, per day wala band
   const v4 = await AppSetting.findById("banquetHallRent2500").lean();
   if (!v4) {
