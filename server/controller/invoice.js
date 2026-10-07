@@ -70,7 +70,7 @@ router.get("/room-prefill/:date/:period/:roomNo", async (req, res) => {
     const ch = charges.filter((c) => !c.period || c.period === period);
     const items = [];
     if (e) {
-      const rate = Math.max(0, (Number(e.rate) || 0) - (Number(e.discount) || 0));
+      const rate = Math.max(0, Number(e.rate) || 0); // Rate = discount ke baad ki final rakam
       items.push({ desc: `Room rent — Room ${roomNo}${room?.roomType ? ` (${room.roomType})` : ""}`, sac: SAC.room, qty: 1, rate, taxRate: 5 });
     }
     const food = ch.filter((c) => c.kind === "food").reduce((s, c) => s + (Number(c.amount) || 0), 0);
@@ -86,7 +86,7 @@ router.get("/room-prefill/:date/:period/:roomNo", async (req, res) => {
         roomList.push(rn);
         const rm = rooms2.find((x) => x.roomNumber === rn);
         const er = (doc?.entry || []).find((x) => x.roomNo === rn && ["day", "night", "extraDay", "extraNight"].includes(x.period));
-        if (er) items.push({ desc: `Room rent — Room ${rn}${rm?.roomType ? ` (${rm.roomType})` : ""}`, sac: SAC.room, qty: 1, rate: Math.max(0, (Number(er.rate) || 0) - (Number(er.discount) || 0)), taxRate: 5 });
+        if (er) items.push({ desc: `Room rent — Room ${rn}${rm?.roomType ? ` (${rm.roomType})` : ""}`, sac: SAC.room, qty: 1, rate: Math.max(0, Number(er.rate) || 0), taxRate: 5 });
         const c2 = charges2.filter((c) => c.roomNo === rn);
         const f2 = c2.filter((c) => c.kind === "food").reduce((t, c) => t + (Number(c.amount) || 0), 0);
         if (f2 > 0) items.push({ desc: `Restaurant food & beverages — Room ${rn}`, sac: SAC.food, qty: 1, rate: f2, taxRate: 5 });

@@ -111,7 +111,7 @@ const isTouched = (r) => r && (num(r.rate) > 0 || String(r.fullname || "").trim(
 /* ---------------- Room card ---------------- */
 const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkout, booking, advance = 0, period, dueOut, group }) => {
   // Room pe "baaki" dikhao: room rent (agar UnPaid) + food/extra jo abhi paid nahi − booking advance
-  const rentDue = row?.modeOfPayment === "UnPaid" ? Math.max(0, num(row?.rate) - num(row?.discount)) : 0;
+  const rentDue = row?.modeOfPayment === "UnPaid" ? Math.max(0, num(row?.rate)) : 0; // Rate = final
   const due = Math.max(0, rentDue + charges.filter((c) => !c.isPaid).reduce((s, c) => s + num(c.amount), 0) - advance);
   const nextLabel = PERIODS.find((p) => p.key === NEXT_PERIOD[period])?.label;
   const filled = row && rowIssues(row).length === 0;
@@ -1546,7 +1546,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
               </Typography>
             ))}
             <Typography variant="caption" color={Q.muted}>
-              To collect: select the payment mode for today&apos;s room, mark food/extra charges as paid in the room bill, and add earlier unpaid days under Collections. If the amount is to be waived, enter it as a Discount on the room. Then check out again.
+              To collect: select the payment mode for today&apos;s room, mark food/extra charges as paid in the room bill, and add earlier unpaid days under Collections. If something is to be waived, the owner can lower the room rate (rate is the final amount) or remove the extra charge. Then check out again.
             </Typography>
           </Stack>
         )}

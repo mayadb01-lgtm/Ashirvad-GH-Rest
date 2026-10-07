@@ -30,16 +30,14 @@ export const computeDues = async ({ roomNo, from, to, unpaid = [], todayRows = n
     .filter((u) => !(todayRows && (u.createDate || u.date) === to)) // aaj ka draft hi maana jaayega
     .filter((u) => !jamaKeys.has(`${u.createDate}|${u.roomNo}|${u.mobileNumber}`))
     .forEach((u) => {
-      const amt = Math.max(0, num(u.rate) - num(u.discount));
+      const amt = num(u.rate); // Rate = discount ke baad ki final rakam
       rent += amt;
       lines.push(`Room rent ${u.createDate}: ₹${Math.round(amt)}`);
     });
-  // Aaj ka discount poore bill se ghatta hai (owner food/extra bhi discount se maaf kar sakta hai)
   // Cash / Card / PPS / PPC = paid (valid). Sirf "UnPaid" baaki gina jaata hai. Payment chuna hi nahi → pehle chunna padega.
-  let discount = 0;
+  // Rate = discount ke baad ki final rakam (discount sirf jaankari ke liye, dobara nahi ghatta)
   let needMode = false;
   (todayRows || []).forEach((r) => {
-    discount += num(r.discount);
     const amt = num(r.rate);
     if (!amt) return;
     if (!r.modeOfPayment) {
@@ -62,8 +60,7 @@ export const computeDues = async ({ roomNo, from, to, unpaid = [], todayRows = n
   } catch {
     /* charges check server pe bhi hota hai */
   }
-  const due = Math.max(0, rent + charges - advance - discount);
+  const due = Math.max(0, rent + charges - advance);
   if (advance > 0) lines.push(`Booking advance: −₹${Math.round(advance)}`);
-  if (discount > 0) lines.push(`Discount: −₹${Math.round(discount)}`);
   return { rent, charges, advance, due, lines, needMode };
 };

@@ -91,7 +91,7 @@ const RoomChargesPanel = ({ date, period, roomNo, guestName, mobile, charges = [
   const food = charges.filter((c) => c.kind === "food");
   const extra = charges.filter((c) => c.kind === "extra");
   const sumOf = (l) => l.reduce((s, c) => s + num(c.amount), 0);
-  const rent = Math.max(0, num(roomRate) - num(discount));
+  const rent = Math.max(0, num(roomRate)); // Rate = final (discount ke baad)
   const total = rent + sumOf(food) + sumOf(extra);
   const due = Math.max(0, (roomPaid ? 0 : rent) + sumOf(charges.filter((c) => !c.isPaid)) - num(advance));
 

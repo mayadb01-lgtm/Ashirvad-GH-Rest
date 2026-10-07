@@ -26,7 +26,7 @@ const RoomInvoiceButton = ({ date, period, roomNo, isAdmin, guestName, row, room
         const m = String(row.mobileNumber || "").replace(/\D/g, "");
         if (m && m !== "0") dr.customer.mobile = dr.customer.mobile || m;
         dr.stay.guests = dr.stay.guests || Number(row.noOfPeople) || 0;
-        const rate = Math.max(0, (Number(row.rate) || 0) - (Number(row.discount) || 0));
+        const rate = Math.max(0, Number(row.rate) || 0); // Rate = final
         if (rate > 0) dr.items = [{ desc: `Room rent — Room ${roomNo}${roomType ? ` (${roomType})` : ""}`, sac: "996311", qty: 1, rate, taxRate: 5 }, ...dr.items];
       }
       if (!dr.items.length) dr.items = [{ desc: `Room rent — Room ${roomNo}`, sac: "996311", qty: 1, rate: 0, taxRate: 5 }];
