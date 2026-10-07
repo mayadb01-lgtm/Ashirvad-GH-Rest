@@ -795,6 +795,33 @@ const GhQuickEntry = ({ date, isAdmin }) => {
     loadStay();
     return true;
   };
+  // 📅 Calendar se check-out: payment ho chuka ho to seedha; warna room khol kar payment chunwao
+  const PAID = ["Cash", "Card", "PPS", "PPC"];
+  const calendarCheckout = async (b) => {
+    const grp = groupOf(b.roomNo);
+    const rn = grp ? grp.mainRoom : b.roomNo;
+    const p = b.from === date ? b.period || "day" : "day";
+    const [pk, row] = grp ? rowOfRoom(rn) : [p, draft.rooms[keyOf(p, rn)]];
+    const openRoom = (msg) => {
+      setTab("rooms");
+      setPeriod(pk || p);
+      setEditing(rn);
+      toast(msg, { icon: "💳" });
+      return false;
+    };
+    try {
+      if (!row || !isTouched(row)) {
+        // kal ka guest, aaj 11 baje se pehle ja raha (aaj ka kiraya nahi) → seedha hisaab
+        if (!grp && (stayInfo?.dueOut || []).some((x) => String(x._id) === String(b.id))) return await doCheckout(rn, "day", { fullname: b.name }, b.id, b.from);
+        return openRoom(`Room ${rn}: select payment, then press Check out`);
+      }
+      if (!PAID.includes(row.modeOfPayment)) return openRoom(row.modeOfPayment === "UnPaid" ? `Room ${rn} is Unpaid — collect payment, then check out` : `Room ${rn}: select payment, then press Check out`);
+      return await doCheckout(rn, pk || p, row, undefined, row._stayStart || b.from || date);
+    } catch (e) {
+      toast.error(apiError(e));
+      return false;
+    }
+  };
   const guestSnap = (r) => (r ? { fullname: r.fullname, mobileNumber: digits(r.mobileNumber), type: r.type, noOfPeople: num(r.noOfPeople), rate: num(r.rate), discount: num(r.discount), checkInTime: r.checkInTime, checkOutTime: r.checkOutTime } : null);
   const openMove = (f) => {
     if (submitted && !isAdmin) return toast.error("This day is already submitted — ask the owner to change rooms.");
@@ -1157,6 +1184,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
             setPeriod(p || "day");
             setEditing(rn);
           }}
+          onCheckout={calendarCheckout}
         />
       ) : tab === "booking" ? (
         <BookingsPanel rooms={rooms} isAdmin={isAdmin} onChanged={loadStay} />

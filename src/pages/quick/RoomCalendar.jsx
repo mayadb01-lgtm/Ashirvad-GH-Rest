@@ -59,7 +59,7 @@ const D = (s) => dayjs(s, F, true);
 const endOf = (b) => b.expectedTo || b.to; // ruke guest ka andaaza bhi room ghera hua maana jaata hai
 const covers = (b, d) => !D(b.from).isAfter(d, "day") && !D(endOf(b)).isBefore(d, "day");
 
-const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
+const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom, onCheckout }) => {
   const small = useMediaQuery("(max-width:700px)");
   const [start, setStart] = useState(() => dayjs().subtract(1, "day").startOf("day"));
   const [days, setDays] = useState(small ? 7 : 14);
@@ -149,8 +149,15 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom }) => {
   };
 
   // Check-out sirf room screen se: wahin aaj ki payment chuni jaati hai aur poora hisaab (rent + food/extra) check hota hai
-  const openForCheckout = (b) => {
+  const openForCheckout = async (b) => {
     if (pageDate !== today.format(F) || !onOpenRoom) return toast.error("Open today's page to check out");
+    // Room screen pe payment ho chuka (Cash / Card / PPS / PPC) → yahin se seedha check-out, dobara payment nahi poochna
+    if (onCheckout) {
+      setBar(null);
+      const done = await onCheckout(b);
+      if (done) load();
+      return;
+    }
     const grp = (data?.groups || []).find((g) => (g.rooms || []).includes(b.roomNo));
     const rn = grp ? grp.mainRoom : b.roomNo;
     setBar(null);
