@@ -1,12 +1,13 @@
 // Restaurant receivables: kiska kitna baaki hai (Restaurant mein udhaar diya − Office mein wasool hua). Sirf dikhane ke liye.
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { Alert, Box, Button, Chip, IconButton, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, MenuItem, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import DownloadIcon from "@mui/icons-material/Download";
 import axios from "axios";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
+import dayjs from "dayjs";
 import { API, COLORS, Kpi, PageTitle, Section, inr, lakh } from "./shared";
 
 const Q2 = { muted: "#64748B" };
@@ -16,13 +17,33 @@ const RestReceivableBalance = () => {
   const [q, setQ] = useState("");
   const [show, setShow] = useState("due");
   const [open, setOpen] = useState({});
+  const [adj, setAdj] = useState(null); // { name, kind, amount, note, date }
 
-  useEffect(() => {
+  const load = () =>
     axios
       .get(`${API}/insights/rest-receivables`)
       .then(({ data: r }) => setData(r.data))
       .catch((e) => toast.error(e?.response?.data?.message || "Could not load receivables"));
+  useEffect(() => {
+    load();
   }, []);
+  const saveAdj = async () => {
+    try {
+      await axios.post(`${API}/rest-dues/adjust`, { ...adj, amount: Number(adj.amount) || 0, date: dayjs(adj.date).format("DD-MM-YYYY") });
+      toast.success("Saved. Only the balance changes — no money is counted.");
+      setAdj(null);
+      load();
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Could not save");
+    }
+  };
+  const cancelAdj = async (id) => {
+    if (!window.confirm("Remove this correction?")) return;
+    await axios.put(`${API}/rest-dues/adjust/${id}/cancel`).catch(() => {});
+    load();
+  };
+  const newAdj = (name = "", balance = 0) =>
+    setAdj({ name, kind: balance < 0 ? "opening" : "writeoff", amount: name ? Math.abs(balance) || "" : "", note: "", date: dayjs().format("YYYY-MM-DD") });
 
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -79,6 +100,9 @@ const RestReceivableBalance = () => {
               <ToggleButton value="all">All</ToggleButton>
             </ToggleButtonGroup>
             <TextField size="small" placeholder="Search name / mobile" value={q} onChange={(e) => setQ(e.target.value)} />
+            <Button variant="outlined" onClick={() => newAdj("", -1)}>
+              + Opening balance
+            </Button>
             <Button variant="contained" startIcon={<DownloadIcon />} onClick={exportExcel} disabled={!data}>
               Excel
             </Button>
@@ -133,7 +157,12 @@ const RestReceivableBalance = () => {
                           </Typography>
                         )}
                       </TableCell>
-                      <TableCell sx={td}>{r.lastReceived || "—"}</TableCell>
+                      <TableCell sx={td}>
+                        {r.lastReceived || "—"}
+                        <Button size="small" onClick={() => newAdj(r.name, r.balance)} sx={{ ml: 1, minWidth: 0, fontWeight: 700 }}>
+                          Correct
+                        </Button>
+                      </TableCell>
                     </TableRow>
                     {open[r.key] &&
                       r.ledger.map((l, i) => (
@@ -143,6 +172,11 @@ const RestReceivableBalance = () => {
                             {l.date} · <span style={{ color: l.kind === "given" ? COLORS.out : COLORS.net, fontWeight: 700 }}>{l.kind === "given" ? "Credit given" : "Received"}</span>
                             <Typography variant="caption" display="block" color="text.secondary">
                               {l.note}
+                              {l.adjustId && (
+                                <Button size="small" color="error" onClick={() => cancelAdj(l.adjustId)} sx={{ ml: 1, minWidth: 0, p: 0 }}>
+                                  remove
+                                </Button>
+                              )}
                             </Typography>
                           </TableCell>
                           <TableCell sx={td}>{l.kind === "given" ? inr(l.amount) : ""}</TableCell>
@@ -165,6 +199,33 @@ const RestReceivableBalance = () => {
           </TableContainer>
         )}
       </Section>
+
+      <Dialog open={!!adj} onClose={() => setAdj(null)} fullWidth maxWidth="xs">
+        <DialogTitle>Correct balance (owner)</DialogTitle>
+        {adj && (
+          <DialogContent>
+            <Stack spacing={1.5} sx={{ pt: 1 }}>
+              <TextField label="Name" value={adj.name} onChange={(e) => setAdj((a) => ({ ...a, name: e.target.value }))} helperText="Same name as in Receivables" />
+              <TextField select label="Type" value={adj.kind} onChange={(e) => setAdj((a) => ({ ...a, kind: e.target.value }))}>
+                <MenuItem value="opening">Opening balance — old credit from before the app (adds to balance)</MenuItem>
+                <MenuItem value="writeoff">Write-off / settled outside the app (reduces balance)</MenuItem>
+              </TextField>
+              <TextField label="Amount" type="number" value={adj.amount} onChange={(e) => setAdj((a) => ({ ...a, amount: e.target.value }))} />
+              <TextField label="Date" type="date" value={adj.date} onChange={(e) => setAdj((a) => ({ ...a, date: e.target.value }))} InputLabelProps={{ shrink: true }} />
+              <TextField label="Note" value={adj.note} onChange={(e) => setAdj((a) => ({ ...a, note: e.target.value }))} />
+              <Typography variant="caption" color="text.secondary">
+                This only corrects who owes how much. It is not money — it is not counted in cash, balance or profit reports.
+              </Typography>
+            </Stack>
+          </DialogContent>
+        )}
+        <DialogActions>
+          <Button onClick={() => setAdj(null)}>Cancel</Button>
+          <Button variant="contained" onClick={saveAdj} disabled={!adj?.name?.trim() || !(Number(adj?.amount) > 0)}>
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {!!data?.room?.dueList?.length && (
         <Section title={`Room bills still due at GH (${data.room.dueList.length})`}>

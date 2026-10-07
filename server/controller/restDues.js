@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import RestDueReceipt from "../model/restDueReceipt.js";
 import RoomCharge from "../model/roomCharge.js";
+import RestDueAdjust from "../model/restDueAdjust.js";
 import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
 import { computeRestReceivables, isRoomBill } from "../utils/restReceivables.js";
 import { nk } from "../utils/officeTypes.js";
@@ -59,8 +60,50 @@ router.post("/", async (req, res) => {
     // Do baar tap ho gaya to dobara na bane
     const dup = await RestDueReceipt.findOne({ date: b.date, nameKey: nk(name), amount, mode: b.mode, cancelled: { $ne: true }, createdAt: { $gte: new Date(Date.now() - 15000) } }).lean();
     if (dup) return res.json({ success: true, data: dup, duplicate: true });
+    // Baaki se zyada nahi (do counter par ek hi paisa do baar na ho). Owner ko chhoot.
+    if (!isAdminLike(req.user)) {
+      const r = await computeRestReceivables({ upto: dayjs(b.date, F, true) });
+      const bal = r.rows.find((x) => x.key === nk(name))?.balance || 0;
+      if (amount > bal) return bad(res, bal > 0 ? `Only ${"₹" + bal} is due from ${name}. It may already be received at another counter.` : `Nothing is due from ${name}. It may already be received at another counter.`);
+    }
     const doc = await RestDueReceipt.create({ date: b.date, name, nameKey: nk(name), amount, mode: b.mode, at, note: String(b.note || "").trim().slice(0, 200), enteredBy: who(req) });
     res.json({ success: true, data: doc });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// ───── Owner: purana baaki (opening) / maafi (writeoff) — paisa nahi, sirf baaki sudharna ─────
+router.get("/adjust", async (req, res) => {
+  try {
+    if (!isAdminLike(req.user)) return bad(res, "Only the owner can do this", 403);
+    res.json({ success: true, data: await RestDueAdjust.find({}).sort({ createdAt: -1 }).lean() });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+router.post("/adjust", async (req, res) => {
+  try {
+    if (!isAdminLike(req.user)) return bad(res, "Only the owner can do this", 403);
+    const b = req.body || {};
+    const name = String(b.name || "").trim();
+    const amount = Math.round(Number(b.amount) || 0);
+    if (!validDate(b.date)) return bad(res, "Invalid date");
+    if (!name) return bad(res, "Enter the name");
+    if (isRoomBill(name)) return bad(res, "Room bills are settled with the guest's room bill");
+    if (!["opening", "writeoff"].includes(b.kind)) return bad(res, "Choose opening balance or write-off");
+    if (!(amount > 0)) return bad(res, "Enter the amount");
+    const doc = await RestDueAdjust.create({ date: b.date, name, nameKey: nk(name), kind: b.kind, amount, note: String(b.note || "").trim().slice(0, 200), enteredBy: who(req) });
+    res.json({ success: true, data: doc });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+router.put("/adjust/:id([a-f0-9]{24})/cancel", async (req, res) => {
+  try {
+    if (!isAdminLike(req.user)) return bad(res, "Only the owner can do this", 403);
+    await RestDueAdjust.updateOne({ _id: req.params.id }, { $set: { cancelled: true, cancelledBy: who(req) } });
+    res.json({ success: true });
   } catch (e) {
     fail(res, e);
   }

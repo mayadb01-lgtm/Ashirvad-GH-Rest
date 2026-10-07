@@ -92,7 +92,7 @@ router.get("/cashflow/:from/:to", async (req, res) => {
       restCash: 0, restUdhaar: 0,
       officeIn: 0, recoveryIn: 0, loansIn: 0, personalIn: 0, transferIn: 0,
       restKharch: 0, restUpad: 0,
-      officeOut: 0, personalOut: 0, loanOut: 0, transferOut: 0,
+      officeOut: 0, personalOut: 0, loanOut: 0, transferOut: 0, refundOut: 0,
       inByCat: {}, outByCat: {},
     }));
     const byM = Object.fromEntries(months.map((m) => [m.month, m]));
@@ -134,6 +134,7 @@ router.get("/cashflow/:from/:to", async (req, res) => {
         if (t === "personal") m.personalOut += n(x.amount);
         else if (t === "emi") m.loanOut += n(x.amount);
         else if (t === "transfer") m.transferOut += n(x.amount);
+        else if (t === "refund") m.refundOut += n(x.amount);
         else m.officeOut += n(x.amount);
       });
     });
@@ -162,13 +163,13 @@ router.get("/cashflow/:from/:to", async (req, res) => {
     });
     months.forEach((m) => {
       m.aaya = m.ghCash + m.ghJama + m.restCash + m.officeIn + m.recoveryIn; // business ka paisa aaya (personal / loan / transfer alag)
-      m.gaya = m.restKharch + m.restUpad + m.officeOut; // business kharch (personal / EMI / transfer alag)
+      m.gaya = m.restKharch + m.restUpad + m.officeOut + m.refundOut; // business kharch + guest ko wapas (personal / EMI / transfer alag)
       m.businessNet = m.aaya - m.gaya;
       m.net = m.aaya + m.loansIn + m.personalIn - m.gaya - m.personalOut - m.loanOut; // transfer dono taraf barabar, isliye nahi gina
       Object.keys(m).forEach((k) => typeof m[k] === "number" && (m[k] = round(m[k])));
     });
 
-    const keys = ["ghCash", "ghJama", "ghUdhaar", "restCash", "restUdhaar", "officeIn", "recoveryIn", "loansIn", "personalIn", "transferIn", "restKharch", "restUpad", "officeOut", "personalOut", "loanOut", "transferOut", "aaya", "gaya", "businessNet", "net"];
+    const keys = ["ghCash", "ghJama", "ghUdhaar", "restCash", "restUdhaar", "officeIn", "recoveryIn", "loansIn", "personalIn", "transferIn", "restKharch", "restUpad", "officeOut", "personalOut", "loanOut", "transferOut", "refundOut", "aaya", "gaya", "businessNet", "net"];
     const totals = Object.fromEntries(keys.map((k) => [k, round(sum(months, (m) => m[k]))]));
     const outByCat = {};
     const inByCat = {};
@@ -457,7 +458,7 @@ router.get("/pnl/:from/:to", async (req, res) => {
     const months = monthList(from, to).map((m) => ({
       month: m, label: dayjs(m + "-01").format("MMM YY"),
       ghSales: 0, ghExtra: 0, ghDiscount: 0, restSales: 0, otherIncome: 0, otherByCat: {},
-      exp: {}, expGh: 0, expRest: 0, loanOut: 0, personalOut: 0,
+      exp: {}, expGh: 0, expRest: 0, loanOut: 0, personalOut: 0, refundOut: 0,
     }));
     const byM = Object.fromEntries(months.map((m) => [m.month, m]));
     const addExp = (m, cat, amt) => {
@@ -498,6 +499,7 @@ router.get("/pnl/:from/:to", async (req, res) => {
         const t = classify("out", c, lineName(x));
         if (t === "personal") return (m.personalOut += n(x.amount));
         if (t === "emi") return (m.loanOut += n(x.amount));
+        if (t === "refund") return (m.refundOut = (m.refundOut || 0) + n(x.amount)); // guest ko wapas (advance) — kharch nahi
         if (t === "transfer" || t === "loan" || t === "recovery") return; // apne account mein ghumaya — kharch nahi
         addExp(m, c, x.amount);
       });
@@ -511,10 +513,10 @@ router.get("/pnl/:from/:to", async (req, res) => {
       m.afterLoanPersonal = m.profit - m.loanOut - m.personalOut;
       m.ghProfit = m.ghSales + m.ghExtra - m.ghDiscount - m.expGh;
       groups.forEach((g) => (m.exp[g] = round(m.exp[g] || 0)));
-      ["ghSales", "ghExtra", "ghDiscount", "restSales", "otherIncome", "expGh", "expRest", "loanOut", "personalOut", "revenue", "expenses", "profit", "afterLoanPersonal", "ghProfit"].forEach((k) => (m[k] = round(m[k])));
+      ["ghSales", "ghExtra", "ghDiscount", "restSales", "otherIncome", "expGh", "expRest", "loanOut", "personalOut", "refundOut", "revenue", "expenses", "profit", "afterLoanPersonal", "ghProfit"].forEach((k) => (m[k] = round(m[k])));
     });
     const totals = {};
-    ["ghSales", "ghExtra", "ghDiscount", "restSales", "otherIncome", "expGh", "expRest", "loanOut", "personalOut", "revenue", "expenses", "profit", "afterLoanPersonal", "ghProfit"].forEach((k) => (totals[k] = round(sum(months, (m) => m[k]))));
+    ["ghSales", "ghExtra", "ghDiscount", "restSales", "otherIncome", "expGh", "expRest", "loanOut", "personalOut", "refundOut", "revenue", "expenses", "profit", "afterLoanPersonal", "ghProfit"].forEach((k) => (totals[k] = round(sum(months, (m) => m[k]))));
     totals.margin = totals.revenue ? round((100 * totals.profit) / totals.revenue, 1) : 0;
     totals.exp = Object.fromEntries(groups.map((g) => [g, round(sum(months, (m) => m.exp[g]))]));
     totals.otherByCat = {};

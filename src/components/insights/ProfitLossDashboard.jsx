@@ -50,6 +50,7 @@ const ProfitLossDashboard = () => {
     ["SHOWN SEPARATELY (not business expenses)", null, "head"],
     ["Loan EMI / repayment", (m) => m.loanOut],
     ["Personal withdrawals", (m) => m.personalOut],
+    ["Refunds to guests (booking advance returned — not an expense)", (m) => m.refundOut || 0],
     ["Remaining (after all)", (m) => m.afterLoanPersonal, "profit"],
   ];
   const totalOf = (fn, style) => (style === "pct" ? t.margin : months.reduce((s, m) => s + (Number(fn(m)) || 0), 0));

@@ -10,6 +10,8 @@ import * as XLSX from "xlsx";
 import { API, COLORS, Kpi, PageTitle, Section, inr, kTick, lakh, MonthRangeBar } from "./shared";
 
 const MODE_COLOR = { Cash: "#16A34A", PP: "#2563EB", PPS: "#9333EA", PPC: "#EA580C" };
+// Kaunsa mode kis account mein (owner ne bataya)
+const ACC = { Cash: "Cash in hand", PP: "Restaurant a/c (UPI + all card)", PPS: "GH saving a/c (non-GST)", PPC: "GH current a/c" };
 
 const ModeBalanceDashboard = () => {
   const [from, setFrom] = useState(dayjs().subtract(5, "month").startOf("month"));
@@ -68,7 +70,7 @@ const ModeBalanceDashboard = () => {
 
       <Stack direction="row" spacing={1.5} sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
         {modes.map((k) => (
-          <Kpi key={k} label={`${k} balance`} value={lakh(t[k]?.net)} sub={`In ${lakh(t[k]?.in)} · Out ${lakh(t[k]?.out)}`} color={MODE_COLOR[k]} />
+          <Kpi key={k} label={`${k} · ${ACC[k]}`} value={lakh(t[k]?.net)} sub={`In ${lakh(t[k]?.in)} · Out ${lakh(t[k]?.out)}`} color={MODE_COLOR[k]} />
         ))}
         <Kpi label="Total balance" value={lakh((data?.totalIn || 0) - (data?.totalOut || 0))} sub={`In ${lakh(data?.totalIn)} · Out ${lakh(data?.totalOut)}`} color={COLORS.net} />
       </Stack>
@@ -110,6 +112,9 @@ const ModeBalanceDashboard = () => {
                 {modes.map((k) => (
                   <TableCell key={k} colSpan={3} align="center" sx={{ fontWeight: 800, color: MODE_COLOR[k], borderLeft: "1px solid #E5E7EB" }}>
                     {k}
+                    <Typography variant="caption" display="block" color="text.secondary">
+                      {ACC[k]}
+                    </Typography>
                   </TableCell>
                 ))}
                 <TableCell colSpan={3} align="center" sx={{ fontWeight: 800, borderLeft: "1px solid #E5E7EB" }}>

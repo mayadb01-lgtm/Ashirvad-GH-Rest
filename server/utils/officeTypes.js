@@ -8,7 +8,7 @@
 import OfficeType from "../model/officeType.js";
 import AppSetting from "../model/appSetting.js";
 
-export const OFFICE_TYPES = ["business", "personal", "loan", "emi", "transfer", "recovery"];
+export const OFFICE_TYPES = ["business", "personal", "loan", "emi", "transfer", "recovery", "refund"];
 export const nk = (s) => String(s || "").replace(/\s+/g, " ").trim().toLowerCase();
 
 const TRANSFER_RE = /^(cash|pp|pps|ppc)\s*(to|->|→)\s*(cash|pp|pps|ppc|\d+)\b/i;
@@ -22,6 +22,8 @@ export const defaultType = (side, cat, name) => {
     if (/pending/.test(c)) return "recovery";
     return "business";
   }
+  // Guest ko paisa wapas (booking cancel / customer return) — kharch nahi, aaye paise ki wapsi
+  if (/refund|return|wapas|cancel/.test(nk(name))) return "refund";
   if (/loan/.test(c)) return "emi";
   if (/^personal/.test(c)) return "personal";
   return "business";

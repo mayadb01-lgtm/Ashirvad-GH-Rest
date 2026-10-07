@@ -63,6 +63,7 @@ const CashflowDashboard = () => {
       "Rest expenses from cash collection": m.restKharch,
       "Rest staff advance": m.restUpad,
       "Office Out (business)": m.officeOut,
+      "Refunds to guests (booking cancel)": m.refundOut,
       "MONEY OUT (business)": m.gaya,
       "REMAINING (business)": m.businessNet,
       Personal: m.personalOut,
@@ -131,7 +132,7 @@ const CashflowDashboard = () => {
           <Table size="small">
             <TableHead>
               <TableRow>
-                {["Month", "GH", "Restaurant", "Office In + old dues", "Money in", "Rest expenses + advance", "Office Out", "Money out", "Remaining", "Personal in", "Personal out", "Loan in", "Loan EMI", "Net"].map((h) => (
+                {["Month", "GH", "Restaurant", "Office In + old dues", "Money in", "Rest expenses + advance", "Office Out + refunds", "Money out", "Remaining", "Personal in", "Personal out", "Loan in", "Loan EMI", "Net"].map((h) => (
                   <TableCell key={h} align={h === "Month" ? "left" : "right"} sx={{ fontWeight: 700, whiteSpace: "nowrap" }}>
                     {h}
                   </TableCell>
@@ -147,7 +148,7 @@ const CashflowDashboard = () => {
                   <TableCell align="right">{inr(m.officeIn + (m.recoveryIn || 0))}</TableCell>
                   <TableCell align="right" sx={{ color: COLORS.in, fontWeight: 700 }}>{inr(m.aaya)}</TableCell>
                   <TableCell align="right">{inr(m.restKharch + m.restUpad)}</TableCell>
-                  <TableCell align="right">{inr(m.officeOut)}</TableCell>
+                  <TableCell align="right">{inr(m.officeOut + (m.refundOut || 0))}</TableCell>
                   <TableCell align="right" sx={{ color: COLORS.out, fontWeight: 700 }}>{inr(m.gaya)}</TableCell>
                   <TableCell align="right" sx={{ color: m.businessNet >= 0 ? COLORS.net : COLORS.bad, fontWeight: 800 }}>{inr(m.businessNet)}</TableCell>
                   <TableCell align="right" sx={{ color: COLORS.personal }}>{inr(m.personalIn)}</TableCell>

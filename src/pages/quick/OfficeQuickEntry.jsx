@@ -281,7 +281,12 @@ const OfficeQuickEntry = ({ date, isAdmin }) => {
   );
 
   const ed = editor;
-  const opts = ed ? (ed.side === "officeIn" ? lists.in : lists.out) : [];
+  // "Pending" se GH / Restaurant ka baaki ab 🤝 Counters dabbe se hi lena hai (warna do baar ginega) —
+  // isliye jinka Restaurant mein baaki hai aur GH/Restaurant ke aam naam Money in list mein nahi dikhte (sirf screen; purani entries waisi hi)
+  const restDueNames = new Set((counter.rest.due || []).map((d) => String(d.name || "").trim().toLowerCase()));
+  const viaCounters = (o) =>
+    o.categoryName === "Pending" && (restDueNames.has(String(o.expenseName || "").trim().toLowerCase()) || /gh\s*pending|restaurant\s*(pending|bill)|room\s*bill|canteen/i.test(o.expenseName || ""));
+  const opts = ed ? (ed.side === "officeIn" ? lists.in.filter((o) => !viaCounters(o)) : lists.out) : [];
   const edValue = ed?.row._id ? opts.find((o) => o._id === ed.row._id && o.expenseName === ed.row.expenseName) || null : null;
   const staffName = ed && isStaffCat(ed.row.categoryName);
   const setRow = (patch) => setEditor((e) => ({ ...e, row: { ...e.row, ...patch } }));
@@ -361,6 +366,11 @@ const OfficeQuickEntry = ({ date, isAdmin }) => {
               <Stack key={m} direction="row" sx={{ py: 0.4, ...(m === "Total" ? { borderTop: "1px solid #C7D2FE", mt: 0.5 } : {}) }}>
                 <Typography fontWeight={m === "Total" || m === "Cash" ? 800 : 600} sx={{ flex: 1 }}>
                   {m === "Cash" ? "Total cash" : m}
+                  {["PP", "PPS", "PPC"].includes(m) && (
+                    <Typography component="span" variant="caption" color={Q.muted} sx={{ display: "block", fontWeight: 400 }}>
+                      {{ PP: "restaurant a/c", PPS: "GH saving a/c", PPC: "GH current a/c" }[m]}
+                    </Typography>
+                  )}
                 </Typography>
                 <Typography sx={cell}>{inr(a)}</Typography>
                 <Typography sx={cell}>{inr(c)}</Typography>

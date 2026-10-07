@@ -11,6 +11,7 @@ import OfficeBook from "../model/officeBook.js";
 import RestPending from "../model/restPending.js";
 import RestDueReceipt from "../model/restDueReceipt.js";
 import RoomCharge from "../model/roomCharge.js";
+import RestDueAdjust from "../model/restDueAdjust.js";
 import { loadOfficeClassifier, lineName, nk } from "./officeTypes.js";
 
 dayjs.extend(customParseFormat);
@@ -25,13 +26,14 @@ export const isRoomBill = (k) => /room\s*bill/.test(nk(k));
 
 export const computeRestReceivables = async ({ upto } = {}) => {
   const q = upto ? { entryCreateDate: { $lte: upto.endOf("day").toDate() } } : {};
-  const [rest, office, people, receipts, classify, food] = await Promise.all([
+  const [rest, office, people, receipts, classify, food, adjusts] = await Promise.all([
     RestEntry.find(q, { pending: 1, createDate: 1, entryCreateDate: 1 }).lean(),
     OfficeBook.find(q, { officeIn: 1, createDate: 1, entryCreateDate: 1 }).lean(),
     RestPending.find({}, { fullname: 1, mobileNumber: 1, category: 1 }).lean(),
     RestDueReceipt.find({ ...q, cancelled: { $ne: true }, source: { $ne: "gh" } }).lean(),
     loadOfficeClassifier(),
     RoomCharge.find({ ...q, kind: "food", source: "rest" }, { date: 1, roomNo: 1, guestName: 1, amount: 1, isPaid: 1, paidDate: 1, paidMode: 1 }).lean(),
+    RestDueAdjust.find({ cancelled: { $ne: true } }).lean(),
   ]);
   const map = new Map();
   const get = (name) => {
@@ -54,6 +56,20 @@ export const computeRestReceivables = async ({ upto } = {}) => {
     const r = map.get(nk(p.fullname));
     if (r && p.mobileNumber > 999999) r.mobile = p.mobileNumber;
   });
+  // Owner ka sudhaar: purana baaki (opening) / maafi (writeoff) — paisa nahi, sirf baaki
+  adjusts
+    .filter((a) => !upto || dv(a.date) <= upto.format("YYYYMMDD"))
+    .forEach((a) => {
+      const r = get(a.name);
+      const amt = n(a.amount);
+      if (a.kind === "opening") {
+        r.given += amt;
+        r.ledger.push({ date: a.date, kind: "given", amount: amt, note: `Opening balance (before app)${a.note ? ` · ${a.note}` : ""}`, adjustId: String(a._id) });
+      } else {
+        r.received += amt;
+        r.ledger.push({ date: a.date, kind: "received", amount: amt, note: `Write-off / settled outside${a.note ? ` · ${a.note}` : ""}`, adjustId: String(a._id) });
+      }
+    });
   // Restaurant screen se wasooli
   receipts.forEach((x) => {
     const r = get(x.name);

@@ -10,7 +10,7 @@ const officeTypeSchema = new mongoose.Schema(
     side: { type: String, enum: ["in", "out"], required: true },
     categoryName: { type: String, required: true },
     expenseName: { type: String, default: "*" },
-    type: { type: String, enum: ["business", "personal", "loan", "emi", "transfer", "recovery"], required: true },
+    type: { type: String, enum: ["business", "personal", "loan", "emi", "transfer", "recovery", "refund"], required: true },
     updatedBy: { type: String, default: "" },
   },
   { timestamps: true, versionKey: false }

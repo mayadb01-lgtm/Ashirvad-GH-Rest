@@ -15,9 +15,10 @@ const LABEL = {
   emi: "Loan EMI / repayment",
   transfer: "Transfer (own accounts)",
   recovery: "Old dues received",
+  refund: "Refund to guest",
 };
-const COLOR = { business: COLORS.net, personal: COLORS.personal, loan: COLORS.loan, emi: COLORS.loan, transfer: "#0891B2", recovery: COLORS.in };
-const FOR_SIDE = { in: ["business", "personal", "loan", "transfer", "recovery"], out: ["business", "personal", "emi", "transfer"] };
+const COLOR = { business: COLORS.net, personal: COLORS.personal, loan: COLORS.loan, emi: COLORS.loan, transfer: "#0891B2", recovery: COLORS.in, refund: "#B45309" };
+const FOR_SIDE = { in: ["business", "personal", "loan", "transfer", "recovery"], out: ["business", "personal", "emi", "transfer", "refund"] };
 
 const TypeSelect = ({ side, value, onChange, inherit }) => (
   <TextField select size="small" value={value} onChange={(e) => onChange(e.target.value)} sx={{ minWidth: 210 }}>
