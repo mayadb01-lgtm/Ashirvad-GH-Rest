@@ -45,6 +45,23 @@ const loadTesseract = () => {
   return tessLoading;
 };
 
+// Restaurant ke hisaab se units
+export const UNITS = ["kg", "g", "ltr", "ml", "pcs", "dozen", "packet", "box", "bottle", "tray", "bunch", "bag", "can", "jar"];
+const normUnit = (u) => {
+  const x = String(u || "").toLowerCase();
+  if (!x) return "pcs";
+  if (/^kgs?$/.test(x)) return "kg";
+  if (/^(g|gm|gms)$/.test(x)) return "g";
+  if (/^(l|lt|ltr)$/.test(x)) return "ltr";
+  if (/^(pc|pcs|no|nos)$/.test(x)) return "pcs";
+  if (/^doz/.test(x)) return "dozen";
+  if (/^(pkt|packet)$/.test(x)) return "packet";
+  if (/^(btl|bottle)$/.test(x)) return "bottle";
+  return UNITS.includes(x) ? x : "pcs";
+};
+const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+const NEW_ITEM = { name: "", qty: 1, unit: "kg", rate: 0, amount: 0 };
+
 const NUM = /(\d{1,3}(?:,\d{2,3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/g;
 const toNum = (s) => Number(String(s).replace(/,/g, "")) || 0;
 
@@ -95,13 +112,18 @@ export const parseBill = (text, vendors = []) => {
   lines.forEach((l) => {
     if (totalRe.test(l) || /gst|cgst|sgst|tax|round|discount|change|cash|date|bill|invoice|phone|mob|gstin/i.test(l)) return;
     const m = l.match(/^([A-Za-zऀ-૿][^0-9]{2,40}?)\s+(.*?)(\d+(?:\.\d{1,2})?)\s*$/);
-    if (m && toNum(m[3]) > 0 && toNum(m[3]) <= (out.amount || 1e6)) out.items.push({ name: m[1].trim(), qty: (m[2].match(/\d+(?:\.\d+)?\s*(kg|g|ltr|l|pcs|nos|pc)?/i) || [""])[0].trim(), amount: toNum(m[3]) });
+    if (m && toNum(m[3]) > 0 && toNum(m[3]) <= (out.amount || 1e6)) {
+      const q = m[2].match(/(\d+(?:\.\d+)?)\s*(kg|kgs|gm|gms|g|ltr|lt|l|ml|pcs|pc|nos|no|dozen|doz|pkt|packet|box|btl|bottle|tray|bunch|bag|can|jar)?/i);
+      const qty = q ? Number(q[1]) || 1 : 1;
+      const amount = toNum(m[3]);
+      out.items.push({ name: m[1].trim(), qty, unit: normUnit(q?.[2] || ""), rate: Math.round((amount / qty) * 100) / 100, amount });
+    }
   });
   out.items = out.items.slice(0, 30);
   return out;
 };
 
-const EMPTY = { vendor: null, billNo: "", billDate: "", amount: 0, mode: "Cash", note: "", items: [], ocrText: "" };
+const EMPTY = { vendor: null, billNo: "", billDate: "", amount: 0, mode: "Cash", note: "", items: [], extra: 0, ocrText: "" };
 
 const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], onSaved }) => {
   const [tab, setTab] = useState("scan");
@@ -118,6 +140,20 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
     }
   }, [open]);
   const set = (k, v) => setF((x) => ({ ...x, [k]: v }));
+  // Items: Qty × Rate = Total (Total badlo to Rate apne aap)
+  const setItem = (i, k, v) =>
+    setF((x) => ({
+      ...x,
+      items: x.items.map((it, j) => {
+        if (j !== i) return it;
+        const n = { ...it, [k]: v };
+        if (k === "qty" || k === "rate") n.amount = r2(num(n.qty) * num(n.rate));
+        if (k === "amount") n.rate = num(n.qty) ? r2(num(v) / num(n.qty)) : n.rate;
+        return n;
+      }),
+    }));
+  const itemsTotal = r2(f.items.reduce((t, it) => t + num(it.amount), 0));
+  const grand = f.items.length ? r2(itemsTotal + num(f.extra)) : num(f.amount);
 
   // Picker: pehle vendors (Payable ke liye zaroori), phir baaki kharch items
   const options = [
@@ -161,6 +197,7 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
         billNo: x.billNo || p.billNo,
         vendor: x.vendor || (p.vendor ? options.find((o) => o._id === p.vendor._id) || null : null),
         items: p.items,
+        extra: p.items.length && p.amount ? r2(p.amount - p.items.reduce((t, it) => t + it.amount, 0)) : 0,
         note: x.note || (p.header && !p.vendor ? `Bill: ${p.header.slice(0, 60)}` : x.note),
       }));
       setOcr({ busy: false, progress: 100, msg: p.amount ? "Read done — please check the details below" : "Could not find the total — please type it" });
@@ -169,10 +206,10 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
     }
   };
 
-  const valid = f.vendor && num(f.amount) > 0 && (f.mode === "Cash" || f.vendor?.isVendor);
+  const valid = f.vendor && grand > 0 && (f.mode === "Cash" || f.vendor?.isVendor) && f.items.every((it) => it.name.trim() && num(it.amount) > 0);
   const save = async () => {
     if (!f.vendor) return toast.error("Choose the vendor / expense item");
-    if (!(num(f.amount) > 0)) return toast.error("Enter the bill amount");
+    if (!(grand > 0)) return toast.error("Enter the bill amount");
     if (f.mode === "Payable" && !f.vendor.isVendor) return toast.error("For Payable, choose a listed vendor");
     setBusy(true);
     try {
@@ -183,9 +220,10 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
         billDate: f.billDate,
         billNo: f.billNo,
         vendor: { _id: v._id || "", name: v.fullname || v.expenseName || "", expenseName: v.expenseName || v.fullname || "", categoryName: v.categoryName || "", isVendor: !!v.isVendor },
-        amount: num(f.amount),
+        amount: grand,
         mode: f.mode,
-        items: f.items,
+        items: f.items.map((it) => ({ name: it.name.trim(), qty: num(it.qty), unit: it.unit, rate: num(it.rate), amount: num(it.amount) })),
+        extra: f.items.length ? num(f.extra) : 0,
         note: f.note,
         source: photos.length && f.ocrText ? "scan" : "manual",
         ocrText: f.ocrText,
@@ -216,7 +254,7 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
       title="🧾 Purchase bill"
       actions={
         <Button fullWidth variant="contained" disabled={busy || ocr.busy || !valid} onClick={save} sx={{ bgcolor: Q.rest, py: 1.3, fontWeight: 800, "&:hover": { bgcolor: Q.rest } }}>
-          {busy ? "Saving…" : `Save bill${num(f.amount) ? ` · ${inr(f.amount)}` : ""} → ${f.mode === "Payable" ? "Payables" : "Expenses"}`}
+          {busy ? "Saving…" : `Save bill${grand ? ` · ${inr(grand)}` : ""} → ${f.mode === "Payable" ? "Payables" : "Expenses"}`}
         </Button>
       }
     >
@@ -265,7 +303,7 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
             </Box>
           )}
           {!ocr.busy && ocr.msg && (
-            <Alert severity={f.amount ? "success" : "warning"} sx={{ mt: 1 }}>
+            <Alert severity={grand ? "success" : "warning"} sx={{ mt: 1 }}>
               {ocr.msg}
             </Alert>
           )}
@@ -288,7 +326,61 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
           <TextField size="small" label="Bill no." value={f.billNo} onChange={(e) => set("billNo", e.target.value)} fullWidth />
           <TextField size="small" label="Bill date (DD-MM-YYYY)" value={f.billDate} onChange={(e) => set("billDate", e.target.value)} fullWidth />
         </Stack>
-        <MoneyField label="Bill amount (total)" value={f.amount} onChange={(v) => set("amount", v)} big />
+        {/* Bill ki details: Item · Qty · Unit · Rate · Total */}
+        <Box sx={{ border: `1px solid ${Q.line}`, borderRadius: 2, p: 1.25, bgcolor: "#fff" }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
+            <Typography fontWeight={800}>Bill items</Typography>
+            <Button size="small" onClick={() => set("items", [...f.items, { ...NEW_ITEM }])} sx={{ fontWeight: 800, color: Q.rest }}>
+              + Add item
+            </Button>
+          </Stack>
+          {f.items.length === 0 && (
+            <Typography variant="caption" color={Q.muted}>
+              Optional — add items (qty, unit, rate) or just enter the bill total below.
+            </Typography>
+          )}
+          {f.items.map((it, i) => (
+            <Box key={i} sx={{ py: 1, borderTop: i ? `1px dashed ${Q.line}` : "none" }}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <TextField size="small" label={`Item ${i + 1}`} value={it.name} onChange={(e) => setItem(i, "name", e.target.value)} fullWidth error={!it.name.trim()} />
+                <Button size="small" color="error" onClick={() => set("items", f.items.filter((_, j) => j !== i))} sx={{ minWidth: 36 }}>
+                  ✕
+                </Button>
+              </Stack>
+              <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                <TextField size="small" label="Qty" value={it.qty} onChange={(e) => setItem(i, "qty", e.target.value.replace(/[^0-9.]/g, ""))} inputProps={{ inputMode: "decimal" }} sx={{ width: 74 }} />
+                <TextField size="small" select label="Unit" value={it.unit} onChange={(e) => setItem(i, "unit", e.target.value)} SelectProps={{ native: true }} sx={{ width: 96 }}>
+                  {UNITS.map((u) => (
+                    <option key={u} value={u}>
+                      {u}
+                    </option>
+                  ))}
+                </TextField>
+                <TextField size="small" label="Rate ₹" value={it.rate || ""} onChange={(e) => setItem(i, "rate", e.target.value.replace(/[^0-9.]/g, ""))} inputProps={{ inputMode: "decimal" }} sx={{ flex: 1 }} />
+                <TextField size="small" label="Total ₹" value={it.amount || ""} onChange={(e) => setItem(i, "amount", e.target.value.replace(/[^0-9.]/g, ""))} inputProps={{ inputMode: "decimal" }} sx={{ flex: 1 }} />
+              </Stack>
+            </Box>
+          ))}
+          {f.items.length > 0 && (
+            <Box sx={{ borderTop: `1px solid ${Q.line}`, mt: 1, pt: 1 }}>
+              <Stack direction="row" justifyContent="space-between">
+                <Typography color={Q.muted}>Items total</Typography>
+                <Typography fontWeight={700}>{inr(itemsTotal)}</Typography>
+              </Stack>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ my: 0.5 }}>
+                <Typography color={Q.muted}>Tax / round-off / transport</Typography>
+                <TextField size="small" value={f.extra || ""} placeholder="0" onChange={(e) => set("extra", e.target.value.replace(/[^0-9.-]/g, ""))} inputProps={{ inputMode: "decimal", style: { textAlign: "right" } }} sx={{ width: 110 }} />
+              </Stack>
+              <Stack direction="row" justifyContent="space-between">
+                <Typography fontWeight={800}>Grand total</Typography>
+                <Typography fontWeight={800} fontSize={18}>
+                  {inr(grand)}
+                </Typography>
+              </Stack>
+            </Box>
+          )}
+        </Box>
+        {f.items.length === 0 && <MoneyField label="Bill amount (grand total)" value={f.amount} onChange={(v) => set("amount", v)} big />}
         <ChipChoice
           label="Payment"
           options={["Cash", "Payable"]}
@@ -302,23 +394,6 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
         </Typography>
         <TextField size="small" label="Note (optional)" value={f.note} onChange={(e) => set("note", e.target.value)} />
 
-        {f.items.length > 0 && (
-          <Box sx={{ border: `1px solid ${Q.line}`, borderRadius: 2, p: 1.25, bgcolor: "#fff" }}>
-            <Typography variant="caption" fontWeight={800} color={Q.muted}>
-              Items read from the bill (for reference)
-            </Typography>
-            {f.items.map((it, i) => (
-              <Stack key={i} direction="row" justifyContent="space-between" spacing={1}>
-                <Typography variant="body2" noWrap>
-                  {it.name} {it.qty ? `· ${it.qty}` : ""}
-                </Typography>
-                <Typography variant="body2" fontWeight={600}>
-                  {inr(it.amount)}
-                </Typography>
-              </Stack>
-            ))}
-          </Box>
-        )}
         {f.ocrText && (
           <TextField size="small" label="Text read from bill" value={f.ocrText} multiline minRows={3} maxRows={8} InputProps={{ readOnly: true }} />
         )}

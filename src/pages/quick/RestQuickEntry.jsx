@@ -549,14 +549,47 @@ const RestQuickEntry = ({ date }) => {
           <Stack spacing={1.5}>
             {billView.bill.billNo && <Typography>Bill no.: {billView.bill.billNo}</Typography>}
             {billView.bill.note && <Typography color={Q.muted}>{billView.bill.note}</Typography>}
-            {(billView.bill.items || []).map((it, i) => (
-              <Stack key={i} direction="row" justifyContent="space-between">
-                <Typography variant="body2">
-                  {it.name} {it.qty ? `· ${it.qty}` : ""}
-                </Typography>
-                <Typography variant="body2">{inr(it.amount)}</Typography>
-              </Stack>
-            ))}
+            {(billView.bill.items || []).length > 0 && (
+              <Box sx={{ border: `1px solid ${Q.line}`, borderRadius: 2, p: 1.25, bgcolor: "#fff" }}>
+                <Stack direction="row" sx={{ pb: 0.5, borderBottom: `1px solid ${Q.line}` }}>
+                  {[["Item", 3], ["Qty", 1.6], ["Rate", 1.4], ["Total", 1.4]].map(([h, w]) => (
+                    <Typography key={h} variant="caption" fontWeight={800} color={Q.muted} sx={{ flex: w, textAlign: h === "Item" ? "left" : "right" }}>
+                      {h}
+                    </Typography>
+                  ))}
+                </Stack>
+                {billView.bill.items.map((it, i) => (
+                  <Stack key={i} direction="row" sx={{ py: 0.4 }}>
+                    <Typography variant="body2" sx={{ flex: 3 }} noWrap>
+                      {it.name}
+                    </Typography>
+                    <Typography variant="body2" sx={{ flex: 1.6, textAlign: "right" }}>
+                      {it.qty} {it.unit}
+                    </Typography>
+                    <Typography variant="body2" sx={{ flex: 1.4, textAlign: "right" }}>
+                      {inr(it.rate)}
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600} sx={{ flex: 1.4, textAlign: "right" }}>
+                      {inr(it.amount)}
+                    </Typography>
+                  </Stack>
+                ))}
+                <Stack direction="row" justifyContent="space-between" sx={{ pt: 0.5, borderTop: `1px solid ${Q.line}` }}>
+                  <Typography variant="body2" color={Q.muted}>Items total</Typography>
+                  <Typography variant="body2">{inr(billView.bill.itemsTotal)}</Typography>
+                </Stack>
+                {!!billView.bill.extra && (
+                  <Stack direction="row" justifyContent="space-between">
+                    <Typography variant="body2" color={Q.muted}>Tax / round-off / transport</Typography>
+                    <Typography variant="body2">{inr(billView.bill.extra)}</Typography>
+                  </Stack>
+                )}
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography fontWeight={800}>Grand total</Typography>
+                  <Typography fontWeight={800}>{inr(billView.bill.amount)}</Typography>
+                </Stack>
+              </Box>
+            )}
             {billView.photos.map((u, i) => (
               <a key={i} href={u} target="_blank" rel="noopener noreferrer">
                 <img src={u} alt="bill" style={{ width: "100%", borderRadius: 8, border: `1px solid ${Q.line}` }} />

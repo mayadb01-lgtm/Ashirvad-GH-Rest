@@ -19,7 +19,7 @@ const ok = (d) => dayjs(d, F, true).isValid();
 const bad = (res, message, code = 400) => res.status(code).json({ success: false, message });
 const dateOk = (req, d) => isAdminLike(req.user) || allowedStaffDates().includes(d);
 
-const fields = (b) => ({
+const fields = (b) => withTotals({
   billDate: clean(b.billDate, 20),
   billNo: clean(b.billNo, 40),
   vendor: {
@@ -31,12 +31,22 @@ const fields = (b) => ({
   },
   amount: Math.round((Number(b.amount) || 0) * 100) / 100,
   mode: b.mode === "Payable" ? "Payable" : "Cash",
-  items: (Array.isArray(b.items) ? b.items : []).slice(0, 60).map((x) => ({ name: clean(x.name, 80), qty: clean(x.qty, 20), amount: Number(x.amount) || 0 })),
+  items: (Array.isArray(b.items) ? b.items : [])
+    .slice(0, 80)
+    .map((x) => ({ name: clean(x.name, 80), qty: Number(x.qty) || 0, unit: clean(x.unit, 12), rate: Math.round((Number(x.rate) || 0) * 100) / 100, amount: Math.round((Number(x.amount) || 0) * 100) / 100 }))
+    .filter((x) => x.name || x.amount),
+  extra: Math.round((Number(b.extra) || 0) * 100) / 100,
   note: clean(b.note, 300),
   source: b.source === "scan" ? "scan" : "manual",
   ocrText: String(b.ocrText || "").slice(0, 5000),
   rowKey: clean(b.rowKey, 40),
 });
+
+// Items ka jod + extra = grand total (items hon to bill amount yahi)
+function withTotals(f) {
+  const itemsTotal = Math.round(f.items.reduce((t, x) => t + (Number(x.amount) || 0), 0) * 100) / 100;
+  return { ...f, itemsTotal, ...(f.items.length ? { amount: Math.round((itemsTotal + f.extra) * 100) / 100 } : {}) };
+}
 
 // GET /day/:date → us din ke bills
 router.get("/day/:date", async (req, res) => {
