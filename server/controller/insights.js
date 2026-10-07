@@ -482,4 +482,79 @@ router.get("/pnl/:from/:to", async (req, res) => {
   }
 });
 
+// ───────────────────────── MONTHLY BALANCE (payment mode-wise) ─────────────────────────
+// Har mahine Cash / PP / PPS / PPC mein kitna aaya, kitna gaya. Card ka paisa PP mein hi aata hai → Card = PP.
+// Aaya: GH room + purane baaki ki jama (mode se) · Restaurant: Cash (galla + jo kharch/upad galle se diya) , Card+PP → PP · Office In (mode se)
+// Gaya: Restaurant kharch + upad (galle se, Cash) · Office Out (mode se). UnPaid / udhaar ginti mein nahi.
+const MODE_OF = (m) => {
+  const x = String(m || "").trim().toUpperCase();
+  if (x === "CASH") return "Cash";
+  if (x === "CARD" || x === "PP") return "PP";
+  if (x === "PPS") return "PPS";
+  if (x === "PPC") return "PPC";
+  return null; // UnPaid / khaali
+};
+const BAL_MODES = ["Cash", "PP", "PPS", "PPC"];
+router.get("/mode-balance/:from/:to", async (req, res) => {
+  try {
+    const from = dayjs(req.params.from, "YYYY-MM", true);
+    const to = dayjs(req.params.to, "YYYY-MM", true);
+    if (!from.isValid() || !to.isValid() || to.isBefore(from)) return res.status(400).json({ success: false, message: "Month must be in YYYY-MM format (from <= to)" });
+    const q = range(from.startOf("month"), to.endOf("month"));
+    const [gh, rest, office] = await Promise.all([
+      Entry.find(q, { entry: 1, entryCreateDate: 1 }).lean(),
+      RestEntry.find(q, { entryCreateDate: 1, totalCash: 1, totalCard: 1, totalPP: 1, totalExpenses: 1, totalUpad: 1 }).lean(),
+      OfficeBook.find(q, { entryCreateDate: 1, officeIn: 1, officeOut: 1 }).lean(),
+    ]);
+    const blank = () => Object.fromEntries(BAL_MODES.map((k) => [k, { in: 0, out: 0, src: { gh: 0, rest: 0, office: 0, restOut: 0, officeOut: 0 } }]));
+    const months = monthList(from, to).map((m) => ({ month: m, label: dayjs(m + "-01").format("MMM YY"), modes: blank() }));
+    const byM = Object.fromEntries(months.map((m) => [m.month, m]));
+    const add = (m, mode, dir, amt, src) => {
+      if (!m || !mode || !(n(amt) > 0)) return;
+      m.modes[mode][dir] += n(amt);
+      m.modes[mode].src[src] += n(amt);
+    };
+    gh.forEach((d) => {
+      const m = byM[ymOf(d.entryCreateDate)];
+      (d.entry || []).forEach((e) => add(m, MODE_OF(e.modeOfPayment), "in", e.rate, "gh"));
+    });
+    rest.forEach((d) => {
+      const m = byM[ymOf(d.entryCreateDate)];
+      const galla = n(d.totalCash) + n(d.totalExpenses) + n(d.totalUpad); // kharch/upad galle se diya gaya tha
+      add(m, "Cash", "in", galla, "rest");
+      add(m, "PP", "in", n(d.totalCard) + n(d.totalPP), "rest");
+      add(m, "Cash", "out", n(d.totalExpenses) + n(d.totalUpad), "restOut");
+    });
+    office.forEach((d) => {
+      const m = byM[ymOf(d.entryCreateDate)];
+      (d.officeIn || []).forEach((x) => add(m, MODE_OF(x.modeOfPayment), "in", x.amount, "office"));
+      (d.officeOut || []).forEach((x) => add(m, MODE_OF(x.modeOfPayment), "out", x.amount, "officeOut"));
+    });
+    const totals = blank();
+    months.forEach((m) => {
+      BAL_MODES.forEach((k) => {
+        const v = m.modes[k];
+        v.in = round(v.in);
+        v.out = round(v.out);
+        v.net = round(v.in - v.out);
+        Object.keys(v.src).forEach((s2) => (v.src[s2] = round(v.src[s2])));
+        totals[k].in += v.in;
+        totals[k].out += v.out;
+        Object.keys(v.src).forEach((s2) => (totals[k].src[s2] += v.src[s2]));
+      });
+      m.totalIn = round(sum(BAL_MODES, (k) => m.modes[k].in));
+      m.totalOut = round(sum(BAL_MODES, (k) => m.modes[k].out));
+      m.net = round(m.totalIn - m.totalOut);
+    });
+    BAL_MODES.forEach((k) => {
+      totals[k].in = round(totals[k].in);
+      totals[k].out = round(totals[k].out);
+      totals[k].net = round(totals[k].in - totals[k].out);
+    });
+    res.json({ success: true, data: { modes: BAL_MODES, months, totals, totalIn: round(sum(months, (m) => m.totalIn)), totalOut: round(sum(months, (m) => m.totalOut)) } });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
 export default router;

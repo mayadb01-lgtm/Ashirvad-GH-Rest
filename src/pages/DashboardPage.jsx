@@ -45,6 +45,8 @@ import OfficeMerged from "../components/office/OfficeMerged";
 import OfficeCreditDebit from "../components/office/OfficeCreditDebit";
 import VendorGraphDashboard from "../components/office/VendorGraphDashboard";
 import CashflowDashboard from "../components/insights/CashflowDashboard";
+import ModeBalanceDashboard from "../components/insights/ModeBalanceDashboard";
+import PurchaseAnalyticsDashboard from "../components/insights/PurchaseAnalyticsDashboard";
 import GhGrowthDashboard from "../components/insights/GhGrowthDashboard";
 import KharchControlDashboard from "../components/insights/KharchControlDashboard";
 import DataAlerts from "../components/insights/DataAlerts";
@@ -118,6 +120,8 @@ const NAVIGATION = [
   { kind: "header", title: "Business Growth" },
   { segment: "profit-loss", title: "Profit & Loss", icon: <AssessmentIcon /> },
   { segment: "cashflow", title: "Cashflow (monthly)", icon: <AccountBalanceWalletIcon /> },
+  { segment: "mode-balance", title: "Monthly balance (Cash / PP / PPS / PPC)", icon: <AccountBalanceWalletIcon /> },
+  { segment: "purchase-analytics", title: "Purchase analytics", icon: <ReceiptLongIcon /> },
   { segment: "gh-growth", title: "GH Growth", icon: <TrendingUpIcon /> },
   { segment: "kharch-control", title: "Expense control", icon: <ReceiptLongIcon /> },
   { segment: "data-check", title: "Data check (error alerts)", icon: <FactCheckIcon /> },
@@ -345,6 +349,8 @@ const DashboardPage = () => {
     { path: "merged-vendor-report", element: <OfficeCreditDebit /> },
     { path: "merged-vendor-graph", element: <VendorGraphDashboard /> },
     { path: "cashflow", element: <CashflowDashboard /> },
+    { path: "mode-balance", element: <ModeBalanceDashboard /> },
+    { path: "purchase-analytics", element: <PurchaseAnalyticsDashboard /> },
     { path: "profit-loss", element: <ProfitLossDashboard /> },
     { path: "room-rates", element: <RoomRatesDashboard /> },
     { path: "guest-register", element: <GuestRegisterDashboard /> },

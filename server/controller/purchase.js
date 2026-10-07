@@ -192,4 +192,76 @@ router.get("/range/:from/:to", async (req, res) => {
   }
 });
 
+// GET /analytics/:from/:to (DD-MM-YYYY) → owner: kharid ka hisaab — mahina, vendor, item, mode
+router.get("/analytics/:from/:to", async (req, res) => {
+  try {
+    if (!isAdminLike(req.user)) return bad(res, "Only the owner can see purchase analytics", 403);
+    const { from, to } = req.params;
+    if (!ok(from) || !ok(to)) return bad(res, "Invalid date");
+    const q = { entryCreateDate: { $gte: dayjs(from, F).startOf("day").toDate(), $lte: dayjs(to, F).endOf("day").toDate() } };
+    if (req.query.book === "rest") q.book = { $ne: "office" };
+    if (req.query.book === "office") q.book = "office";
+    const bills = await PurchaseBill.find(q).lean();
+    const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+    const total = { amount: 0, bills: bills.length, paid: 0, payable: 0 };
+    const byMonth = {};
+    const byVendor = {};
+    const byMode = {};
+    const byBook = { rest: 0, office: 0 };
+    const items = {};
+    bills.forEach((b) => {
+      const amt = Number(b.amount) || 0;
+      total.amount += amt;
+      if (b.mode === "Payable") total.payable += amt;
+      else total.paid += amt;
+      const mk = dayjs(b.entryCreateDate).format("YYYY-MM");
+      byMonth[mk] = byMonth[mk] || { month: mk, label: dayjs(mk + "-01").format("MMM YY"), amount: 0, bills: 0, payable: 0 };
+      byMonth[mk].amount += amt;
+      byMonth[mk].bills += 1;
+      if (b.mode === "Payable") byMonth[mk].payable += amt;
+      const vk = b.vendor?.name || b.vendor?.expenseName || "—";
+      byVendor[vk] = byVendor[vk] || { vendor: vk, category: b.vendor?.categoryName || "", amount: 0, bills: 0, payable: 0, lastDate: "" };
+      byVendor[vk].amount += amt;
+      byVendor[vk].bills += 1;
+      if (b.mode === "Payable") byVendor[vk].payable += amt;
+      if (!byVendor[vk].lastDate || dayjs(b.date, F).isAfter(dayjs(byVendor[vk].lastDate, F))) byVendor[vk].lastDate = b.date;
+      byMode[b.mode] = (byMode[b.mode] || 0) + amt;
+      byBook[b.book === "office" ? "office" : "rest"] += amt;
+      (b.items || []).forEach((it) => {
+        const ik = `${String(it.name || "").trim().toLowerCase()}|${it.unit || ""}`;
+        if (!it.name) return;
+        const x = (items[ik] = items[ik] || { item: String(it.name).trim(), unit: it.unit || "", qty: 0, amount: 0, bills: 0, minRate: null, maxRate: null, lastRate: 0, lastDate: "" });
+        x.qty += Number(it.qty) || 0;
+        x.amount += Number(it.amount) || 0;
+        x.bills += 1;
+        const rt = Number(it.rate) || 0;
+        if (rt) {
+          x.minRate = x.minRate === null ? rt : Math.min(x.minRate, rt);
+          x.maxRate = x.maxRate === null ? rt : Math.max(x.maxRate, rt);
+          if (!x.lastDate || !dayjs(b.date, F).isBefore(dayjs(x.lastDate, F))) {
+            x.lastRate = rt;
+            x.lastDate = b.date;
+          }
+        }
+      });
+    });
+    const itemList = Object.values(items)
+      .map((x) => ({ ...x, qty: r2(x.qty), amount: r2(x.amount), avgRate: x.qty ? r2(x.amount / x.qty) : 0, minRate: r2(x.minRate), maxRate: r2(x.maxRate) }))
+      .sort((a, b) => b.amount - a.amount);
+    res.json({
+      success: true,
+      data: {
+        total: { ...total, amount: r2(total.amount), paid: r2(total.paid), payable: r2(total.payable) },
+        months: Object.values(byMonth).sort((a, b) => a.month.localeCompare(b.month)).map((m) => ({ ...m, amount: r2(m.amount), payable: r2(m.payable) })),
+        vendors: Object.values(byVendor).sort((a, b) => b.amount - a.amount).map((v) => ({ ...v, amount: r2(v.amount), payable: r2(v.payable) })),
+        modes: Object.entries(byMode).map(([mode, amount]) => ({ mode, amount: r2(amount) })).sort((a, b) => b.amount - a.amount),
+        books: { rest: r2(byBook.rest), office: r2(byBook.office) },
+        items: itemList,
+      },
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
 export default router;
