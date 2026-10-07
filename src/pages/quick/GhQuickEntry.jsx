@@ -1024,6 +1024,12 @@ const GhQuickEntry = ({ date, isAdmin }) => {
     })
     .sort((a, b) => dayjs(a.createDate, DATE_FMT).valueOf() - dayjs(b.createDate, DATE_FMT).valueOf());
 
+  // Collections ka total: kul baaki (search se alag), aaj mila (mode-wise)
+  const pendingAll = unpaid.filter((u) => !jamaKeys.has(`${u.createDate}|${u.roomNo}|${u.mobileNumber}`));
+  const pendingAllTotal = pendingAll.reduce((t, u) => t + num(u.rate), 0);
+  const pendingShownTotal = pendingList.reduce((t, u) => t + num(u.rate), 0);
+  const jamaByMode = draft.jama.reduce((m, j) => ({ ...m, [j.modeOfPayment]: (m[j.modeOfPayment] || 0) + num(j.rate) }), {});
+
   const addJama = (u, mode) => {
     setDraft((d) => ({
       ...d,
@@ -1303,6 +1309,35 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         </>
       ) : (
         <Stack spacing={1.5}>
+          <Grid container spacing={1.5}>
+            <Grid size={{ xs: 6 }}>
+              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 3, borderColor: "#FCA5A5", bgcolor: "#FEF2F2", height: "100%" }}>
+                <Typography variant="caption" color={Q.muted} fontWeight={700}>
+                  Total pending
+                </Typography>
+                <Typography fontWeight={800} fontSize={22} color={Q.bad}>
+                  {inr(pendingAllTotal)}
+                </Typography>
+                <Typography variant="caption" color={Q.muted}>
+                  {pendingAll.length} {pendingAll.length === 1 ? "entry" : "entries"}
+                  {jamaQuery.trim() ? ` · search: ${pendingList.length} · ${inr(pendingShownTotal)}` : ""}
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 3, borderColor: "#22C55E", bgcolor: "#DCFCE7", height: "100%" }}>
+                <Typography variant="caption" color={Q.muted} fontWeight={700}>
+                  Received today
+                </Typography>
+                <Typography fontWeight={800} fontSize={22} color={Q.good}>
+                  {inr(summary.jamaTotal)}
+                </Typography>
+                <Typography variant="caption" color={Q.muted}>
+                  {draft.jama.length ? Object.entries(jamaByMode).map(([m, v]) => `${m} ${inr(v)}`).join(" · ") : "Nothing collected yet"}
+                </Typography>
+              </Paper>
+            </Grid>
+          </Grid>
           {draft.jama.length > 0 && (
             <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 3 }}>
               <Typography fontWeight={800} sx={{ mb: 1 }}>
