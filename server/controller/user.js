@@ -1,3 +1,5 @@
+import jwt from "jsonwebtoken";
+import { logLogin } from "../utils/loginLog.js";
 import { Router } from "express";
 const router = Router();
 import sendToken from "../utils/jwtToken.js";
@@ -64,6 +66,7 @@ router.post("/login-user", async (req, res) => {
       email: new RegExp("^" + String(email).trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$", "i"),
     }).select("+password");
     if (!user) {
+      logLogin(req, { kind: "staff", event: "failed", email, note: "No account with this email" });
       return res.status(404).json({
         success: false,
         message: "Invalid email or password",
@@ -74,12 +77,14 @@ router.post("/login-user", async (req, res) => {
     const isPasswordMatch = await user.comparePassword(password);
 
     if (!isPasswordMatch) {
+      logLogin(req, { kind: "staff", event: "failed", user, note: "Wrong password" });
       return res.status(404).json({
         success: false,
         message: "Invalid email or password",
       });
     }
 
+    logLogin(req, { kind: "staff", event: user.isActive === false ? "disabled" : "login", user, note: user.isActive === false ? "Account is off" : "" });
     // Send success response with token
     sendToken(user, 200, res);
   } catch (error) {
@@ -117,6 +122,14 @@ router.get("/getuser", isAuthenticated, async (req, res) => {
 // Logout User
 router.get("/logout-user", async (req, res) => {
   try {
+    // Kaun logout hua (cookie se) — log ke liye
+    try {
+      const { id } = jwt.verify(req.cookies?.token || "", process.env.JWT_SECRET_KEY);
+      const u = await User.findById(id, { name: 1, email: 1 }).lean();
+      if (u) logLogin(req, { kind: "staff", event: "logout", user: u });
+    } catch {
+      /* cookie nahi / purani — koi baat nahi */
+    }
     res.cookie("token", null, {
       expires: new Date(Date.now()),
       httpOnly: true,
@@ -139,6 +152,7 @@ router.get("/logout-user", async (req, res) => {
 router.post("/reset-password", async (req, res) => {
   // 🔒 Band: referral code se kisi ka bhi password badal sakte the. Ab staff ka password Super Admin (Staff access) se.
   if (process.env.ALLOW_CODE_RESET !== "yes") {
+    logLogin(req, { kind: "staff", event: "blocked", email: req.body?.email, note: "Tried old password reset (referral code)" });
     return res.status(403).json({ success: false, message: "Ask the owner to reset your password." });
   }
   try {

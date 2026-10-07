@@ -3,6 +3,8 @@ import { Router } from "express";
 import User from "../model/user.js";
 import { isAdminLike, REPORTS, MODULES, clearAccessCache } from "../middleware/staffAccess.js";
 import UserAccess from "../model/userAccess.js";
+import LoginLog from "../model/loginLog.js";
+import { logLogin } from "../utils/loginLog.js";
 
 const router = Router();
 const DEPTS = ["none", "gh", "rest", "office", "manager"];
@@ -60,6 +62,24 @@ router.post("/", async (req, res) => {
   }
 });
 
+// GET /api/v1/staff-accounts/login-log?from=YYYY-MM-DD&to=YYYY-MM-DD — kaun kab kahan se login hua (sirf Super Admin)
+router.get("/login-log", async (req, res) => {
+  try {
+    const IST = 330 * 60 * 1000;
+    const day = (s, end) => {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || ""));
+      if (!m) return null;
+      return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], end ? 23 : 0, end ? 59 : 0, end ? 59 : 0) - IST);
+    };
+    const to = day(req.query.to, true) || new Date();
+    const from = day(req.query.from) || new Date(to.getTime() - 7 * 24 * 3600 * 1000);
+    const rows = await LoginLog.find({ at: { $gte: from, $lte: to } }).sort({ at: -1 }).limit(3000).lean();
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // PUT /api/v1/staff-accounts/:id/access  { modules, entryDays (null = koi bhi din), reports, reportDays (null = koi rok nahi) }
 router.put("/:id/access", async (req, res) => {
   try {
@@ -91,6 +111,7 @@ router.put("/:id/password", async (req, res) => {
     if (!u) return res.status(404).json({ success: false, message: "Staff not found" });
     u.password = password;
     await u.save();
+    logLogin(req, { kind: "staff", event: "reset", user: u, note: `New password set by ${req.user?.name || "Super Admin"}` });
     res.json({ success: true, message: `New password set for ${u.name}` });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

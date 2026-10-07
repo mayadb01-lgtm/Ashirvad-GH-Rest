@@ -1,3 +1,4 @@
+import { logLogin } from "../utils/loginLog.js";
 import { Router } from "express";
 const router = Router();
 import { isAuthenticated } from "../middleware/auth.js";
@@ -11,6 +12,7 @@ import { otpOn, sendOtp, checkOtp, maskEmail } from "../utils/adminOtp.js";
 router.post("/create-admin", async (req, res) => {
   // 🔒 Band: referral code se koi bhi naya admin bana sakta tha. Super Admin sirf ek (owner) — naya chahiye to server se.
   if (process.env.ALLOW_ADMIN_SIGNUP !== "yes") {
+    logLogin(req, { kind: "admin", event: "blocked", email: req.body?.email, note: "Tried to create a new admin" });
     return res.status(403).json({ success: false, message: "New admin accounts are closed. Ask the owner." });
   }
   try {
@@ -76,6 +78,7 @@ router.post("/login-admin", async (req, res) => {
     }).select("+password");
 
     if (!admin) {
+      logLogin(req, { kind: "admin", event: "failed", email, note: "No admin with this email" });
       return res.status(404).json({
         success: false,
         message: "Invalid email or password",
@@ -86,6 +89,7 @@ router.post("/login-admin", async (req, res) => {
     const isPasswordMatch = await admin.comparePassword(password);
 
     if (!isPasswordMatch) {
+      logLogin(req, { kind: "admin", event: "failed", user: admin, note: "Wrong password" });
       return res.status(404).json({
         success: false,
         message: "Invalid email or password",
@@ -96,12 +100,14 @@ router.post("/login-admin", async (req, res) => {
     if (otpOn()) {
       try {
         const otpId = await sendOtp(admin, "login");
+        logLogin(req, { kind: "admin", event: "otp_sent", user: admin, note: "Password OK, code emailed" });
         return res.status(200).json({ success: true, otpRequired: true, otpId, sentTo: maskEmail(admin.email) });
       } catch (e) {
         console.log("OTP mail failed:", e.message);
         return res.status(500).json({ success: false, message: "Could not send the login code by email. Please try again." });
       }
     }
+    logLogin(req, { kind: "admin", event: "login", user: admin, note: "Password only (email code not set up)" });
     sendAdminToken(admin, 200, res);
   } catch (error) {
     res.status(500).json({
@@ -118,7 +124,11 @@ router.post("/verify-otp", async (req, res) => {
     const admin = await Admin.findOne({ email: new RegExp("^" + String(email || "").trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$", "i") });
     if (!admin) return res.status(400).json({ success: false, message: "Code expired. Please start again." });
     const ok = await checkOtp(otpId, admin._id, "login", code);
-    if (ok !== true) return res.status(400).json({ success: false, message: ok });
+    if (ok !== true) {
+      logLogin(req, { kind: "admin", event: "otp_failed", user: admin, note: ok });
+      return res.status(400).json({ success: false, message: ok });
+    }
+    logLogin(req, { kind: "admin", event: "login", user: admin, note: "Password + email code" });
     sendAdminToken(admin, 200, res);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -151,6 +161,7 @@ router.get("/getadmin", isAuthenticated, async (req, res) => {
 // Logout Admin
 router.get("/logout-admin", isAuthenticated, async (req, res) => {
   try {
+    if (req.user?.constructor?.modelName === "Admin") logLogin(req, { kind: "admin", event: "logout", user: req.user });
     res.cookie("admin_token", null, {
       expires: new Date(Date.now()),
       httpOnly: true,
@@ -190,9 +201,13 @@ router.post("/reset-password", async (req, res) => {
     const admin = await findAdmin(email);
     if (!admin) return res.status(400).json({ success: false, message: "Code expired. Please start again." });
     const ok = await checkOtp(otpId, admin._id, "reset", code);
-    if (ok !== true) return res.status(400).json({ success: false, message: ok });
+    if (ok !== true) {
+      logLogin(req, { kind: "admin", event: "otp_failed", user: admin, note: `Password reset: ${ok}` });
+      return res.status(400).json({ success: false, message: ok });
+    }
     admin.password = password;
     await admin.save();
+    logLogin(req, { kind: "admin", event: "reset", user: admin, note: "Password changed with email code" });
     res.json({ success: true, message: "Password updated successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

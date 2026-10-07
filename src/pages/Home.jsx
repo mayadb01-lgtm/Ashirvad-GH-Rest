@@ -11,6 +11,7 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import BadgeIcon from "@mui/icons-material/Badge";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import FingerprintIcon from "@mui/icons-material/Fingerprint";
 
 const INK = "#1E293B";
 const MUTED = "#64748B";
@@ -79,6 +80,7 @@ const Home = () => {
     ? [
         { to: "/dashboard", title: "Today's summary & reports", sub: "Money, rooms, dues — all businesses", color: INK, icon: <DashboardIcon /> },
         { to: "/dashboard/staff-access", title: "Staff access", sub: "Who can enter what, how many days, which reports", color: "#7C3AED", icon: <AdminPanelSettingsIcon /> },
+        { to: "/dashboard/login-log", title: "Login log", sub: "Who logged in, when, from which device", color: "#B91C1C", icon: <FingerprintIcon /> },
         { to: "/dashboard/invoices", title: "Invoices", sub: "GST / Non-GST bills", color: "#0369A1", icon: <ReceiptLongIcon /> },
         { to: `${pre}/staff-salary`, title: "Staff salary", sub: "Salary and advances", color: "#C2410C", icon: <BadgeIcon /> },
       ]

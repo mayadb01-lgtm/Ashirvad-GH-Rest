@@ -83,6 +83,7 @@ import DataImportDashboard from "../components/import/DataImportDashboard";
 import OwnerMonthlyDashboard from "../components/owner/OwnerMonthlyDashboard";
 import GuestDuesReminders from "../components/owner/GuestDuesReminders";
 import StaffAccessDashboard from "../components/owner/StaffAccessDashboard";
+import LoginLogDashboard from "../components/owner/LoginLogDashboard";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import InsightsIcon from "@mui/icons-material/Insights";
@@ -203,6 +204,7 @@ const NAVIGATION = [
   { segment: "invoices", title: "Invoices (GST / Non-GST)", icon: <ReceiptLongIcon /> },
   { kind: "header", title: "Settings" },
   { segment: "staff-access", title: "Staff Access", icon: <AdminPanelSettingsIcon /> },
+  { segment: "login-log", title: "Login log", icon: <FingerprintIcon /> },
   { segment: "room-rates", title: "Room Rates", icon: <BedIcon /> },
   { segment: "guest-register", title: "Guest Register (Govt)", icon: <AssignmentIndIcon /> },
   { segment: "room-activity", title: "Room Activity (footprint)", icon: <FingerprintIcon /> },
@@ -390,6 +392,7 @@ const DashboardPage = () => {
     { path: "owner-report", element: <OwnerMonthlyDashboard /> },
     { path: "guest-dues", element: <GuestDuesReminders /> },
     { path: "staff-access", element: <StaffAccessDashboard /> },
+    { path: "login-log", element: <LoginLogDashboard /> },
     { path: "*", element: <Typography>404: Page Not Found</Typography> },
   ]);
 
