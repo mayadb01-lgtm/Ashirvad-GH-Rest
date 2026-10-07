@@ -173,7 +173,7 @@ const ModeBalanceDashboard = () => {
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  {["Mode", "GH in", "Restaurant in", "Office in (business)", "Office in (personal / loan / transfer)", "Restaurant out", "Office out (business)", "Office out (personal / EMI / transfer)"].map((h) => (
+                  {["Mode", "GH in", "Restaurant in", "Banquet in", "Office in (business)", "Office in (personal / loan / transfer)", "Restaurant out", "Office out (business)", "Office out (personal / EMI / transfer)"].map((h) => (
                     <TableCell key={h} sx={{ fontWeight: 800, textAlign: h === "Mode" ? "left" : "right" }}>
                       {h}
                     </TableCell>
@@ -184,7 +184,7 @@ const ModeBalanceDashboard = () => {
                 {modes.map((k) => (
                   <TableRow key={k}>
                     <TableCell sx={{ fontWeight: 800, color: MODE_COLOR[k] }}>{k}</TableCell>
-                    {["gh", "rest", "office", "officeP", "restOut", "officeOut", "officeOutP"].map((s) => (
+                    {["gh", "rest", "banquet", "office", "officeP", "restOut", "officeOut", "officeOutP"].map((s) => (
                       <TableCell key={s} sx={cell}>
                         {inr(t[k]?.src?.[s])}
                       </TableCell>

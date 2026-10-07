@@ -16,6 +16,18 @@ import { computeRestReceivables } from "../utils/restReceivables.js";
 import RestDueReceipt from "../model/restDueReceipt.js";
 import GhDueReceipt from "../model/ghDueReceipt.js";
 import { bookingAdvanceMoves } from "../utils/bookingAdvance.js";
+import { BanquetBooking, banquetTotals } from "../model/banquet.js";
+
+// 🎉 Banquet: paisa jis din mila (mode ke saath) + bill (event ke din, GST ke bina)
+const banquetMoney = async (from, to) => {
+  const list = await BanquetBooking.find({}, { payments: 1, status: 1, eventDate: 1, menus: 1, addons: 1, hallRent: 1, discount: 1, gstPercent: 1 }).lean();
+  const a = from.format("YYYY-MM");
+  const b = to.format("YYYY-MM");
+  const ymOfD = (d) => dayjs(d, "DD-MM-YYYY", true).format("YYYY-MM");
+  const pays = list.flatMap((x) => (x.payments || []).filter((p) => !p.cancelled).map((p) => ({ ym: ymOfD(p.date), amount: Number(p.amount) || 0, mode: p.mode }))).filter((p) => p.ym >= a && p.ym <= b);
+  const sales = list.filter((x) => x.status === "billed").map((x) => ({ ym: ymOfD(x.eventDate), amount: banquetTotals(x).taxable })).filter((x) => x.ym >= a && x.ym <= b);
+  return { pays, sales };
+};
 import { loadOfficeClassifier, lineName, nk } from "../utils/officeTypes.js";
 
 // "Discount on total bill" (naya niyam) kis din se P&L mein ghatega: server pehli baar chalte hi aaj ki tareekh (IST) save karta hai.
@@ -84,11 +96,12 @@ router.get("/cashflow/:from/:to", async (req, res) => {
     const roomPaid = await paidRoomCharges(from, to);
     const ghOffice = await GhDueReceipt.find({ ...q, cancelled: { $ne: true } }, { entryCreateDate: 1, amount: 1 }).lean();
     const advMoves = await bookingAdvanceMoves();
+    const bq = await banquetMoney(from, to);
 
     const months = monthList(from, to).map((m) => ({
       month: m,
       label: dayjs(m + "-01").format("MMM YY"),
-      ghCash: 0, ghJama: 0, ghUdhaar: 0,
+      ghCash: 0, ghJama: 0, ghUdhaar: 0, banquetIn: 0,
       restCash: 0, restUdhaar: 0,
       officeIn: 0, recoveryIn: 0, loansIn: 0, personalIn: 0, transferIn: 0,
       restKharch: 0, restUpad: 0,
@@ -149,6 +162,11 @@ router.get("/cashflow/:from/:to", async (req, res) => {
       const m = byM[ymOf(x.entryCreateDate)];
       if (m) m.ghJama += n(x.amount);
     });
+    // Banquet ka paisa (jis din mila)
+    bq.pays.forEach((x) => {
+      const m = byM[x.ym];
+      if (m) m.banquetIn += x.amount;
+    });
     // Booking advance: jis mahine mila wahan +, check-in wale room ki wasooli se −
     advMoves.forEach((x) => {
       const m = byM[x.ym];
@@ -162,14 +180,14 @@ router.get("/cashflow/:from/:to", async (req, res) => {
       else m.ghCash += n(c.amount);
     });
     months.forEach((m) => {
-      m.aaya = m.ghCash + m.ghJama + m.restCash + m.officeIn + m.recoveryIn; // business ka paisa aaya (personal / loan / transfer alag)
+      m.aaya = m.ghCash + m.ghJama + m.restCash + m.officeIn + m.recoveryIn + m.banquetIn; // business ka paisa aaya (personal / loan / transfer alag)
       m.gaya = m.restKharch + m.restUpad + m.officeOut + m.refundOut; // business kharch + guest ko wapas (personal / EMI / transfer alag)
       m.businessNet = m.aaya - m.gaya;
       m.net = m.aaya + m.loansIn + m.personalIn - m.gaya - m.personalOut - m.loanOut; // transfer dono taraf barabar, isliye nahi gina
       Object.keys(m).forEach((k) => typeof m[k] === "number" && (m[k] = round(m[k])));
     });
 
-    const keys = ["ghCash", "ghJama", "ghUdhaar", "restCash", "restUdhaar", "officeIn", "recoveryIn", "loansIn", "personalIn", "transferIn", "restKharch", "restUpad", "officeOut", "personalOut", "loanOut", "transferOut", "refundOut", "aaya", "gaya", "businessNet", "net"];
+    const keys = ["ghCash", "ghJama", "ghUdhaar", "banquetIn", "restCash", "restUdhaar", "officeIn", "recoveryIn", "loansIn", "personalIn", "transferIn", "restKharch", "restUpad", "officeOut", "personalOut", "loanOut", "transferOut", "refundOut", "aaya", "gaya", "businessNet", "net"];
     const totals = Object.fromEntries(keys.map((k) => [k, round(sum(months, (m) => m[k]))]));
     const outByCat = {};
     const inByCat = {};
@@ -455,9 +473,10 @@ router.get("/pnl/:from/:to", async (req, res) => {
     ]);
     const discFrom = await discountFrom();
     const classify = await loadOfficeClassifier();
+    const bqP = await banquetMoney(from, to);
     const months = monthList(from, to).map((m) => ({
       month: m, label: dayjs(m + "-01").format("MMM YY"),
-      ghSales: 0, ghExtra: 0, ghDiscount: 0, restSales: 0, otherIncome: 0, otherByCat: {},
+      ghSales: 0, ghExtra: 0, ghDiscount: 0, restSales: 0, banquetSales: 0, otherIncome: 0, otherByCat: {},
       exp: {}, expGh: 0, expRest: 0, loanOut: 0, personalOut: 0, refundOut: 0,
     }));
     const byM = Object.fromEntries(months.map((m) => [m.month, m]));
@@ -505,18 +524,20 @@ router.get("/pnl/:from/:to", async (req, res) => {
       });
     });
     const groups = [...EXP_GROUPS.map(([g]) => g), "Other expenses"];
+    // Banquet bill (event ke mahine, GST ke bina)
+    bqP.sales.forEach((x) => byM[x.ym] && (byM[x.ym].banquetSales += x.amount));
     months.forEach((m) => {
-      m.revenue = m.ghSales + m.ghExtra - m.ghDiscount + m.restSales + m.otherIncome;
+      m.revenue = m.ghSales + m.ghExtra - m.ghDiscount + m.restSales + m.banquetSales + m.otherIncome;
       m.expenses = sum(Object.values(m.exp), (v) => v);
       m.profit = m.revenue - m.expenses;
       m.margin = m.revenue ? round((100 * m.profit) / m.revenue, 1) : 0;
       m.afterLoanPersonal = m.profit - m.loanOut - m.personalOut;
       m.ghProfit = m.ghSales + m.ghExtra - m.ghDiscount - m.expGh;
       groups.forEach((g) => (m.exp[g] = round(m.exp[g] || 0)));
-      ["ghSales", "ghExtra", "ghDiscount", "restSales", "otherIncome", "expGh", "expRest", "loanOut", "personalOut", "refundOut", "revenue", "expenses", "profit", "afterLoanPersonal", "ghProfit"].forEach((k) => (m[k] = round(m[k])));
+      ["ghSales", "ghExtra", "ghDiscount", "restSales", "banquetSales", "otherIncome", "expGh", "expRest", "loanOut", "personalOut", "refundOut", "revenue", "expenses", "profit", "afterLoanPersonal", "ghProfit"].forEach((k) => (m[k] = round(m[k])));
     });
     const totals = {};
-    ["ghSales", "ghExtra", "ghDiscount", "restSales", "otherIncome", "expGh", "expRest", "loanOut", "personalOut", "refundOut", "revenue", "expenses", "profit", "afterLoanPersonal", "ghProfit"].forEach((k) => (totals[k] = round(sum(months, (m) => m[k]))));
+    ["ghSales", "ghExtra", "ghDiscount", "restSales", "banquetSales", "otherIncome", "expGh", "expRest", "loanOut", "personalOut", "refundOut", "revenue", "expenses", "profit", "afterLoanPersonal", "ghProfit"].forEach((k) => (totals[k] = round(sum(months, (m) => m[k]))));
     totals.margin = totals.revenue ? round((100 * totals.profit) / totals.revenue, 1) : 0;
     totals.exp = Object.fromEntries(groups.map((g) => [g, round(sum(months, (m) => m.exp[g]))]));
     totals.otherByCat = {};
@@ -563,7 +584,8 @@ router.get("/mode-balance/:from/:to", async (req, res) => {
     const roomPaid = await paidRoomCharges(from, to);
     const ghOffice = await GhDueReceipt.find({ ...q, cancelled: { $ne: true } }, { entryCreateDate: 1, amount: 1, mode: 1 }).lean();
     const advMoves = await bookingAdvanceMoves();
-    const blank = () => Object.fromEntries(BAL_MODES.map((k) => [k, { in: 0, out: 0, src: { gh: 0, rest: 0, office: 0, officeP: 0, restOut: 0, officeOut: 0, officeOutP: 0 } }]));
+    const bq = await banquetMoney(from, to);
+    const blank = () => Object.fromEntries(BAL_MODES.map((k) => [k, { in: 0, out: 0, src: { gh: 0, rest: 0, office: 0, banquet: 0, officeP: 0, restOut: 0, officeOut: 0, officeOutP: 0 } }]));
     const months = monthList(from, to).map((m) => ({ month: m, label: dayjs(m + "-01").format("MMM YY"), modes: blank() }));
     const byM = Object.fromEntries(months.map((m) => [m.month, m]));
     const add = (m, mode, dir, amt, src) => {
@@ -586,6 +608,8 @@ router.get("/mode-balance/:from/:to", async (req, res) => {
     dueReceipts.forEach((x) => add(byM[ymOf(x.entryCreateDate)], MODE_OF(x.mode), "in", x.amount, "rest"));
     // GH counter par food bill (restaurant ka udhaar) aur extra charges wasool: mode ke hisaab se
     roomPaid.forEach((c) => add(byM[c.ym], MODE_OF(c.paidMode), "in", c.amount, c.kind === "food" ? "rest" : "gh"));
+    // Banquet payments (Card → PP, kyunki ek hi machine)
+    bq.pays.forEach((x) => add(byM[x.ym], MODE_OF(x.mode), "in", x.amount, "banquet"));
     // GH ka purana baaki jo Office mein wasool hua
     ghOffice.forEach((x) => add(byM[ymOf(x.entryCreateDate)], MODE_OF(x.mode), "in", x.amount, "gh"));
     // Booking advance: mila us din/mode mein +, check-in room ki wasooli wale mode se − (minus bhi ho sakta hai, isliye seedha)

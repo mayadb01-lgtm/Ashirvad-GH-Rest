@@ -40,6 +40,7 @@ const ProfitLossDashboard = () => {
     ["GH extra charges (extra bed, laundry…)", (m) => m.ghExtra || 0],
     [`Less: GH discount on bills${data?.discountFrom ? ` (from ${data.discountFrom})` : ""}`, (m) => -(m.ghDiscount || 0)],
     ["Restaurant sales", (m) => m.restSales],
+    ["Banquet (billed, without GST)", (m) => m.banquetSales || 0],
     ["Other income (Banquet, Baada, etc.)", (m) => m.otherIncome],
     ["Total revenue", (m) => m.revenue, "total"],
     ["EXPENSES", null, "head"],

@@ -160,6 +160,15 @@ const RULES = {
     R("GET", /^\/api\/v1\/counter\/handover\/([^/]+)$/, { dateParam: 1 }),
     R("POST", /^\/api\/v1\/counter\/handover$/, { dateBody: "date" }),
     R("PUT", /^\/api\/v1\/counter\/handover\/[a-f0-9]{24}\/cancel$/),
+    // Banquet (booking / bill / payment — date ke niyam controller mein)
+    R("GET", /^\/api\/v1\/banquet\/setup$/),
+    R("GET", /^\/api\/v1\/banquet\/bookings$/),
+    R("GET", /^\/api\/v1\/banquet\/bookings\/[a-f0-9]{24}$/),
+    R("POST", /^\/api\/v1\/banquet\/bookings$/),
+    R("PUT", /^\/api\/v1\/banquet\/bookings\/[a-f0-9]{24}$/),
+    R("POST", /^\/api\/v1\/banquet\/bookings\/[a-f0-9]{24}\/payment$/),
+    R("PUT", /^\/api\/v1\/banquet\/bookings\/[a-f0-9]{24}\/payment\/[a-f0-9]{24}\/cancel$/),
+    R("POST", /^\/api\/v1\/banquet\/bookings\/[a-f0-9]{24}\/bill$/),
     dayStatus,
   ],
 };

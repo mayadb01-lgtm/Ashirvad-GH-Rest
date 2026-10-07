@@ -286,7 +286,9 @@ const OfficeQuickEntry = ({ date, isAdmin }) => {
   const restDueNames = new Set((counter.rest.due || []).map((d) => String(d.name || "").trim().toLowerCase()));
   const viaCounters = (o) =>
     o.categoryName === "Pending" && (restDueNames.has(String(o.expenseName || "").trim().toLowerCase()) || /gh\s*pending|restaurant\s*(pending|bill)|room\s*bill|canteen/i.test(o.expenseName || ""));
-  const opts = ed ? (ed.side === "officeIn" ? lists.in.filter((o) => !viaCounters(o)) : lists.out) : [];
+  // Banquet ka paisa ab 🎉 Banquet tab (booking ke saath) mein — Money in mein nahi, warna do baar ginega
+  const viaBanquet = (o) => /banquet|banquate/i.test(`${o.categoryName || ""}`);
+  const opts = ed ? (ed.side === "officeIn" ? lists.in.filter((o) => !viaCounters(o) && !viaBanquet(o)) : lists.out) : [];
   const edValue = ed?.row._id ? opts.find((o) => o._id === ed.row._id && o.expenseName === ed.row.expenseName) || null : null;
   const staffName = ed && isStaffCat(ed.row.categoryName);
   const setRow = (patch) => setEditor((e) => ({ ...e, row: { ...e.row, ...patch } }));

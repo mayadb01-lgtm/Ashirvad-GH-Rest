@@ -54,6 +54,7 @@ const CashflowDashboard = () => {
       "GH credit (not yet received)": m.ghUdhaar,
       "Rest (excluding credit)": m.restCash,
       "Rest credit": m.restUdhaar,
+      "Banquet received": m.banquetIn,
       "Office In (business)": m.officeIn,
       "Old dues received (Office + Restaurant)": m.recoveryIn,
       "Loan received": m.loansIn,
@@ -132,7 +133,7 @@ const CashflowDashboard = () => {
           <Table size="small">
             <TableHead>
               <TableRow>
-                {["Month", "GH", "Restaurant", "Office In + old dues", "Money in", "Rest expenses + advance", "Office Out + refunds", "Money out", "Remaining", "Personal in", "Personal out", "Loan in", "Loan EMI", "Net"].map((h) => (
+                {["Month", "GH", "Restaurant", "Office / Banquet In + old dues", "Money in", "Rest expenses + advance", "Office Out + refunds", "Money out", "Remaining", "Personal in", "Personal out", "Loan in", "Loan EMI", "Net"].map((h) => (
                   <TableCell key={h} align={h === "Month" ? "left" : "right"} sx={{ fontWeight: 700, whiteSpace: "nowrap" }}>
                     {h}
                   </TableCell>
@@ -145,7 +146,7 @@ const CashflowDashboard = () => {
                   <TableCell>{m.label}</TableCell>
                   <TableCell align="right">{inr(m.ghCash + m.ghJama)}</TableCell>
                   <TableCell align="right">{inr(m.restCash)}</TableCell>
-                  <TableCell align="right">{inr(m.officeIn + (m.recoveryIn || 0))}</TableCell>
+                  <TableCell align="right">{inr(m.officeIn + (m.recoveryIn || 0) + (m.banquetIn || 0))}</TableCell>
                   <TableCell align="right" sx={{ color: COLORS.in, fontWeight: 700 }}>{inr(m.aaya)}</TableCell>
                   <TableCell align="right">{inr(m.restKharch + m.restUpad)}</TableCell>
                   <TableCell align="right">{inr(m.officeOut + (m.refundOut || 0))}</TableCell>

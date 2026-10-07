@@ -48,6 +48,8 @@ import CashflowDashboard from "../components/insights/CashflowDashboard";
 import ModeBalanceDashboard from "../components/insights/ModeBalanceDashboard";
 import OfficeTypesDashboard from "../components/insights/OfficeTypesDashboard";
 import RestReceivableBalance from "../components/insights/RestReceivableBalance";
+import BanquetSetupDashboard from "../components/insights/BanquetSetupDashboard";
+import BanquetReportDashboard from "../components/insights/BanquetReportDashboard";
 import PurchaseAnalyticsDashboard from "../components/insights/PurchaseAnalyticsDashboard";
 import GhGrowthDashboard from "../components/insights/GhGrowthDashboard";
 import KharchControlDashboard from "../components/insights/KharchControlDashboard";
@@ -126,6 +128,9 @@ const NAVIGATION = [
   { segment: "purchase-analytics", title: "Purchase analytics", icon: <ReceiptLongIcon /> },
   { segment: "office-types", title: "Office category types", icon: <AccountBalanceWalletIcon /> },
   { segment: "rest-receivables", title: "Restaurant receivables (who owes)", icon: <CurrencyRupeeIcon /> },
+  { kind: "header", title: "Banquet" },
+  { segment: "banquet-report", title: "Banquet report & kitchen planning", icon: <ReceiptLongIcon /> },
+  { segment: "banquet-setup", title: "Banquet setup (menu, packages)", icon: <ReceiptLongIcon /> },
   { segment: "gh-growth", title: "GH Growth", icon: <TrendingUpIcon /> },
   { segment: "kharch-control", title: "Expense control", icon: <ReceiptLongIcon /> },
   { segment: "data-check", title: "Data check (error alerts)", icon: <FactCheckIcon /> },
@@ -357,6 +362,8 @@ const DashboardPage = () => {
     { path: "purchase-analytics", element: <PurchaseAnalyticsDashboard /> },
     { path: "office-types", element: <OfficeTypesDashboard /> },
     { path: "rest-receivables", element: <RestReceivableBalance /> },
+    { path: "banquet-report", element: <BanquetReportDashboard /> },
+    { path: "banquet-setup", element: <BanquetSetupDashboard /> },
     { path: "profit-loss", element: <ProfitLossDashboard /> },
     { path: "room-rates", element: <RoomRatesDashboard /> },
     { path: "guest-register", element: <GuestRegisterDashboard /> },

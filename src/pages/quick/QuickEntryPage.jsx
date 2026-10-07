@@ -27,6 +27,8 @@ import { API, DATE_FMT, Q, useIsDesktop } from "./shared";
 import GhQuickEntry from "./GhQuickEntry";
 import RestQuickEntry from "./RestQuickEntry";
 import OfficeQuickEntry from "./OfficeQuickEntry";
+import BanquetQuickEntry from "./BanquetQuickEntry";
+import CelebrationIcon from "@mui/icons-material/Today"; // (naya icon Vite ko reload karata hai — pehle se wala use kiya)
 
 dayjs.extend(customParseFormat);
 
@@ -34,6 +36,7 @@ const MODULES = [
   { key: "gh", label: "Guest House", short: "GH", icon: <HotelIcon />, color: Q.gh, old: "/hotel" },
   { key: "rest", label: "Restaurant", short: "Restaurant", icon: <RestaurantIcon />, color: Q.rest, old: "/restaurant" },
   { key: "office", label: "Office Book", short: "Office", icon: <BusinessCenterIcon />, color: Q.office, old: "/office" },
+  { key: "banquet", label: "Banquet", short: "Banquet", icon: <CelebrationIcon />, color: "#BE185D", old: "" },
 ];
 const WEEKDAY_HI = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -180,9 +183,9 @@ const QuickEntryPage = () => {
             )}
             {auth.isAdmin && (
               <>
-                <Button component={RouterLink} to={auth.isOwnerAdmin ? `/admin${mod.old}` : mod.old} size="small" sx={{ color: Q.muted, textTransform: "none", whiteSpace: "nowrap" }}>
+                {mod.old && <Button component={RouterLink} to={auth.isOwnerAdmin ? `/admin${mod.old}` : mod.old} size="small" sx={{ color: Q.muted, textTransform: "none", whiteSpace: "nowrap" }}>
                   Classic view
-                </Button>
+                </Button>}
                 {auth.isOwnerAdmin && (
                   <IconButton component={RouterLink} to="/dashboard" aria-label="Dashboard">
                     <DashboardIcon />
@@ -195,8 +198,8 @@ const QuickEntryPage = () => {
             </Button>
           </Stack>
 
-          {/* Date bar: staff ko sirf aaj (privacy), admin ko koi bhi din */}
-          {staffDates ? (
+          {/* Date bar: staff ko sirf aaj (privacy), admin ko koi bhi din. Banquet ki apni dates hain — wahan nahi */}
+          {mod.key === "banquet" ? null : staffDates ? (
             <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mt: 1 }}>
               {staffDates.length > 1 ? (
                 staffDates.map((d) => (
@@ -260,6 +263,7 @@ const QuickEntryPage = () => {
         {mod.key === "gh" && <GhQuickEntry key={`gh-${date}`} date={date} isAdmin={auth.isAdmin} />}
         {mod.key === "rest" && <RestQuickEntry key={`rest-${date}`} date={date} isAdmin={auth.isAdmin} />}
         {mod.key === "office" && <OfficeQuickEntry key={`office-${date}`} date={date} isAdmin={auth.isAdmin} />}
+        {mod.key === "banquet" && <BanquetQuickEntry isAdmin={auth.isAdmin} />}
       </Box>
 
       {/* Mobile bottom tabs */}

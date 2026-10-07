@@ -11,6 +11,11 @@ import OfficeBook from "../model/officeBook.js";
 import StaffSalary from "../model/staffSalary.js";
 import { loadOfficeClassifier, lineName } from "../utils/officeTypes.js";
 import { officeReceivedGhIds } from "../model/ghDueReceipt.js";
+import { BanquetBooking, banquetTotals } from "../model/banquet.js";
+
+// Banquet ka bill (event ke din, GST ke bina) — revenue mein
+const banquetRevenue = async (s, e) =>
+  (await BanquetBooking.find({ status: "billed", eventCreateDate: { $gte: s.toDate(), $lte: e.toDate() } }).lean()).reduce((t, b) => t + banquetTotals(b).taxable, 0);
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -150,6 +155,13 @@ router.get("/monthly-summary/:month/:year", async (req, res) => {
     const cls = await loadOfficeClassifier();
     const kpis = monthKpis(gh, rest, office, salary, roomCount, days, cls);
     const prevKpis = monthKpis(ghPrev, restPrev, officePrev, salaryPrev, roomCount, prevEnd.date(), cls);
+    // 🎉 Banquet module ka bill bhi kamai mein
+    const [bqNow, bqPrev] = await Promise.all([banquetRevenue(start, end), banquetRevenue(prevStart, prevEnd)]);
+    [[kpis, bqNow], [prevKpis, bqPrev]].forEach(([k, v]) => {
+      k.banquetRevenue = v;
+      k.totalRevenue += v;
+      k.netCash += v;
+    });
 
     /* ---------- Daily series ---------- */
     const daily = [];

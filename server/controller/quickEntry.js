@@ -23,7 +23,8 @@ router.get("/me", (req, res) => {
       isOwnerAdmin: u?.constructor?.modelName === "Admin",
       department: admin ? "all" : u?.department || "none",
       isActive: u?.isActive !== false,
-      modules: admin ? ["gh", "rest", "office"] : ["gh", "rest", "office"].includes(u?.department) ? [u.department] : [],
+      // Banquet: owner + Office department
+      modules: admin ? ["gh", "rest", "office", "banquet"] : u?.department === "office" ? ["office", "banquet"] : ["gh", "rest"].includes(u?.department) ? [u.department] : [],
       allowedDates: admin ? null : allowedStaffDates(), // null = koi rok nahi
     },
   });
