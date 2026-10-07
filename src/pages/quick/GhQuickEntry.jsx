@@ -1022,7 +1022,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       const q = jamaQuery.trim().toLowerCase();
       return !q || `${u.fullname} ${u.mobileNumber} ${u.roomNo}`.toLowerCase().includes(q);
     })
-    .sort((a, b) => dayjs(a.createDate, DATE_FMT).valueOf() - dayjs(b.createDate, DATE_FMT).valueOf());
+    .sort((a, b) => dayjs(b.createDate, DATE_FMT).valueOf() - dayjs(a.createDate, DATE_FMT).valueOf()); // naya din pehle
 
   // Collections ka total: kul baaki (search se alag), aaj mila (mode-wise)
   const pendingAll = unpaid.filter((u) => !jamaKeys.has(`${u.createDate}|${u.roomNo}|${u.mobileNumber}`));
