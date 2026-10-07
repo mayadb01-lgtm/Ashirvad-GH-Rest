@@ -119,7 +119,7 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkou
   const low = filled && room.roomCost && num(row.rate) < room.roomCost * 0.7;
   // Rang: check-in = halka hara, check-out = halka laal, khaali (available) = halka neela
   const state = checkout ? "out" : filled || partial || dueOut ? "in" : "free";
-  const tint = { in: { bg: "#F0FDF4", line: "#86EFAC" }, out: { bg: "#FEF2F2", line: "#FCA5A5" }, free: { bg: "#F0F9FF", line: "#BAE6FD" } }[state];
+  const tint = { in: { bg: "#DCFCE7", line: "#22C55E" }, out: { bg: "#FEF2F2", line: "#FCA5A5" }, free: { bg: "#F0F9FF", line: "#BAE6FD" } }[state];
   const border = low ? "#F59E0B" : partial ? Q.bad : tint.line;
   return (
     <ButtonBase
@@ -1221,31 +1221,18 @@ const GhQuickEntry = ({ date, isAdmin }) => {
               ))}
             </Paper>
           )}
-          {(regBlock.length > 0 || (settleDay && regPending.today?.length > 0)) && (
-            <Paper variant="outlined" sx={{ p: 1.5, mb: 1.5, borderRadius: 3, borderColor: regBlock.length ? "#FCA5A5" : Q.line, bgcolor: regBlock.length ? "#FEF2F2" : "#fff" }}>
-              <Typography fontWeight={800}>📄 Guest registration</Typography>
-              <Typography variant="caption" color={Q.muted} component="div" sx={{ mb: 1 }}>
-                Registration can be filled on the check-in day or the next day. It must be complete before the next day is submitted.
-              </Typography>
-              {[...(regBlock || []).map((x) => ({ ...x, must: true })), ...(regPending.today || []).map((x) => ({ ...x, must: false }))].map((u, i) => (
-                <Stack key={`${u.date}-${u.period}-${u.roomNo}`} direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }} sx={{ py: 0.75, borderTop: i ? `1px solid ${Q.line}` : "none" }}>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography fontWeight={700}>
-                      Room {u.roomNo} · {u.guest?.fullname || "—"}{" "}
-                      <Typography component="span" variant="caption" sx={{ color: u.must ? Q.bad : Q.muted, fontWeight: 700 }}>
-                        {u.must ? `checked in ${u.date} — required now` : "due by tomorrow"}
-                      </Typography>
-                    </Typography>
-                    <Typography variant="caption" color={Q.muted}>
-                      Missing: {u.missing.join(", ")}
-                    </Typography>
-                  </Box>
-                  <Button size="small" variant={u.must ? "contained" : "outlined"} onClick={() => setRegEdit(u)} sx={{ fontWeight: 700, ...(u.must ? { bgcolor: Q.bad, "&:hover": { bgcolor: Q.bad } } : {}) }}>
-                    Fill details
-                  </Button>
-                </Stack>
-              ))}
-            </Paper>
+          {regBlock.length > 0 && (
+            <Alert
+              severity="error"
+              sx={{ mb: 1.5 }}
+              action={
+                <Button color="inherit" size="small" onClick={() => document.getElementById("gh-reg-panel")?.scrollIntoView({ behavior: "smooth" })} sx={{ fontWeight: 800 }}>
+                  Fill
+                </Button>
+              }
+            >
+              Guest registration required now: Room {regBlock.map((u) => u.roomNo).join(", ")}
+            </Alert>
           )}
           <Box sx={{ mb: 1.5 }}>
             <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
@@ -1253,7 +1240,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
                 {periodFilled(period)} / {rooms.length} rooms filled
               </Typography>
               <Stack direction="row" spacing={1.25}>
-                {[["#F0FDF4", "#86EFAC", "Checked in"], ["#FEF2F2", "#FCA5A5", "Checked out"], ["#F0F9FF", "#BAE6FD", "Available"]].map(([bg, line, l]) => (
+                {[["#DCFCE7", "#22C55E", "Checked in"], ["#FEF2F2", "#FCA5A5", "Checked out"], ["#F0F9FF", "#BAE6FD", "Available"]].map(([bg, line, l]) => (
                   <Stack key={l} direction="row" spacing={0.5} alignItems="center">
                     <Box sx={{ width: 12, height: 12, borderRadius: 0.5, bgcolor: bg, border: `1.5px solid ${line}` }} />
                     <Typography variant="caption" color={Q.muted}>{l}</Typography>
@@ -1285,6 +1272,32 @@ const GhQuickEntry = ({ date, isAdmin }) => {
               </Grid>
             ))}
           </Grid>
+          {(regBlock.length > 0 || (settleDay && regPending.today?.length > 0)) && (
+            <Paper id="gh-reg-panel" variant="outlined" sx={{ p: 1.5, mt: 2, mb: 1.5, borderRadius: 3, borderColor: regBlock.length ? "#FCA5A5" : Q.line, bgcolor: regBlock.length ? "#FEF2F2" : "#fff" }}>
+              <Typography fontWeight={800}>📄 Guest registration</Typography>
+              <Typography variant="caption" color={Q.muted} component="div" sx={{ mb: 1 }}>
+                Registration can be filled on the check-in day or the next day. It must be complete before the next day is submitted.
+              </Typography>
+              {[...(regBlock || []).map((x) => ({ ...x, must: true })), ...(regPending.today || []).map((x) => ({ ...x, must: false }))].map((u, i) => (
+                <Stack key={`${u.date}-${u.period}-${u.roomNo}`} direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }} sx={{ py: 0.75, borderTop: i ? `1px solid ${Q.line}` : "none" }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography fontWeight={700}>
+                      Room {u.roomNo} · {u.guest?.fullname || "—"}{" "}
+                      <Typography component="span" variant="caption" sx={{ color: u.must ? Q.bad : Q.muted, fontWeight: 700 }}>
+                        {u.must ? `checked in ${u.date} — required now` : "due by tomorrow"}
+                      </Typography>
+                    </Typography>
+                    <Typography variant="caption" color={Q.muted}>
+                      Missing: {u.missing.join(", ")}
+                    </Typography>
+                  </Box>
+                  <Button size="small" variant={u.must ? "contained" : "outlined"} onClick={() => setRegEdit(u)} sx={{ fontWeight: 700, ...(u.must ? { bgcolor: Q.bad, "&:hover": { bgcolor: Q.bad } } : {}) }}>
+                    Fill details
+                  </Button>
+                </Stack>
+              ))}
+            </Paper>
+          )}
         </>
       ) : (
         <Stack spacing={1.5}>
