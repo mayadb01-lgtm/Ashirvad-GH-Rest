@@ -11,6 +11,7 @@ import { Alert, Box, Button, ButtonBase, Skeleton, Stack, TextField, Typography 
 import Grid from "@mui/material/Grid2";
 import AddIcon from "@mui/icons-material/Add";
 import PurchaseBillsSection from "./PurchaseBillsSection";
+import OfficeRoomBillsSection from "./OfficeRoomBillsSection";
 import OfficeImportDialog from "./OfficeImportDialog";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import {
@@ -320,6 +321,7 @@ const OfficeQuickEntry = ({ date, isAdmin }) => {
           deleteNote={(b) => (b.mode === "Payable" ? "It is removed from the vendor ledger too." : "Its line in Money out is removed too.")}
         />
       </Box>
+      <OfficeRoomBillsSection date={date} />
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 6 }}>{side("officeIn", "Money in", "Money received", Q.office)}</Grid>
         <Grid size={{ xs: 12, md: 6 }}>{side("officeOut", "Money out", "Money paid out", "#7C3AED")}</Grid>

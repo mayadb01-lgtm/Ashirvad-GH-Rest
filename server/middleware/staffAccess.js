@@ -142,6 +142,9 @@ const RULES = {
     R("DELETE", /^\/api\/v1\/purchase\/[a-f0-9]{24}$/),
     R("POST", /^\/api\/v1\/purchase\/[a-f0-9]{24}\/photo$/),
     R("GET", /^\/api\/v1\/purchase\/photo\/[A-Za-z0-9._-]+$/),
+    // Room ka food bill Office mein wasool
+    R("GET", /^\/api\/v1\/rest-dues\/room-bills\/([^/]+)$/, { dateParam: 1 }),
+    R("POST", /^\/api\/v1\/rest-dues\/room-bills\/[a-f0-9]{24}\/receive$/, { dateBody: "date" }),
     dayStatus,
   ],
 };

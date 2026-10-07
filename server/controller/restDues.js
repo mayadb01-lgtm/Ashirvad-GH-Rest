@@ -72,7 +72,7 @@ router.get("/gh-cash/:date", async (req, res) => {
     const days = [];
     for (let i = 0; i <= 30; i++) days.push(d.subtract(i, "day").format(F));
     const [paid, handed] = await Promise.all([
-      RoomCharge.find({ kind: "food", source: "rest", isPaid: true, paidMode: "Cash", paidAt: { $ne: "rest" }, paidDate: { $in: days } }).lean(),
+      RoomCharge.find({ kind: "food", source: "rest", isPaid: true, paidMode: "Cash", paidAt: { $nin: ["rest", "office"] }, paidDate: { $in: days } }).lean(),
       RestDueReceipt.find({ source: "gh", cancelled: { $ne: true } }, { chargeId: 1 }).lean(),
     ]);
     const done = new Set(handed.map((h) => h.chargeId));
@@ -130,7 +130,7 @@ router.get("/room-bills/:date", async (req, res) => {
     for (let i = 0; i <= 60; i++) days.push(d.subtract(i, "day").format(F));
     const [due, paidToday] = await Promise.all([
       RoomCharge.find({ kind: "food", source: "rest", isPaid: false, date: { $in: days } }).lean(),
-      RoomCharge.find({ kind: "food", isPaid: true, paidAt: "rest", paidDate: req.params.date }).lean(),
+      RoomCharge.find({ kind: "food", isPaid: true, paidAt: req.query.at === "office" ? "office" : "rest", paidDate: req.params.date }).lean(),
     ]);
     const pick = (c) => ({ _id: c._id, roomNo: c.roomNo, guestName: c.guestName, date: c.date, amount: c.amount, paidMode: c.paidMode, paidBy: c.paidBy });
     const dv = (s) => String(s).split("-").reverse().join("");
@@ -140,13 +140,16 @@ router.get("/room-bills/:date", async (req, res) => {
   }
 });
 
-// POST /room-bills/:id/receive { date, mode: Cash | Card | PP } → GH par bhi "paid" dikhega (Restaurant par wasool)
+// POST /room-bills/:id/receive { date, mode, at: "rest" | "office" } → GH / Restaurant dono jagah "paid" dikhega
+//   Restaurant: Cash / Card / PP · Office: Cash / PP / PPS / PPC
 router.post("/room-bills/:id([a-f0-9]{24})/receive", async (req, res) => {
   try {
     const b = req.body || {};
     if (!validDate(b.date)) return bad(res, "Invalid date");
     if (!dateOk(req, b.date)) return bad(res, "Only today's collection can be added", 403);
-    if (!["Cash", "Card", "PP"].includes(b.mode)) return bad(res, "Choose Cash, Card or PP (UPI)");
+    const at = b.at === "office" ? "office" : "rest";
+    const modes = at === "office" ? ["Cash", "PP", "PPS", "PPC"] : ["Cash", "Card", "PP"];
+    if (!modes.includes(b.mode)) return bad(res, `Choose ${modes.join(" / ")}`);
     const doc = await RoomCharge.findById(req.params.id);
     if (!doc || doc.kind !== "food") return bad(res, "Bill not found", 404);
     if (doc.isPaid) return bad(res, "This room bill is already paid");
@@ -154,7 +157,7 @@ router.post("/room-bills/:id([a-f0-9]{24})/receive", async (req, res) => {
     doc.paidMode = b.mode;
     doc.paidDate = b.date;
     doc.paidBy = who(req);
-    doc.paidAt = "rest";
+    doc.paidAt = at;
     doc.updatedBy = who(req);
     await doc.save();
     res.json({ success: true, data: doc });
