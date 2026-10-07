@@ -44,6 +44,7 @@ import { apiGate } from "./middleware/security.js";
 import owner from "./controller/owner.js";
 import insights from "./controller/insights.js";
 import guestRegister from "./controller/guestRegister.js";
+import purchase from "./controller/purchase.js";
 import roomCharges from "./controller/roomCharges.js";
 import invoice from "./controller/invoice.js";
 import { stayRouter, bookingRouter } from "./controller/stays.js";
@@ -70,6 +71,7 @@ app.use("/api/v1/staffSalary", staffSalary);
 app.use("/api/v1/import", dataImport);
 app.use("/api/v1/owner", owner); // read-only owner report
 app.use("/api/v1/guest-register", guestRegister); // govt guest register (alag collection)
+app.use("/api/v1/purchase", purchase); // restaurant purchase bills (alag collection)
 app.use("/api/v1/room-charges", roomCharges); // food bill + extra charges (alag collection)
 app.use("/api/v1/invoice", invoice); // GST / Non-GST invoice (alag collection + numbering)
 app.use("/api/v1/stay", stayRouter); // continue stay + checkout (alag collection)

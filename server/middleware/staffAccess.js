@@ -104,6 +104,13 @@ const RULES = {
     R("GET", /^\/api\/v1\/room-charges\/occupied\/([^/]+)$/, { dateParam: 1 }),
     R("GET", /^\/api\/v1\/room-charges\/rest\/([^/]+)$/, { dateParam: 1 }),
     R("PUT", /^\/api\/v1\/room-charges\/rest-sync\/([^/]+)$/, { dateParam: 1 }),
+    // Purchase bills (aaj ke; id wale routes andar date check karte hain)
+    R("GET", /^\/api\/v1\/purchase\/day\/([^/]+)$/, { dateParam: 1 }),
+    R("POST", /^\/api\/v1\/purchase$/, { dateBody: "date" }),
+    R("PUT", /^\/api\/v1\/purchase\/[a-f0-9]{24}$/),
+    R("DELETE", /^\/api\/v1\/purchase\/[a-f0-9]{24}$/),
+    R("POST", /^\/api\/v1\/purchase\/[a-f0-9]{24}\/photo$/),
+    R("GET", /^\/api\/v1\/purchase\/photo\/[A-Za-z0-9._-]+$/),
     dayStatus,
   ],
   office: [

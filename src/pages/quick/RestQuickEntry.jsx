@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import { Alert, Box, Button, ButtonBase, Skeleton, Stack, Typography } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import AddIcon from "@mui/icons-material/Add";
+import PurchaseBillDialog from "./PurchaseBillDialog";
 import {
   API,
   ConfirmDialog,
@@ -69,6 +70,21 @@ const RestQuickEntry = ({ date }) => {
   const [error, setError] = useState("");
   const seededFor = useRef("");
   const roomRowsRef = useRef([]);
+  // 🧾 Purchase bills (alag collection) — save hote hi Expenses / Payables mein line
+  const [bills, setBills] = useState([]);
+  const [billOpen, setBillOpen] = useState(false);
+  const [billView, setBillView] = useState(null); // { bill, photos: [url] }
+  const loadBills = useCallback(
+    () =>
+      axios
+        .get(`${API}/purchase/day/${date}`)
+        .then(({ data }) => setBills(data.data || []))
+        .catch(() => setBills([])),
+    [date]
+  );
+  useEffect(() => {
+    loadBills();
+  }, [loadBills]);
 
   const load = useCallback(async () => {
     setError("");
@@ -171,9 +187,63 @@ const RestQuickEntry = ({ date }) => {
     setEditor(null);
   };
 
+  const billSaved = (bill, v) => {
+    const base = { amount: num(bill.amount), purchaseKey: bill.rowKey };
+    if (bill.mode === "Payable")
+      setDraft((d) => ({
+        ...d,
+        pendingUsers: [
+          ...d.pendingUsers,
+          { ...base, _id: v._id, fullname: v.fullname || v.expenseName, mobileNumber: v.mobileNumber || 0, category: v.category || "", expenseName: v.expenseName, isVendor: true, categoryName: v.categoryName },
+        ],
+      }));
+    else
+      setDraft((d) => ({
+        ...d,
+        expenses: [...d.expenses, { ...base, _id: v._id, expenseName: v.expenseName || v.fullname, categoryName: v.categoryName, isVendor: !!v.isVendor, fullname: "", fullname_id: "" }],
+      }));
+    setBillOpen(false);
+    loadBills();
+    toast.success(`Bill saved → added to ${bill.mode === "Payable" ? "Payables" : "Expenses"}. Press ${submitted ? "Update" : "Submit"} to save the day.`, { duration: 5000 });
+  };
+  const deleteBill = async (bill) => {
+    if (!window.confirm(`Remove this bill (${inr(bill.amount)})? Its line in ${bill.mode === "Payable" ? "Payables" : "Expenses"} is removed too.`)) return;
+    try {
+      await axios.delete(`${API}/purchase/${bill._id}`);
+      const sec = bill.mode === "Payable" ? "pendingUsers" : "expenses";
+      setDraft((d) => {
+        const rows = [...d[sec]];
+        let i = rows.findIndex((r) => r.purchaseKey && r.purchaseKey === bill.rowKey);
+        // submit ke baad key nahi rehti → naam + rakam se dhoondo
+        if (i < 0) i = rows.findIndex((r) => num(r.amount) === num(bill.amount) && (r.expenseName === bill.vendor?.expenseName || r.fullname === bill.vendor?.name));
+        if (i >= 0) rows.splice(i, 1);
+        return { ...d, [sec]: rows };
+      });
+      setBillView(null);
+      loadBills();
+      toast.success(`Bill removed. Press ${submitted ? "Update" : "Submit"} to save the day.`);
+    } catch (e) {
+      toast.error(apiError(e));
+    }
+  };
+  const viewBill = async (bill) => {
+    setBillView({ bill, photos: [] });
+    const urls = [];
+    for (const n of bill.photos || []) {
+      try {
+        const { data } = await axios.get(`${API}/purchase/photo/${n}`, { responseType: "blob" });
+        urls.push(URL.createObjectURL(data));
+      } catch {
+        /* photo nahi mili */
+      }
+    }
+    setBillView({ bill, photos: urls });
+  };
+
   /* ----- payload: purane page ke filters jaisa ----- */
   const build = () => {
-    const renumber = (rows) => rows.map((r, i) => ({ ...r, id: i + 1, createDate: r.createDate || date }));
+    // eslint-disable-next-line no-unused-vars
+    const renumber = (rows) => rows.map(({ purchaseKey, ...r }, i) => ({ ...r, id: i + 1, createDate: r.createDate || date }));
     const upad = renumber(draft.upad.filter((r) => num(r.amount) > 0 && r.fullname));
     const pending = renumber(draft.pending.filter((r) => num(r.amount) > 0 && r.fullname));
     const expenses = renumber(draft.expenses.filter((r) => num(r.amount) > 0 && r.expenseName));
@@ -322,6 +392,39 @@ const RestQuickEntry = ({ date }) => {
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 7 }}>
           <Stack spacing={2}>
+            <Section
+              title="🧾 Purchase bills"
+              subtitle="Scan or type a supplier bill · Cash → Expenses, credit → Payables"
+              total={bills.reduce((t, b) => t + num(b.amount), 0)}
+              color={Q.rest}
+              action={
+                <Button size="small" startIcon={<AddIcon />} onClick={() => setBillOpen(true)} sx={{ fontWeight: 800, color: Q.rest }}>
+                  Add bill
+                </Button>
+              }
+            >
+              {bills.length === 0 && (
+                <Typography variant="body2" color={Q.muted} sx={{ py: 1 }}>
+                  No purchase bill today.
+                </Typography>
+              )}
+              {bills.map((b) => (
+                <ButtonBase key={b._id} onClick={() => viewBill(b)} sx={{ width: "100%", textAlign: "left", display: "block" }}>
+                  <Stack direction="row" alignItems="center" spacing={1} sx={{ py: 1, borderTop: `1px solid ${Q.line}` }}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography fontWeight={700} noWrap>
+                        {b.vendor?.name || b.vendor?.expenseName}
+                      </Typography>
+                      <Typography variant="caption" color={Q.muted}>
+                        {[b.billNo && `Bill ${b.billNo}`, b.billDate, b.photos?.length ? `📷 ${b.photos.length}` : "", b.source === "scan" ? "scanned" : "manual"].filter(Boolean).join(" · ")}
+                      </Typography>
+                    </Box>
+                    <StatusPill tone={b.mode === "Payable" ? "warn" : "good"}>{b.mode}</StatusPill>
+                    <Typography fontWeight={800}>{inr(b.amount)}</Typography>
+                  </Stack>
+                </ButtonBase>
+              ))}
+            </Section>
             {sectionBlock("expenses", (r) => (
               <>
                 <Typography fontWeight={700} noWrap>
@@ -430,6 +533,42 @@ const RestQuickEntry = ({ date }) => {
         onClick={() => setConfirm(true)}
       />
 
+      <PurchaseBillDialog open={billOpen} onClose={() => setBillOpen(false)} date={date} vendors={lists.vendors} expenses={lists.expenses} onSaved={billSaved} />
+      <EditorDialog
+        open={!!billView}
+        onClose={() => setBillView(null)}
+        subtitle={billView ? `${billView.bill.mode} · ${billView.bill.billDate || date}` : ""}
+        title={billView ? `${billView.bill.vendor?.name || billView.bill.vendor?.expenseName} · ${inr(billView.bill.amount)}` : ""}
+        actions={
+          <Button fullWidth color="error" variant="outlined" onClick={() => deleteBill(billView.bill)}>
+            Remove bill
+          </Button>
+        }
+      >
+        {billView && (
+          <Stack spacing={1.5}>
+            {billView.bill.billNo && <Typography>Bill no.: {billView.bill.billNo}</Typography>}
+            {billView.bill.note && <Typography color={Q.muted}>{billView.bill.note}</Typography>}
+            {(billView.bill.items || []).map((it, i) => (
+              <Stack key={i} direction="row" justifyContent="space-between">
+                <Typography variant="body2">
+                  {it.name} {it.qty ? `· ${it.qty}` : ""}
+                </Typography>
+                <Typography variant="body2">{inr(it.amount)}</Typography>
+              </Stack>
+            ))}
+            {billView.photos.map((u, i) => (
+              <a key={i} href={u} target="_blank" rel="noopener noreferrer">
+                <img src={u} alt="bill" style={{ width: "100%", borderRadius: 8, border: `1px solid ${Q.line}` }} />
+              </a>
+            ))}
+            {billView.bill.photos?.length > 0 && billView.photos.length === 0 && <Typography color={Q.muted}>Loading photo…</Typography>}
+            <Typography variant="caption" color={Q.muted}>
+              Saved by {billView.bill.enteredBy || "—"}
+            </Typography>
+          </Stack>
+        )}
+      </EditorDialog>
       <EditorDialog
         open={!!ed}
         onClose={() => setEditor(null)}
