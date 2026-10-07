@@ -187,6 +187,39 @@ const RestQuickEntry = ({ date }) => {
     setEditor(null);
   };
 
+  // Har bill ki line din ki entry mein ho (page reload / doosre phone se bill aaya ho to bhi) — gayab ho to wapas jodo
+  const billRow = (bill) => {
+    const v = bill.vendor || {};
+    return bill.mode === "Payable"
+      ? { amount: num(bill.amount), purchaseKey: bill.rowKey, _id: v._id, fullname: v.name || v.expenseName, mobileNumber: 0, category: "", expenseName: v.expenseName, isVendor: true, categoryName: v.categoryName }
+      : { amount: num(bill.amount), purchaseKey: bill.rowKey, _id: v._id, expenseName: v.expenseName || v.name, categoryName: v.categoryName, isVendor: !!v.isVendor, fullname: "", fullname_id: "" };
+  };
+  useEffect(() => {
+    if (!server.loaded || !lists || !bills.length) return;
+    if (server.doc && seededFor.current !== date) return; // pehle server wali entry bhar jaye
+    setDraft((d) => {
+      let changed = false;
+      const next = { ...d, expenses: [...d.expenses], pendingUsers: [...d.pendingUsers] };
+      const used = { expenses: new Set(), pendingUsers: new Set() };
+      bills.forEach((bill) => {
+        const sec = bill.mode === "Payable" ? "pendingUsers" : "expenses";
+        const rows = next[sec];
+        let i = rows.findIndex((r, j) => !used[sec].has(j) && r.purchaseKey && r.purchaseKey === bill.rowKey);
+        if (i < 0)
+          i = rows.findIndex(
+            (r, j) => !used[sec].has(j) && !r.purchaseKey && num(r.amount) === num(bill.amount) && (r.expenseName === bill.vendor?.expenseName || r.fullname === bill.vendor?.name)
+          );
+        if (i >= 0) used[sec].add(i);
+        else {
+          rows.push(billRow(bill));
+          used[sec].add(rows.length - 1);
+          changed = true;
+        }
+      });
+      return changed ? next : d;
+    });
+  }, [bills, server, lists, date, setDraft]);
+
   const billSaved = (bill, v) => {
     const base = { amount: num(bill.amount), purchaseKey: bill.rowKey };
     if (bill.mode === "Payable")
