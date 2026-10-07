@@ -108,7 +108,7 @@ const BanquetSetupDashboard = () => {
         <Section
           title="Packages (menu plans with choices)"
           right={
-            <Button variant="contained" onClick={() => setPkg({ name: "", meal: "Lunch", items: [], sections: [], pricePerPlate: 0, minPlates: 0, description: "", active: true })}>
+            <Button variant="contained" onClick={() => setPkg({ name: "", meal: "Lunch", items: [], sections: [], pricePerPlate: 0, minPlates: 50, description: "", active: true })}>
               + New package
             </Button>
           }

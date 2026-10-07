@@ -76,10 +76,11 @@ const SEED_PACKAGES = [
     ["Sweet", 1, 50, ["Gulab jamun / Mohanthal", "Shrikhand", "Shahi kheer"]],
   ]],
 ];
+const MIN_PLATES = 50; // owner 08-10-2026: kam se kam 50 person
 const buildPackages = (byName) =>
   SEED_PACKAGES.map(([name, meal, secs], i) => {
     const sections = secs.map(([label, pick, grams, opts]) => ({ label, pick, grams, options: opts.filter((o) => byName[o]).map((o) => ({ itemId: String(byName[o]._id), name: o, category: byName[o].category })) }));
-    return { name, meal, sections, items: [], pricePerPlate: Math.round(rateRange({ sections }, Object.fromEntries(Object.values(byName).map((x) => [String(x._id), x.pricePerKg]))).max), sort: i };
+    return { name, meal, sections, items: [], pricePerPlate: Math.round(rateRange({ sections }, Object.fromEntries(Object.values(byName).map((x) => [String(x._id), x.pricePerKg]))).max), minPlates: MIN_PLATES, sort: i };
   });
 const SEED_ADDONS = [
   ["Stage 15' x 10'", 8000], ["Red carpet entry", 5000], ["Mandap 70' x 90'", 50000], ["Decoration (basic balloon)", 5000], ["VIP sofa (4 + 2 seating)", 4000],
@@ -105,6 +106,12 @@ const seedOnce = async () => {
     const items = await BanquetItem.find({}).lean();
     await BanquetPackage.insertMany(buildPackages(Object.fromEntries(items.map((x) => [x.name, x]))));
     await AppSetting.updateOne({ _id: "banquetPackagesV2" }, { $set: { value: true, at: new Date() } }, { upsert: true });
+  }
+  // V3 (owner 08-10-2026): har package mein minimum 50 person
+  const v3 = await AppSetting.findById("banquetMinPlates50").lean();
+  if (!v3) {
+    await BanquetPackage.updateMany({ minPlates: { $lt: MIN_PLATES } }, { $set: { minPlates: MIN_PLATES } });
+    await AppSetting.updateOne({ _id: "banquetMinPlates50" }, { $set: { value: true, at: new Date() } }, { upsert: true });
   }
   seeded = true;
 };
@@ -234,7 +241,10 @@ const readBooking = async (req, b) => {
       });
       return { packageId: String(p._id), name: p.name, meal: p.meal, pricePerPlate: admin(req) && m.pricePerPlate !== undefined && m.pricePerPlate !== "" ? n(m.pricePerPlate) : p.pricePerPlate /* staff: package ka hi rate */, plates: Math.round(n(m.plates)), items: p.items, choices };
     });
+  // Package ka minimum person se kam plate? (save nahi hoga)
+  const short = menus.filter((m) => n(pk[m.packageId]?.minPlates) > m.plates).map((m) => `${m.name}: minimum ${pk[m.packageId].minPlates} persons`);
   return {
+    short,
     customer: { name: clean(b.customer?.name, 80), mobile: clean(b.customer?.mobile, 15).replace(/\D/g, ""), company: clean(b.customer?.company, 80), address: clean(b.customer?.address, 200), gstin: clean(b.customer?.gstin, 20).toUpperCase() },
     occasion: clean(b.occasion, 80),
     eventDate: b.eventDate,
@@ -284,6 +294,8 @@ router.post("/bookings", async (req, res) => {
     const data = await readBooking(req, req.body || {});
     if (!data.customer.name) return bad(res, "Customer name is required");
     if (!valid(data.eventDate)) return bad(res, "Choose the event date");
+    if (data.short.length) return bad(res, data.short.join(", "));
+    delete data.short;
     if (!admin(req) && dayjs(data.eventDate, F).isBefore(dayjs(todayIst(), F), "day")) return bad(res, "Event date cannot be in the past");
     const c = await clash(data);
     if (c.length && !req.body?.force) return res.status(409).json({ success: false, clash: c, message: `Already booked: ${c.map((x) => `${x.bookingNo} ${x.customer?.name} (${x.slot})`).join(", ")}` });
@@ -303,6 +315,8 @@ router.put("/bookings/:id([a-f0-9]{24})", async (req, res) => {
     const data = await readBooking(req, req.body || {});
     if (!data.customer.name) return bad(res, "Customer name is required");
     if (!valid(data.eventDate)) return bad(res, "Choose the event date");
+    if (data.short.length) return bad(res, data.short.join(", "));
+    delete data.short;
     const c = await clash(data, doc._id);
     if (c.length && !req.body?.force) return res.status(409).json({ success: false, clash: c, message: `Already booked: ${c.map((x) => `${x.bookingNo} ${x.customer?.name} (${x.slot})`).join(", ")}` });
     Object.assign(doc, data, { updatedBy: who(req) });

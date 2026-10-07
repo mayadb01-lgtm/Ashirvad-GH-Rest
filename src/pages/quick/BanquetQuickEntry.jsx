@@ -332,7 +332,7 @@ const BanquetQuickEntry = ({ isAdmin }) => {
                       menus: [
                         ...form.menus,
                         {
-                          packageId: p._id, name: p.name, meal: p.meal, pricePerPlate: p.pricePerPlate, plates: form.guests || p.minPlates || 0, items: p.items,
+                          packageId: p._id, name: p.name, meal: p.meal, pricePerPlate: p.pricePerPlate, plates: Math.max(num(form.guests), num(p.minPlates)), items: p.items,
                           // ek hi option wale hisse apne aap chune
                           choices: (p.sections || []).map((sec) => ({ label: sec.label, items: sec.options.length === 1 ? [sec.options[0]] : [] })),
                         },
@@ -408,7 +408,15 @@ const BanquetQuickEntry = ({ isAdmin }) => {
                   );
                 })()}
                 <Stack direction="row" spacing={1}>
-                  <TextField size="small" label="Plates" value={m.plates || ""} onChange={(e) => setF({ menus: form.menus.map((x, j) => (j === i ? { ...x, plates: num(e.target.value) } : x)) })} inputMode="numeric" />
+                  <TextField
+                    size="small"
+                    label="Plates"
+                    value={m.plates || ""}
+                    onChange={(e) => setF({ menus: form.menus.map((x, j) => (j === i ? { ...x, plates: num(e.target.value) } : x)) })}
+                    inputMode="numeric"
+                    error={num(setup.packages.find((x) => x._id === m.packageId)?.minPlates) > num(m.plates)}
+                    helperText={num(setup.packages.find((x) => x._id === m.packageId)?.minPlates) ? `Min ${setup.packages.find((x) => x._id === m.packageId).minPlates} persons` : ""}
+                  />
                   <TextField
                     size="small"
                     label="Rate / plate"
