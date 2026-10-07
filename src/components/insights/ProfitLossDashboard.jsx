@@ -38,6 +38,7 @@ const ProfitLossDashboard = () => {
     ["REVENUE", null, "head"],
     ["Guest House sales", (m) => m.ghSales],
     ["GH extra charges (extra bed, laundry…)", (m) => m.ghExtra || 0],
+    [`Less: GH discount on bills${data?.discountFrom ? ` (from ${data.discountFrom})` : ""}`, (m) => -(m.ghDiscount || 0)],
     ["Restaurant sales", (m) => m.restSales],
     ["Other income (Banquet, Baada, etc.)", (m) => m.otherIncome],
     ["Total revenue", (m) => m.revenue, "total"],
@@ -52,7 +53,7 @@ const ProfitLossDashboard = () => {
     ["Remaining (after all)", (m) => m.afterLoanPersonal, "profit"],
   ];
   const totalOf = (fn, style) => (style === "pct" ? t.margin : months.reduce((s, m) => s + (Number(fn(m)) || 0), 0));
-  const fmt = (v, style) => (style === "pct" ? `${v ?? 0}%` : inr(v));
+  const fmt = (v, style) => (style === "pct" ? `${v ?? 0}%` : v < 0 ? `− ${inr(-v)}` : inr(v));
 
   const exportExcel = () => {
     if (!data) return;

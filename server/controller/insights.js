@@ -11,6 +11,19 @@ import RestEntry from "../model/restEntry.js";
 import OfficeBook from "../model/officeBook.js";
 import StaffSalary from "../model/staffSalary.js";
 import RoomCharge from "../model/roomCharge.js";
+import AppSetting from "../model/appSetting.js";
+
+// "Discount on total bill" (naya niyam) kis din se P&L mein ghatega: server pehli baar chalte hi aaj ki tareekh (IST) save karta hai.
+// Isse pehle ke din bilkul waise hi rehte hain (purane records mein Discount ka matlab alag tha).
+let discountFromCache = null;
+const discountFrom = async () => {
+  if (discountFromCache) return discountFromCache;
+  const ist = new Date(Date.now() + 330 * 60 * 1000).toISOString().slice(0, 10);
+  const doc = await AppSetting.findOneAndUpdate({ _id: "billDiscountFrom" }, { $setOnInsert: { value: ist } }, { upsert: true, new: true }).lean();
+  discountFromCache = new Date(`${doc.value}T00:00:00+05:30`);
+  return discountFromCache;
+};
+discountFrom().catch((e) => console.error("billDiscountFrom:", e.message));
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -399,9 +412,10 @@ router.get("/pnl/:from/:to", async (req, res) => {
       OfficeBook.find(q, { entryCreateDate: 1, officeIn: 1, officeOut: 1 }).lean(),
       RoomCharge.find({ ...q, kind: "extra" }, { entryCreateDate: 1, amount: 1 }).lean(),
     ]);
+    const discFrom = await discountFrom();
     const months = monthList(from, to).map((m) => ({
       month: m, label: dayjs(m + "-01").format("MMM YY"),
-      ghSales: 0, ghExtra: 0, restSales: 0, otherIncome: 0, otherByCat: {},
+      ghSales: 0, ghExtra: 0, ghDiscount: 0, restSales: 0, otherIncome: 0, otherByCat: {},
       exp: {}, expGh: 0, expRest: 0, loanOut: 0, personalOut: 0,
     }));
     const byM = Object.fromEntries(months.map((m) => [m.month, m]));
@@ -413,6 +427,9 @@ router.get("/pnl/:from/:to", async (req, res) => {
     gh.forEach((d) => {
       const m = byM[ymOf(d.entryCreateDate)];
       if (m) (d.entry || []).forEach((e) => SOLD.includes(e.period) && (m.ghSales += n(e.rate)));
+      // naye niyam ke din: bill par diya discount GH kamai se ghatta hai (alag line)
+      if (m && d.entryCreateDate && new Date(d.entryCreateDate) >= discFrom)
+        (d.entry || []).forEach((e) => SOLD.includes(e.period) && (m.ghDiscount += Math.max(0, n(e.discount))));
     });
     // GH extra charges (extra bed, laundry...) — food bill nahi (wo restaurant sales mein pehle se hai)
     extras.forEach((x) => {
@@ -444,22 +461,22 @@ router.get("/pnl/:from/:to", async (req, res) => {
     });
     const groups = [...EXP_GROUPS.map(([g]) => g), "Other expenses"];
     months.forEach((m) => {
-      m.revenue = m.ghSales + m.ghExtra + m.restSales + m.otherIncome;
+      m.revenue = m.ghSales + m.ghExtra - m.ghDiscount + m.restSales + m.otherIncome;
       m.expenses = sum(Object.values(m.exp), (v) => v);
       m.profit = m.revenue - m.expenses;
       m.margin = m.revenue ? round((100 * m.profit) / m.revenue, 1) : 0;
       m.afterLoanPersonal = m.profit - m.loanOut - m.personalOut;
-      m.ghProfit = m.ghSales + m.ghExtra - m.expGh;
+      m.ghProfit = m.ghSales + m.ghExtra - m.ghDiscount - m.expGh;
       groups.forEach((g) => (m.exp[g] = round(m.exp[g] || 0)));
-      ["ghSales", "ghExtra", "restSales", "otherIncome", "expGh", "expRest", "loanOut", "personalOut", "revenue", "expenses", "profit", "afterLoanPersonal", "ghProfit"].forEach((k) => (m[k] = round(m[k])));
+      ["ghSales", "ghExtra", "ghDiscount", "restSales", "otherIncome", "expGh", "expRest", "loanOut", "personalOut", "revenue", "expenses", "profit", "afterLoanPersonal", "ghProfit"].forEach((k) => (m[k] = round(m[k])));
     });
     const totals = {};
-    ["ghSales", "ghExtra", "restSales", "otherIncome", "expGh", "expRest", "loanOut", "personalOut", "revenue", "expenses", "profit", "afterLoanPersonal", "ghProfit"].forEach((k) => (totals[k] = round(sum(months, (m) => m[k]))));
+    ["ghSales", "ghExtra", "ghDiscount", "restSales", "otherIncome", "expGh", "expRest", "loanOut", "personalOut", "revenue", "expenses", "profit", "afterLoanPersonal", "ghProfit"].forEach((k) => (totals[k] = round(sum(months, (m) => m[k]))));
     totals.margin = totals.revenue ? round((100 * totals.profit) / totals.revenue, 1) : 0;
     totals.exp = Object.fromEntries(groups.map((g) => [g, round(sum(months, (m) => m.exp[g]))]));
     totals.otherByCat = {};
     months.forEach((m) => Object.entries(m.otherByCat).forEach(([k, v]) => inc(totals.otherByCat, k, v)));
-    res.json({ success: true, data: { months, totals, groups } });
+    res.json({ success: true, data: { months, totals, groups, discountFrom: dayjs(discFrom).format("DD-MM-YYYY") } });
   } catch (e) {
     fail(res, e);
   }
