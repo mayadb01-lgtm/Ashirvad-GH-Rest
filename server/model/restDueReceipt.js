@@ -14,6 +14,10 @@ const schema = new mongoose.Schema(
     amount: { type: Number, required: true, min: 1 },
     mode: { type: String, enum: ["Cash", "Card", "PP"], required: true },
     note: { type: String, default: "" },
+    // source "gh": GH cashier ne room ka food bill (Cash) wasool karke Restaurant cashier ko diya — handover.
+    // Paisa GH par wasooli ke din hi reports mein gin chuka, isliye reports isse dobara nahi ginti.
+    source: { type: String, enum: ["rest", "gh"], default: "rest" },
+    chargeId: { type: String, default: "" },
     enteredBy: { type: String, default: "" },
     cancelled: { type: Boolean, default: false }, // hatana = cancel (record rehta hai)
     cancelledBy: { type: String, default: "" },

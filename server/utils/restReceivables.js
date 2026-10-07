@@ -29,7 +29,7 @@ export const computeRestReceivables = async ({ upto } = {}) => {
     RestEntry.find(q, { pending: 1, createDate: 1, entryCreateDate: 1 }).lean(),
     OfficeBook.find(q, { officeIn: 1, createDate: 1, entryCreateDate: 1 }).lean(),
     RestPending.find({}, { fullname: 1, mobileNumber: 1, category: 1 }).lean(),
-    RestDueReceipt.find({ ...q, cancelled: { $ne: true } }).lean(),
+    RestDueReceipt.find({ ...q, cancelled: { $ne: true }, source: { $ne: "gh" } }).lean(),
     loadOfficeClassifier(),
     RoomCharge.find({ ...q, kind: "food", source: "rest" }, { date: 1, roomNo: 1, guestName: 1, amount: 1, isPaid: 1, paidDate: 1, paidMode: 1 }).lean(),
   ]);

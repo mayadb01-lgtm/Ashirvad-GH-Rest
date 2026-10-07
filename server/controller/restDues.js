@@ -5,6 +5,7 @@ import { Router } from "express";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import RestDueReceipt from "../model/restDueReceipt.js";
+import RoomCharge from "../model/roomCharge.js";
 import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
 import { computeRestReceivables, isRoomBill } from "../utils/restReceivables.js";
 import { nk } from "../utils/officeTypes.js";
@@ -56,6 +57,64 @@ router.post("/", async (req, res) => {
     if (dup) return res.json({ success: true, data: dup, duplicate: true });
     const doc = await RestDueReceipt.create({ date: b.date, name, nameKey: nk(name), amount, mode: b.mode, note: String(b.note || "").trim().slice(0, 200), enteredBy: who(req) });
     res.json({ success: true, data: doc });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// ───── GH → Restaurant cash handover ─────
+// GH cashier ne room ka food bill Cash mein liya → woh paisa Restaurant cashier ko deta hai.
+// GET /gh-cash/:date → pichhle 30 din mein GH par Cash mein wasool hue food bill jo abhi Restaurant ko nahi mile
+router.get("/gh-cash/:date", async (req, res) => {
+  try {
+    if (!validDate(req.params.date)) return bad(res, "Invalid date");
+    const d = dayjs(req.params.date, F, true);
+    const days = [];
+    for (let i = 0; i <= 30; i++) days.push(d.subtract(i, "day").format(F));
+    const [paid, handed] = await Promise.all([
+      RoomCharge.find({ kind: "food", source: "rest", isPaid: true, paidMode: "Cash", paidDate: { $in: days } }).lean(),
+      RestDueReceipt.find({ source: "gh", cancelled: { $ne: true } }, { chargeId: 1 }).lean(),
+    ]);
+    const done = new Set(handed.map((h) => h.chargeId));
+    const data = paid
+      .filter((c) => !done.has(String(c._id)))
+      .map((c) => ({ _id: c._id, roomNo: c.roomNo, guestName: c.guestName, date: c.date, paidDate: c.paidDate, paidBy: c.paidBy, amount: c.amount, label: c.label }));
+    res.json({ success: true, data });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// POST /gh-handover { date, chargeIds: [] } → Restaurant cashier: "GH se cash mil gaya"
+router.post("/gh-handover", async (req, res) => {
+  try {
+    const b = req.body || {};
+    if (!validDate(b.date)) return bad(res, "Invalid date");
+    if (!dateOk(req, b.date)) return bad(res, "Only today's entry can be added", 403);
+    const ids = (Array.isArray(b.chargeIds) ? b.chargeIds : []).filter((x) => /^[a-f0-9]{24}$/.test(String(x)));
+    if (!ids.length) return bad(res, "Choose the bills received");
+    const [charges, handed] = await Promise.all([
+      RoomCharge.find({ _id: { $in: ids }, kind: "food", isPaid: true, paidMode: "Cash" }).lean(),
+      RestDueReceipt.find({ source: "gh", chargeId: { $in: ids }, cancelled: { $ne: true } }, { chargeId: 1 }).lean(),
+    ]);
+    const done = new Set(handed.map((h) => h.chargeId));
+    const todo = charges.filter((c) => !done.has(String(c._id)));
+    if (!todo.length) return bad(res, "Already received");
+    const docs = await RestDueReceipt.insertMany(
+      todo.map((c) => ({
+        date: b.date,
+        entryCreateDate: dayjs(b.date, F, true).startOf("day").toDate(),
+        name: `Room ${c.roomNo} food bill${c.guestName ? ` · ${c.guestName}` : ""}`,
+        nameKey: nk(`room ${c.roomNo} food bill`),
+        amount: Math.round(Number(c.amount) || 0),
+        mode: "Cash",
+        note: `From GH cashier · bill of ${c.date}${c.paidBy ? ` · collected by ${c.paidBy}` : ""}`,
+        source: "gh",
+        chargeId: String(c._id),
+        enteredBy: who(req),
+      }))
+    );
+    res.json({ success: true, data: docs });
   } catch (e) {
     fail(res, e);
   }

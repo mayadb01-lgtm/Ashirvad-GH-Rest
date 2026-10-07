@@ -78,7 +78,7 @@ router.get("/cashflow/:from/:to", async (req, res) => {
       OfficeBook.find(q, { entryCreateDate: 1, officeIn: 1, officeOut: 1 }).lean(),
       loadOfficeClassifier(),
     ]);
-    const dueReceipts = await RestDueReceipt.find({ ...q, cancelled: { $ne: true } }, { entryCreateDate: 1, amount: 1 }).lean();
+    const dueReceipts = await RestDueReceipt.find({ ...q, cancelled: { $ne: true }, source: { $ne: "gh" } }, { entryCreateDate: 1, amount: 1 }).lean();
     const roomPaid = await paidRoomCharges(from, to);
 
     const months = monthList(from, to).map((m) => ({
@@ -543,7 +543,7 @@ router.get("/mode-balance/:from/:to", async (req, res) => {
       OfficeBook.find(q, { entryCreateDate: 1, officeIn: 1, officeOut: 1 }).lean(),
     ]);
     const classify = await loadOfficeClassifier();
-    const dueReceipts = await RestDueReceipt.find({ ...q, cancelled: { $ne: true } }, { entryCreateDate: 1, amount: 1, mode: 1 }).lean();
+    const dueReceipts = await RestDueReceipt.find({ ...q, cancelled: { $ne: true }, source: { $ne: "gh" } }, { entryCreateDate: 1, amount: 1, mode: 1 }).lean();
     const roomPaid = await paidRoomCharges(from, to);
     const blank = () => Object.fromEntries(BAL_MODES.map((k) => [k, { in: 0, out: 0, src: { gh: 0, rest: 0, office: 0, officeP: 0, restOut: 0, officeOut: 0, officeOutP: 0 } }]));
     const months = monthList(from, to).map((m) => ({ month: m, label: dayjs(m + "-01").format("MMM YY"), modes: blank() }));

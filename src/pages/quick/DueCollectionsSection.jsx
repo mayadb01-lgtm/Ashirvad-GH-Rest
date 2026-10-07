@@ -19,7 +19,12 @@ const modeLabel = (m) => (m === "PP" ? "PP (UPI)" : m);
 export const useDueReceipts = (date) => {
   const [receipts, setReceipts] = useState([]);
   const [due, setDue] = useState({ due: [], total: 0 });
+  const [ghCash, setGhCash] = useState([]); // GH counter par Cash mein wasool room food bill, jo abhi Restaurant ko nahi mile
   const load = useCallback(() => {
+    axios
+      .get(`${API}/rest-dues/gh-cash/${date}`)
+      .then(({ data }) => setGhCash(data.data || []))
+      .catch(() => setGhCash([]));
     axios
       .get(`${API}/rest-dues/day/${date}`)
       .then(({ data }) => setReceipts(data.data || []))
@@ -32,17 +37,18 @@ export const useDueReceipts = (date) => {
   useEffect(() => {
     load();
   }, [load]);
-  const live = receipts.filter((r) => !r.cancelled);
+  const live = receipts.filter((r) => !r.cancelled && r.source !== "gh");
+  const fromGh = receipts.filter((r) => !r.cancelled && r.source === "gh").reduce((t, r) => t + num(r.amount), 0);
   const byMode = useMemo(() => {
     const o = { Cash: 0, Card: 0, PP: 0 };
     live.forEach((r) => (o[r.mode] = (o[r.mode] || 0) + num(r.amount)));
     return o;
   }, [live]);
-  return { receipts, live, due, byMode, total: byMode.Cash + byMode.Card + byMode.PP, reload: load };
+  return { receipts, live, due, byMode, fromGh, ghCash, total: byMode.Cash + byMode.Card + byMode.PP, reload: load };
 };
 
 const DueCollectionsSection = ({ date, dues }) => {
-  const { receipts, due, total, reload } = dues;
+  const { receipts, due, total, reload, ghCash, fromGh } = dues;
   const [form, setForm] = useState(null); // { person, amount, mode, note }
   const [busy, setBusy] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -65,6 +71,20 @@ const DueCollectionsSection = ({ date, dues }) => {
       setBusy(false);
     }
   };
+  const takeFromGh = async (items) => {
+    if (busy || !items.length) return;
+    setBusy(true);
+    try {
+      await axios.post(`${API}/rest-dues/gh-handover`, { date, chargeIds: items.map((c) => c._id) });
+      toast.success(`${inr(items.reduce((t, c) => t + num(c.amount), 0))} cash received from GH cashier. Not added to sales.`);
+      reload();
+    } catch (e) {
+      toast.error(apiError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const ghTotal = ghCash.reduce((t, c) => t + num(c.amount), 0);
   const cancel = async (r) => {
     if (!window.confirm(`Remove ${inr(r.amount)} received from ${r.name}?`)) return;
     try {
@@ -82,7 +102,7 @@ const DueCollectionsSection = ({ date, dues }) => {
       <Section
         title="💰 Collect old dues"
         subtitle={`Who still owes · total ${inr(due.total)} · not added to today's sales`}
-        total={total}
+        total={total + fromGh}
         color={COLOR}
         action={
           <Button size="small" startIcon={<AddIcon />} onClick={() => openFor(null)} sx={{ fontWeight: 800, color: COLOR }} disabled={!due.due.length}>
@@ -120,6 +140,42 @@ const DueCollectionsSection = ({ date, dues }) => {
           </Button>
         )}
 
+        {ghCash.length > 0 && (
+          <Box sx={{ mt: 1.5, p: 1.25, borderRadius: 2, bgcolor: "#F0FDFA", border: "1px solid #99F6E4" }}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Box sx={{ flex: 1 }}>
+                <Typography fontWeight={800}>🛏 Cash to take from GH cashier · {inr(ghTotal)}</Typography>
+                <Typography variant="caption" color={Q.muted}>
+                  Room food bills the GH cashier collected in cash. Tap when you get the money.
+                </Typography>
+              </Box>
+              {ghCash.length > 1 && (
+                <Button size="small" variant="contained" disabled={busy} onClick={() => takeFromGh(ghCash)} sx={{ bgcolor: COLOR, fontWeight: 800, "&:hover": { bgcolor: COLOR } }}>
+                  All received
+                </Button>
+              )}
+            </Stack>
+            {ghCash.map((c) => (
+              <Stack key={c._id} direction="row" alignItems="center" spacing={1} sx={{ py: 0.6, borderTop: `1px solid #CCFBF1`, mt: 0.5 }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography fontWeight={700} noWrap>
+                    Room {c.roomNo}
+                    {c.guestName ? ` · ${c.guestName}` : ""}
+                  </Typography>
+                  <Typography variant="caption" color={Q.muted}>
+                    Bill {c.date} · paid at GH {c.paidDate}
+                    {c.paidBy ? ` · ${c.paidBy}` : ""}
+                  </Typography>
+                </Box>
+                <Typography fontWeight={800}>{inr(c.amount)}</Typography>
+                <Button size="small" variant="outlined" disabled={busy} onClick={() => takeFromGh([c])} sx={{ fontWeight: 800, color: COLOR, borderColor: COLOR, minWidth: 0 }}>
+                  Received
+                </Button>
+              </Stack>
+            ))}
+          </Box>
+        )}
+
         <Collapse in={receipts.length > 0}>
           <Typography variant="caption" fontWeight={800} color={Q.muted} sx={{ display: "block", mt: 1.5, mb: 0.5 }}>
             RECEIVED TODAY
@@ -143,7 +199,7 @@ const DueCollectionsSection = ({ date, dues }) => {
               </Box>
               <Stack alignItems="flex-end">
                 <Typography fontWeight={800}>{inr(r.amount)}</Typography>
-                <StatusPill tone={r.mode === "Cash" ? "good" : "info"}>{modeLabel(r.mode)}</StatusPill>
+                <StatusPill tone={r.mode === "Cash" ? "good" : "info"}>{r.source === "gh" ? "Cash · from GH" : modeLabel(r.mode)}</StatusPill>
               </Stack>
             </ButtonBase>
           ))}

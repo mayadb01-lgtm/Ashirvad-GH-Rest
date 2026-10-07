@@ -8,6 +8,7 @@ import EntryLock from "../model/entryLock.js";
 import Entry from "../model/entry.js";
 import Room from "../model/room.js";
 import Stay from "../model/stay.js";
+import RestDueReceipt from "../model/restDueReceipt.js";
 import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
@@ -228,7 +229,10 @@ router.get("/paid-on/:date", async (req, res) => {
   try {
     if (!validDate(req.params.date)) return bad(res, "Invalid date");
     const list = await RoomCharge.find({ isPaid: true, paidDate: req.params.date }).sort({ updatedAt: 1 }).lean();
-    res.json({ success: true, data: list });
+    // Cash wale food bill: Restaurant cashier ko de diye ya nahi
+    const handed = await RestDueReceipt.find({ source: "gh", cancelled: { $ne: true }, chargeId: { $in: list.map((c) => String(c._id)) } }, { chargeId: 1, date: 1, enteredBy: 1 }).lean();
+    const hm = new Map(handed.map((h) => [h.chargeId, h]));
+    res.json({ success: true, data: list.map((c) => ({ ...c, handedOver: hm.has(String(c._id)) ? { date: hm.get(String(c._id)).date, by: hm.get(String(c._id)).enteredBy } : null })) });
   } catch (e) {
     fail(res, e);
   }
@@ -288,6 +292,8 @@ router.put("/paid/:id", async (req, res) => {
     if (!canTouch(req, doc) && !(isPaid && !doc.isPaid && recent)) return res.status(403).json({ success: false, message: "Staff can only edit today's entries." });
     if (!isPaid && doc.isPaid && !isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can undo a paid charge" });
     if (isPaid && !PAID_MODES.includes(req.body?.paidMode)) return bad(res, "Select a payment mode");
+    if (!isPaid && doc.isPaid && (await RestDueReceipt.exists({ source: "gh", chargeId: String(doc._id), cancelled: { $ne: true } })))
+      return bad(res, "The restaurant cashier already took this cash. Remove it there first.");
     doc.isPaid = isPaid;
     doc.paidMode = isPaid ? req.body.paidMode : "";
     doc.paidDate = isPaid ? dayjs(new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10)).format(F) : "";

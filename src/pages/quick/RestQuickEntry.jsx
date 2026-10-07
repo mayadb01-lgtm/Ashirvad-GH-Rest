@@ -513,7 +513,7 @@ const RestQuickEntry = ({ date }) => {
                 </Typography>
               )}
             </Box>
-            {dues.total > 0 && (
+            {dues.total + dues.fromGh > 0 && (
               <Box sx={{ border: `1.5px solid #A5F3FC`, borderRadius: 3, p: 2, bgcolor: "#ECFEFF" }}>
                 <Typography fontWeight={800} sx={{ mb: 0.5 }}>
                   💰 Old dues received today (not sales)
@@ -530,13 +530,21 @@ const RestQuickEntry = ({ date }) => {
                       <Typography fontWeight={600}>{inr(v)}</Typography>
                     </Stack>
                   ))}
+                {dues.fromGh > 0 && (
+                  <Stack direction="row" justifyContent="space-between" sx={{ py: 0.3 }}>
+                    <Typography color={Q.muted}>Cash from GH (room food bills)</Typography>
+                    <Typography fontWeight={600}>{inr(dues.fromGh)}</Typography>
+                  </Stack>
+                )}
                 <Stack direction="row" justifyContent="space-between" sx={{ py: 0.5, mt: 0.5, borderTop: `1px solid #A5F3FC` }}>
                   <Typography fontWeight={800}>Total</Typography>
-                  <Typography fontWeight={800}>{inr(dues.total)}</Typography>
+                  <Typography fontWeight={800}>{inr(dues.total + dues.fromGh)}</Typography>
                 </Stack>
-                {dues.byMode.Cash > 0 && (
+                {dues.byMode.Cash + dues.fromGh > 0 && (
                   <Typography variant="body2" sx={{ mt: 0.5, color: "#155E75", fontWeight: 700 }}>
-                    Cash in drawer should be {inr(num(draft.cash) + dues.byMode.Cash)} = today's sale cash {inr(draft.cash)} + old dues cash {inr(dues.byMode.Cash)}. Enter only the sale cash in "Cash" above.
+                    Cash in drawer should be {inr(num(draft.cash) + dues.byMode.Cash + dues.fromGh)} = today's sale cash {inr(draft.cash)}
+                    {dues.byMode.Cash ? ` + old dues cash ${inr(dues.byMode.Cash)}` : ""}
+                    {dues.fromGh ? ` + cash from GH ${inr(dues.fromGh)}` : ""}. Enter only the sale cash in "Cash" above.
                   </Typography>
                 )}
               </Box>
