@@ -512,42 +512,71 @@ const RestQuickEntry = ({ date }) => {
                 </Typography>
               )}
             </Box>
-            {dues.total + dues.fromGh > 0 && (
-              <Box sx={{ border: `1.5px solid #A5F3FC`, borderRadius: 3, p: 2, bgcolor: "#ECFEFF" }}>
-                <Typography fontWeight={800} sx={{ mb: 0.5 }}>
-                  💰 Old dues received today (not sales)
-                </Typography>
-                {[
-                  ["Cash", dues.byMode.Cash],
-                  ["Card", dues.byMode.Card],
-                  ["PP (UPI)", dues.byMode.PP],
-                ]
-                  .filter(([, v]) => v > 0)
-                  .map(([l, v]) => (
-                    <Stack key={l} direction="row" justifyContent="space-between" sx={{ py: 0.3 }}>
-                      <Typography color={Q.muted}>{l}</Typography>
-                      <Typography fontWeight={600}>{inr(v)}</Typography>
+            {/* 💵 Total by payment mode: counter (aaj ki sale) + collections (purana udhaar + GH se room food bill cash) */}
+            {(() => {
+              const rows = [
+                ["Cash", num(draft.cash), dues.byMode.Cash + dues.fromGh],
+                ["Card", num(draft.card), dues.byMode.Card],
+                ["PP (UPI)", num(draft.pp), dues.byMode.PP],
+              ];
+              const tc = rows.reduce((a, r) => a + r[1], 0);
+              const tl = rows.reduce((a, r) => a + r[2], 0);
+              if (tc + tl <= 0) return null;
+              const cell = { textAlign: "right", fontVariantNumeric: "tabular-nums", minWidth: 92, pl: 1.5 };
+              return (
+                <Box sx={{ border: `1.5px solid #A5F3FC`, borderRadius: 3, p: 2, bgcolor: "#ECFEFF" }}>
+                  <Typography fontWeight={800}>💵 Total by payment mode</Typography>
+                  <Typography variant="caption" color={Q.muted} sx={{ display: "block", mb: 1 }}>
+                    Counter = today's sale · Collections = old dues received{dues.fromGh ? " + cash from GH (room food bills)" : ""} (not sales)
+                  </Typography>
+                  <Stack direction="row" sx={{ py: 0.4, borderBottom: `1px solid #A5F3FC` }}>
+                    <Typography variant="caption" fontWeight={800} color={Q.muted} sx={{ flex: 1 }}>
+                      MODE
+                    </Typography>
+                    <Typography variant="caption" fontWeight={800} color={Q.muted} sx={cell}>
+                      COUNTER
+                    </Typography>
+                    <Typography variant="caption" fontWeight={800} color={Q.muted} sx={cell}>
+                      COLLECTIONS
+                    </Typography>
+                    <Typography variant="caption" fontWeight={800} color={Q.muted} sx={cell}>
+                      TOTAL
+                    </Typography>
+                  </Stack>
+                  {rows.map(([l, c, d]) => (
+                    <Stack key={l} direction="row" sx={{ py: 0.4 }}>
+                      <Typography fontWeight={l === "Cash" ? 800 : 600} sx={{ flex: 1 }}>
+                        {l === "Cash" ? "Cash (in drawer)" : l}
+                      </Typography>
+                      <Typography sx={cell}>{inr(c)}</Typography>
+                      <Typography sx={cell}>{inr(d)}</Typography>
+                      <Typography fontWeight={800} sx={cell}>
+                        {inr(c + d)}
+                      </Typography>
                     </Stack>
                   ))}
-                {dues.fromGh > 0 && (
-                  <Stack direction="row" justifyContent="space-between" sx={{ py: 0.3 }}>
-                    <Typography color={Q.muted}>Cash from GH (room food bills)</Typography>
-                    <Typography fontWeight={600}>{inr(dues.fromGh)}</Typography>
+                  <Stack direction="row" sx={{ py: 0.6, mt: 0.5, borderTop: `1px solid #A5F3FC` }}>
+                    <Typography fontWeight={800} sx={{ flex: 1 }}>
+                      Total (all modes)
+                    </Typography>
+                    <Typography fontWeight={700} sx={cell}>
+                      {inr(tc)}
+                    </Typography>
+                    <Typography fontWeight={700} sx={cell}>
+                      {inr(tl)}
+                    </Typography>
+                    <Typography fontWeight={800} sx={{ ...cell, color: "#155E75" }}>
+                      {inr(tc + tl)}
+                    </Typography>
                   </Stack>
-                )}
-                <Stack direction="row" justifyContent="space-between" sx={{ py: 0.5, mt: 0.5, borderTop: `1px solid #A5F3FC` }}>
-                  <Typography fontWeight={800}>Total</Typography>
-                  <Typography fontWeight={800}>{inr(dues.total + dues.fromGh)}</Typography>
-                </Stack>
-                {dues.byMode.Cash + dues.fromGh > 0 && (
-                  <Typography variant="body2" sx={{ mt: 0.5, color: "#155E75", fontWeight: 700 }}>
-                    Cash in drawer should be {inr(num(draft.cash) + dues.byMode.Cash + dues.fromGh)} = today's sale cash {inr(draft.cash)}
-                    {dues.byMode.Cash ? ` + old dues cash ${inr(dues.byMode.Cash)}` : ""}
-                    {dues.fromGh ? ` + cash from GH ${inr(dues.fromGh)}` : ""}. Enter only the sale cash in "Cash" above.
-                  </Typography>
-                )}
-              </Box>
-            )}
+                  {tl > 0 && (
+                    <Typography variant="caption" sx={{ display: "block", mt: 0.5, color: "#155E75", fontWeight: 700 }}>
+                      In the "Cash / Card / PP" boxes above enter only today's sale. Collections are added here automatically.
+                    </Typography>
+                  )}
+                </Box>
+              );
+            })()}
           </Stack>
         </Grid>
       </Grid>
