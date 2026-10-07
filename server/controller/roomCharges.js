@@ -16,6 +16,8 @@ const router = Router();
 const F = "DD-MM-YYYY";
 const SOLD = ["day", "night", "extraDay", "extraNight"];
 const PAID_MODES = ["Cash", "Card", "PPS", "PPC"];
+// Food bill (restaurant ka) Restaurant ke UPI (PP) mein bhi aa sakta hai
+const modesFor = (doc) => (doc.kind === "food" ? [...PAID_MODES, "PP"] : PAID_MODES);
 const PERIOD_ORDER = { day: 1, extraDay: 2, night: 3, extraNight: 4 };
 
 const who = (req) => req.user?.name || req.user?.email || "";
@@ -291,7 +293,7 @@ router.put("/paid/:id", async (req, res) => {
     const recent = dayjs(doc.date, F, true).isAfter(dayjs().subtract(61, "day"));
     if (!canTouch(req, doc) && !(isPaid && !doc.isPaid && recent)) return res.status(403).json({ success: false, message: "Staff can only edit today's entries." });
     if (!isPaid && doc.isPaid && !isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can undo a paid charge" });
-    if (isPaid && !PAID_MODES.includes(req.body?.paidMode)) return bad(res, "Select a payment mode");
+    if (isPaid && !modesFor(doc).includes(req.body?.paidMode)) return bad(res, "Select a payment mode");
     if (!isPaid && doc.isPaid && (await RestDueReceipt.exists({ source: "gh", chargeId: String(doc._id), cancelled: { $ne: true } })))
       return bad(res, "The restaurant cashier already took this cash. Remove it there first.");
     doc.isPaid = isPaid;

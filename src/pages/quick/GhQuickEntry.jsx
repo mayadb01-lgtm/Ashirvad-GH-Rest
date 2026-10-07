@@ -1358,7 +1358,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
                 🍽 Food / extra bills received today ({inr(chargesPaidToday.reduce((t, c) => t + num(c.amount), 0))})
               </Typography>
               <Typography variant="caption" color={Q.muted} sx={{ display: "block", mb: 1 }}>
-                Food bills are restaurant sales (already counted in the restaurant entry), not GH room sales. Cash food bills go to the restaurant cashier; the restaurant cashier marks them received.{" "}
+                Food bills are restaurant sales (already counted in the restaurant entry), not GH room sales. Cash food bills go to the restaurant cashier; the restaurant cashier marks them received. PP = paid to the restaurant UPI (nothing to hand over).{" "}
                 {Object.entries(chargesPaidToday.reduce((o, c) => ({ ...o, [c.paidMode]: (o[c.paidMode] || 0) + num(c.amount) }), {}))
                   .map(([m, v]) => `${m} ${inr(v)}`)
                   .join(" · ")}

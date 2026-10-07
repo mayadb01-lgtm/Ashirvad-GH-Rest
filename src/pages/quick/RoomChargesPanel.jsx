@@ -71,9 +71,9 @@ const Row = ({ c, isAdmin, onChanged }) => {
           <Typography variant="caption" color={Q.muted}>
             Paid via:
           </Typography>
-          {PAID_MODES.map((m) => (
+          {(c.kind === "food" ? [...PAID_MODES, "PP"] : PAID_MODES).map((m) => (
             <Button key={m} size="small" variant="contained" disabled={busy} onClick={() => markPaid(m)} sx={{ bgcolor: Q.gh, minWidth: 0, px: 1.25, "&:hover": { bgcolor: Q.gh } }}>
-              {m}
+              {m === "PP" ? "PP (Restaurant UPI)" : m}
             </Button>
           ))}
         </Stack>
