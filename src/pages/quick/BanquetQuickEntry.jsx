@@ -162,11 +162,10 @@ const BanquetQuickEntry = ({ isAdmin }) => {
     if (r?.data?.data) setOpen(r.data.data);
   };
 
-  // Hall rent: Full day = per day, warna per hour × ghante (kam se kam min hours)
+  // Hall rent: sirf per hour × ghante (kam se kam min hours) — per day wala hata diya (owner 08-10-2026)
   const autoRent = (f) => {
     const h = (setup?.halls || []).find((x) => x._id === f.hall?.id);
     if (!h) return f.hallRent;
-    if (f.slot === "Full day") return h.rentPerDay || h.rentPerHour * 24;
     return h.rentPerHour * Math.max(num(f.hours), num(h.minHours));
   };
   const setF = (patch, rent = false) =>
@@ -316,11 +315,11 @@ const BanquetQuickEntry = ({ isAdmin }) => {
                 <MenuItem value="">No hall rent</MenuItem>
                 {setup.halls.map((h) => (
                   <MenuItem key={h._id} value={h._id}>
-                    {h.name} · {inr(h.rentPerHour)}/hr{h.minHours ? ` (min ${h.minHours} hr)` : ""} · {inr(h.rentPerDay)}/day
+                    {h.name} · {inr(h.rentPerHour)}/hr{h.minHours ? ` (min ${h.minHours} hr)` : ""}
                   </MenuItem>
                 ))}
               </TextField>
-              {form.slot !== "Full day" && <TextField label="Hours" value={form.hours || ""} onChange={(e) => setF({ hours: num(e.target.value) }, true)} inputMode="numeric" sx={{ width: 110 }} />}
+              <TextField label="Hours" value={form.hours || ""} onChange={(e) => setF({ hours: num(e.target.value) }, true)} inputMode="numeric" sx={{ width: 110 }} />
             </Stack>
             <MoneyField label={isAdmin ? "Hall rent" : "Hall rent (auto)"} value={form.hallRent} onChange={(v) => setF({ hallRent: v })} disabled={!isAdmin} />
 

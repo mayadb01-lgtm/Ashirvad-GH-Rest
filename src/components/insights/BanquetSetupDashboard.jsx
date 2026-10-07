@@ -312,7 +312,7 @@ const BanquetSetupDashboard = () => {
       )}
 
       {tab === "halls" && (
-        <Section title="Halls / venues" right={<Button variant="contained" onClick={() => setEdit((s) => ({ ...s, new: { name: "", rentPerHour: 0, rentPerDay: 0, minHours: 0, capacity: 0, active: true } }))}>+ New hall</Button>}>
+        <Section title="Halls / venues" right={<Button variant="contained" onClick={() => setEdit((s) => ({ ...s, new: { name: "", rentPerHour: 2500, minHours: 0, capacity: 0, active: true } }))}>+ New hall</Button>}>
           <Table size="small">
             <TableBody>
               {[...(edit.new && tab === "halls" ? [edit.new] : []), ...data.halls].map((x) => (
@@ -320,7 +320,6 @@ const BanquetSetupDashboard = () => {
                   <TableCell>{field("hall", x, "name", { sx: { minWidth: 220 } })}</TableCell>
                   <TableCell>{field("hall", x, "rentPerHour", { type: "number", label: "Rent / hour", sx: { width: 120 } })}</TableCell>
                   <TableCell>{field("hall", x, "minHours", { type: "number", label: "Min hours", sx: { width: 100 } })}</TableCell>
-                  <TableCell>{field("hall", x, "rentPerDay", { type: "number", label: "Rent / day", sx: { width: 120 } })}</TableCell>
                   <TableCell>{field("hall", x, "capacity", { type: "number", label: "Capacity", sx: { width: 100 } })}</TableCell>
                   <TableCell>{x._id ? activeBox("hall", x) : null}</TableCell>
                   <TableCell>{rowSave("hall", x)}</TableCell>

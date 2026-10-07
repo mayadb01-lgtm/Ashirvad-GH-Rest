@@ -96,7 +96,7 @@ const seedOnce = async () => {
     await BanquetPackage.insertMany(buildPackages(byName));
     await AppSetting.updateOne({ _id: "banquetPackagesV2" }, { $set: { value: true, at: new Date() } }, { upsert: true });
     await BanquetAddon.insertMany(SEED_ADDONS.map(([name, price], i) => ({ name, price, unit: "fixed", sort: i })));
-    await BanquetHall.create({ name: "Hotel Ashirvad, Songadh", rentPerHour: 2000, rentPerDay: 85000, minHours: 3 });
+    await BanquetHall.create({ name: "Hotel Ashirvad, Songadh", rentPerHour: 2500, rentPerDay: 0, minHours: 3 });
     await AppSetting.updateOne({ _id: "banquetSeeded" }, { $set: { value: true, at: new Date() } }, { upsert: true });
   }
   // V2 (owner 08-10-2026): Diwali Dinner hatao, har package mein selection ke options. Purane (fix item wale) package band, naye jodo.
@@ -112,6 +112,13 @@ const seedOnce = async () => {
   if (!v3) {
     await BanquetPackage.updateMany({ minPlates: { $lt: MIN_PLATES } }, { $set: { minPlates: MIN_PLATES } });
     await AppSetting.updateOne({ _id: "banquetMinPlates50" }, { $set: { value: true, at: new Date() } }, { upsert: true });
+  }
+  // Owner 08-10-2026: hall rent ₹2,500 / hour, per day wala band
+  const v4 = await AppSetting.findById("banquetHallRent2500").lean();
+  if (!v4) {
+    await BanquetHall.updateMany({ name: "Hotel Ashirvad, Songadh" }, { $set: { rentPerHour: 2500 } });
+    await BanquetHall.updateMany({}, { $set: { rentPerDay: 0 } });
+    await AppSetting.updateOne({ _id: "banquetHallRent2500" }, { $set: { value: true, at: new Date() } }, { upsert: true });
   }
   seeded = true;
 };
@@ -180,7 +187,7 @@ router.get("/setup", async (req, res) => {
 const KINDS = {
   item: [BanquetItem, (b) => ({ name: clean(b.name, 80), category: clean(b.category, 60) || "Other", pricePerKg: n(b.pricePerKg), unit: ["kg", "litre", "pc"].includes(b.unit) ? b.unit : "kg", defaultGrams: n(b.defaultGrams), active: b.active !== false, sort: n(b.sort) })],
   addon: [BanquetAddon, (b) => ({ name: clean(b.name, 80), price: n(b.price), unit: ["fixed", "hour", "day", "plate"].includes(b.unit) ? b.unit : "fixed", active: b.active !== false, sort: n(b.sort) })],
-  hall: [BanquetHall, (b) => ({ name: clean(b.name, 80), rentPerHour: n(b.rentPerHour), rentPerDay: n(b.rentPerDay), minHours: n(b.minHours), capacity: n(b.capacity), active: b.active !== false })],
+  hall: [BanquetHall, (b) => ({ name: clean(b.name, 80), rentPerHour: n(b.rentPerHour), rentPerDay: 0, minHours: n(b.minHours), capacity: n(b.capacity), active: b.active !== false })],
   package: [
     BanquetPackage,
     (b) => ({
