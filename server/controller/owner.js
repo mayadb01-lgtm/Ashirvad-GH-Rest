@@ -9,6 +9,7 @@ import Room from "../model/room.js";
 import RestEntry from "../model/restEntry.js";
 import OfficeBook from "../model/officeBook.js";
 import StaffSalary from "../model/staffSalary.js";
+import { loadOfficeClassifier, lineName } from "../utils/officeTypes.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -29,18 +30,32 @@ const inc = (obj, k, v) => (obj[k] = (obj[k] || 0) + (Number(v) || 0));
 // period rows (those are collections of old dues, not new sales).
 const ghSaleRows = (doc) => (doc.entry || []).filter((e) => e.period !== "UnPaid");
 
-const officeMonthTotals = (docs) => {
+// Office: revenue / kharch mein sirf "business" lines. Personal, Loan, EMI, Transfer, Udhaar-wapas alag
+// (type owner "Office category types" page par set karta hai; Office Book ke records nahi badalte).
+const officeMonthTotals = (docs, cls) => {
   const inByCat = {};
   const outByCat = {};
+  const inType = {};
+  const outType = {};
   docs.forEach((d) => {
-    (d.officeIn || []).forEach((i) => inc(inByCat, i.categoryName || "Other", i.amount));
-    (d.officeOut || []).forEach((o) => inc(outByCat, o.categoryName || "Other", o.amount));
+    (d.officeIn || []).forEach((i) => {
+      inc(inByCat, i.categoryName || "Other", i.amount);
+      inc(inType, cls("in", i.categoryName, lineName(i)), i.amount);
+    });
+    (d.officeOut || []).forEach((o) => {
+      inc(outByCat, o.categoryName || "Other", o.amount);
+      inc(outType, cls("out", o.categoryName, lineName(o)), o.amount);
+    });
   });
   return {
     inByCat,
     outByCat,
-    totalIn: Object.values(inByCat).reduce((a, b) => a + b, 0),
-    totalOut: Object.values(outByCat).reduce((a, b) => a + b, 0),
+    inType,
+    outType,
+    totalIn: inType.business || 0,
+    totalOut: outType.business || 0,
+    allIn: Object.values(inByCat).reduce((a, b) => a + b, 0),
+    allOut: Object.values(outByCat).reduce((a, b) => a + b, 0),
   };
 };
 
@@ -53,7 +68,7 @@ const fetchRange = (from, to) => {
   ]);
 };
 
-const monthKpis = (gh, rest, office, salaryTotal, roomCount, days) => {
+const monthKpis = (gh, rest, office, salaryTotal, roomCount, days, cls) => {
   const ghRows = gh.flatMap(ghSaleRows);
   const ghRevenue = sum(ghRows, (e) => e.rate);
   const soldRows = ghRows.filter((e) => SOLD_PERIODS.includes(e.period));
@@ -62,7 +77,7 @@ const monthKpis = (gh, rest, office, salaryTotal, roomCount, days) => {
   ).size;
   const restSales = sum(rest, (r) => r.grandTotal);
   const restExpenses = sum(rest, (r) => r.totalExpenses);
-  const o = officeMonthTotals(office);
+  const o = officeMonthTotals(office, cls);
   const totalRevenue = ghRevenue + restSales + o.totalIn;
   const totalOut = restExpenses + o.totalOut + salaryTotal;
   return {
@@ -72,6 +87,10 @@ const monthKpis = (gh, rest, office, salaryTotal, roomCount, days) => {
     officeIn: o.totalIn,
     restExpenses,
     officeOut: o.totalOut,
+    officeInPersonal: (o.inType.personal || 0) + (o.inType.loan || 0), // revenue mein nahi
+    officeInRecovery: o.inType.recovery || 0, // purana udhaar wapas (sale pehle gin chuki)
+    officeOutPersonal: o.outType.personal || 0,
+    officeOutEmi: o.outType.emi || 0,
     staffSalary: salaryTotal,
     netCash: totalRevenue - totalOut,
     occupancy: roomCount && days ? round((nightsSold / (roomCount * days)) * 100, 1) : 0,
@@ -127,8 +146,9 @@ router.get("/monthly-summary/:month/:year", async (req, res) => {
       salaryFor(prevStart.month() + 1, prevStart.year()),
     ]);
 
-    const kpis = monthKpis(gh, rest, office, salary, roomCount, days);
-    const prevKpis = monthKpis(ghPrev, restPrev, officePrev, salaryPrev, roomCount, prevEnd.date());
+    const cls = await loadOfficeClassifier();
+    const kpis = monthKpis(gh, rest, office, salary, roomCount, days, cls);
+    const prevKpis = monthKpis(ghPrev, restPrev, officePrev, salaryPrev, roomCount, prevEnd.date(), cls);
 
     /* ---------- Daily series ---------- */
     const daily = [];
@@ -158,7 +178,7 @@ router.get("/monthly-summary/:month/:year", async (req, res) => {
     });
     office.forEach((doc) => {
       const i = dayIdx(doc.createDate);
-      if (daily[i]) daily[i].office += sum(doc.officeIn || [], (x) => x.amount);
+      if (daily[i]) daily[i].office += sum((doc.officeIn || []).filter((x) => cls("in", x.categoryName, lineName(x)) === "business"), (x) => x.amount);
     });
     daily.forEach((d) => (d.total = d.gh + d.rest + d.office));
 
@@ -210,7 +230,7 @@ router.get("/monthly-summary/:month/:year", async (req, res) => {
       .map((r) => ({ date: r.createDate, diff: r.extraAmount }))
       .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
       .slice(0, 5);
-    const o = officeMonthTotals(office);
+    const o = officeMonthTotals(office, cls);
 
     /* ---------- 12-month trend ---------- */
     const trend = [];
@@ -221,7 +241,7 @@ router.get("/monthly-summary/:month/:year", async (req, res) => {
         month: ms.format("MMM YY"),
         gh: sum(gh12.filter((d) => inMonth(d, ms, me)).flatMap(ghSaleRows), (e) => e.rate),
         rest: sum(rest12.filter((d) => inMonth(d, ms, me)), (r) => r.grandTotal),
-        office: officeMonthTotals(office12.filter((d) => inMonth(d, ms, me))).totalIn,
+        office: officeMonthTotals(office12.filter((d) => inMonth(d, ms, me)), cls).totalIn,
       });
     }
     trend.forEach((t) => (t.total = t.gh + t.rest + t.office));
@@ -277,7 +297,7 @@ router.get("/monthly-summary/:month/:year", async (req, res) => {
         trend,
         gh: { byMode, byType, roomPerf, heat },
         rest: { expByCat: restExpByCat, mode: restMode, cashDiffDays },
-        office: { inByCat: o.inByCat, outByCat: o.outByCat },
+        office: { inByCat: o.inByCat, outByCat: o.outByCat, inType: o.inType, outType: o.outType, allIn: o.allIn, allOut: o.allOut },
         unpaid: { aging, top: topUnpaid, total: sum(unpaid, (u) => u.rate) },
         insights,
       },

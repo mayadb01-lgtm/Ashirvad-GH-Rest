@@ -246,7 +246,7 @@ const TodayHome = ({ onNavigate }) => {
             stats={[
               ["In", inr(v.o.in)],
               ["Out", inr(v.o.out)],
-              ["This month", v.m ? inr(v.m.kpis.officeIn) : "—"],
+              ["This month (business)", v.m ? inr(v.m.kpis.officeIn) : "—"],
             ]}
           />
         </Grid>

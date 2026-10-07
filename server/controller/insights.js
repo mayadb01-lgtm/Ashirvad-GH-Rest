@@ -12,6 +12,7 @@ import OfficeBook from "../model/officeBook.js";
 import StaffSalary from "../model/staffSalary.js";
 import RoomCharge from "../model/roomCharge.js";
 import AppSetting from "../model/appSetting.js";
+import { loadOfficeClassifier, lineName } from "../utils/officeTypes.js";
 
 // "Discount on total bill" (naya niyam) kis din se P&L mein ghatega: server pehli baar chalte hi aaj ki tareekh (IST) save karta hai.
 // Isse pehle ke din bilkul waise hi rehte hain (purane records mein Discount ka matlab alag tha).
@@ -69,10 +70,11 @@ router.get("/cashflow/:from/:to", async (req, res) => {
       return res.status(400).json({ success: false, message: "Month must be in YYYY-MM format (from <= to)" });
     }
     const q = range(from.startOf("month"), to.endOf("month"));
-    const [gh, rest, office] = await Promise.all([
+    const [gh, rest, office, classify] = await Promise.all([
       Entry.find(q, { entry: 1, entryCreateDate: 1 }).lean(),
       RestEntry.find(q, { entryCreateDate: 1, grandTotal: 1, totalPending: 1, totalExpenses: 1, totalUpad: 1 }).lean(),
       OfficeBook.find(q, { entryCreateDate: 1, officeIn: 1, officeOut: 1 }).lean(),
+      loadOfficeClassifier(),
     ]);
 
     const months = monthList(from, to).map((m) => ({
@@ -80,9 +82,9 @@ router.get("/cashflow/:from/:to", async (req, res) => {
       label: dayjs(m + "-01").format("MMM YY"),
       ghCash: 0, ghJama: 0, ghUdhaar: 0,
       restCash: 0, restUdhaar: 0,
-      officeIn: 0, loansIn: 0,
+      officeIn: 0, recoveryIn: 0, loansIn: 0, personalIn: 0, transferIn: 0,
       restKharch: 0, restUpad: 0,
-      officeOut: 0, personalOut: 0,
+      officeOut: 0, personalOut: 0, loanOut: 0, transferOut: 0,
       inByCat: {}, outByCat: {},
     }));
     const byM = Object.fromEntries(months.map((m) => [m.month, m]));
@@ -110,26 +112,33 @@ router.get("/cashflow/:from/:to", async (req, res) => {
       (d.officeIn || []).forEach((x) => {
         const c = x.categoryName || "Other";
         inc(m.inByCat, c, x.amount);
-        if (/loan/i.test(c)) m.loansIn += n(x.amount);
+        const t = classify("in", c, lineName(x));
+        if (t === "loan") m.loansIn += n(x.amount);
+        else if (t === "personal") m.personalIn += n(x.amount);
+        else if (t === "transfer") m.transferIn += n(x.amount);
+        else if (t === "recovery") m.recoveryIn += n(x.amount);
         else m.officeIn += n(x.amount);
       });
       (d.officeOut || []).forEach((x) => {
         const c = x.categoryName || "Other";
-        inc(m.outByCat, c, x.amount);
-        if (/^personal/i.test(c)) m.personalOut += n(x.amount);
+        const t = classify("out", c, lineName(x));
+        inc(m.outByCat, t === "emi" ? "Loan EMI" : t === "transfer" ? "Transfer (own accounts)" : c, x.amount);
+        if (t === "personal") m.personalOut += n(x.amount);
+        else if (t === "emi") m.loanOut += n(x.amount);
+        else if (t === "transfer") m.transferOut += n(x.amount);
         else m.officeOut += n(x.amount);
       });
     });
 
     months.forEach((m) => {
-      m.aaya = m.ghCash + m.ghJama + m.restCash + m.officeIn; // business income (loan alag)
-      m.gaya = m.restKharch + m.restUpad + m.officeOut; // business kharch (personal alag)
+      m.aaya = m.ghCash + m.ghJama + m.restCash + m.officeIn + m.recoveryIn; // business ka paisa aaya (personal / loan / transfer alag)
+      m.gaya = m.restKharch + m.restUpad + m.officeOut; // business kharch (personal / EMI / transfer alag)
       m.businessNet = m.aaya - m.gaya;
-      m.net = m.aaya + m.loansIn - m.gaya - m.personalOut;
+      m.net = m.aaya + m.loansIn + m.personalIn - m.gaya - m.personalOut - m.loanOut; // transfer dono taraf barabar, isliye nahi gina
       Object.keys(m).forEach((k) => typeof m[k] === "number" && (m[k] = round(m[k])));
     });
 
-    const keys = ["ghCash", "ghJama", "ghUdhaar", "restCash", "restUdhaar", "officeIn", "loansIn", "restKharch", "restUpad", "officeOut", "personalOut", "aaya", "gaya", "businessNet", "net"];
+    const keys = ["ghCash", "ghJama", "ghUdhaar", "restCash", "restUdhaar", "officeIn", "recoveryIn", "loansIn", "personalIn", "transferIn", "restKharch", "restUpad", "officeOut", "personalOut", "loanOut", "transferOut", "aaya", "gaya", "businessNet", "net"];
     const totals = Object.fromEntries(keys.map((k) => [k, round(sum(months, (m) => m[k]))]));
     const outByCat = {};
     const inByCat = {};
@@ -270,6 +279,7 @@ router.get("/kharch/:months", async (req, res) => {
       RestEntry.find(q, { entryCreateDate: 1, grandTotal: 1, expenses: 1 }).lean(),
       OfficeBook.find(q, { entryCreateDate: 1, officeOut: 1 }).lean(),
     ]);
+    const classify = await loadOfficeClassifier();
     const months = monthList(start, end);
     const sales = Object.fromEntries(months.map((m) => [m, 0]));
     const food = Object.fromEntries(months.map((m) => [m, 0]));
@@ -293,7 +303,7 @@ router.get("/kharch/:months", async (req, res) => {
     });
     office.forEach((d) => {
       const m = ymOf(d.entryCreateDate);
-      (d.officeOut || []).forEach((x) => add(m, x.categoryName, x.expenseName || x.fullname, x.amount, "Office"));
+      (d.officeOut || []).forEach((x) => classify("out", x.categoryName, lineName(x)) === "business" && add(m, x.categoryName, x.expenseName || x.fullname, x.amount, "Office"));
     });
 
     const monthRows = months.map((m) => ({
@@ -413,6 +423,7 @@ router.get("/pnl/:from/:to", async (req, res) => {
       RoomCharge.find({ ...q, kind: "extra" }, { entryCreateDate: 1, amount: 1 }).lean(),
     ]);
     const discFrom = await discountFrom();
+    const classify = await loadOfficeClassifier();
     const months = monthList(from, to).map((m) => ({
       month: m, label: dayjs(m + "-01").format("MMM YY"),
       ghSales: 0, ghExtra: 0, ghDiscount: 0, restSales: 0, otherIncome: 0, otherByCat: {},
@@ -448,14 +459,16 @@ router.get("/pnl/:from/:to", async (req, res) => {
       if (!m) return;
       (d.officeIn || []).forEach((x) => {
         const c = x.categoryName || "Other";
-        if (/loan|personal|pending/i.test(c)) return;
+        if (classify("in", c, lineName(x)) !== "business") return; // personal / loan / transfer / udhaar-wapas kamai nahi
         m.otherIncome += n(x.amount);
         inc(m.otherByCat, c, x.amount);
       });
       (d.officeOut || []).forEach((x) => {
         const c = x.categoryName || "Other";
-        if (/^personal/i.test(c)) return (m.personalOut += n(x.amount));
-        if (/loan/i.test(c)) return (m.loanOut += n(x.amount));
+        const t = classify("out", c, lineName(x));
+        if (t === "personal") return (m.personalOut += n(x.amount));
+        if (t === "emi") return (m.loanOut += n(x.amount));
+        if (t === "transfer" || t === "loan" || t === "recovery") return; // apne account mein ghumaya — kharch nahi
         addExp(m, c, x.amount);
       });
     });
@@ -506,7 +519,8 @@ router.get("/mode-balance/:from/:to", async (req, res) => {
       RestEntry.find(q, { entryCreateDate: 1, totalCash: 1, totalCard: 1, totalPP: 1, totalExpenses: 1, totalUpad: 1 }).lean(),
       OfficeBook.find(q, { entryCreateDate: 1, officeIn: 1, officeOut: 1 }).lean(),
     ]);
-    const blank = () => Object.fromEntries(BAL_MODES.map((k) => [k, { in: 0, out: 0, src: { gh: 0, rest: 0, office: 0, restOut: 0, officeOut: 0 } }]));
+    const classify = await loadOfficeClassifier();
+    const blank = () => Object.fromEntries(BAL_MODES.map((k) => [k, { in: 0, out: 0, src: { gh: 0, rest: 0, office: 0, officeP: 0, restOut: 0, officeOut: 0, officeOutP: 0 } }]));
     const months = monthList(from, to).map((m) => ({ month: m, label: dayjs(m + "-01").format("MMM YY"), modes: blank() }));
     const byM = Object.fromEntries(months.map((m) => [m.month, m]));
     const add = (m, mode, dir, amt, src) => {
@@ -527,8 +541,12 @@ router.get("/mode-balance/:from/:to", async (req, res) => {
     });
     office.forEach((d) => {
       const m = byM[ymOf(d.entryCreateDate)];
-      (d.officeIn || []).forEach((x) => add(m, MODE_OF(x.modeOfPayment), "in", x.amount, "office"));
-      (d.officeOut || []).forEach((x) => add(m, MODE_OF(x.modeOfPayment), "out", x.amount, "officeOut"));
+      // Balance mein har paisa ginta hai (account mein sach mein aaya/gaya), bas business aur personal/loan/transfer alag column mein
+      (d.officeIn || []).forEach((x) => {
+        const t = classify("in", x.categoryName, lineName(x));
+        add(m, MODE_OF(x.modeOfPayment), "in", x.amount, t === "business" || t === "recovery" ? "office" : "officeP");
+      });
+      (d.officeOut || []).forEach((x) => add(m, MODE_OF(x.modeOfPayment), "out", x.amount, classify("out", x.categoryName, lineName(x)) === "business" ? "officeOut" : "officeOutP"));
     });
     const totals = blank();
     months.forEach((m) => {

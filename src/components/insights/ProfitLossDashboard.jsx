@@ -102,7 +102,7 @@ const ProfitLossDashboard = () => {
         </Alert>
       )}
       <Alert severity="info" sx={{ mb: 2 }}>
-        Revenue = all GH sales (including credit) + Restaurant grand total + other Office In income (excluding Loan, Personal and Pending collections). Expenses = money actually paid (Restaurant cash collection + staff advance + Office Out). Categories starting with "GH ..." are counted as direct Guest House expenses.
+        Revenue = all GH sales (including credit) + Restaurant grand total + Office In business lines only (Personal, Loan, transfers and old dues received are not revenue). Expenses = money actually paid (Restaurant cash collection + staff advance + Office Out business lines). Personal and Loan EMI are shown separately; transfers between your own accounts are left out. Set which Office line is which on the Office category types page. Categories starting with "GH ..." are counted as direct Guest House expenses.
       </Alert>
 
       <Section title="Monthly revenue, expenses and profit">

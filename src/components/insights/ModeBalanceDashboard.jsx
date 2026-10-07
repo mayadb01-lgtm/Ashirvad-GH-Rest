@@ -74,7 +74,7 @@ const ModeBalanceDashboard = () => {
       </Stack>
 
       <Alert severity="info" sx={{ mb: 2 }}>
-        <b>In</b> = GH room payments and old dues received (by mode) + Restaurant cash collection (incl. cash paid out for expenses/advance) and Card + PP → PP + Office In (by mode).{" "}
+        <b>In</b> = GH room payments and old dues received (by mode) + Restaurant cash collection (incl. cash paid out for expenses/advance) and Card + PP → PP + Office In (by mode, including personal / loan / transfers — it is real money in that account).{" "}
         <b>Out</b> = Restaurant expenses + staff advance (Cash) + Office Out (by mode). Unpaid / credit is not counted until it is received.
       </Alert>
 
@@ -168,7 +168,7 @@ const ModeBalanceDashboard = () => {
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  {["Mode", "GH in", "Restaurant in", "Office in", "Restaurant out", "Office out"].map((h) => (
+                  {["Mode", "GH in", "Restaurant in", "Office in (business)", "Office in (personal / loan / transfer)", "Restaurant out", "Office out (business)", "Office out (personal / EMI / transfer)"].map((h) => (
                     <TableCell key={h} sx={{ fontWeight: 800, textAlign: h === "Mode" ? "left" : "right" }}>
                       {h}
                     </TableCell>
@@ -179,7 +179,7 @@ const ModeBalanceDashboard = () => {
                 {modes.map((k) => (
                   <TableRow key={k}>
                     <TableCell sx={{ fontWeight: 800, color: MODE_COLOR[k] }}>{k}</TableCell>
-                    {["gh", "rest", "office", "restOut", "officeOut"].map((s) => (
+                    {["gh", "rest", "office", "officeP", "restOut", "officeOut", "officeOutP"].map((s) => (
                       <TableCell key={s} sx={cell}>
                         {inr(t[k]?.src?.[s])}
                       </TableCell>

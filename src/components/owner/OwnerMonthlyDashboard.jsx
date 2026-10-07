@@ -287,6 +287,10 @@ const OwnerMonthlyDashboard = () => {
       ["Office / banquet income", k.officeIn, p.officeIn],
       ["Restaurant expenses", k.restExpenses, p.restExpenses],
       ["Office expenses", k.officeOut, p.officeOut],
+      ["Office In: personal / loan (not revenue)", k.officeInPersonal, p.officeInPersonal],
+      ["Office In: old dues received (not revenue)", k.officeInRecovery, p.officeInRecovery],
+      ["Office Out: personal", k.officeOutPersonal, p.officeOutPersonal],
+      ["Office Out: loan EMI", k.officeOutEmi, p.officeOutEmi],
       ["Staff salary paid", k.staffSalary, p.staffSalary],
       ["Net cash (approx.)", k.netCash, p.netCash],
       ["Occupancy %", k.occupancy, p.occupancy],
@@ -627,7 +631,10 @@ const OwnerMonthlyDashboard = () => {
 
             {/* Office in/out */}
             <Grid size={{ xs: 12, md: 6 }}>
-              <Panel title="Office book by category" subtitle={`In ${inr(k.officeIn)} · Out ${inr(k.officeOut)}`}>
+              <Panel
+                title="Office book by category"
+                subtitle={`Business: In ${inr(k.officeIn)} · Out ${inr(k.officeOut)} — not counted as business: personal/loan in ${inr(k.officeInPersonal || 0)}, old dues received ${inr(k.officeInRecovery || 0)}, personal out ${inr(k.officeOutPersonal || 0)}, loan EMI ${inr(k.officeOutEmi || 0)}`}
+              >
                 <Box sx={{ height: 280 }}>
                   <ResponsiveContainer>
                     <BarChart

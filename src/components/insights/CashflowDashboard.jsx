@@ -37,6 +37,7 @@ const CashflowDashboard = () => {
         "Money in (business)": m.aaya,
         "Money out (business)": -m.gaya,
         Personal: -m.personalOut,
+        "Loan EMI": -(m.loanOut || 0),
         "Remaining (business)": m.businessNet,
       })),
     [data]
@@ -53,15 +54,19 @@ const CashflowDashboard = () => {
       "GH credit (not yet received)": m.ghUdhaar,
       "Rest (excluding credit)": m.restCash,
       "Rest credit": m.restUdhaar,
-      "Office In": m.officeIn,
+      "Office In (business)": m.officeIn,
+      "Office: old dues received": m.recoveryIn,
       "Loan received": m.loansIn,
+      "Personal money in": m.personalIn,
+      "Transfer between own accounts": m.transferIn,
       "MONEY IN (business)": m.aaya,
       "Rest expenses from cash collection": m.restKharch,
       "Rest staff advance": m.restUpad,
-      "Office Out (excluding personal)": m.officeOut,
+      "Office Out (business)": m.officeOut,
       "MONEY OUT (business)": m.gaya,
       "REMAINING (business)": m.businessNet,
       Personal: m.personalOut,
+      "Loan EMI": m.loanOut,
       "Net (after loan + personal)": m.net,
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -74,7 +79,7 @@ const CashflowDashboard = () => {
 
   return (
     <Box sx={{ p: { xs: 1, md: 2 } }}>
-      <PageTitle title="Cashflow (monthly)" sub="How much money came in, went out and remained. Loan and personal are shown separately." />
+      <PageTitle title="Cashflow (monthly)" sub="How much money came in, went out and remained. Personal, loan and transfers are shown separately." />
       <MonthRangeBar from={from} to={to} setFrom={setFrom} setTo={setTo}>
         <Button variant="contained" startIcon={<DownloadIcon />} onClick={exportExcel} disabled={!data}>
           Excel
@@ -86,13 +91,15 @@ const CashflowDashboard = () => {
         <Kpi label="Money out (business)" value={lakh(t.gaya)} sub={`Avg ${lakh((t.gaya || 0) / nMonths)} / month`} color={COLORS.out} />
         <Kpi label="Remaining (business)" value={lakh(t.businessNet)} sub={t.aaya ? `${Math.round((100 * t.businessNet) / t.aaya)}% margin` : ""} color={t.businessNet >= 0 ? COLORS.net : COLORS.bad} />
         <Kpi label="Personal withdrawals" value={lakh(t.personalOut)} sub={t.businessNet ? `${Math.round((100 * t.personalOut) / Math.max(t.businessNet, 1))}% of savings` : ""} color={COLORS.personal} />
+        <Kpi label="Personal money in" value={lakh(t.personalIn)} sub="Not business" color={COLORS.personal} />
         <Kpi label="Loan received" value={lakh(t.loansIn)} color={COLORS.loan} />
+        <Kpi label="Loan EMI paid" value={lakh(t.loanOut)} color={COLORS.loan} />
         <Kpi label="Credit (still to collect)" value={lakh((t.ghUdhaar || 0) + (t.restUdhaar || 0))} sub="GH + Rest credit sales" />
       </Stack>
 
       <Alert severity="info" sx={{ mb: 2 }}>
-        <b>Money in</b> = GH (cash/online + old dues received) + Restaurant (excluding credit) + Office In (excluding loan).{" "}
-        <b>Money out</b> = Restaurant expenses from cash collection + staff advance + Office Out (excluding personal). Money moved from one business to another may be counted twice if it is also written in the Office Book.
+        <b>Money in</b> = GH (cash/online + old dues received) + Restaurant (excluding credit) + Office In business lines + old dues received in Office.{" "}
+        <b>Money out</b> = Restaurant expenses from cash collection + staff advance + Office Out business lines. Personal, Loan, Loan EMI and transfers between your own accounts are kept separate. Which Office line is which is set on the <b>Office category types</b> page.
       </Alert>
 
       <Section title="Monthly money in vs money out">
@@ -111,6 +118,7 @@ const CashflowDashboard = () => {
                 <Bar dataKey="Money in (business)" fill={COLORS.in} stackId="a" />
                 <Bar dataKey="Money out (business)" fill={COLORS.out} stackId="a" />
                 <Bar dataKey="Personal" fill={COLORS.personal} stackId="a" />
+                <Bar dataKey="Loan EMI" fill={COLORS.loan} stackId="a" />
                 <Line dataKey="Remaining (business)" stroke={COLORS.net} strokeWidth={3} dot />
               </ComposedChart>
             </ResponsiveContainer>
@@ -123,7 +131,7 @@ const CashflowDashboard = () => {
           <Table size="small">
             <TableHead>
               <TableRow>
-                {["Month", "GH", "Restaurant", "Office In", "Money in", "Rest expenses + advance", "Office Out", "Money out", "Remaining", "Personal", "Loan", "Net"].map((h) => (
+                {["Month", "GH", "Restaurant", "Office In", "Money in", "Rest expenses + advance", "Office Out", "Money out", "Remaining", "Personal in", "Personal out", "Loan in", "Loan EMI", "Net"].map((h) => (
                   <TableCell key={h} align={h === "Month" ? "left" : "right"} sx={{ fontWeight: 700, whiteSpace: "nowrap" }}>
                     {h}
                   </TableCell>
@@ -136,14 +144,16 @@ const CashflowDashboard = () => {
                   <TableCell>{m.label}</TableCell>
                   <TableCell align="right">{inr(m.ghCash + m.ghJama)}</TableCell>
                   <TableCell align="right">{inr(m.restCash)}</TableCell>
-                  <TableCell align="right">{inr(m.officeIn)}</TableCell>
+                  <TableCell align="right">{inr(m.officeIn + (m.recoveryIn || 0))}</TableCell>
                   <TableCell align="right" sx={{ color: COLORS.in, fontWeight: 700 }}>{inr(m.aaya)}</TableCell>
                   <TableCell align="right">{inr(m.restKharch + m.restUpad)}</TableCell>
                   <TableCell align="right">{inr(m.officeOut)}</TableCell>
                   <TableCell align="right" sx={{ color: COLORS.out, fontWeight: 700 }}>{inr(m.gaya)}</TableCell>
                   <TableCell align="right" sx={{ color: m.businessNet >= 0 ? COLORS.net : COLORS.bad, fontWeight: 800 }}>{inr(m.businessNet)}</TableCell>
+                  <TableCell align="right" sx={{ color: COLORS.personal }}>{inr(m.personalIn)}</TableCell>
                   <TableCell align="right" sx={{ color: COLORS.personal }}>{inr(m.personalOut)}</TableCell>
                   <TableCell align="right">{inr(m.loansIn)}</TableCell>
+                  <TableCell align="right">{inr(m.loanOut)}</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 700, color: m.net >= 0 ? COLORS.net : COLORS.bad }}>{inr(m.net)}</TableCell>
                 </TableRow>
               ))}
