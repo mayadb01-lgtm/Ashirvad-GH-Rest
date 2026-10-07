@@ -457,6 +457,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
   const [status, setStatus] = useState(null);
   const [unpaid, setUnpaid] = useState([]);
   const [charges, setCharges] = useState([]);
+  const [chargesPaidToday, setChargesPaidToday] = useState([]); // food / extra bill jo aaj wasool hue (kisi bhi din ke)
   const [stayInfo, setStayInfo] = useState(null); // { continuing, started, checkouts, bookings, advances }
   const [regPending, setRegPending] = useState({ yesterday: [], today: [] });
   const [regEdit, setRegEdit] = useState(null); // pending item jiska form khula hai
@@ -476,14 +477,16 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         .catch(() => setStayInfo({ continuing: [], started: [], checkouts: [], bookings: [], advances: [] })),
     [date]
   );
-  const loadCharges = useCallback(
-    () =>
-      axios
-        .get(`${API}/room-charges/day/${date}`)
-        .then(({ data }) => setCharges(data.data || []))
-        .catch(() => setCharges([])),
-    [date]
-  );
+  const loadCharges = useCallback(() => {
+    axios
+      .get(`${API}/room-charges/paid-on/${date}`)
+      .then(({ data }) => setChargesPaidToday(data.data || []))
+      .catch(() => setChargesPaidToday([]));
+    return axios
+      .get(`${API}/room-charges/day/${date}`)
+      .then(({ data }) => setCharges(data.data || []))
+      .catch(() => setCharges([]));
+  }, [date]);
   const [period, setPeriod] = useState("day");
   const [tab, setTab] = useState("rooms"); // rooms | jama
   const [editing, setEditing] = useState(null); // roomNo
@@ -1349,6 +1352,34 @@ const GhQuickEntry = ({ date, isAdmin }) => {
               </Paper>
             </Grid>
           </Grid>
+          {chargesPaidToday.length > 0 && (
+            <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 3, borderColor: "#99F6E4", bgcolor: "#F0FDFA" }}>
+              <Typography fontWeight={800}>
+                🍽 Food / extra bills received today ({inr(chargesPaidToday.reduce((t, c) => t + num(c.amount), 0))})
+              </Typography>
+              <Typography variant="caption" color={Q.muted} sx={{ display: "block", mb: 1 }}>
+                Keep this money with the GH cash. Food bills are restaurant sales already counted in the restaurant entry — they are not GH room sales.{" "}
+                {Object.entries(chargesPaidToday.reduce((o, c) => ({ ...o, [c.paidMode]: (o[c.paidMode] || 0) + num(c.amount) }), {}))
+                  .map(([m, v]) => `${m} ${inr(v)}`)
+                  .join(" · ")}
+              </Typography>
+              {chargesPaidToday.map((c, i) => (
+                <Stack key={c._id} direction="row" alignItems="center" spacing={1} sx={{ py: 0.5, borderTop: i ? `1px solid ${Q.line}` : "none" }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography fontWeight={700} noWrap>
+                      {c.kind === "food" ? "🍽" : "➕"} Room {c.roomNo} · {c.label}
+                    </Typography>
+                    <Typography variant="caption" color={Q.muted}>
+                      Bill of {c.date}
+                      {c.guestName ? ` · ${c.guestName}` : ""} · {c.paidMode}
+                      {c.paidBy ? ` · by ${c.paidBy}` : ""}
+                    </Typography>
+                  </Box>
+                  <Typography fontWeight={800}>{inr(c.amount)}</Typography>
+                </Stack>
+              ))}
+            </Paper>
+          )}
           {draft.jama.length > 0 && (
             <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 3 }}>
               <Typography fontWeight={800} sx={{ mb: 1 }}>

@@ -7,6 +7,7 @@ import RoomCharge from "../model/roomCharge.js";
 import EntryLock from "../model/entryLock.js";
 import Entry from "../model/entry.js";
 import Room from "../model/room.js";
+import Stay from "../model/stay.js";
 import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
@@ -180,8 +181,53 @@ router.put("/rest-sync/:restDate", async (req, res) => {
 // GET /day/:date → us din ke saare room charges (GH room card + editor)
 router.get("/day/:date", async (req, res) => {
   try {
+    const date = req.params.date;
+    if (!validDate(date)) return bad(res, "Invalid date");
+    const d = dayjs(date, F, true);
+    const [list, stays] = await Promise.all([
+      RoomCharge.find({ date }).sort({ roomNo: 1, createdAt: 1 }).lean(),
+      // Room mein abhi ruka guest (ya aaj check-out hua): uske pichhle dinon ke food / extra bill bhi isi room screen par dikhen
+      Stay.find(
+        { startCreateDate: { $gte: d.subtract(60, "day").startOf("day").toDate(), $lt: d.startOf("day").toDate() }, $or: [{ status: "active" }, { checkoutDate: date }] },
+        { roomNo: 1, startDate: 1 }
+      ).lean(),
+    ]);
+    const earlier = [];
+    const seenIds = new Set();
+    // Kal raat ruka guest (night) aaj check-out karta hai — Stay record check-out par banta hai, isliye kal ki GH entry se bhi dekho
+    const prev = d.subtract(1, "day").format(F);
+    const yday = await Entry.find({ date: prev }, { entry: 1 }).lean();
+    const nightRooms = [...new Set(yday.flatMap((x) => (x.entry || []).filter((e) => /night/i.test(e.period || "") && e.roomNo).map((e) => Number(e.roomNo))))];
+    if (nightRooms.length) {
+      const rows = await RoomCharge.find({ roomNo: { $in: nightRooms }, date: prev, $or: [{ isPaid: false }, { paidDate: date }] }).lean();
+      rows.forEach((c) => {
+        seenIds.add(String(c._id));
+        earlier.push({ ...c, period: "", earlier: true });
+      });
+    }
+    for (const st of stays) {
+      const dates = [];
+      for (let x = dayjs(st.startDate, F, true); x.isBefore(d, "day"); x = x.add(1, "day")) dates.push(x.format(F));
+      if (!dates.length) continue;
+      // Baaki wale + jo aaj hi wasool hue (taaki "✓ Paid" dikhe)
+      const rows = await RoomCharge.find({ roomNo: st.roomNo, date: { $in: dates }, $or: [{ isPaid: false }, { paidDate: date }] }).lean();
+      rows.forEach((c) => {
+        if (seenIds.has(String(c._id))) return;
+        seenIds.add(String(c._id));
+        earlier.push({ ...c, period: "", earlier: true });
+      });
+    }
+    res.json({ success: true, data: [...list, ...earlier] });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// GET /paid-on/:date → aaj GH counter par kaun se food / extra bill wasool hue (kisi bhi din ke)
+router.get("/paid-on/:date", async (req, res) => {
+  try {
     if (!validDate(req.params.date)) return bad(res, "Invalid date");
-    const list = await RoomCharge.find({ date: req.params.date }).sort({ roomNo: 1, createdAt: 1 }).lean();
+    const list = await RoomCharge.find({ isPaid: true, paidDate: req.params.date }).sort({ updatedAt: 1 }).lean();
     res.json({ success: true, data: list });
   } catch (e) {
     fail(res, e);
@@ -236,8 +282,10 @@ router.put("/paid/:id", async (req, res) => {
   try {
     const doc = await RoomCharge.findById(req.params.id);
     if (!doc) return res.status(404).json({ success: false, message: "Not found" });
-    if (!canTouch(req, doc)) return res.status(403).json({ success: false, message: "Staff can only edit today's entries." });
     const isPaid = !!req.body?.isPaid;
+    // Wasooli (paid mark karna) pichhle dinon ke bill ki bhi ho sakti hai — guest agle din check-out karta hai. Wapas unpaid sirf owner.
+    const recent = dayjs(doc.date, F, true).isAfter(dayjs().subtract(61, "day"));
+    if (!canTouch(req, doc) && !(isPaid && !doc.isPaid && recent)) return res.status(403).json({ success: false, message: "Staff can only edit today's entries." });
     if (!isPaid && doc.isPaid && !isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can undo a paid charge" });
     if (isPaid && !PAID_MODES.includes(req.body?.paidMode)) return bad(res, "Select a payment mode");
     doc.isPaid = isPaid;

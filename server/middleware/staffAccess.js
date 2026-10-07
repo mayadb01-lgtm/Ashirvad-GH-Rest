@@ -60,6 +60,7 @@ const RULES = {
     R("GET", /^\/api\/v1\/guest-register\/pending\/([^/]+)$/, { dateParam: 1 }),
     // Room charges: food bill dekhna, extra charge jodna/hatana, vasooli (id wale routes andar date check karte hain)
     R("GET", /^\/api\/v1\/room-charges\/day\/([^/]+)$/, { dateParam: 1 }),
+    R("GET", /^\/api\/v1\/room-charges\/paid-on\/([^/]+)$/, { dateParam: 1 }),
     R("POST", /^\/api\/v1\/room-charges\/extra$/, { dateBody: "date" }),
     R("DELETE", /^\/api\/v1\/room-charges\/extra\/[a-f0-9]{24}$/),
     R("PUT", /^\/api\/v1\/room-charges\/paid\/[a-f0-9]{24}$/),

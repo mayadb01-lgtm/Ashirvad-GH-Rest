@@ -79,6 +79,7 @@ router.get("/cashflow/:from/:to", async (req, res) => {
       loadOfficeClassifier(),
     ]);
     const dueReceipts = await RestDueReceipt.find({ ...q, cancelled: { $ne: true } }, { entryCreateDate: 1, amount: 1 }).lean();
+    const roomPaid = await paidRoomCharges(from, to);
 
     const months = monthList(from, to).map((m) => ({
       month: m,
@@ -137,6 +138,13 @@ router.get("/cashflow/:from/:to", async (req, res) => {
     dueReceipts.forEach((x) => {
       const m = byM[ymOf(x.entryCreateDate)];
       if (m) m.recoveryIn += n(x.amount);
+    });
+    // GH counter par wasooli: food bill = restaurant ka udhaar wapas (recovery), extra charge = GH kamai
+    roomPaid.forEach((c) => {
+      const m = byM[c.ym];
+      if (!m) return;
+      if (c.kind === "food") m.recoveryIn += n(c.amount);
+      else m.ghCash += n(c.amount);
     });
     months.forEach((m) => {
       m.aaya = m.ghCash + m.ghJama + m.restCash + m.officeIn + m.recoveryIn; // business ka paisa aaya (personal / loan / transfer alag)
@@ -507,6 +515,13 @@ router.get("/pnl/:from/:to", async (req, res) => {
 // Har mahine Cash / PP / PPS / PPC mein kitna aaya, kitna gaya. Card ka paisa PP mein hi aata hai → Card = PP.
 // Aaya: GH room + purane baaki ki jama (mode se) · Restaurant: Cash (galla + jo kharch/upad galle se diya) , Card+PP → PP · Office In (mode se)
 // Gaya: Restaurant kharch + upad (galle se, Cash) · Office Out (mode se). UnPaid / udhaar ginti mein nahi.
+// GH counter par wasool hue food / extra bill (paidDate ke hisaab se)
+const paidRoomCharges = async (from, to) => {
+  const list = await RoomCharge.find({ isPaid: true, paidDate: { $ne: "" } }, { kind: 1, amount: 1, paidMode: 1, paidDate: 1 }).lean();
+  return list
+    .map((c) => ({ ...c, ym: dayjs(c.paidDate, F, true).format("YYYY-MM") }))
+    .filter((c) => c.ym >= from.format("YYYY-MM") && c.ym <= to.format("YYYY-MM"));
+};
 const MODE_OF = (m) => {
   const x = String(m || "").trim().toUpperCase();
   if (x === "CASH") return "Cash";
@@ -529,6 +544,7 @@ router.get("/mode-balance/:from/:to", async (req, res) => {
     ]);
     const classify = await loadOfficeClassifier();
     const dueReceipts = await RestDueReceipt.find({ ...q, cancelled: { $ne: true } }, { entryCreateDate: 1, amount: 1, mode: 1 }).lean();
+    const roomPaid = await paidRoomCharges(from, to);
     const blank = () => Object.fromEntries(BAL_MODES.map((k) => [k, { in: 0, out: 0, src: { gh: 0, rest: 0, office: 0, officeP: 0, restOut: 0, officeOut: 0, officeOutP: 0 } }]));
     const months = monthList(from, to).map((m) => ({ month: m, label: dayjs(m + "-01").format("MMM YY"), modes: blank() }));
     const byM = Object.fromEntries(months.map((m) => [m.month, m]));
@@ -550,6 +566,8 @@ router.get("/mode-balance/:from/:to", async (req, res) => {
     });
     // Restaurant par purana udhaar wasool: Cash → Cash, Card / PP → PP
     dueReceipts.forEach((x) => add(byM[ymOf(x.entryCreateDate)], MODE_OF(x.mode), "in", x.amount, "rest"));
+    // GH counter par food bill (restaurant ka udhaar) aur extra charges wasool: mode ke hisaab se
+    roomPaid.forEach((c) => add(byM[c.ym], MODE_OF(c.paidMode), "in", c.amount, c.kind === "food" ? "rest" : "gh"));
     office.forEach((d) => {
       const m = byM[ymOf(d.entryCreateDate)];
       // Balance mein har paisa ginta hai (account mein sach mein aaya/gaya), bas business aur personal/loan/transfer alag column mein

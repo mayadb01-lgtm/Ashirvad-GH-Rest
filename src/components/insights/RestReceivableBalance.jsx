@@ -9,6 +9,8 @@ import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
 import { API, COLORS, Kpi, PageTitle, Section, inr, lakh } from "./shared";
 
+const Q2 = { muted: "#64748B" };
+
 const RestReceivableBalance = () => {
   const [data, setData] = useState(null);
   const [q, setQ] = useState("");
@@ -56,7 +58,12 @@ const RestReceivableBalance = () => {
         <Kpi label="Still to collect" value={lakh(t.due)} sub={`${t.people || 0} people`} color={COLORS.bad} />
         <Kpi label="Credit given (all time)" value={lakh(t.given)} color={COLORS.out} />
         <Kpi label="Received (Restaurant + Office)" value={lakh(t.received)} color={COLORS.net} />
-        <Kpi label="Room food bills" value={lakh(data?.roomBills)} sub="Collected with the guest's room bill" />
+        <Kpi
+          label="Room bills — due at GH counter"
+          value={lakh(data?.room?.due)}
+          sub={`Given ${lakh(data?.room?.given)} · collected at GH ${lakh(data?.room?.collected)}`}
+          color={data?.room?.due ? COLORS.bad : undefined}
+        />
       </Stack>
       <Alert severity="info" sx={{ mb: 2 }}>
         Money received on the Restaurant screen (<b>Collect old dues</b>) and in the Office Book under <b>Pending</b> with the same person's name is subtracted here. In the reports this Office money is <b>not</b> counted as
@@ -158,6 +165,26 @@ const RestReceivableBalance = () => {
           </TableContainer>
         )}
       </Section>
+
+      {!!data?.room?.dueList?.length && (
+        <Section title={`Room bills still due at GH (${data.room.dueList.length})`}>
+          <Typography variant="body2" color={Q2.muted} sx={{ mb: 1 }}>
+            Restaurant food given to room guests. The GH cashier collects it with the room bill (room screen → food bill → Due → mode). It stops showing here once marked paid.
+          </Typography>
+          <Table size="small">
+            <TableBody>
+              {data.room.dueList.map((c, i) => (
+                <TableRow key={i}>
+                  <TableCell>{c.date}</TableCell>
+                  <TableCell>Room {c.roomNo}</TableCell>
+                  <TableCell>{c.guestName || "—"}</TableCell>
+                  <TableCell sx={{ ...td, fontWeight: 700, color: COLORS.bad }}>{inr(c.amount)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Section>
+      )}
 
       {!!data?.otherReceived?.length && (
         <Section title="Other old dues received in Office (not Restaurant credit)">

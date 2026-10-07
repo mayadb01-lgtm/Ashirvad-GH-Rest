@@ -10,6 +10,7 @@ import RestEntry from "../model/restEntry.js";
 import OfficeBook from "../model/officeBook.js";
 import RestPending from "../model/restPending.js";
 import RestDueReceipt from "../model/restDueReceipt.js";
+import RoomCharge from "../model/roomCharge.js";
 import { loadOfficeClassifier, lineName, nk } from "./officeTypes.js";
 
 dayjs.extend(customParseFormat);
@@ -24,12 +25,13 @@ export const isRoomBill = (k) => /room\s*bill/.test(nk(k));
 
 export const computeRestReceivables = async ({ upto } = {}) => {
   const q = upto ? { entryCreateDate: { $lte: upto.endOf("day").toDate() } } : {};
-  const [rest, office, people, receipts, classify] = await Promise.all([
+  const [rest, office, people, receipts, classify, food] = await Promise.all([
     RestEntry.find(q, { pending: 1, createDate: 1, entryCreateDate: 1 }).lean(),
     OfficeBook.find(q, { officeIn: 1, createDate: 1, entryCreateDate: 1 }).lean(),
     RestPending.find({}, { fullname: 1, mobileNumber: 1, category: 1 }).lean(),
     RestDueReceipt.find({ ...q, cancelled: { $ne: true } }).lean(),
     loadOfficeClassifier(),
+    RoomCharge.find({ ...q, kind: "food", source: "rest" }, { date: 1, roomNo: 1, guestName: 1, amount: 1, isPaid: 1, paidDate: 1, paidMode: 1 }).lean(),
   ]);
   const map = new Map();
   const get = (name) => {
@@ -109,6 +111,14 @@ export const computeRestReceivables = async ({ upto } = {}) => {
     rows,
     totals: { given: round(sum(rows, (r) => r.given)), received: round(sum(rows, (r) => r.received)), due: round(sum(due, (r) => r.balance)), people: due.length },
     roomBills: round(roomBills),
+    // Room bill: GH counter par guest se wasool hota hai (RoomCharges)
+    room: (() => {
+      const paid = food.filter((c) => c.isPaid);
+      const open = food.filter((c) => !c.isPaid).sort((a, b) => dv(a.date).localeCompare(dv(b.date)));
+      const collected = round(sum(paid, (c) => c.amount));
+      const due = round(sum(open, (c) => c.amount));
+      return { given: round(roomBills), collected, due, notLinked: Math.max(0, round(roomBills - collected - due)), dueList: open.map((c) => ({ date: c.date, roomNo: c.roomNo, guestName: c.guestName, amount: round(c.amount) })) };
+    })(),
     otherReceived: [...otherRecv.values()].map((o) => ({ ...o, amount: round(o.amount) })).sort((a, b) => b.amount - a.amount),
   };
 };
