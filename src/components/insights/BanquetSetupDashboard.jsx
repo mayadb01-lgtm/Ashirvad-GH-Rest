@@ -98,7 +98,7 @@ const BanquetSetupDashboard = () => {
     <Box sx={{ p: { xs: 1, md: 2 } }}>
       <PageTitle title="Banquet setup" sub="Owner only. Item rates and grams per person stay here; staff see only package names and rate per plate." />
       <Tabs value={tab} onChange={(e, v) => (setTab(v), setEdit({}), setPkg(null))} sx={{ mb: 2 }}>
-        <Tab value="packages" label={`Packages (${data.packages.length})`} />
+        <Tab value="packages" label={`Packages (${data.packages.filter((p) => p.active !== false).length})`} />
         <Tab value="items" label={`Menu items (${data.items.length})`} />
         <Tab value="addons" label={`Extras (${data.addons.length})`} />
         <Tab value="halls" label={`Halls (${data.halls.length})`} />
@@ -124,7 +124,7 @@ const BanquetSetupDashboard = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {data.packages.map((p) => (
+              {[...data.packages].sort((a, b) => (b.active !== false) - (a.active !== false)).map((p) => (
                 <TableRow key={p._id} hover sx={{ opacity: p.active === false ? 0.45 : 1 }}>
                   <TableCell sx={{ fontWeight: 700 }}>{p.name}</TableCell>
                   <TableCell>{p.meal}</TableCell>
