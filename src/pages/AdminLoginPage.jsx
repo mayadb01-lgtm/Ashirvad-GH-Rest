@@ -67,13 +67,13 @@ const AdminLoginPage = () => {
 
   return (
     <AuthShell
-      title="Super Admin login"
-      subtitle={otp ? `Enter the code sent to ${otp.sentTo}` : "For the dashboard and reports."}
+      title="Admin login"
+      subtitle={otp ? `Enter the code sent to ${otp.sentTo}` : ""}
       footer={
         <AuthLinks
           links={[
-            ["Staff login", () => navigate("/login")],
-            ["Forgot admin password?", () => navigate("/admin-reset-password")],
+            ["User login", () => navigate("/login")],
+            ["Forgot password?", () => navigate("/admin-reset-password")],
           ]}
         />
       }

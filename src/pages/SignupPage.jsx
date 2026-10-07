@@ -138,7 +138,7 @@ const SignupPage = () => {
 
           <PasswordField
             name="signupCode"
-            label="Signup Code (owner se poochho)"
+            label="Signup code"
             type="password"
             variant="outlined"
             fullWidth

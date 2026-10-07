@@ -1,48 +1,59 @@
-import { Stack, Typography, Paper, Button } from "@mui/material";
-import { Link } from "react-router-dom";
+// 404 — saadha, bina naam ka page. Anjaan aadmi ko bas yahi dikhta hai.
+// 🔑 Chhupa darwaza: "404" par 3 second ke andar 5 baar click / tap → login page (us device par yaad rehta hai)
+import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { unlockLogin } from "../utils/gate";
 
 const NotFound = () => {
+  const navigate = useNavigate();
+  const taps = useRef([]);
+
+  useEffect(() => {
+    document.title = "404 Not Found";
+  }, []);
+
+  const tap = () => {
+    const now = Date.now();
+    taps.current = [...taps.current.filter((t) => now - t < 3000), now];
+    if (taps.current.length >= 5) {
+      taps.current = [];
+      unlockLogin();
+      navigate("/login", { replace: true });
+    }
+  };
+
   return (
-    <Stack
-      spacing={4}
-      sx={{
-        justifyContent: "center",
-        alignItems: "center",
+    <div
+      style={{
         minHeight: "100vh",
-        bgcolor: "#f4f4f9",
-        textAlign: "center",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#fff",
+        color: "#000",
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
       }}
     >
-      <Typography variant="h2" color="error">
-        404
-      </Typography>
-
-      <Typography variant="h5">
-        Oops! The page you're looking for doesn't exist.
-      </Typography>
-
-      <Typography variant="body1" color="text.secondary">
-        It might have been moved or deleted. Let’s get you back on track.
-      </Typography>
-
-      <Link to="/" style={{ textDecoration: "none" }}>
-        <Paper
-          elevation={4}
-          sx={{
-            p: 2,
-            bgcolor: "#97c2ff",
-            borderRadius: 3,
-            transition: "transform 0.3s ease, box-shadow 0.3s ease",
-            "&:hover": {
-              transform: "translateY(-5px)",
-              boxShadow: "0px 10px 30px rgba(0,0,0,0.1)",
-            },
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <h1
+          onClick={tap}
+          style={{
+            margin: "0 20px 0 0",
+            padding: "0 23px 0 0",
+            fontSize: 24,
+            fontWeight: 500,
+            borderRight: "1px solid rgba(0,0,0,.3)",
+            lineHeight: "49px",
+            userSelect: "none",
+            WebkitTapHighlightColor: "transparent",
+            cursor: "default",
           }}
         >
-          <Typography variant="h6">Go to Home Page</Typography>
-        </Paper>
-      </Link>
-    </Stack>
+          404
+        </h1>
+        <h2 style={{ fontSize: 14, fontWeight: 400, lineHeight: "49px", margin: 0 }}>This page could not be found.</h2>
+      </div>
+    </div>
   );
 };
 

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 // 🏠 Welcome page (Super Admin / admin). Staff ko HomeGate seedha /entry bhejta hai.
 import { Box, ButtonBase, Paper, Stack, Typography } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
@@ -64,6 +65,9 @@ const Tile = ({ to, icon, title, sub, color, big }) => (
 );
 
 const Home = () => {
+  useEffect(() => {
+    document.title = import.meta.env.VITE_REACT_APP_BUSINESS_NAME || "Ashirvad";
+  }, []);
   const { isAdminAuthenticated, admin } = useAppSelector((s) => s.admin);
   const { user } = useAppSelector((s) => s.user);
   const name = (isAdminAuthenticated ? admin?.name : user?.name) || "";

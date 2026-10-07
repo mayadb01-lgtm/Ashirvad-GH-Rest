@@ -29,6 +29,9 @@ const VIEWS = {
 };
 
 const MyReportsPage = () => {
+  useEffect(() => {
+    document.title = import.meta.env.VITE_REACT_APP_BUSINESS_NAME || "Ashirvad";
+  }, []);
   const [me, setMe] = useState(null);
   const [key, setKey] = useState("");
   const navigate = useNavigate();

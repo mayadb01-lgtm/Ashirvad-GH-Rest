@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useRoutes, useNavigate, Navigate } from "react-router-dom";
 import { AppProvider } from "@toolpad/core/AppProvider";
 import { DashboardLayout } from "@toolpad/core/DashboardLayout";
@@ -90,6 +91,9 @@ import InsightsIcon from "@mui/icons-material/Insights";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 
 const DashboardHeader = () => {
+  useEffect(() => {
+    document.title = import.meta.env.VITE_REACT_APP_BUSINESS_NAME || "Ashirvad";
+  }, []);
   const navigate = useNavigate();
   return (
     <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="space-between" width="100%">

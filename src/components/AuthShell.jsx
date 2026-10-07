@@ -1,68 +1,15 @@
-// Login / signup pages ka common premium layout
-// PC: baayein brand panel, daayein form. Mobile: sirf form.
-import { Box, Stack, Typography } from "@mui/material";
+// Login / password pages ka saadha layout: beech mein ek card, koi naam ya line nahi
+import { useEffect } from "react";
+import { Box, Paper, Stack, Typography } from "@mui/material";
 
-const NAME = import.meta.env.VITE_REACT_APP_BUSINESS_NAME || "Ashirvad";
-const POINTS = [
-  ["Guest House", "Rooms, guests and payments in one place", "#14B8A6"],
-  ["Restaurant", "Daily closing, expenses and staff advance", "#F59E0B"],
-  ["Office Book", "Income, expenses and banquet", "#818CF8"],
-];
-
-const AuthShell = ({ title, subtitle, children, footer }) => (
-  <Box sx={{ minHeight: "100vh", display: "grid", gridTemplateColumns: { xs: "1fr", md: "1.05fr 1fr" }, bgcolor: "background.default" }}>
-    {/* Brand panel */}
-    <Box
-      sx={{
-        display: { xs: "none", md: "flex" },
-        flexDirection: "column",
-        justifyContent: "space-between",
-        p: 6,
-        color: "#fff",
-        bgcolor: "#0F172A",
-        backgroundImage: "radial-gradient(1200px 500px at -10% 110%, rgba(15,118,110,.55), transparent 60%), radial-gradient(700px 400px at 110% -10%, rgba(67,56,202,.35), transparent 60%)",
-      }}
-    >
-      <Stack direction="row" spacing={1.5} alignItems="center">
-        <Box sx={{ width: 40, height: 40, borderRadius: 2.5, bgcolor: "#fff", color: "#0F172A", display: "grid", placeItems: "center", fontWeight: 800, fontSize: 20 }}>
-          {NAME.charAt(0)}
-        </Box>
-        <Typography fontWeight={800} fontSize={18}>
-          {NAME}
-        </Typography>
-      </Stack>
-      <Box sx={{ maxWidth: 460 }}>
-        <Typography sx={{ fontSize: 40, fontWeight: 800, lineHeight: 1.1, letterSpacing: "-0.03em", mb: 2 }}>
-          Your whole business, in one place.
-        </Typography>
-        <Typography sx={{ opacity: 0.75, mb: 4 }}>Daily entries from your phone, clear reports and graphs for the owner.</Typography>
-        <Stack spacing={2}>
-          {POINTS.map(([t, s, c]) => (
-            <Stack key={t} direction="row" spacing={1.5} alignItems="center">
-              <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: c, boxShadow: `0 0 0 4px ${c}33` }} />
-              <Box>
-                <Typography fontWeight={700}>{t}</Typography>
-                <Typography variant="body2" sx={{ opacity: 0.7 }}>
-                  {s}
-                </Typography>
-              </Box>
-            </Stack>
-          ))}
-        </Stack>
-      </Box>
-      <Typography variant="caption" sx={{ opacity: 0.5 }}>
-        © {new Date().getFullYear()} {NAME}
-      </Typography>
-    </Box>
-
-    {/* Form side */}
-    <Box sx={{ display: "grid", placeItems: "center", p: { xs: 2.5, sm: 4 } }}>
-      <Box sx={{ width: "100%", maxWidth: 400 }}>
-        <Stack direction="row" spacing={1.25} alignItems="center" sx={{ display: { xs: "flex", md: "none" }, mb: 4 }}>
-          <Box sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: "#0F172A", color: "#fff", display: "grid", placeItems: "center", fontWeight: 800 }}>{NAME.charAt(0)}</Box>
-          <Typography fontWeight={800}>{NAME}</Typography>
-        </Stack>
-        <Typography variant="h4" sx={{ fontSize: 30, mb: 0.5 }}>
+const AuthShell = ({ title, subtitle, children, footer }) => {
+  useEffect(() => {
+    document.title = "Login";
+  }, []);
+  return (
+    <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center", p: 2, bgcolor: "#F1F5F9" }}>
+      <Paper elevation={0} sx={{ width: "100%", maxWidth: 400, p: { xs: 3, sm: 4 }, borderRadius: 4, border: "1px solid #E2E8F0" }}>
+        <Typography variant="h5" fontWeight={800} sx={{ mb: subtitle ? 0.5 : 3 }}>
           {title}
         </Typography>
         {subtitle && (
@@ -72,10 +19,10 @@ const AuthShell = ({ title, subtitle, children, footer }) => (
         )}
         {children}
         {footer && <Box sx={{ mt: 3, pt: 2.5, borderTop: 1, borderColor: "divider" }}>{footer}</Box>}
-      </Box>
+      </Paper>
     </Box>
-  </Box>
-);
+  );
+};
 
 export const AuthLinks = ({ links }) => (
   <Stack direction="row" flexWrap="wrap" columnGap={2} rowGap={0.75}>

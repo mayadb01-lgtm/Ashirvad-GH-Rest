@@ -11,6 +11,7 @@ import "./App.css";
 import ModernLoader from "./utils/util.jsx";
 import { useAppDispatch, useAppSelector } from "./redux/hooks/index.js";
 import NotFound from "./pages/NotFound.jsx";
+import SecretGate from "./components/SecretGate.jsx";
 
 const EntryPage = lazy(() => import("./pages/EntryPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
@@ -161,56 +162,50 @@ const App = () => {
           <Route
             path="/signup"
             element={
-              <>
-                <Navbar />
+              <SecretGate>
                 <SignupPage />
-              </>
+              </SecretGate>
             }
           />
           <Route
             path="/login"
             element={
-              <>
-                <Navbar />
+              <SecretGate>
                 <LoginPage />
-              </>
+              </SecretGate>
             }
           />
           <Route
             path="/reset-password"
             element={
-              <>
-                <Navbar />
+              <SecretGate>
                 <UserResetPasswordPage />
-              </>
+              </SecretGate>
             }
           />
           {/* Admin */}
           <Route
             path="/admin-login"
             element={
-              <>
-                <Navbar />
+              <SecretGate>
                 <AdminLoginPage />
-              </>
+              </SecretGate>
             }
           />
           <Route
             path="/admin-signup"
             element={
-              <>
-                <Navbar />
+              <SecretGate>
                 <AdminSignupPage />
-              </>
+              </SecretGate>
             }
           />
           <Route
             path="/admin-reset-password"
             element={
-              <>
-                <Navbar />
+              <SecretGate>
                 <AdminResetPasswordPage />
-              </>
+              </SecretGate>
             }
           />
           <Route

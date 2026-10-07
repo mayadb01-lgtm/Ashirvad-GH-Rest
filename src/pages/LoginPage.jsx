@@ -46,14 +46,12 @@ const LoginPage = () => {
 
   return (
     <AuthShell
-      title="Login"
-      subtitle="Log in with your staff account."
+      title="User login"
       footer={
         <AuthLinks
           links={[
-            ["New staff account", () => navigate("/signup")],
+            ["Admin login", () => navigate("/admin-login")],
             ["Forgot password?", () => navigate("/reset-password")],
-            ["Owner / Admin login", () => navigate("/admin-login")],
           ]}
         />
       }

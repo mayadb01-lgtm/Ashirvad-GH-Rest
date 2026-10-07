@@ -50,13 +50,13 @@ const AdminResetPasswordPage = () => {
 
   return (
     <AuthShell
-      title="Reset Super Admin password"
-      subtitle={otpId ? "Enter the code from your email and a new password." : "A code will be sent to your admin email."}
-      footer={<AuthLinks links={[["Back to admin login", () => navigate("/admin-login")]]} />}
+      title="Reset password"
+      subtitle={otpId ? "Enter the code from your email and a new password." : ""}
+      footer={<AuthLinks links={[["Back to login", () => navigate("/admin-login")]]} />}
     >
       {!otpId ? (
         <Box component="form" onSubmit={sendCode} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <TextField label="Admin email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} fullWidth required autoComplete="email" />
+          <TextField label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} fullWidth required autoComplete="email" />
           <Button type="submit" variant="contained" size="large" disabled={busy} sx={{ bgcolor: "#0F172A", "&:hover": { bgcolor: "#1E293B" } }}>
             {busy ? "Sending…" : "Send code"}
           </Button>

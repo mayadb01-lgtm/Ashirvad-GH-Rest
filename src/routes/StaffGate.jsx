@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Navigate } from "react-router-dom";
 import { useAppSelector } from "../redux/hooks";
+import NotFound from "../pages/NotFound";
+import { loginUnlocked } from "../utils/gate";
 
 const useIsPlainStaff = () => {
   const { isAuthenticated, user } = useAppSelector((s) => s.user);
@@ -29,7 +31,8 @@ export const HomeGate = ({ children }) => {
     };
   }, []);
   if (state === "checking") return null;
-  if (state === "out") return <Navigate to="/login" replace />;
+  // Bahar wala: seedha 404 (login ka raasta bhi na dikhe). Is device par darwaza khula hai to login page.
+  if (state === "out") return loginUnlocked() ? <Navigate to="/login" replace /> : <NotFound />;
   return plainStaff ? <Navigate to="/entry" replace /> : children;
 };
 

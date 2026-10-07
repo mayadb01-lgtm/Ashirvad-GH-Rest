@@ -6,8 +6,8 @@ import AuthShell, { AuthLinks } from "../components/AuthShell";
 const UserResetPasswordPage = () => {
   const navigate = useNavigate();
   return (
-    <AuthShell title="Forgot password?" subtitle="Staff passwords are reset by the owner." footer={<AuthLinks links={[["Back to staff login", () => navigate("/login")]]} />}>
-      <Typography>Please ask the owner. They can set a new password for you from Staff access.</Typography>
+    <AuthShell title="Forgot password?" footer={<AuthLinks links={[["Back to login", () => navigate("/login")]]} />}>
+      <Typography>Please ask the admin to set a new password for you.</Typography>
     </AuthShell>
   );
 };

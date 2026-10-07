@@ -50,6 +50,9 @@ const readTab = () => {
 };
 
 const QuickEntryPage = () => {
+  useEffect(() => {
+    document.title = import.meta.env.VITE_REACT_APP_BUSINESS_NAME || "Ashirvad";
+  }, []);
   const navigate = useNavigate();
   const location = useLocation();
   const desktop = useIsDesktop();
