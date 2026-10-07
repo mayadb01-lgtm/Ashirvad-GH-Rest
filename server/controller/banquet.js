@@ -54,26 +54,37 @@ const SEED_PACKAGES = [
     ["Hot beverage", 2, 50, ["Tea", "Coffee", "Milk"]],
     ["Breakfast items", 2, 150, ["Dal pakvan", "Jalebi", "Fafda", "Samosa", "Methi gota", "Patra", "Dhokla", "Thepla", "Aloo paratha", "Idli sambhar", "Dosa", "Upma", "Uttapam", "Vada sambhar", "Poha", "Misal pav", "Bread butter", "Bread jam", "Veg sandwich"]],
   ]],
-  ["Gujarati Lunch / Dinner", "Lunch", [
-    ["Welcome drink", 1, 150, ["Soft drink", "Buttermilk", "Shakes", "Mocktail"]],
-    ["Farsan / starter", 1, 100, ["Khaman / dhokla", "Patra", "Samosa", "Methi gota", "Fafda"]],
-    ["Gujarati sabji", 2, 100, ["Ringan bharthu", "Sev tameta", "Undhiyu", "Mix veg"]],
+  // Sheet ke Lunch/Dinner plan weight ke hisab se: Silver ≈ 900 gm, Gold ≈ 1100 gm, Platinum ≈ 1200 gm per person (owner 08-10-2026)
+  ["Silver (≈900 gm)", "Lunch", [
+    ["Welcome drink", 1, 150, ["Soft drink", "Buttermilk"]],
+    ["Starter / farsan", 1, 100, ["Khaman / dhokla", "Crispy potato starter", "Veg Chinese nugget"]],
+    ["Sabji", 1, 150, ["Ringan bharthu", "Sev tameta", "Mix veg", "Veg handi", "Undhiyu"]],
     ["Bread", 1, 180, ["Chapati", "Rotla / puri"]],
     ["Rice", 1, 120, ["Bhat / khichdi", "Jeera rice", "Veg pulao"]],
     ["Dal / kadhi", 1, 100, ["Dal kadhi", "Dal fry"]],
     ["Salad / papad", 1, 50, ["Roasted papad, salad"]],
-    ["Sweet", 1, 200, ["Gulab jamun / Mohanthal", "Shrikhand", "Shahi kheer"]],
+    ["Sweet", 1, 80, ["Gulab jamun / Mohanthal", "Shahi kheer"]],
   ]],
-  ["Punjabi Lunch / Dinner", "Lunch", [
-    ["Drinks", 2, 200, ["Soft drink", "Buttermilk", "Mocktail", "Shakes"]],
+  ["Gold (≈1100 gm)", "Lunch", [
+    ["Welcome drink", 1, 200, ["Soft drink", "Buttermilk", "Mocktail"]],
+    ["Starter / farsan", 1, 120, ["Khaman / dhokla", "Soup", "Manchurian dry", "Crispy potato starter", "Veg Chinese nugget", "Paneer starter"]],
+    ["Sabji", 2, 100, ["Ringan bharthu", "Sev tameta", "Undhiyu", "Mix veg", "PTM", "PBM", "Veg handi", "Paneer maharaja"]],
+    ["Bread", 1, 200, ["Chapati", "Rotla / puri", "Tandoori roti"]],
+    ["Rice", 1, 120, ["Bhat / khichdi", "Jeera rice", "Veg pulao"]],
+    ["Dal / kadhi", 1, 100, ["Dal kadhi", "Dal fry", "Dal bukhara"]],
+    ["Salad / papad", 1, 60, ["Roasted papad, salad"]],
+    ["Sweet", 1, 100, ["Gulab jamun / Mohanthal", "Shrikhand", "Shahi kheer"]],
+  ]],
+  ["Platinum (≈1200 gm)", "Lunch", [
+    ["Drinks", 2, 100, ["Soft drink", "Buttermilk", "Mocktail", "Shakes"]],
     ["Soup", 1, 100, ["Soup"]],
-    ["Starter", 1, 100, ["Manchurian dry", "Paneer starter", "Crispy potato starter", "Veg Chinese nugget"]],
-    ["Punjabi sabji", 2, 100, ["Mix veg", "PTM", "PBM", "Veg handi", "Paneer maharaja"]],
-    ["Bread", 1, 240, ["Chapati", "Tandoori roti"]],
-    ["Rice", 1, 100, ["Jeera rice", "Veg pulao"]],
-    ["Dal", 1, 100, ["Dal fry", "Dal bukhara"]],
-    ["Salad / papad", 1, 70, ["Roasted papad, salad"]],
-    ["Sweet", 1, 50, ["Gulab jamun / Mohanthal", "Shrikhand", "Shahi kheer"]],
+    ["Starter / farsan", 1, 100, ["Khaman / dhokla", "Manchurian dry", "Paneer starter", "Crispy potato starter", "Veg Chinese nugget"]],
+    ["Sabji", 2, 100, ["Ringan bharthu", "Sev tameta", "Undhiyu", "Mix veg", "PTM", "PBM", "Veg handi", "Paneer maharaja"]],
+    ["Bread", 2, 100, ["Chapati", "Rotla / puri", "Tandoori roti"]],
+    ["Rice", 1, 100, ["Bhat / khichdi", "Jeera rice", "Veg pulao"]],
+    ["Dal / kadhi", 1, 100, ["Dal kadhi", "Dal fry", "Dal bukhara"]],
+    ["Salad / papad", 1, 60, ["Roasted papad, salad"]],
+    ["Sweet", 2, 70, ["Gulab jamun / Mohanthal", "Shrikhand", "Shahi kheer"]],
   ]],
 ];
 const MIN_PLATES = 50; // owner 08-10-2026: kam se kam 50 person
@@ -95,6 +106,7 @@ const seedOnce = async () => {
     const byName = Object.fromEntries(items.map((x) => [x.name, x]));
     await BanquetPackage.insertMany(buildPackages(byName));
     await AppSetting.updateOne({ _id: "banquetPackagesV2" }, { $set: { value: true, at: new Date() } }, { upsert: true });
+    await AppSetting.updateOne({ _id: "banquetPackagesTiers" }, { $set: { value: true, at: new Date() } }, { upsert: true });
     await BanquetAddon.insertMany(SEED_ADDONS.map(([name, price], i) => ({ name, price, unit: "fixed", sort: i })));
     await BanquetHall.create({ name: "Hotel Ashirvad, Songadh", rentPerHour: 2500, rentPerDay: 0, minHours: 3 });
     await AppSetting.updateOne({ _id: "banquetSeeded" }, { $set: { value: true, at: new Date() } }, { upsert: true });
@@ -112,6 +124,17 @@ const seedOnce = async () => {
   if (!v3) {
     await BanquetPackage.updateMany({ minPlates: { $lt: MIN_PLATES } }, { $set: { minPlates: MIN_PLATES } });
     await AppSetting.updateOne({ _id: "banquetMinPlates50" }, { $set: { value: true, at: new Date() } }, { upsert: true });
+  }
+  // Owner 08-10-2026: Silver / Gold / Platinum (sheet ke 900 / 1100 / 1200 gm plan). Gujarati / Punjabi wale band, Breakfast waisa hi.
+  const v5 = await AppSetting.findById("banquetPackagesTiers").lean();
+  if (!v5) {
+    const keep = SEED_PACKAGES.map(([name]) => name);
+    await BanquetPackage.updateMany({ name: { $nin: keep } }, { $set: { active: false } });
+    const have = new Set((await BanquetPackage.find({ active: true }, { name: 1 }).lean()).map((x) => x.name));
+    const items = await BanquetItem.find({}).lean();
+    const add = buildPackages(Object.fromEntries(items.map((x) => [x.name, x]))).filter((p) => !have.has(p.name));
+    if (add.length) await BanquetPackage.insertMany(add);
+    await AppSetting.updateOne({ _id: "banquetPackagesTiers" }, { $set: { value: true, at: new Date() } }, { upsert: true });
   }
   // Owner 08-10-2026: hall rent ₹2,500 / hour, per day wala band
   const v4 = await AppSetting.findById("banquetHallRent2500").lean();
