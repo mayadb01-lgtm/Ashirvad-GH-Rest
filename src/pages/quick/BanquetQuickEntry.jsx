@@ -5,12 +5,14 @@ import axios from "axios";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import toast from "react-hot-toast";
-import { Alert, Box, Button, ButtonBase, Checkbox, Chip, Divider, FormControlLabel, IconButton, MenuItem, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import { Alert, Autocomplete, Box, Button, ButtonBase, Checkbox, Chip, Divider, FormControlLabel, IconButton, MenuItem, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PrintIcon from "@mui/icons-material/Print";
 import { API, ChipChoice, EditorDialog, MoneyField, Q, Section, StatusPill, apiError, inr, num } from "./shared";
+// Occasion ki list (dropdown); list mein na ho to khud bhi likh sakte hain
+const OCCASIONS = ["Wedding", "Engagement", "Reception", "Birthday", "Anniversary", "Baby shower", "Naming ceremony", "Religious / Puja", "Corporate meeting", "Conference / Seminar", "Kitty party", "Family get-together", "Farewell", "Other"];
 
 dayjs.extend(customParseFormat);
 const F = "DD-MM-YYYY";
@@ -276,7 +278,14 @@ const BanquetQuickEntry = ({ isAdmin }) => {
 
             <Divider />
             <Typography fontWeight={800}>Event</Typography>
-            <TextField label="Occasion (wedding, birthday, meeting…)" value={form.occasion} onChange={(e) => setF({ occasion: e.target.value })} />
+            <Autocomplete
+              freeSolo
+              options={OCCASIONS}
+              value={form.occasion || ""}
+              onChange={(e, v) => setF({ occasion: v || "" })}
+              onInputChange={(e, v) => setF({ occasion: v || "" })}
+              renderInput={(params) => <TextField {...params} label="Occasion" placeholder="Choose or type" />}
+            />
             <Stack direction="row" spacing={1}>
               <TextField
                 label="Event date"
