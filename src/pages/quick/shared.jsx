@@ -1,5 +1,5 @@
 // Quick Entry: chhote shared hisse (PC + mobile dono ke liye)
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Autocomplete,
   Box,
@@ -319,29 +319,41 @@ export const SaveBar = ({ label, amount, sub, buttonText, onClick, disabled, col
 );
 
 /* Pakka karo? dialog */
-export const ConfirmDialog = ({ open, title, lines = [], onCancel, onConfirm, confirmText = "Yes, save", color = Q.ink }) => (
-  <Dialog open={open} onClose={onCancel} fullWidth maxWidth="xs">
-    <DialogTitle fontWeight={800}>{title}</DialogTitle>
-    <DialogContent>
-      {lines.map((l, i) => (
-        <Stack key={i} direction="row" justifyContent="space-between" sx={{ py: 0.75, borderBottom: i < lines.length - 1 ? `1px solid ${Q.line}` : "none" }}>
-          <Typography color={l.color || Q.muted}>{l.label}</Typography>
-          <Typography fontWeight={700} color={l.color || Q.ink}>
-            {l.value}
-          </Typography>
-        </Stack>
-      ))}
-    </DialogContent>
-    <DialogActions sx={{ p: 2 }}>
-      <Button onClick={onCancel} sx={{ color: Q.muted }}>
-        Cancel
-      </Button>
-      <Button variant="contained" onClick={onConfirm} sx={{ bgcolor: color, fontWeight: 800, "&:hover": { bgcolor: color } }}>
-        {confirmText}
-      </Button>
-    </DialogActions>
-  </Dialog>
-);
+// Confirm: ek hi baar chale (double-click se do baar save na ho)
+export const ConfirmDialog = ({ open, title, lines = [], onCancel, onConfirm, confirmText = "Yes, save", color = Q.ink }) => {
+  const fired = useRef(false);
+  useEffect(() => {
+    if (open) fired.current = false;
+  }, [open]);
+  const go = () => {
+    if (fired.current) return;
+    fired.current = true;
+    onConfirm?.();
+  };
+  return (
+    <Dialog open={open} onClose={onCancel} fullWidth maxWidth="xs">
+      <DialogTitle fontWeight={800}>{title}</DialogTitle>
+      <DialogContent>
+        {lines.map((l, i) => (
+          <Stack key={i} direction="row" justifyContent="space-between" sx={{ py: 0.75, borderBottom: i < lines.length - 1 ? `1px solid ${Q.line}` : "none" }}>
+            <Typography color={l.color || Q.muted}>{l.label}</Typography>
+            <Typography fontWeight={700} color={l.color || Q.ink}>
+              {l.value}
+            </Typography>
+          </Stack>
+        ))}
+      </DialogContent>
+      <DialogActions sx={{ p: 2 }}>
+        <Button onClick={onCancel} sx={{ color: Q.muted }}>
+          Cancel
+        </Button>
+        <Button variant="contained" onClick={go} sx={{ bgcolor: color, fontWeight: 800, "&:hover": { bgcolor: color } }}>
+          {confirmText}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
 
 /* Status line: draft / saved / locked */
 export const StatusPill = ({ tone, children }) => {

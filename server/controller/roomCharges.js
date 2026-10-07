@@ -4,6 +4,7 @@ import { Router } from "express";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import RoomCharge from "../model/roomCharge.js";
+import EntryLock from "../model/entryLock.js";
 import Entry from "../model/entry.js";
 import Room from "../model/room.js";
 import { allowedStaffDates, isAdminLike } from "../middleware/staffAccess.js";
@@ -83,6 +84,8 @@ router.get("/rest/:restDate", async (req, res) => {
 // Restaurant entry save hone ke baad: us din ki "room" wali Levana rows ko room charges mein utaaro.
 // Jo row hata di, uska charge bhi hat jaata hai. Paid status bachaa rehta hai.
 router.put("/rest-sync/:restDate", async (req, res) => {
+  let lockId = "";
+  let locked = false;
   try {
     const restDate = req.params.restDate;
     if (!validDate(restDate)) return bad(res, "Invalid date");
@@ -98,6 +101,20 @@ router.put("/rest-sync/:restDate", async (req, res) => {
       .filter((r) => r.roomNo > 0 && r.amount > 0)
       .slice(0, 100);
 
+    // ek hi din ka sync ek waqt mein ek hi baar (do submit ek saath → double food bill nahi)
+    lockId = `rest-sync:${restDate}`;
+    for (let i = 0; i < 20 && !locked; i++) {
+      try {
+        await EntryLock.create({ _id: lockId });
+        locked = true;
+      } catch (e) {
+        if (e?.code !== 11000) throw e;
+        // purana atka taala (2 min se zyada) hata do
+        await EntryLock.deleteOne({ _id: lockId, at: { $lt: new Date(Date.now() - 120000) } });
+        await new Promise((ok) => setTimeout(ok, 300));
+      }
+    }
+    if (!locked) return res.status(409).json({ success: false, message: "Room bills are being updated, please try again" });
     const old = await RoomCharge.find({ source: "rest", restDate });
     const used = new Set();
     const sameKey = (o, r) => o.roomNo === r.roomNo && n(o.amount) === r.amount && (o.period || "") === r.period;
@@ -105,7 +122,28 @@ router.put("/rest-sync/:restDate", async (req, res) => {
     for (const r of rows) {
       // pehle wahi charge dhoondo (room + amount same) taaki "Paid" na kho jaaye
       let doc = old.find((o) => !used.has(String(o._id)) && sameKey(o, r)) || old.find((o) => !used.has(String(o._id)) && o.restRowId === r.rowId);
-      if (doc && doc.isPaid && !sameKey(doc, r)) doc = null; // paid wala badla nahi jaata, naya banega
+      if (doc && doc.isPaid && !sameKey(doc, r)) {
+        // paid charge waisa hi rahe (paisa mil chuka). Bill badha → sirf farak ka naya unpaid charge; ghata → kuch nahi
+        used.add(String(doc._id));
+        const extra = doc.roomNo === r.roomNo ? n(r.amount - n(doc.amount)) : r.amount;
+        if (extra > 0)
+          await RoomCharge.create({
+            date: restDate,
+            entryCreateDate: dayStart(restDate),
+            roomNo: r.roomNo,
+            period: r.period,
+            guestName: r.guestName,
+            mobile: r.mobile,
+            kind: "food",
+            label: doc.roomNo === r.roomNo ? "Restaurant food bill (added later)" : "Restaurant food bill",
+            amount: extra,
+            source: "rest",
+            restDate,
+            restRowId: r.rowId,
+            enteredBy: by,
+          });
+        continue;
+      }
       if (doc) {
         used.add(String(doc._id));
         Object.assign(doc, { roomNo: r.roomNo, period: r.period, guestName: r.guestName, mobile: r.mobile, amount: r.amount, restRowId: r.rowId, updatedBy: by });
@@ -134,6 +172,8 @@ router.put("/rest-sync/:restDate", async (req, res) => {
     res.json({ success: true, data: list });
   } catch (e) {
     fail(res, e);
+  } finally {
+    if (locked) await EntryLock.deleteOne({ _id: lockId }).catch(() => {});
   }
 });
 

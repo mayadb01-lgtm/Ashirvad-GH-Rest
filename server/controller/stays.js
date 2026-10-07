@@ -165,6 +165,11 @@ stayRouter.post("/remove", async (req, res) => {
     if (stay && stay.startDate !== b.date && !isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can remove a continuing stay" });
     const guest = { ...(stay?.guest?.toObject?.() || stay?.guest || {}), ...cleanGuest({ ...(stay?.guest || {}), ...row }), modeOfPayment: clean(row.modeOfPayment, 10) };
     await logGh(req, { date: b.date, period: b.period, roomNo, action: "remove", guest, reason, stayStatus: stay ? stay.status : "no-record" });
+    if (stay && stay.startDate !== b.date && stay.status === "active") {
+      // purane din se ruka guest (owner ne hataya): stay yahin khatam, aaj ka din nahi gina jaata
+      Object.assign(stay, { status: "out", checkoutDate: b.date, checkoutPeriod: b.period, checkoutTime: "REMOVED", nights: Math.max(1, D(b.date).diff(D(stay.startDate), "day")), updatedBy: who(req) });
+      await stay.save();
+    }
     if (stay && stay.startDate === b.date) {
       if (stay.bookingId && /^[a-f0-9]{24}$/.test(stay.bookingId))
         await Booking.updateOne({ _id: stay.bookingId, status: "checkedin" }, { $set: { status: "booked", checkedIn: { date: "", period: "", roomNo: null }, updatedBy: who(req) } });
@@ -236,7 +241,9 @@ stayRouter.post("/checkout", async (req, res) => {
     doc.checkoutDate = b.date;
     doc.checkoutPeriod = b.period;
     // Staff ke liye time server ka (India time); owner galti sudhaarne ke liye time de sakta hai
-    doc.checkoutTime = (isAdminLike(req.user) && clean(b.time, 10)) || nowIst().format("hh:mm A");
+    // Aaj ka check-out: abhi ka time. Pichhle din ka (raat 12 ke baad settle window / owner ka sudhaar): guest us din poora ruka → 11:59 PM
+    const pastDay = D(b.date).isBefore(D(todayIst()), "day");
+    doc.checkoutTime = (isAdminLike(req.user) && clean(b.time, 10)) || (pastDay ? "11:59 PM" : nowIst().format("hh:mm A"));
     const billed = diff === 0 || afterCutoff(doc.checkoutTime);
     doc.nights = Math.max(1, diff + (diff >= 1 && billed ? 1 : 0)); // kitne din gine gaye
     doc.updatedBy = who(req);

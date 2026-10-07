@@ -670,6 +670,9 @@ const GhQuickEntry = ({ date, isAdmin }) => {
     // Stay plan / booking check-in (alag collection, turant save)
     if (f._stayId) return;
     const started = (stayInfo?.started || []).find((x) => x.roomNo === roomNo && x.period === period);
+    // Submit ho chuke din ki purani row (server se aayi) badli → naya stay mat banao (warna ruka hua "bhoot" guest roz dikhta)
+    const prevRow = draft.rooms[keyOf(period, roomNo)];
+    if (!started && (f._orig || prevRow?._orig)) return;
     const nights = started?.nights || 1; // din apne aap gine jaate hain (checkout se)
     const jobs = [];
     if (f._bookingId) jobs.push(axios.put(`${API}/booking/${f._bookingId}/checkin`, { date, period, roomNo }));
@@ -785,7 +788,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       period: p,
       roomNo,
       stayId: stayId || f._stayId || "",
-      time: dayjs().format("hh:mm A"),
+      ...(date === dayjs().format(DATE_FMT) ? { time: dayjs().format("hh:mm A") } : {}), // purane din: server poora din ginta hai
       guest: { fullname: f.fullname, mobileNumber: digits(f.mobileNumber), type: f.type, noOfPeople: num(f.noOfPeople), rate: num(f.rate), discount: num(f.discount) },
     });
     // 11:00 AM se pehle gaya → aaj ka charge nahi, auto-bhara row hata do
@@ -990,7 +993,10 @@ const GhQuickEntry = ({ date, isAdmin }) => {
     return [...list, ...jama, ...others];
   };
 
+  const submitting = useRef(false);
   const submit = async () => {
+    if (submitting.current) return; // double-click / do baar nahi
+    submitting.current = true;
     setConfirm(false);
     setBusy(true);
     try {
@@ -1010,14 +1016,18 @@ const GhQuickEntry = ({ date, isAdmin }) => {
     } catch (err) {
       toast.error(apiError(err));
     } finally {
+      submitting.current = false;
       setBusy(false);
     }
   };
 
   /* ----- Jama (pending paisa aaya) ----- */
-  const jamaKeys = new Set(draft.jama.map((j) => `${j.createDate}|${j.roomNo}|${j.mobileNumber}`));
+  // asli UnPaid row ki pehchaan _id se (ek hi din/room/mobile ki do rows alag rahein)
+  const jamaIds = new Set(draft.jama.filter((j) => j.srcId).map((j) => String(j.srcId)));
+  const jamaOldKeys = new Set(draft.jama.filter((j) => !j.srcId).map((j) => `${j.createDate}|${j.roomNo}|${j.mobileNumber}`));
+  const isCollected = (u) => (u._id && jamaIds.has(String(u._id))) || jamaOldKeys.has(`${u.createDate}|${u.roomNo}|${u.mobileNumber}`);
   const pendingList = unpaid
-    .filter((u) => !jamaKeys.has(`${u.createDate}|${u.roomNo}|${u.mobileNumber}`))
+    .filter((u) => !isCollected(u))
     .filter((u) => {
       const q = jamaQuery.trim().toLowerCase();
       return !q || `${u.fullname} ${u.mobileNumber} ${u.roomNo}`.toLowerCase().includes(q);
@@ -1025,7 +1035,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
     .sort((a, b) => dayjs(b.createDate, DATE_FMT).valueOf() - dayjs(a.createDate, DATE_FMT).valueOf()); // naya din pehle
 
   // Collections ka total: kul baaki (search se alag), aaj mila (mode-wise)
-  const pendingAll = unpaid.filter((u) => !jamaKeys.has(`${u.createDate}|${u.roomNo}|${u.mobileNumber}`));
+  const pendingAll = unpaid.filter((u) => !isCollected(u));
   const pendingAllTotal = pendingAll.reduce((t, u) => t + num(u.rate), 0);
   const pendingShownTotal = pendingList.reduce((t, u) => t + num(u.rate), 0);
   const jamaByMode = draft.jama.reduce((m, j) => ({ ...m, [j.modeOfPayment]: (m[j.modeOfPayment] || 0) + num(j.rate) }), {});
@@ -1037,6 +1047,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
         ...d.jama,
         {
           id: `Jama - ${d.jama.length + 1}-${Date.now() % 100000}`,
+          srcId: u._id || "", // asli UnPaid row (server sirf usi ko paid karega)
           date: u.date,
           roomNo: u.roomNo,
           fullname: u.fullname,
