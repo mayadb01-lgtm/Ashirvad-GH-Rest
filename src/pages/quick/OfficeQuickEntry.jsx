@@ -11,6 +11,8 @@ import { Alert, Box, Button, ButtonBase, Skeleton, Stack, TextField, Typography 
 import Grid from "@mui/material/Grid2";
 import AddIcon from "@mui/icons-material/Add";
 import PurchaseBillsSection from "./PurchaseBillsSection";
+import OfficeImportDialog from "./OfficeImportDialog";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 import {
   API,
   ChipChoice,
@@ -34,7 +36,7 @@ const isStaffCat = (c) => /upad|upaad|staff/i.test(c || "");
 const rowValid = (r) => num(r.amount) > 0 && r.categoryName && r.expenseName && r.modeOfPayment && String(r.fullname || "").trim() && r._id;
 const sum = (rows) => rows.reduce((s, r) => s + num(r.amount), 0);
 
-const OfficeQuickEntry = ({ date }) => {
+const OfficeQuickEntry = ({ date, isAdmin }) => {
   const [lists, setLists] = useState(null);
   const [server, setServer] = useState({ loaded: false, doc: null });
   const [status, setStatus] = useState(null);
@@ -97,6 +99,13 @@ const OfficeQuickEntry = ({ date }) => {
 
   /* ----- 🧾 Purchase bills: paid (Cash / PP / PPS / PPC) → Money out mein line; Payable → vendor ledger ----- */
   const [bills, setBills] = useState([]);
+  const [importOpen, setImportOpen] = useState(false);
+  const addImported = (list) =>
+    setDraft((d) => ({
+      ...d,
+      officeIn: [...d.officeIn, ...list.filter((x) => x.side === "officeIn").map((x) => x.row)],
+      officeOut: [...d.officeOut, ...list.filter((x) => x.side === "officeOut").map((x) => x.row)],
+    }));
   const loadBills = useCallback(
     () =>
       axios
@@ -290,6 +299,12 @@ const OfficeQuickEntry = ({ date }) => {
         {status?.updatedBy && <StatusPill tone="lock">Edit: {status.updatedBy}</StatusPill>}
       </Stack>
 
+      <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1 }}>
+        <Button size="small" variant="outlined" startIcon={<UploadFileIcon />} onClick={() => setImportOpen(true)} sx={{ fontWeight: 700, color: Q.office, borderColor: Q.office }}>
+          Import Excel / CSV
+        </Button>
+      </Stack>
+      <OfficeImportDialog open={importOpen} onClose={() => setImportOpen(false)} date={date} lists={lists} isAdmin={isAdmin} onAddToday={addImported} />
       <Box sx={{ mb: 2 }}>
         <PurchaseBillsSection
           date={date}

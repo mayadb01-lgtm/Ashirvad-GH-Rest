@@ -8,6 +8,7 @@ import Room from "../model/room.js";
 import RestEntry from "../model/restEntry.js";
 import RestCategory from "../model/restCategory.js";
 import OfficeBook, { OfficeCategory } from "../model/officeBook.js";
+import RestPending from "../model/restPending.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -331,6 +332,69 @@ router.post("/office-book", async (req, res) => {
     summary.errors = results.filter((r) => r.status === "error").length;
     results.sort((a, b) => a.row - b.row);
     res.status(200).json({ success: true, dryRun, summary, results });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* Office Book page se import (Nayi Entry wali lists ke hisaab se)        */
+/* ------------------------------------------------------------------ */
+// body: { rows: [{ date, section: officeIn|officeOut, categoryName, expenseName, isVendor, fullname, amount, modeOfPayment, remark }] }
+// Same din + same line (section, amount, item, naam, mode) pehle se ho to chhod deta hai.
+router.post("/office-rows", async (req, res) => {
+  try {
+    const rows = getRows(req, res);
+    if (!rows) return;
+    const [officeCats, restCats, pend] = await Promise.all([OfficeCategory.find().lean(), RestCategory.find().lean(), RestPending.find({ category: "Pending" }).lean()]);
+    const key = (c, e) => `${String(c).toLowerCase()}|${String(e).toLowerCase()}`;
+    const inSet = new Set();
+    officeCats.filter((c) => c.categoryName !== "Pending").forEach((c) => (c.expense || []).forEach((e) => inSet.add(key(c.categoryName, e.expenseName))));
+    restCats.forEach((c) => (c.expense || []).filter((e) => e?.isVendor).forEach((e) => inSet.add(key(c.categoryName, e.expenseName))));
+    pend.forEach((p) => inSet.add(key("Pending", p.fullname)));
+    const outSet = new Set();
+    restCats.forEach((c) => (c.expense || []).forEach((e) => outSet.add(key(c.categoryName, e.expenseName))));
+
+    const errors = [];
+    const valid = [];
+    rows.forEach((r, i) => {
+      const date = normaliseDate(r.date);
+      const section = r.section === "officeIn" ? "officeIn" : r.section === "officeOut" ? "officeOut" : null;
+      const amount = num(r.amount);
+      const modeOfPayment = pick(OFFICE_MODES, r.modeOfPayment);
+      const fullname = str(r.fullname);
+      const ok = date && section && amount > 0 && modeOfPayment && fullname && (section === "officeIn" ? inSet : outSet).has(key(r.categoryName, r.expenseName));
+      if (!ok) return errors.push(i + 1);
+      valid.push({
+        date,
+        section,
+        item: { id: uuidv4(), amount, modeOfPayment, fullname, categoryName: str(r.categoryName), expenseName: str(r.expenseName), isVendor: !!r.isVendor, fullname_id: str(r._id), remark: str(r.remark), createDate: date },
+      });
+    });
+    if (errors.length) return res.status(400).json({ success: false, message: `Rows not valid: ${errors.slice(0, 10).join(", ")}` });
+
+    const byDate = groupByDate(valid);
+    const summary = { created: 0, skipped: 0, days: 0 };
+    for (const [date, items] of Object.entries(byDate)) {
+      let doc = await OfficeBook.findOne({ createDate: date });
+      if (!doc) doc = new OfficeBook({ createDate: date, officeIn: [], officeOut: [], entryCreateDate: dayjs(date, "DD-MM-YYYY").startOf("day").toDate() });
+      let added = 0;
+      items.forEach((it) => {
+        const same = (doc[it.section] || []).some(
+          (x) => Number(x.amount) === it.item.amount && x.expenseName === it.item.expenseName && String(x.fullname).trim() === it.item.fullname && x.modeOfPayment === it.item.modeOfPayment
+        );
+        if (same) return summary.skipped++;
+        doc[it.section].push(it.item);
+        added++;
+      });
+      if (added) {
+        doc.updatedDate = dayjs().format("DD-MM-YYYY");
+        await doc.save();
+        summary.created += added;
+        summary.days++;
+      }
+    }
+    res.status(200).json({ success: true, summary });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
