@@ -464,7 +464,7 @@ const RestQuickEntry = ({ date }) => {
           <Stack spacing={2} sx={{ position: { md: "sticky" }, top: { md: 16 } }}>
             <Section title="Cash collection / Sales" subtitle="Today's collection" color={Q.rest}>
               <Stack spacing={1.5}>
-                <MoneyField label="Cash" value={draft.cash} onChange={(v) => set("cash", v)} big />
+                <MoneyField label="Counter cash" value={draft.cash} onChange={(v) => set("cash", v)} big />
                 <Stack direction="row" spacing={1.5}>
                   <MoneyField label="Card" value={draft.card} onChange={(v) => set("card", v)} />
                   <MoneyField label="PP (UPI)" value={draft.pp} onChange={(v) => set("pp", v)} />
@@ -480,7 +480,7 @@ const RestQuickEntry = ({ date }) => {
 
             <Box sx={{ border: `1.5px solid ${t.extra < 0 ? Q.bad : Q.line}`, borderRadius: 3, p: 2, bgcolor: t.extra < 0 ? "#FEF2F2" : "#fff" }}>
               {[
-                ["Cash + Card + PP", num(draft.cash) + num(draft.card) + num(draft.pp)],
+                ["Counter cash + Card + PP", num(draft.cash) + num(draft.card) + num(draft.pp)],
                 ["Staff advance", t.upad],
                 ["Receivables", t.pending],
                 ["Expenses", t.expenses],
@@ -546,7 +546,7 @@ const RestQuickEntry = ({ date }) => {
                   {rows.map(([l, c, d]) => (
                     <Stack key={l} direction="row" sx={{ py: 0.4 }}>
                       <Typography fontWeight={l === "Cash" ? 800 : 600} sx={{ flex: 1 }}>
-                        {l === "Cash" ? "Cash (in drawer)" : l}
+                        {l === "Cash" ? "Total cash" : l}
                       </Typography>
                       <Typography sx={cell}>{inr(c)}</Typography>
                       <Typography sx={cell}>{inr(d)}</Typography>
@@ -571,7 +571,7 @@ const RestQuickEntry = ({ date }) => {
                   </Stack>
                   {tl > 0 && (
                     <Typography variant="caption" sx={{ display: "block", mt: 0.5, color: "#155E75", fontWeight: 700 }}>
-                      In the "Cash / Card / PP" boxes above enter only today's sale. Collections are added here automatically.
+                      In "Counter cash", Card and PP above enter only today's sale. Collections are added here automatically.
                     </Typography>
                   )}
                 </Box>
