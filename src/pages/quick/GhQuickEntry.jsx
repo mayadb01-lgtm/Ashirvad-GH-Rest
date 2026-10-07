@@ -117,7 +117,10 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkou
   const filled = row && rowIssues(row).length === 0;
   const partial = row && !filled && isTouched(row);
   const low = filled && room.roomCost && num(row.rate) < room.roomCost * 0.7;
-  const border = low ? "#F59E0B" : partial ? Q.bad : filled ? Q.line : "#CBD5E1";
+  // Rang: check-in = halka hara, check-out = halka laal, khaali (available) = halka neela
+  const state = checkout ? "out" : filled || partial || dueOut ? "in" : "free";
+  const tint = { in: { bg: "#F0FDF4", line: "#86EFAC" }, out: { bg: "#FEF2F2", line: "#FCA5A5" }, free: { bg: "#F0F9FF", line: "#BAE6FD" } }[state];
+  const border = low ? "#F59E0B" : partial ? Q.bad : tint.line;
   return (
     <ButtonBase
       onClick={onOpen}
@@ -130,9 +133,9 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkou
           p: 1.5,
           borderRadius: 3,
           borderWidth: filled || partial || low ? 1.5 : 1.5,
-          borderStyle: filled || partial ? "solid" : "dashed",
+          borderStyle: state === "free" ? "dashed" : "solid",
           borderColor: border,
-          bgcolor: low ? "#FFFBEB" : filled ? "#fff" : "transparent",
+          bgcolor: low ? "#FFFBEB" : tint.bg,
           minHeight: 104,
         }}
       >
@@ -156,7 +159,7 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkou
             {dueOut && <StatusPill tone="warn">⏰ {dueOut.guest?.fullname || "Guest"} · checkout due {dueOut.dueTime}</StatusPill>}
             {group && <StatusPill tone="info">🔗 {group.mainRoom === room.roomNumber ? `Main · ${group.rooms.length + 1} rooms` : `Bill → ${group.mainRoom}`}</StatusPill>}
             {row?._stayDay && <StatusPill tone="info">🔁 Day {row._stayDay}</StatusPill>}
-            {checkout && <StatusPill tone="good">✓ Checkout {checkout.time}</StatusPill>}
+            {checkout && <StatusPill tone="out">✓ Checkout {checkout.time}</StatusPill>}
           </Stack>
         )}
         {filled || partial ? (
@@ -1249,6 +1252,14 @@ const GhQuickEntry = ({ date, isAdmin }) => {
               <Typography variant="caption" color={Q.muted}>
                 {periodFilled(period)} / {rooms.length} rooms filled
               </Typography>
+              <Stack direction="row" spacing={1.25}>
+                {[["#F0FDF4", "#86EFAC", "Checked in"], ["#FEF2F2", "#FCA5A5", "Checked out"], ["#F0F9FF", "#BAE6FD", "Available"]].map(([bg, line, l]) => (
+                  <Stack key={l} direction="row" spacing={0.5} alignItems="center">
+                    <Box sx={{ width: 12, height: 12, borderRadius: 0.5, bgcolor: bg, border: `1.5px solid ${line}` }} />
+                    <Typography variant="caption" color={Q.muted}>{l}</Typography>
+                  </Stack>
+                ))}
+              </Stack>
             </Stack>
             <Box sx={{ height: 6, bgcolor: "#E2E8F0", borderRadius: 3 }}>
               <Box sx={{ height: "100%", width: `${(periodFilled(period) / rooms.length) * 100}%`, bgcolor: Q.gh, borderRadius: 3, transition: "width .3s" }} />

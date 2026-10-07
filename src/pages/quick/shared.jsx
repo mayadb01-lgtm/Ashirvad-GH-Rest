@@ -350,6 +350,7 @@ export const StatusPill = ({ tone, children }) => {
     warn: { bg: "#FEF3C7", fg: "#92400E" },
     info: { bg: "#E0F2FE", fg: "#075985" },
     lock: { bg: "#E2E8F0", fg: Q.ink },
+    out: { bg: "#FEE2E2", fg: "#991B1B" },
   };
   const c = map[tone] || map.info;
   return (
