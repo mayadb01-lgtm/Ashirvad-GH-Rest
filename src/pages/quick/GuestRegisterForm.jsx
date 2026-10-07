@@ -10,8 +10,11 @@ import { Alert, Box, Button, Chip, Collapse, IconButton, MenuItem, Paper, Stack,
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import CollectionsIcon from "@mui/icons-material/Collections";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { API, Q } from "./shared";
+
+const MAX_PHOTOS = 10;
 
 dayjs.extend(customParseFormat);
 
@@ -78,6 +81,7 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved, defau
   const [g, setG] = useState(null);
   const [exists, setExists] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState("");
   const [thumbs, setThumbs] = useState({});
   const base = `${API}/guest-register/one/${date}/${period}/${roomNo}`;
 
@@ -126,22 +130,34 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved, defau
     }
   };
 
+  // Ek saath kai photo (gallery se) ya camera se ek-ek — sab ek ke baad ek upload
   const addPhoto = async (e) => {
-    const f = e.target.files?.[0];
+    const files = Array.from(e.target.files || []);
     e.target.value = "";
-    if (!f) return;
+    if (!files.length) return;
+    const room = MAX_PHOTOS - (g?.documentImages?.length || 0);
+    if (files.length > room) toast.error(`Only ${room} more photo${room === 1 ? "" : "s"} allowed (max ${MAX_PHOTOS}). Extra photos skipped.`);
+    const list = files.slice(0, Math.max(0, room));
+    if (!list.length) return;
     setBusy(true);
-    try {
-      const image = await shrink(f);
-      const { data } = await axios.post(`${base}/photo`, { image });
-      setG((p) => ({ ...p, documentImages: data.data.documentImages }));
+    let ok = 0;
+    for (let i = 0; i < list.length; i++) {
+      setUploading(`${i + 1} / ${list.length}`);
+      try {
+        const image = await shrink(list[i]);
+        const { data } = await axios.post(`${base}/photo`, { image });
+        setG((p) => ({ ...p, documentImages: data.data.documentImages }));
+        ok++;
+      } catch (err) {
+        toast.error(`Photo ${i + 1}: ${err?.response?.data?.message || err.message || "could not save"}`);
+      }
+    }
+    setUploading("");
+    setBusy(false);
+    if (ok) {
       setExists(true);
       onSaved?.();
-      toast.success("Photo saved");
-    } catch (err) {
-      toast.error(err?.response?.data?.message || err.message || "Could not save photo");
-    } finally {
-      setBusy(false);
+      toast.success(`${ok} photo${ok === 1 ? "" : "s"} saved`);
     }
   };
 
@@ -261,7 +277,7 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved, defau
             </Stack>
 
             <Typography fontWeight={700} sx={{ mt: 2, mb: 1 }}>
-              Document photos ({g.documentImages?.length || 0})
+              Document photos ({g.documentImages?.length || 0} / {MAX_PHOTOS})
             </Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               {(g.documentImages || []).map((name) => (
@@ -280,12 +296,19 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved, defau
                   )}
                 </Box>
               ))}
-              {(g.documentImages?.length || 0) < 4 && (
-                <Button variant="outlined" component="label" startIcon={<PhotoCameraIcon />} disabled={busy}>
-                  Take / choose photo
-                  <input hidden type="file" accept="image/*" capture="environment" onChange={addPhoto} />
-                </Button>
+              {(g.documentImages?.length || 0) < MAX_PHOTOS && (
+                <>
+                  <Button variant="outlined" component="label" startIcon={<PhotoCameraIcon />} disabled={busy}>
+                    Take photo
+                    <input hidden type="file" accept="image/*" capture="environment" onChange={addPhoto} />
+                  </Button>
+                  <Button variant="outlined" component="label" startIcon={<CollectionsIcon />} disabled={busy}>
+                    Choose photos (multiple)
+                    <input hidden type="file" accept="image/*" multiple onChange={addPhoto} />
+                  </Button>
+                </>
               )}
+              {uploading && <Chip color="info" label={`Uploading ${uploading}…`} />}
             </Stack>
 
             <Button fullWidth variant="contained" onClick={save} disabled={busy} sx={{ mt: 2, bgcolor: Q.ink, "&:hover": { bgcolor: Q.ink } }}>

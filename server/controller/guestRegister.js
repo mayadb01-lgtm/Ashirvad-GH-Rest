@@ -105,7 +105,7 @@ router.post("/one/:date/:period/:roomNo/photo", async (req, res) => {
       { $setOnInsert: { ...k, entryCreateDate: dayjs(k.date, F).toDate(), enteredBy: who(req) } },
       { new: true, upsert: true }
     );
-    if (doc.documentImages.length >= 4) return res.status(400).json({ success: false, message: "Maximum 4 photos per guest" });
+    if (doc.documentImages.length >= 10) return res.status(400).json({ success: false, message: "Maximum 10 photos per room" });
     const name = `${doc._id}-${crypto.randomBytes(4).toString("hex")}.${m[1] === "jpeg" ? "jpg" : m[1]}`;
     fs.writeFileSync(path.join(PHOTO_DIR, name), buf);
     doc.documentImages.push(name);
