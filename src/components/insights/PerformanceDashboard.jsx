@@ -80,6 +80,10 @@ const Legend2 = ({ items }) => (
   </Stack>
 );
 
+// Har saal ka apna rang (hamesha wahi rang usi saal ka)
+const YEAR_COLORS = ["#0EA5E9", "#F59E0B", "#10B981", "#8B5CF6", "#EF4444", "#2563EB", "#EC4899", "#14B8A6", "#84CC16"];
+const yearColor = (years, y) => YEAR_COLORS[[...years].sort().indexOf(y) % YEAR_COLORS.length];
+
 const grid2 = { display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" } };
 
 const PerformanceDashboard = () => {
@@ -138,7 +142,15 @@ const PerformanceDashboard = () => {
     // Har saal ki line
     const lineRows = MON.map((mon, i) => {
       const o = { mon };
-      years.forEach((y) => { const r = get(y, i + 1); o[`r${y}`] = r?.avg_rate ?? null; o[`s${y}`] = r?.restaurant_per_day ?? null; });
+      years.forEach((y) => {
+        const r = get(y, i + 1);
+        const live = r && data.today && r.month === data.today.slice(0, 7); // chalu mahina: sirf beete din se bhaag
+        const dd = r ? (live ? Math.max(1, +data.today.slice(8, 10) - 1) : r.days) : null;
+        o[`r${y}`] = r?.avg_rate ?? null;
+        o[`s${y}`] = r?.restaurant_per_day ?? null;
+        o[`g${y}`] = r && r.gh_revenue ? Math.round(r.gh_revenue / dd) : null;
+        o[`b${y}`] = r ? r.banquet || 0 : null;
+      });
       return o;
     });
     const lastY = Math.max(...rows.filter((r) => r.year === Y).map((r) => r.m));
@@ -173,8 +185,33 @@ const PerformanceDashboard = () => {
   if (!v) return <Alert severity="info">No monthly data yet.</Alert>;
   const { Y, B, cur, prev, ch } = v;
   const sp = v.ms.length ? span(v.ms[0], v.ms.at(-1)) : "";
-  const style = (y) => (y === Y ? { stroke: C.y, strokeWidth: 3, dot: { r: 3 } } : y === B ? { stroke: "#475569", strokeWidth: 2, dot: { r: 2 } } : { stroke: C.other, strokeWidth: 1.5, dot: false });
-  const yearLegend = [...v.years].reverse().map((y) => ({ name: String(y), color: style(y).stroke, line: true }));
+  const style = (y) => {
+    const c = yearColor(v.years, y);
+    return y === Y ? { stroke: c, strokeWidth: 3.5, dot: { r: 3.5, fill: c, strokeWidth: 0 } } : y === B ? { stroke: c, strokeWidth: 2.2, dot: { r: 2.5, fill: c, strokeWidth: 0 } } : { stroke: c, strokeWidth: 1.6, strokeOpacity: 0.75, dot: false };
+  };
+  const yearLegend = [...v.years].reverse().map((y) => ({ name: y === Y ? `${y} (chosen)` : y === B ? `${y} (compare)` : String(y), color: style(y).stroke, line: true }));
+  const lineOrder = [...v.years].sort((a, b) => (a === Y) - (b === Y) || (a === B) - (b === B));
+  const YearLines = ({ k, height = 280, tick, tip, pad, beat, note }) => (
+    <>
+      <Legend2 items={yearLegend} />
+      <ResponsiveContainer width="100%" height={height}>
+        <LineChart data={v.lineRows} margin={{ top: 24, right: 16, left: 0, bottom: 0 }}>
+          <CartesianGrid vertical={false} stroke="#EEF2F7" />
+          <XAxis dataKey="mon" tickLine={false} />
+          <YAxis width={56} tickFormatter={tick} domain={pad ? [`dataMin - ${pad}`, `dataMax + ${pad}`] : [0, "auto"]} fontSize={11} />
+          <Tooltip itemSorter={(it) => -(it.value || 0)} formatter={(val, name) => [tip(val), name.slice(1)]} />
+          {lineOrder.map((y) => <Line key={y} dataKey={`${k}${y}`} name={`${k}${y}`} {...style(y)} connectNulls={false} isAnimationActive={false} />)}
+          {beat != null && <ReferenceDot x={v.toBeat.mon} y={beat} r={5} fill={yearColor(v.years, B)} stroke="#fff" label={{ value: `To beat: ${tip(beat)}`, position: "top", fontSize: 12, fontWeight: 700, fill: "#0F172A" }} />}
+        </LineChart>
+      </ResponsiveContainer>
+      <Typography variant="caption" color="text.secondary">{note}Each year has its own colour; the chosen year ({Y}) is the thickest line.</Typography>
+    </>
+  );
+  const beatOf = (k) => {
+    if (!v.toBeat) return null;
+    const row = v.lineRows.find((r) => r.mon === v.toBeat.mon);
+    return row?.[`${k}${B}`] ?? null;
+  };
 
   return (
     <Box sx={{ p: { xs: 1, md: 2 }, display: "flex", flexDirection: "column", gap: 2.5 }}>
@@ -293,33 +330,16 @@ const PerformanceDashboard = () => {
           <Typography variant="caption" color="text.secondary">Bar labels in ₹ lakh. Hover for room-nights and occupancy.</Typography>
         </Section>
         <Section title="Guest house · average room rate, every year">
-          <Legend2 items={yearLegend} />
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={v.lineRows} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <CartesianGrid vertical={false} stroke="#EEF2F7" />
-              <XAxis dataKey="mon" tickLine={false} />
-              <YAxis width={56} tickFormatter={(t) => "₹" + t.toLocaleString("en-IN")} domain={["dataMin - 100", "dataMax + 100"]} fontSize={11} />
-              <Tooltip formatter={(val, name) => [rupee(val), name.slice(1)]} />
-              {[...v.years].sort((a, b) => (a === Y) - (b === Y) || (a === B) - (b === B)).map((y) => <Line key={y} dataKey={`r${y}`} name={`r${y}`} {...style(y)} connectNulls={false} isAnimationActive={false} />)}
-            </LineChart>
-          </ResponsiveContainer>
-          <Typography variant="caption" color="text.secondary">Room revenue ÷ room-nights sold.</Typography>
+          <YearLines k="r" height={260} tick={(t) => "₹" + t.toLocaleString("en-IN")} tip={rupee} pad={100} note="Room revenue ÷ room-nights sold (room-nights start in 2025). " />
         </Section>
       </Box>
 
       <Section title="Restaurant · average sale per day, every year">
-        <Legend2 items={yearLegend} />
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={v.lineRows} margin={{ top: 24, right: 16, left: 0, bottom: 0 }}>
-            <CartesianGrid vertical={false} stroke="#EEF2F7" />
-            <XAxis dataKey="mon" tickLine={false} />
-            <YAxis width={52} tickFormatter={(t) => "₹" + Math.round(t / 1000) + "k"} domain={["dataMin - 3000", "dataMax + 3000"]} fontSize={11} />
-            <Tooltip formatter={(val, name) => [rupee(val) + " a day", name.slice(1)]} />
-            {[...v.years].sort((a, b) => (a === Y) - (b === Y) || (a === B) - (b === B)).map((y) => <Line key={y} dataKey={`s${y}`} name={`s${y}`} {...style(y)} connectNulls={false} isAnimationActive={false} />)}
-            {v.toBeat?.restaurant_per_day && <ReferenceDot x={v.toBeat.mon} y={v.toBeat.restaurant_per_day} r={5} fill="#475569" stroke="#fff" label={{ value: `To beat: ${rupee(v.toBeat.restaurant_per_day)}`, position: "top", fontSize: 12, fontWeight: 700, fill: "#0F172A" }} />}
-          </LineChart>
-        </ResponsiveContainer>
-        <Typography variant="caption" color="text.secondary">{v.toBeat ? `${v.toBeat.mon} ${B} is the next month to beat. ` : ""}The chosen year is the thick blue line.</Typography>
+        <YearLines k="s" height={300} tick={(t) => "₹" + Math.round(t / 1000) + "k"} tip={(x) => rupee(x) + " a day"} pad={3000} beat={beatOf("s")} note={v.toBeat ? `${v.toBeat.mon} ${B} is the next month to beat. ` : ""} />
+      </Section>
+
+      <Section title="Guest house · room revenue per day, every year">
+        <YearLines k="g" height={300} tick={(t) => "₹" + (t >= 1000 ? (t / 1000).toFixed(t >= 10000 ? 0 : 1) + "k" : t)} tip={(x) => rupee(x) + " a day"} beat={beatOf("g")} note="Month's room revenue ÷ days (this month: days so far). " />
       </Section>
 
       <Box sx={grid2}>
@@ -379,6 +399,10 @@ const PerformanceDashboard = () => {
         <Typography variant="caption" color="text.secondary">
           Bar labels in ₹ lakh. Office book + banquet module payments.{v.missOffice ? ` ${v.missOffice} days are missing from the office book in these months, so those totals are a minimum.` : ""}{v.zeroBq.length ? ` No banquet money came in during ${v.zeroBq.join(", ")} ${Y}.` : ""}
         </Typography>
+      </Section>
+
+      <Section title="Banquet · money received by month, every year">
+        <YearLines k="b" height={280} tick={(t) => (t >= 100000 ? (t / 100000).toFixed(1) + "L" : Math.round(t / 1000) + "k")} tip={money} beat={beatOf("b")} note="Whole month's banquet money (this month: so far). " />
       </Section>
 
       <ExpenseSection expenses={data.expenses || []} months={v.rows} Y={Y} B={B} ms={v.ms} win={v.win} />

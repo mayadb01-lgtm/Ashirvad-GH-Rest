@@ -57,6 +57,7 @@ import staffAccounts from "./controller/staffAccounts.js";
 import forecast from "./controller/forecast.js";
 import performance from "./controller/performance.js";
 import bizGraph from "./controller/bizGraph.js";
+import dashLock from "./controller/dashLock.js";
 
 // Use routes
 // 🔒 Har API ke liye login zaroori (public list security.js mein)
@@ -92,6 +93,7 @@ app.use("/api/v1/backup", backup);
 app.use("/api/v1/quick", quickEntry); // mobile/PC quick entry helpers (read-only)
 app.use("/api/v1/staff-accounts", staffAccounts); // owner: staff ka department / band-chalu
 app.use("/api/v1/forecast", forecast); // read-only: aage ka andaza + important dates (sirf owner/admin)
+app.use("/api/v1/dash-lock", dashLock); // dashboard ka alag password (sirf Super Admin)
 app.use("/api/v1/biz", bizGraph); // naye graphs + sales goals (daily read-only, goals alag collection)
 app.use("/api/v1/performance", performance); // read-only: saal vs saal performance (sirf owner/admin)
 

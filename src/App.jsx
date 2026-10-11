@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Suspense, lazy, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
+import DashLockGate from "./components/DashLockGate.jsx";
 import ProtectedAdminRoute from "./routes/ProtectedAdminRoute";
 import { HomeGate, LegacyGate } from "./routes/StaffGate.jsx";
 import { loadUser } from "./redux/actions/userAction.js";
@@ -154,7 +155,9 @@ const App = () => {
               path="/dashboard/*"
               element={
                 <ProtectedAdminRoute>
-                  <DashboardPage />
+                  <DashLockGate>
+                    <DashboardPage />
+                  </DashLockGate>
                 </ProtectedAdminRoute>
               }
             />

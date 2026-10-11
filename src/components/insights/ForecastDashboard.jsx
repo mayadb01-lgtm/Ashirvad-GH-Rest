@@ -77,9 +77,6 @@ const DateCard = ({ d }) => (
 // 🗓️ Season strip (futuristic): aage ke dinon ka "radar" — rooms aur restaurant alag track, tyohar icon ke saath
 const EV_ICON = { Navratri: "💃", Dussehra: "🏹", "Diwali week": "🪔", "After Diwali": "🧳", "Christmas–New Year": "🎄", Uttarayan: "🪁", "Republic Day": "🇮🇳", "Independence Day": "🇮🇳", "Valentine's Day": "💖", "Maha Shivratri": "🔱", "Holi / Dhuleti": "🎨", "Ram Navami": "🚩", "Akshaya Tritiya": "💍", "Raksha Bandhan": "🎀", Janmashtami: "🦚", "Ganesh Chaturthi": "🐘", "Pitru Paksha (Shraddh)": "🕯️" };
 const NEON = { rooms: "#0891B2", rest: "#D97706", wed: "#059669", ev: "#7C3AED", up: "#16A34A", down: "#DC2626", bq: "#9333EA" };
-// text width (ek hi canvas, baar baar nahi banta)
-const _cv = typeof document !== "undefined" ? document.createElement("canvas").getContext("2d") : null;
-const textWidth = (t, font = "700 11.5px Roboto, Arial, sans-serif") => { if (!_cv) return t.length * 7; _cv.font = font; return _cv.measureText(t).width; };
 const smoothPath = (pts) => {
   if (pts.length < 2) return "";
   let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
@@ -141,19 +138,6 @@ const SeasonStrip = ({ daily, keyDates, nRooms, banquetMonths = [] }) => {
   const roomsPts = sm.map((d, i) => [x(i), yR(d.rooms)]);
   const restPts = sm.map((d, i) => [x(i), yS(d.rest)]);
   const roomsLine = smoothPath(roomsPts), restLine = smoothPath(restPts);
-  // 📏 "Usual" line (is period ka average) + pichhle saal ki halki line — upar/niche turant dikhe
-  const meanRooms = sm.reduce((t, d) => t + d.rooms, 0) / n, meanRest = sm.reduce((t, d) => t + d.rest, 0) / n;
-  const hasLy = daily.some((d) => d.lyRooms != null || d.lyRest != null);
-  const lyAvg = (k, i) => {
-    const w = daily.slice(Math.max(0, i - 3), i + 4).filter((x) => x[k] != null);
-    return w.length ? w.reduce((t, x) => t + x[k], 0) / w.length : null;
-  };
-  const lyPath = (k, y) => {
-    const pts = daily.map((d, i) => [i, n > 45 ? lyAvg(k, i) : d[k]]).filter(([, v]) => v != null).map(([i, v]) => [x(i), y(v)]);
-    return pts.length > 1 ? smoothPath(pts) : null;
-  };
-  const lyRoomsLine = hasLy ? lyPath("lyRooms", (v) => yR(Math.min(v, nRooms))) : null;
-  const lyRestLine = hasLy ? lyPath("lyRest", (v) => yS(Math.min(v, maxRest))) : null;
   const area = (line, pts, base) => `${line} L${pts[pts.length - 1][0].toFixed(1)},${base} L${pts[0][0].toFixed(1)},${base} Z`;
 
   const idx = Object.fromEntries(daily.map((d, i) => [d.date, i]));
@@ -165,7 +149,6 @@ const SeasonStrip = ({ daily, keyDates, nRooms, banquetMonths = [] }) => {
     else bands.push({ ev: d.event, a: i, b: i });
   });
   // 🔢 Har tyohar ka number badge (ek line mein, kabhi takrata nahi). Naam tabhi likha jab poori jagah ho; baaki niche list mein.
-  const measure = (t) => textWidth(t);
   const GAP_B = 21;
   let lastX = -1e9;
   const badges = bands.map((b, k) => {
@@ -179,11 +162,6 @@ const SeasonStrip = ({ daily, keyDates, nRooms, banquetMonths = [] }) => {
     const lim = k === badges.length - 1 ? W - R - 9 : badges[k + 1].bx - GAP_B;
     if (badges[k].bx > lim) badges[k].bx = lim;
   }
-  badges.forEach((bd, k) => {
-    const next = badges[k + 1] ? badges[k + 1].bx - 12 : W - R;
-    const room = next - (bd.bx + 13);
-    bd.showName = measure(bd.text) + 6 <= room;
-  });
   const fmtRange = (b) => {
     const a = dayjs(daily[b.a].date), z = dayjs(daily[b.b].date);
     return b.a === b.b ? a.format("D MMM") : a.month() === z.month() ? `${a.format("D")}–${z.format("D MMM")}` : `${a.format("D MMM")} – ${z.format("D MMM")}`;
@@ -201,14 +179,13 @@ const SeasonStrip = ({ daily, keyDates, nRooms, banquetMonths = [] }) => {
   };
   const hd = hover ? daily[hover.i] : null;
   const level = (v) => (v >= nRooms * 0.6 ? "Busy" : v >= nRooms * 0.35 ? "Normal" : "Quiet");
-  const pk = bestRooms ? bestRooms.i + 3 : 0;
   return (
-    <Box sx={{ mt: 2, borderRadius: 3, p: { xs: 1.5, sm: 2 }, color: "#0F172A", background: "radial-gradient(120% 120% at 0% 0%, #E0F2FE 0%, #F8FAFC 45%, #FFFFFF 100%)", border: "1px solid #E2E8F0", boxShadow: "0 8px 30px rgba(15,23,42,0.06)" }}>
+    <Box sx={{ mt: 2, borderRadius: 2, p: { xs: 1.5, sm: 2 }, color: "#0F172A", bgcolor: "#FFFFFF", border: "1px solid #E2E8F0" }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.25 }} flexWrap="wrap" useFlexGap spacing={1}>
         <Typography sx={{ fontWeight: 800, letterSpacing: 0.5, fontSize: 15 }}>
-          <Box component="span" sx={{ color: NEON.rooms, textShadow: `0 0 10px ${NEON.rooms}` }}>●</Box> Season radar
+          Season ahead
         </Typography>
-        <Typography sx={{ fontSize: 12, color: "#64748B" }}>Move your finger / mouse across to see any day</Typography>
+        <Typography sx={{ fontSize: 12, color: "#94A3B8" }}>Touch / hover for a day</Typography>
       </Stack>
       <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 1.5 }}>
         <Insight icon="🏨" title="Rooms busiest" value={wk(bestRooms)} sub={`${bestRooms?.rooms.toFixed(1)} rooms a day of ${nRooms}`} color={NEON.rooms} />
@@ -221,83 +198,54 @@ const SeasonStrip = ({ daily, keyDates, nRooms, banquetMonths = [] }) => {
       </Stack>
       <Box ref={ref} sx={{ position: "relative" }} onMouseLeave={() => setHover(null)}>
         <svg width="100%" viewBox={`0 0 ${W} ${H}`} height={H} style={{ display: "block", overflow: "visible", touchAction: "pan-y" }} onMouseMove={onMove} onTouchMove={(e) => onMove(e.touches[0])}>
-          <defs>
-            <linearGradient id="fgRooms" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0" stopColor={NEON.rooms} stopOpacity="0.28" />
-              <stop offset="1" stopColor={NEON.rooms} stopOpacity="0" />
-            </linearGradient>
-            <linearGradient id="fgRest" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0" stopColor={NEON.rest} stopOpacity="0.26" />
-              <stop offset="1" stopColor={NEON.rest} stopOpacity="0" />
-            </linearGradient>
-            <filter id="fgGlow" x="-20%" y="-50%" width="140%" height="200%">
-              <feGaussianBlur stdDeviation="1.6" result="b" />
-              <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-            </filter>
-          </defs>
           {/* tyohar: number badge + (jagah ho to) naam */}
           {badges.map((bd) => (
             <g key={`bd${bd.a}`}>
-              <path d={`M${bd.bx},${BY + 9} L${x(bd.a)},${T1 - 2}`} stroke="rgba(124,58,237,0.4)" strokeDasharray="2 2" fill="none" />
-              <circle cx={bd.bx} cy={BY} r={hl === bd.a ? 11 : 9} fill={hl === bd.a ? "#5B21B6" : NEON.ev} stroke="#EDE9FE" strokeWidth={1.5} />
-              <text x={bd.bx} y={BY + 3.8} fontSize={10} fontWeight={800} fill="#fff" textAnchor="middle">{bd.no}</text>
-              {bd.showName && <text x={bd.bx + 13} y={BY + 4} fontSize={11.5} fontWeight={700} fill="#4C1D95">{bd.text}</text>}
+              <line x1={bd.bx} x2={x(bd.a)} y1={BY + 8} y2={T1 - 2} stroke="#DDD6FE" />
+              <circle cx={bd.bx} cy={BY} r={hl === bd.a ? 9 : 7.5} fill={hl === bd.a ? "#5B21B6" : "#A78BFA"} />
+              <text x={bd.bx} y={BY + 3.3} fontSize={9} fontWeight={700} fill="#fff" textAnchor="middle">{bd.no}</text>
             </g>
           ))}
           {/* tyohar ke din: dono track pe halki roshni */}
           {bands.map((b) => (
-            <rect key={`b${b.a}`} x={x(b.a) - dx / 2} y={T1} width={Math.max(3, (b.b - b.a + 1) * dx)} height={T2 + TH - T1} fill={hl === b.a ? "rgba(124,58,237,0.22)" : "rgba(124,58,237,0.07)"} />
+            <rect key={`b${b.a}`} x={x(b.a) - dx / 2} y={T1} width={Math.max(3, (b.b - b.a + 1) * dx)} height={T2 + TH - T1} fill={hl === b.a ? "rgba(124,58,237,0.16)" : "rgba(124,58,237,0.04)"} />
           ))}
           {/* mahine ki lines */}
           {months.map(({ d, i }) => (
             <g key={d.date}>
-              <line x1={x(i) - dx / 2} x2={x(i) - dx / 2} y1={T1} y2={AX} stroke="#E2E8F0" />
-              <text x={x(i) - dx / 2 + 4} y={AX + 14} fontSize={11} fill="#64748B">{dayjs(d.date).format(d.date.slice(5, 7) === "01" ? "MMM YY" : "MMM")}</text>
+              <line x1={x(i) - dx / 2} x2={x(i) - dx / 2} y1={T1} y2={AX} stroke="#F1F5F9" />
+              <text x={x(i) - dx / 2 + 4} y={AX + 14} fontSize={11} fill="#94A3B8">{dayjs(d.date).format(d.date.slice(5, 7) === "01" ? "MMM YY" : "MMM")}</text>
             </g>
           ))}
           {/* TRACK 1: Rooms */}
-          <text x={L} y={T1 - 7} fontSize={10.5} fontWeight={800} fill={NEON.rooms} letterSpacing="1">🏨 ROOMS A DAY</text>
+          <text x={L} y={T1 - 7} fontSize={11} fontWeight={600} fill="#64748B">Rooms a day</text>
           <line x1={L} x2={W - R} y1={T1 + TH} y2={T1 + TH} stroke="#CBD5E1" />
-          <line x1={L} x2={W - R} y1={yR(nRooms)} y2={yR(nRooms)} stroke="rgba(8,145,178,0.35)" strokeDasharray="3 4" />
-          <text x={W - R} y={yR(nRooms) - 3} fontSize={10} textAnchor="end" fill={NEON.rooms}>all {nRooms} full</text>
-          <path d={area(roomsLine, roomsPts, T1 + TH)} fill="url(#fgRooms)" />
-          {lyRoomsLine && <path d={lyRoomsLine} fill="none" stroke="#94A3B8" strokeWidth={1.3} strokeDasharray="4 3" />}
-          <line x1={L} x2={W - R} y1={yR(meanRooms)} y2={yR(meanRooms)} stroke={NEON.rooms} strokeOpacity={0.45} strokeDasharray="1 3" />
-          <text x={L + 2} y={yR(meanRooms) - 3} fontSize={9.5} fill="#0E7490">usual {meanRooms.toFixed(1)}</text>
-          <path d={roomsLine} fill="none" stroke={NEON.rooms} strokeWidth={2.2} filter="url(#fgGlow)" strokeLinecap="round" />
-          {bestRooms && (
-            <g>
-              <circle cx={x(pk)} cy={yR(sm[pk].rooms)} r={4.5} fill="#fff" stroke={NEON.rooms} strokeWidth={2} filter="url(#fgGlow)" />
-              <text x={Math.min(x(pk) + 8, W - 60)} y={yR(sm[pk].rooms) - 6} fontSize={11} fontWeight={800} fill="#0F172A">Peak</text>
-            </g>
-          )}
+          <text x={W - R} y={T1 - 7} fontSize={10} textAnchor="end" fill="#94A3B8">of {nRooms}</text>
+          <path d={area(roomsLine, roomsPts, T1 + TH)} fill={NEON.rooms} fillOpacity={0.07} />
+          <path d={roomsLine} fill="none" stroke={NEON.rooms} strokeWidth={1.8} strokeLinecap="round" />
           {/* TRACK 2: Restaurant */}
-          <text x={L} y={T2 - 7} fontSize={10.5} fontWeight={800} fill={NEON.rest} letterSpacing="1">🍽️ RESTAURANT SALE A DAY</text>
+          <text x={L} y={T2 - 7} fontSize={11} fontWeight={600} fill="#64748B">Restaurant sale a day</text>
           <line x1={L} x2={W - R} y1={T2 + TH} y2={T2 + TH} stroke="#CBD5E1" />
-          <path d={area(restLine, restPts, T2 + TH)} fill="url(#fgRest)" />
-          {lyRestLine && <path d={lyRestLine} fill="none" stroke="#94A3B8" strokeWidth={1.3} strokeDasharray="4 3" />}
-          <line x1={L} x2={W - R} y1={yS(meanRest)} y2={yS(meanRest)} stroke={NEON.rest} strokeOpacity={0.5} strokeDasharray="1 3" />
-          <text x={L + 2} y={yS(meanRest) - 3} fontSize={9.5} fill="#B45309">usual {kTick(meanRest)}</text>
-          <path d={restLine} fill="none" stroke={NEON.rest} strokeWidth={2.2} filter="url(#fgGlow)" strokeLinecap="round" />
-          <text x={W - R} y={T2 + 10} fontSize={10} textAnchor="end" fill="#B45309">up to {kTick(maxRest)}</text>
+          <path d={area(restLine, restPts, T2 + TH)} fill={NEON.rest} fillOpacity={0.07} />
+          <path d={restLine} fill="none" stroke={NEON.rest} strokeWidth={1.8} strokeLinecap="round" />
+          <text x={W - R} y={T2 - 7} fontSize={10} textAnchor="end" fill="#94A3B8">up to {kTick(maxRest)}</text>
           {/* aaj */}
-          <line x1={x(0)} x2={x(0)} y1={T1} y2={T2 + TH} stroke="#0F172A" strokeOpacity={0.7} strokeWidth={1.5} />
-          <text x={x(0)} y={AX + 14} fontSize={10.5} fontWeight={800} fill="#0F172A">TODAY</text>
+          <line x1={x(0)} x2={x(0)} y1={T1} y2={T2 + TH} stroke="#0F172A" strokeOpacity={0.35} />
+          <text x={x(0)} y={AX + 14} fontSize={10.5} fontWeight={600} fill="#475569">Today</text>
           {/* shaadi */}
-          <text x={L} y={WY + 13} fontSize={10.5} fontWeight={800} fill={NEON.wed}>💍</text>
+          
           {weddings.map((w) => (
             <g key={`w${w.a}`}>
-              <rect x={x(w.a) - dx / 2} y={WY} width={Math.max(4, (w.b - w.a + 1) * dx)} height={18} rx={9} fill="rgba(5,150,105,0.12)" stroke="rgba(5,150,105,0.55)" />
+              <rect x={x(w.a) - dx / 2} y={WY} width={Math.max(4, (w.b - w.a + 1) * dx)} height={18} rx={9} fill="rgba(5,150,105,0.08)" />
               {(w.b - w.a + 1) * dx > 120 && (
-                <text x={x(w.a) + 6} y={WY + 13} fontSize={10.5} fontWeight={700} fill="#065F46">Weddings · {w.label.replace(/^Wedding season \(|\)$/g, "")}</text>
+                <text x={x(w.a) + 6} y={WY + 13} fontSize={10.5} fontWeight={500} fill="#047857">💍 {w.label.replace(/^Wedding season \(|\)$/g, "")}</text>
               )}
             </g>
           ))}
           {/* pakki banquet bookings */}
           {keyDates.filter((k) => k.kind === "Banquet" && idx[k.start] != null).map((k) => (
             <g key={`bk${k.start}${k.event}`}>
-              <circle cx={x(idx[k.start])} cy={WY + 9} r={7} fill="#7E22CE" stroke="#E9D5FF" strokeWidth={1.5} filter="url(#fgGlow)" />
-              <text x={x(idx[k.start])} y={WY + 12.5} fontSize={9} textAnchor="middle">🎉</text>
+              <circle cx={x(idx[k.start])} cy={WY + 9} r={4} fill="#9333EA" />
             </g>
           ))}
           {/* hover */}
@@ -332,16 +280,16 @@ const SeasonStrip = ({ daily, keyDates, nRooms, banquetMonths = [] }) => {
       {badges.length > 0 && (
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mt: 1 }}>
           {badges.map((bd) => (
-            <Box key={`lg${bd.a}`} sx={{ display: "inline-flex", alignItems: "center", gap: 0.75, px: 1, py: 0.4, borderRadius: 5, bgcolor: hl === bd.a ? "#EDE9FE" : "#F5F3FF", border: `1px solid ${hl === bd.a ? "#7C3AED" : "#DDD6FE"}`, fontSize: 12, cursor: "pointer", transition: "all .15s" }} onMouseEnter={() => setHl(bd.a)} onMouseLeave={() => setHl(null)} onClick={() => setHl(hl === bd.a ? null : bd.a)}>
-              <Box component="span" sx={{ width: 18, height: 18, borderRadius: "50%", bgcolor: NEON.ev, color: "#fff", display: "grid", placeItems: "center", fontSize: 10, fontWeight: 800 }}>{bd.no}</Box>
-              <Box component="span" sx={{ fontWeight: 700, color: "#4C1D95" }}>{bd.text}</Box>
+            <Box key={`lg${bd.a}`} sx={{ display: "inline-flex", alignItems: "center", gap: 0.75, px: 1, py: 0.4, borderRadius: 5, bgcolor: hl === bd.a ? "#F5F3FF" : "transparent", border: `1px solid ${hl === bd.a ? "#C4B5FD" : "#EDE9FE"}`, fontSize: 12, cursor: "pointer", transition: "all .15s" }} onMouseEnter={() => setHl(bd.a)} onMouseLeave={() => setHl(null)} onClick={() => setHl(hl === bd.a ? null : bd.a)}>
+              <Box component="span" sx={{ width: 18, height: 18, borderRadius: "50%", bgcolor: "#A78BFA", color: "#fff", display: "grid", placeItems: "center", fontSize: 10, fontWeight: 700 }}>{bd.no}</Box>
+              <Box component="span" sx={{ fontWeight: 600, color: "#334155" }}>{bd.text}</Box>
               <Box component="span" sx={{ color: "#64748B" }}>{fmtRange(bd)}</Box>
             </Box>
           ))}
         </Box>
       )}
-      <Typography sx={{ mt: 0.75, fontSize: 11.5, color: "#64748B" }}>
-        Numbers = festivals (list above) · Purple glow = festival days · green pill = wedding season · 🎉 = banquet already booked · dotted line = usual level for this period{hasLy ? " · grey dashed line = same days last year" : ""}{n > 45 ? " · lines show a 7-day average so the trend is easy to read" : ""}
+      <Typography sx={{ mt: 0.75, fontSize: 11, color: "#94A3B8" }}>
+        Numbers = festivals · green = wedding season · purple dot = banquet booked{n > 45 ? " · 7-day average" : ""}
       </Typography>
     </Box>
   );
@@ -437,14 +385,13 @@ const OpportunityFinder = ({ dates }) => {
 const DailyChart = ({ data, field, lyField, recent, money, max }) => (
   <ResponsiveContainer width="100%" height={260}>
     <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-      <XAxis dataKey="date" tickFormatter={(v) => dayjs(v).format(data.length > 200 ? "MMM YY" : "D MMM")} minTickGap={36} tick={{ fontSize: 11 }} />
-      <YAxis tickFormatter={money ? kTick : undefined} domain={[0, max || "auto"]} width={42} tick={{ fontSize: 11 }} />
+      <CartesianGrid stroke="#F1F5F9" vertical={false} />
+      <XAxis dataKey="date" tickFormatter={(v) => dayjs(v).format(data.length > 200 ? "MMM YY" : "D MMM")} minTickGap={48} tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false} />
+      <YAxis tickFormatter={money ? kTick : undefined} domain={[0, max || "auto"]} width={38} tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false} tickCount={4} />
       <Tooltip labelFormatter={(v) => dayjs(v).format("ddd, D MMM YYYY")} formatter={(v, name) => [v == null ? "—" : money ? inr(v) : Number(v).toFixed(1), name]} />
-      <Legend />
-      <Bar dataKey={recent} name="Actual" fill="#CBD5E1" barSize={4} />
-      <Area dataKey={field} name="Forecast" stroke={COLORS.in} fill={COLORS.in} fillOpacity={0.08} strokeWidth={2} dot={false} connectNulls />
-      <Line dataKey={lyField} name="Same weekday last year" stroke={LY} strokeDasharray="3 3" dot={false} strokeWidth={1.4} connectNulls />
+      <Bar dataKey={recent} name="Actual" fill="#E2E8F0" barSize={3} isAnimationActive={false} />
+      <Area dataKey={field} name="Forecast" stroke={COLORS.in} fill={COLORS.in} fillOpacity={0.05} strokeWidth={1.6} dot={false} connectNulls isAnimationActive={false} />
+      <Line dataKey={lyField} name="Last year" stroke="transparent" dot={false} activeDot={false} legendType="none" connectNulls isAnimationActive={false} />
     </ComposedChart>
   </ResponsiveContainer>
 );

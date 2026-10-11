@@ -6,6 +6,7 @@
 // 3. Login / signup / reset pe brute-force rok: 15 minute mein 10 galat koshish.
 import { isAuthenticated } from "./auth.js";
 import { staffGuard, isAdminLike } from "./staffAccess.js";
+import { dashGuard } from "../controller/dashLock.js";
 
 const PUBLIC_ROUTES = new Set([
   "POST /api/v1/user/create-user",
@@ -79,7 +80,8 @@ export const apiGate = (req, res, next) => {
       return res.status(403).json({ success: false, message: "Only admin can delete data." });
     }
     // Staff: sirf apna department + sirf aaj (staffAccess.js)
-    return staffGuard(req, res, next);
+    // Super Admin: dashboard ki report APIs ke liye dashboard password (dashLock.js)
+    return staffGuard(req, res, () => dashGuard(req, res, next));
   });
 };
 

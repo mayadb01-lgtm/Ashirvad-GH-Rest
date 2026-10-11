@@ -7,6 +7,7 @@ import process from "process";
 import { runAutoBackup } from "../utils/autoBackup.js";
 import Admin from "../model/admin.js";
 import { otpOn, sendOtp, checkOtp, maskEmail } from "../utils/adminOtp.js";
+import { clearDashCookie } from "./dashLock.js";
 
 // Sign Up Admin
 router.post("/create-admin", async (req, res) => {
@@ -162,6 +163,7 @@ router.get("/getadmin", isAuthenticated, async (req, res) => {
 router.get("/logout-admin", isAuthenticated, async (req, res) => {
   try {
     if (req.user?.constructor?.modelName === "Admin") logLogin(req, { kind: "admin", event: "logout", user: req.user });
+    clearDashCookie(res);
     res.cookie("admin_token", null, {
       expires: new Date(Date.now()),
       httpOnly: true,
