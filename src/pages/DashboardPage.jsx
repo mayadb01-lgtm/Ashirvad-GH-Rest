@@ -129,7 +129,6 @@ const DashboardHeader = () => {
 // Naye tab-wale pages (Reports, Setup...) bhi "Naye combined pages" mein rakhe hain.
 const NAVIGATION = [
   { segment: "home", title: "Today's summary", icon: <TodayIcon /> },
-  { segment: "home-classic", title: "Home", icon: <DashboardIcon /> },
   { segment: "owner-report", title: "Owner Monthly Report", icon: <InsightsIcon /> },
   { segment: "forecast", title: "Forecast & key dates", icon: <TrendingUpIcon /> },
   { segment: "performance", title: "Performance: year vs year", icon: <AssessmentIcon /> },
@@ -222,6 +221,8 @@ const NAVIGATION = [
   { segment: "guest-register", title: "Guest Register (Govt)", icon: <AssignmentIndIcon /> },
   { segment: "room-activity", title: "Room Activity (footprint)", icon: <FingerprintIcon /> },
   { segment: "data-import", title: "Import Excel / CSV", icon: <UploadFileIcon /> },
+  { kind: "header", title: "Old" },
+  { segment: "home-classic", title: "Home (old)", icon: <DashboardIcon /> },
 ];
 
 const DashboardPage = () => {
