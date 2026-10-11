@@ -53,6 +53,12 @@ import BanquetSetupDashboard from "../components/insights/BanquetSetupDashboard"
 import BanquetReportDashboard from "../components/insights/BanquetReportDashboard";
 import PurchaseAnalyticsDashboard from "../components/insights/PurchaseAnalyticsDashboard";
 import GhGrowthDashboard from "../components/insights/GhGrowthDashboard";
+import ForecastDashboard from "../components/insights/ForecastDashboard";
+import PerformanceDashboard from "../components/insights/PerformanceDashboard";
+import GHGraph2 from "../components/biz/GHGraph2";
+import RestGraph2 from "../components/biz/RestGraph2";
+import MergedGraph2 from "../components/biz/MergedGraph2";
+import SalesGoals2 from "../components/biz/SalesGoals2";
 import KharchControlDashboard from "../components/insights/KharchControlDashboard";
 import DataAlerts from "../components/insights/DataAlerts";
 import ProfitLossDashboard from "../components/insights/ProfitLossDashboard";
@@ -125,6 +131,8 @@ const NAVIGATION = [
   { segment: "home", title: "Today's summary", icon: <TodayIcon /> },
   { segment: "home-classic", title: "Home", icon: <DashboardIcon /> },
   { segment: "owner-report", title: "Owner Monthly Report", icon: <InsightsIcon /> },
+  { segment: "forecast", title: "Forecast & key dates", icon: <TrendingUpIcon /> },
+  { segment: "performance", title: "Performance: year vs year", icon: <AssessmentIcon /> },
   { segment: "guest-dues", title: "Guest Dues & Reminders", icon: <WhatsAppIcon /> },
   { kind: "header", title: "Business Growth" },
   { segment: "profit-loss", title: "Profit & Loss", icon: <AssessmentIcon /> },
@@ -190,6 +198,7 @@ const NAVIGATION = [
     title: "Sales Goal",
     icon: <StackedLineChartIcon />,
     children: [
+      { segment: "all", title: "All goals (new)", icon: <StackedLineChartIcon /> },
       { segment: "gh-sales-goal", title: "GH - Sales Goal", icon: <StackedLineChartIcon /> },
       { segment: "rest-sales-goal", title: "Rest - Sales Goal", icon: <StackedLineChartIcon /> },
       { segment: "office-banquet-sales-goal", title: "Banquet Sales Goal", icon: <StackedLineChartIcon /> },
@@ -302,7 +311,8 @@ const DashboardPage = () => {
           title="Merged reports"
           subtitle="Guest House + Restaurant + Office together"
           tabs={[
-            { key: "graph", label: "Graph", element: <OfficeMergedGraph /> },
+            { key: "graph", label: "Graph", element: <MergedGraph2 /> },
+            { key: "graph-classic", label: "Graph (classic)", element: <OfficeMergedGraph /> },
             { key: "report", label: "Report", element: <OfficeMerged /> },
             { key: "vendor", label: "Vendor report", element: <OfficeCreditDebit /> },
             { key: "vendor-graph", label: "Vendor graph", element: <VendorGraphDashboard /> },
@@ -316,6 +326,7 @@ const DashboardPage = () => {
         <TabbedPage
           title="Sales goals"
           tabs={[
+            { key: "all", label: "All goals (new)", element: <SalesGoals2 /> },
             { key: "gh", label: "Guest House", element: <GHSalesGoalDashboard /> },
             { key: "rest", label: "Restaurant", element: <RestSalesGoalDashboard /> },
             { key: "banquet", label: "Banquet", element: <OfficeBanquetSalesGoalDashboard /> },
@@ -327,11 +338,11 @@ const DashboardPage = () => {
     },
     { path: "gh-dashboard", element: <GHDashboard /> },
     { path: "gh-dashboard-range", element: <GHSalesDashboardRange /> },
-    { path: "guest-house", element: <GHHome /> },
+    { path: "guest-house", element: <TabbedPage title="Guest house graph" accent="#2563EB" tabs={[{ key: "new", label: "New graph", element: <GHGraph2 /> }, { key: "classic", label: "Classic", element: <GHHome /> }]} /> },
     { path: "gh-reports/sales-report", element: <GHSalesDashboard /> },
     { path: "gh-reports/bank-books", element: <GHBankBooksDashboard /> },
     { path: "gh-reports/upaid-report", element: <GHUpaidEntriesDashboard /> },
-    { path: "restaurant", element: <RestHome /> },
+    { path: "restaurant", element: <TabbedPage title="Restaurant graph" accent="#EA580C" tabs={[{ key: "new", label: "New graph", element: <RestGraph2 /> }, { key: "classic", label: "Classic", element: <RestHome /> }]} /> },
     { path: "res-reports/sales-report", element: <RestSalesDashboard /> },
     {
       path: "res-reports/upaad-report",
@@ -359,7 +370,7 @@ const DashboardPage = () => {
     { path: "office-category", element: <OfficeCategoryDashboard /> },
     { path: "staff-salary", element: <StaffSalaryDashboard /> },
     { path: "attendance-import", element: <AttendanceImportDashboard /> },
-    { path: "merged-graph", element: <OfficeMergedGraph /> },
+    { path: "merged-graph", element: <TabbedPage title="Merged graph" accent="#0F172A" tabs={[{ key: "new", label: "New graph", element: <MergedGraph2 /> }, { key: "classic", label: "Classic", element: <OfficeMergedGraph /> }]} /> },
     { path: "merged-reports", element: <OfficeMerged /> },
     { path: "merged-vendor-report", element: <OfficeCreditDebit /> },
     { path: "merged-vendor-graph", element: <VendorGraphDashboard /> },
@@ -376,8 +387,11 @@ const DashboardPage = () => {
     { path: "room-activity", element: <RoomActivityDashboard /> },
     { path: "invoices", element: <InvoicesDashboard /> },
     { path: "gh-growth", element: <GhGrowthDashboard /> },
+    { path: "forecast", element: <ForecastDashboard /> },
+    { path: "performance", element: <PerformanceDashboard /> },
     { path: "kharch-control", element: <KharchControlDashboard /> },
     { path: "data-check", element: <DataAlerts onNavigate={router.navigate} /> },
+    { path: "sales-goal/all", element: <SalesGoals2 /> },
     { path: "sales-goal/gh-sales-goal", element: <GHSalesGoalDashboard /> },
     { path: "sales-goal/rest-sales-goal", element: <RestSalesGoalDashboard /> },
     {
