@@ -6,7 +6,7 @@ import sendAdminToken from "../utils/adminToken.js";
 import process from "process";
 import { runAutoBackup } from "../utils/autoBackup.js";
 import Admin from "../model/admin.js";
-import { otpOn, sendOtp, checkOtp, maskEmail } from "../utils/adminOtp.js";
+import { otpOn, mailReady, sendOtp, checkOtp, maskEmail } from "../utils/adminOtp.js";
 import { clearDashCookie } from "./dashLock.js";
 
 // Sign Up Admin
@@ -187,7 +187,8 @@ router.get("/logout-admin", isAuthenticated, async (req, res) => {
 const findAdmin = (email) => Admin.findOne({ email: new RegExp("^" + String(email || "").trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$", "i") });
 router.post("/reset-password/request", async (req, res) => {
   try {
-    if (!otpOn()) return res.status(400).json({ success: false, message: "Password reset by email is not set up yet. Ask the owner." });
+    // Login wala OTP (ADMIN_OTP=off) band ho tab bhi "password bhool gaye" email se chalega — bas email set ho
+    if (!mailReady()) return res.status(400).json({ success: false, message: "Password reset by email is not set up yet. Ask the owner." });
     const admin = await findAdmin(req.body?.email);
     // Email galat ho tab bhi wahi jawab (koi email dhoondh na sake)
     const otpId = admin ? await sendOtp(admin, "reset") : "000000000000000000000000";
