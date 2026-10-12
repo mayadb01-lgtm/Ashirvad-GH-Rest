@@ -182,6 +182,36 @@ router.get("/logout-admin", isAuthenticated, async (req, res) => {
   }
 });
 
+// 🔑 Login ke andar se apna password badalna: { current, password } — purana password sahi hona zaroori
+const pwFails = new Map(); // adminId -> { n, until }
+router.post("/change-password", isAuthenticated, async (req, res) => {
+  try {
+    if (req.user?.constructor?.modelName !== "Admin") return res.status(403).json({ success: false, message: "Only Super Admin" });
+    const id = String(req.user._id);
+    const f = pwFails.get(id);
+    if (f && f.until > Date.now()) return res.status(429).json({ success: false, message: `Too many wrong tries. Try again after ${Math.ceil((f.until - Date.now()) / 60000)} minute(s).` });
+    const { current, password } = req.body || {};
+    if (!password || String(password).length < 8) return res.status(400).json({ success: false, message: "New password must be at least 8 characters" });
+    if (String(password) === String(current || "")) return res.status(400).json({ success: false, message: "New password must be different from the old one" });
+    const admin = await Admin.findById(req.user._id).select("+password");
+    if (!admin || !(await admin.comparePassword(String(current || "")))) {
+      const x = pwFails.get(id) || { n: 0, until: 0 };
+      x.n += 1;
+      if (x.n >= 5) { x.until = Date.now() + 15 * 60 * 1000; x.n = 0; }
+      pwFails.set(id, x);
+      logLogin(req, { kind: "admin", event: "failed", user: admin || req.user, note: "Change password: wrong current password" });
+      return res.status(401).json({ success: false, message: "Current password is wrong" });
+    }
+    pwFails.delete(id);
+    admin.password = String(password);
+    await admin.save();
+    logLogin(req, { kind: "admin", event: "reset", user: admin, note: "Password changed from inside the app" });
+    res.json({ success: true, message: "Password changed. Use the new password next time you log in." });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // 🔐 Password reset: referral code wala tarika band (koi bhi admin ka password badal sakta tha).
 // Ab: 1) /reset-password/request { email } → email par OTP   2) /reset-password { email, otpId, code, password }
 const findAdmin = (email) => Admin.findOne({ email: new RegExp("^" + String(email || "").trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$", "i") });
