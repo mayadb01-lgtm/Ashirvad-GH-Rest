@@ -19,6 +19,7 @@ import toast from "react-hot-toast";
 import { getRestCategory } from "../../redux/actions/restCategoryAction";
 import { getRestStaff } from "../../redux/actions/restStaffAction";
 import { getPendingUser } from "../../redux/actions/restPendingAction";
+import { useMe, staffMinDate } from "../../utils/staffMe";
 dayjs.locale("en-gb");
 const OfficeEntryPage = () => {
   const dispatch = useAppDispatch();
@@ -29,10 +30,13 @@ const OfficeEntryPage = () => {
   const USER_ALLOWED_DAYS = 20;
   const todayFun = dayjs();
 
-  const userMinDate = useMemo(
+  const oldMinDate = useMemo(
     () => todayFun.clone().subtract(USER_ALLOWED_DAYS - 1, "day"),
     []
   );
+  // Staff: Super Admin ki di hui din-seema (server bhi yahi check karta hai)
+  const me = useMe();
+  const userMinDate = staffMinDate(me, oldMinDate);
   const userMaxDate = todayFun;
 
   const makeInitialRows = (date, count = 8) =>

@@ -186,6 +186,12 @@ const QuickEntryPage = () => {
                 ))}
               </Tabs>
             )}
+            {/* Classic view: admin ko hamesha; staff ko tab jab Super Admin ne diya ho (apne business ka) */}
+            {!auth.isAdmin && auth.classic && mod.old && auth.modules?.includes(mod.key) && (
+              <Button component={RouterLink} to={mod.old} size="small" sx={{ color: Q.muted, textTransform: "none", whiteSpace: "nowrap" }}>
+                Classic view
+              </Button>
+            )}
             {auth.isAdmin && (
               <>
                 {mod.old && <Button component={RouterLink} to={auth.isOwnerAdmin ? `/admin${mod.old}` : mod.old} size="small" sx={{ color: Q.muted, textTransform: "none", whiteSpace: "nowrap" }}>

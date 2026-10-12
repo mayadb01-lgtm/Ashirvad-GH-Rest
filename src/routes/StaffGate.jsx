@@ -2,10 +2,11 @@
 // Admin aur Super User ke liye sab pehle jaisa.
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAppSelector } from "../redux/hooks";
 import NotFound from "../pages/NotFound";
 import { loginUnlocked } from "../utils/gate";
+import { useMe, CLASSIC_MODULE } from "../utils/staffMe";
 
 const useIsPlainStaff = () => {
   const { isAuthenticated, user } = useAppSelector((s) => s.user);
@@ -36,7 +37,16 @@ export const HomeGate = ({ children }) => {
   return plainStaff ? <Navigate to="/entry" replace /> : children;
 };
 
-// Purane staff pages (/hotel, /restaurant, /office, /staff-salary) pe lagao
-export const LegacyGate = ({ children }) => (useIsPlainStaff() ? <Navigate to="/entry" replace /> : children);
+// Purane staff pages (/hotel, /restaurant, /office, /staff-salary) pe lagao.
+// Staff: sirf tab jab Super Admin ne "Classic view" diya ho aur ye page uske business ka ho (server bhi yahi check karta hai).
+const StaffClassic = ({ children }) => {
+  const me = useMe();
+  const { pathname } = useLocation();
+  if (me === undefined) return null;
+  const mod = CLASSIC_MODULE[pathname];
+  const ok = !!me && me.isActive !== false && me.classic && mod && (me.modules || []).includes(mod);
+  return ok ? children : <Navigate to="/entry" replace />;
+};
+export const LegacyGate = ({ children }) => (useIsPlainStaff() ? <StaffClassic>{children}</StaffClassic> : children);
 
 export default HomeGate;

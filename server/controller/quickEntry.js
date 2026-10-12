@@ -31,6 +31,7 @@ router.get("/me", async (req, res) => {
       allowedDates: admin || acc?.entryDays === null ? null : datesBack(acc?.entryDays || 0), // null = koi rok nahi
       reports: admin ? Object.keys(REPORTS) : acc?.reports || [],
       reportDays: admin ? null : acc?.reportDays ?? 0,
+      classic: admin ? true : acc?.classic !== false, // purane (classic) entry pages
     },
   });
 });

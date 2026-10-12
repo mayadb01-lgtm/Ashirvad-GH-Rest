@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 //   entryDays  : kitne din peeche tak entry dekh/badal sake (0 = sirf aaj; null = koi bhi din)
 //   reports    : kaun si report dekh sake
 //   reportDays : report mein kitne din purana data (null = koi rok nahi)
+//   classic    : purane (classic) entry pages /hotel /restaurant /office khol sake (sirf apne business ke)
 const schema = new mongoose.Schema(
   {
     userId: { type: String, required: true, unique: true },
@@ -12,6 +13,7 @@ const schema = new mongoose.Schema(
     entryDays: { type: Number, default: 0 },
     reports: [String],
     reportDays: { type: Number, default: 30 },
+    classic: { type: Boolean, default: true },
     updatedBy: { type: String, default: "" },
   },
   { timestamps: true, versionKey: false }

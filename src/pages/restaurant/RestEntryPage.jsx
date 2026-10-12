@@ -25,6 +25,7 @@ import {
 import ModernLoader from "../../utils/util";
 import { getPendingUser } from "../../redux/actions/restPendingAction";
 import RestPendingUsersTable from "../../components/restaurant/RestPendingUsersTable";
+import { useMe, staffMinDate } from "../../utils/staffMe";
 dayjs.locale("en-gb");
 
 const RestEntryPage = () => {
@@ -39,10 +40,13 @@ const RestEntryPage = () => {
   const USER_ALLOWED_DAYS = 20;
   const todayFun = dayjs();
 
-  const userMinDate = useMemo(
+  const oldMinDate = useMemo(
     () => todayFun.clone().subtract(USER_ALLOWED_DAYS - 1, "day"),
     []
   );
+  // Staff: Super Admin ki di hui din-seema (server bhi yahi check karta hai)
+  const me = useMe();
+  const userMinDate = staffMinDate(me, oldMinDate);
   const userMaxDate = todayFun;
 
   const upaadFieldOptions =

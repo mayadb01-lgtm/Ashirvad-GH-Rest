@@ -35,6 +35,7 @@ export const isAdminLike = (user) =>
 // [method, path regex, options]
 //   dateParam: regex group number jisme date hai
 //   dateBody:  body ka field jisme date hai
+//   classic:   sirf classic (purane) entry page ke liye — Super Admin ne "Classic view" band kiya ho to mana
 const R = (method, re, opts = {}) => ({ method, re, ...opts });
 const LISTS = {
   rooms: R("GET", /^\/api\/v1\/room$/),
@@ -51,6 +52,7 @@ const RULES = {
     LISTS.rooms,
     R("GET", /^\/api\/v1\/entry\/get-entry\/([^/]+)$/, { dateParam: 1 }),
     R("POST", /^\/api\/v1\/entry\/create-entry$/, { dateBody: "date" }),
+    R("PUT", /^\/api\/v1\/entry\/update-entry\/([^/]+)$/, { dateParam: 1 }), // submit ke baad badlav (quick + classic)
     R("GET", /^\/api\/v1\/entry\/get-unpaid-entries$/), // Pending jama ke liye
     R("GET", /^\/api\/v1\/quick\/guest\/\d{10}$/), // purana guest
     // Govt guest register (sirf aaj ka; photo dekhna sirf admin)
@@ -103,6 +105,7 @@ const RULES = {
     R("GET", /^\/api\/v1\/restEntry\/get-entry\/([^/]+)$/, { dateParam: 1 }),
     R("POST", /^\/api\/v1\/restEntry\/create-entry$/, { dateBody: "createDate" }),
     R("PUT", /^\/api\/v1\/restEntry\/update-entry\/([^/]+)$/, { dateParam: 1, dateBody: "createDate" }),
+    R("GET", /^\/api\/v1\/restCategory\/get-category-name$/, { classic: true }), // classic restaurant page ki category list
     // Levana baaki → room (kaun sa room, kaun guest)
     R("GET", /^\/api\/v1\/room-charges\/occupied\/([^/]+)$/, { dateParam: 1 }),
     R("GET", /^\/api\/v1\/room-charges\/rest\/([^/]+)$/, { dateParam: 1 }),
@@ -235,10 +238,11 @@ export const effectiveAccess = async (user) => {
       entryDays: doc.entryDays === null || doc.entryDays === undefined ? null : Math.max(0, Number(doc.entryDays) || 0),
       reports: (doc.reports || []).filter((r) => REPORTS[r]),
       reportDays: doc.reportDays === null || doc.reportDays === undefined ? null : Math.max(0, Number(doc.reportDays) || 0),
+      classic: doc.classic !== false,
     };
   }
   const l = LEGACY[user.department];
-  return l ? { custom: false, modules: l.modules, entryDays: l.entryDays, reports: [], reportDays: 0 } : { custom: false, modules: [], entryDays: 0, reports: [], reportDays: 0 };
+  return l ? { custom: false, modules: l.modules, entryDays: l.entryDays, reports: [], reportDays: 0, classic: true } : { custom: false, modules: [], entryDays: 0, reports: [], reportDays: 0, classic: true };
 };
 
 // Kya yeh user is date ki entry chhoo sakta hai? (controllers ke liye; staffGuard req.access set karta hai)
@@ -331,6 +335,7 @@ export const staffGuard = async (req, res, next) => {
   }
   const rule = acc.modules.flatMap((m) => RULES[m] || []).find((r) => r.method === method && r.re.test(path));
   if (!rule) return deny(res, "This page/report is not available to you.");
+  if (rule.classic && !acc.classic) return deny(res, "Classic view is not allowed for you. Ask the Super Admin.");
 
   // Dates: Super Admin ki di hui seema (entryDays). window2: check-in ka din + agla din (guest registration)
   const base = acc.entryDays === null ? null : datesBack(acc.entryDays);

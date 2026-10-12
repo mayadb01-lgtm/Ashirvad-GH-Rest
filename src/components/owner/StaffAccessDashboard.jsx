@@ -42,8 +42,8 @@ const fromSel = (v) => (v === "any" ? null : Number(v));
 // Purana department → shuruaati form (jab tak naya access save na ho)
 const startOf = (u) =>
   u.access
-    ? { modules: u.access.modules || [], entryDays: u.access.entryDays ?? null, reports: u.access.reports || [], reportDays: u.access.reportDays ?? null }
-    : { modules: LEGACY[u.department] || [], entryDays: u.department === "manager" ? null : 0, reports: [], reportDays: 30 };
+    ? { modules: u.access.modules || [], entryDays: u.access.entryDays ?? null, reports: u.access.reports || [], reportDays: u.access.reportDays ?? null, classic: u.access.classic !== false }
+    : { modules: LEGACY[u.department] || [], entryDays: u.department === "manager" ? null : 0, reports: [], reportDays: 30, classic: true };
 
 const StaffAccessDashboard = () => {
   const [users, setUsers] = useState(null);
@@ -193,6 +193,15 @@ const StaffAccessDashboard = () => {
                     </MenuItem>
                   ))}
                 </TextField>
+              </Stack>
+              <Stack direction="row" alignItems="center" flexWrap="wrap" useFlexGap sx={{ mb: 0.5 }}>
+                <FormControlLabel
+                  control={<Switch size="small" checked={f.classic !== false} onChange={(e) => setF(u._id, { classic: e.target.checked })} />}
+                  label={<Typography variant="body2"><b>Classic view</b> — old entry pages too (Guest House / Restaurant / Office, only the ticked businesses)</Typography>}
+                />
+                {f.classic !== false && !f.modules.some((m) => ["gh", "rest", "office"].includes(m)) && (
+                  <Typography variant="caption" color="text.secondary">Tick Guest House, Restaurant or Office for this to show.</Typography>
+                )}
               </Stack>
 
               <Typography variant="caption" fontWeight={800} color="text.secondary">

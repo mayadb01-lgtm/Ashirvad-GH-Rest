@@ -35,6 +35,7 @@ import {
 } from "../utils/utils";
 import PendingJamaTable from "../components/PendingJamaTable";
 import ModernLoader, { AccordionSection, PaymentSummary } from "../utils/util";
+import { useMe, staffMinDate } from "../utils/staffMe";
 const PendingJamaGrid = React.lazy(
   () => import("../components/PendingJamaGrid")
 );
@@ -67,10 +68,13 @@ const EntryPage = () => {
   const USER_ALLOWED_DAYS = 20;
   const todayFun = dayjs();
 
-  const userMinDate = useMemo(
+  const oldMinDate = useMemo(
     () => todayFun.clone().subtract(USER_ALLOWED_DAYS - 1, "day"),
     []
   );
+  // Staff: Super Admin ki di hui din-seema (server bhi yahi check karta hai)
+  const me = useMe();
+  const userMinDate = staffMinDate(me, oldMinDate);
 
   const userMaxDate = todayFun;
 
