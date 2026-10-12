@@ -512,7 +512,12 @@ const EntryPage = () => {
         date: selectedDate,
       };
 
-      if (isAdminAuthenticated) {
+      // Submit ke baad badlav: owner ya jise Super Admin ne "Edit" diya (server bhi check karta hai)
+      if (!isAdminAuthenticated && !me?.canEdit) {
+        toast.error("Already submitted. Only the owner can change it.");
+        return;
+      }
+      {
         const confirmEdit = window.confirm(
           `Are you sure you want to edit entries for ${selectedDate}?`
         );

@@ -451,7 +451,8 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
 };
 
 /* ---------------- Main ---------------- */
-const GhQuickEntry = ({ date, isAdmin }) => {
+const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
+  const editor = isAdmin || canEdit; // submit ke baad badal sakta hai? (owner ya jise Super Admin ne "Edit" diya)
   const [rooms, setRooms] = useState(null);
   const [server, setServer] = useState({ loaded: false, entries: [] });
   const [status, setStatus] = useState(null);
@@ -533,7 +534,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
   }, [load]);
 
   const submitted = server.entries.length > 0;
-  const locked = submitted && !isAdmin;
+  const locked = submitted && !editor;
 
   // Submitted din ho to server ka data hi dikhao (admin ke edit ke liye bhi wahi shuruaat)
   useEffect(() => {
@@ -554,7 +555,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
   // 🔁 Ruke hue guest (continue stay): aaj ke Day slot mein apne aap bharo — staff sirf payment chune
   useEffect(() => {
     // submit ho chuke din pe sirf admin ke liye (wo Update dabayega)
-    if (!server.loaded || (submitted && !isAdmin) || !stayInfo?.continuing?.length) return;
+    if (!server.loaded || (submitted && !editor) || !stayInfo?.continuing?.length) return;
     if (submitted && seededFor.current !== date) return;
     setDraft((d) => {
       const dismissed = d._dismissed || [];
@@ -582,11 +583,11 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       });
       return changed ? { ...d, rooms } : d;
     });
-    }, [server.loaded, submitted, stayInfo, setDraft, isAdmin, date]);
+    }, [server.loaded, submitted, stayInfo, setDraft, editor, date]);
 
   // 🔗 Aaj ke check-in jo doosre phone / computer se hue (server pe stay hai, is screen ke draft mein nahi) → yahan bhi bharo
   useEffect(() => {
-    if (!server.loaded || (submitted && !isAdmin) || !stayInfo?._ok || !stayInfo?.started?.length) return;
+    if (!server.loaded || (submitted && !editor) || !stayInfo?._ok || !stayInfo?.started?.length) return;
     if (submitted && seededFor.current !== date) return;
     setDraft((d) => {
       const dismissed = d._dismissed || [];
@@ -613,7 +614,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
       });
       return changed ? { ...d, rooms } : d;
     });
-  }, [server.loaded, submitted, stayInfo, setDraft, isAdmin, date]);
+  }, [server.loaded, submitted, stayInfo, setDraft, editor, date]);
 
   const others = useMemo(
     () => server.entries.filter((e) => !ROOM_PERIODS.includes(e.period) && e.period !== "UnPaid"),
@@ -840,7 +841,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
   };
   const guestSnap = (r) => (r ? { fullname: r.fullname, mobileNumber: digits(r.mobileNumber), type: r.type, noOfPeople: num(r.noOfPeople), rate: num(r.rate), discount: num(r.discount), checkInTime: r.checkInTime, checkOutTime: r.checkOutTime } : null);
   const openMove = (f) => {
-    if (submitted && !isAdmin) return toast.error("This day is already submitted — ask the owner to change rooms.");
+    if (submitted && !editor) return toast.error("This day is already submitted — ask the owner to change rooms.");
     setEditing(null);
     setMoveDlg({ fromRoom: room.roomNumber, period, guest: guestSnap(f) });
   };
@@ -1715,7 +1716,7 @@ const GhQuickEntry = ({ date, isAdmin }) => {
           ...(summary.byMode.UnPaid ? [{ label: "Received today", value: inr(summary.total + summary.jamaTotal - summary.byMode.UnPaid.amt), color: Q.good || Q.ink }] : []),
           ...(cashBox.advUsed > 0 ? [{ label: "Less: booking advance taken earlier (not in today's drawer)", value: `− ${inr(cashBox.advUsed)}`, color: Q.warn }] : []),
           { label: "Total", value: inr(summary.total + summary.jamaTotal), color: Q.ink },
-          ...(!submitted && !isAdmin ? [{ label: "Note", value: "After submitting, only an admin can make changes", color: Q.warn }] : []),
+          ...(!submitted && !editor ? [{ label: "Note", value: "After submitting, only an admin can make changes", color: Q.warn }] : []),
         ]}
         onCancel={() => setConfirm(false)}
         onConfirm={submit}

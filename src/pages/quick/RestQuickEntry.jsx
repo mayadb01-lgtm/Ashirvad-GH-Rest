@@ -28,6 +28,7 @@ import {
   useDraft,
 } from "./shared";
 
+const LOCK_MSG = "Already submitted. Only the owner can change it.";
 const EMPTY = { cash: 0, card: 0, pp: 0, computer: 0, upad: [], pending: [], pendingUsers: [], expenses: [] };
 const sum = (rows) => rows.reduce((s, r) => s + num(r.amount), 0);
 const PERIOD_LABEL = { day: "Day", night: "Night", extraDay: "Extra Day", extraNight: "Extra Night" };
@@ -59,7 +60,7 @@ const RowList = ({ rows, onEdit, empty, locked, render }) => (
   </Stack>
 );
 
-const RestQuickEntry = ({ date }) => {
+const RestQuickEntry = ({ date, canEdit = true }) => {
   const [lists, setLists] = useState(null);
   const [server, setServer] = useState({ loaded: false, doc: null });
   const [status, setStatus] = useState(null);
@@ -142,6 +143,7 @@ const RestQuickEntry = ({ date }) => {
   }, [load]);
 
   const submitted = !!server.doc;
+  const editLocked = submitted && !canEdit;
 
   useEffect(() => {
     if (!server.loaded || !server.doc || seededFor.current === date) return;
@@ -170,8 +172,9 @@ const RestQuickEntry = ({ date }) => {
   const set = (k, v) => setDraft((d) => ({ ...d, [k]: v }));
 
   /* ----- editor ----- */
-  const openNew = (section) => setEditor({ section, index: -1, row: { amount: 0 } });
-  const openEdit = (section, index) => setEditor({ section, index, row: { ...draft[section][index] } });
+  // Submit ke baad badalna: sirf owner ya jise Super Admin ne "Edit" diya
+  const openNew = (section) => (editLocked ? toast.error(LOCK_MSG) : setEditor({ section, index: -1, row: { amount: 0 } }));
+  const openEdit = (section, index) => (editLocked ? toast.error(LOCK_MSG) : setEditor({ section, index, row: { ...draft[section][index] } }));
   const saveRow = (row) => {
     const { section, index } = editor;
     setDraft((d) => {
@@ -400,6 +403,7 @@ const RestQuickEntry = ({ date }) => {
           <StatusPill tone="warn">Today's restaurant entry is not done yet</StatusPill>
         )}
         {status?.updatedBy && <StatusPill tone="lock">Edit: {status.updatedBy}</StatusPill>}
+        {editLocked && <StatusPill tone="lock">🔒 Submitted — only the owner can change it</StatusPill>}
       </Stack>
 
       <Grid container spacing={2}>
@@ -632,11 +636,11 @@ const RestQuickEntry = ({ date }) => {
       <SaveBar
         label="Grand total"
         amount={t.grand}
-        sub={blockReason ? { text: blockReason, color: Q.bad } : { text: `Difference ${inr(t.extra)}`, color: Q.good }}
+        sub={editLocked ? { text: LOCK_MSG, color: Q.bad } : blockReason ? { text: blockReason, color: Q.bad } : { text: `Difference ${inr(t.extra)}`, color: Q.good }}
         buttonText={submitted ? "Update" : "Submit"}
         color={Q.rest}
         busy={busy}
-        disabled={!!blockReason}
+        disabled={!!blockReason || editLocked}
         onClick={() => setConfirm(true)}
       />
 

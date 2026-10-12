@@ -33,8 +33,8 @@ const REPORT_DAYS = [
 ];
 const LEGACY = { gh: ["gh"], rest: ["rest"], office: ["office", "banquet"], manager: ["gh", "rest", "office", "banquet"] };
 const PRESETS = {
-  staff: { label: "Staff (today only)", v: (a) => ({ ...a, entryDays: 0, reports: [], reportDays: 30 }) },
-  manager: { label: "Manager (all business)", v: (a) => ({ ...a, modules: MODULES.map((m) => m.value), entryDays: 30 }) },
+  staff: { label: "Staff (today only)", v: (a) => ({ ...a, entryDays: 0, reports: [], reportDays: 30, canEdit: false }) },
+  manager: { label: "Manager (all business)", v: (a) => ({ ...a, modules: MODULES.map((m) => m.value), entryDays: 30, canEdit: true }) },
 };
 const toSel = (v) => (v === null || v === undefined ? "any" : v);
 const fromSel = (v) => (v === "any" ? null : Number(v));
@@ -42,8 +42,8 @@ const fromSel = (v) => (v === "any" ? null : Number(v));
 // Purana department → shuruaati form (jab tak naya access save na ho)
 const startOf = (u) =>
   u.access
-    ? { modules: u.access.modules || [], entryDays: u.access.entryDays ?? null, reports: u.access.reports || [], reportDays: u.access.reportDays ?? null, classic: u.access.classic !== false }
-    : { modules: LEGACY[u.department] || [], entryDays: u.department === "manager" ? null : 0, reports: [], reportDays: 30, classic: true };
+    ? { modules: u.access.modules || [], entryDays: u.access.entryDays ?? null, reports: u.access.reports || [], reportDays: u.access.reportDays ?? null, classic: u.access.classic !== false, canEdit: u.access.canEdit === true }
+    : { modules: LEGACY[u.department] || [], entryDays: u.department === "manager" ? null : 0, reports: [], reportDays: 30, classic: true, canEdit: false };
 
 const StaffAccessDashboard = () => {
   const [users, setUsers] = useState(null);
@@ -198,6 +198,10 @@ const StaffAccessDashboard = () => {
                 <FormControlLabel
                   control={<Switch size="small" checked={f.classic !== false} onChange={(e) => setF(u._id, { classic: e.target.checked })} />}
                   label={<Typography variant="body2"><b>Classic view</b> — old entry pages too (Guest House / Restaurant / Office, only the ticked businesses)</Typography>}
+                />
+                <FormControlLabel
+                  control={<Switch size="small" checked={f.canEdit === true} onChange={(e) => setF(u._id, { canEdit: e.target.checked })} />}
+                  label={<Typography variant="body2"><b>Edit entries</b> — can change a day after it is submitted (only inside the allowed days)</Typography>}
                 />
                 {f.classic !== false && !f.modules.some((m) => ["gh", "rest", "office"].includes(m)) && (
                   <Typography variant="caption" color="text.secondary">Tick Guest House, Restaurant or Office for this to show.</Typography>

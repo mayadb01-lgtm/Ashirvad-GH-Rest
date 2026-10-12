@@ -32,13 +32,14 @@ import {
   useDraft,
 } from "./shared";
 
+const LOCK_MSG = "Already submitted. Only the owner can change it.";
 const MODES = ["Cash", "Card", "PP", "PPS", "PPC", "UnPaid"];
 const EMPTY = { officeIn: [], officeOut: [] };
 const isStaffCat = (c) => /upad|upaad|staff/i.test(c || "");
 const rowValid = (r) => num(r.amount) > 0 && r.categoryName && r.expenseName && r.modeOfPayment && String(r.fullname || "").trim() && r._id;
 const sum = (rows) => rows.reduce((s, r) => s + num(r.amount), 0);
 
-const OfficeQuickEntry = ({ date, isAdmin }) => {
+const OfficeQuickEntry = ({ date, isAdmin, canEdit = true }) => {
   const [lists, setLists] = useState(null);
   const [server, setServer] = useState({ loaded: false, doc: null });
   const [status, setStatus] = useState(null);
@@ -90,6 +91,7 @@ const OfficeQuickEntry = ({ date, isAdmin }) => {
   }, [load]);
 
   const submitted = !!server.doc;
+  const editLocked = submitted && !canEdit;
 
   useEffect(() => {
     if (!server.loaded || !server.doc || seededFor.current === date) return;
@@ -185,8 +187,9 @@ const OfficeQuickEntry = ({ date, isAdmin }) => {
     toast.success(bill.mode === "Payable" ? "Bill removed." : `Bill removed. Press ${submitted ? "Update" : "Submit"} to save the day.`);
   };
 
-  const openNew = (side) => setEditor({ side, index: -1, row: { amount: 0, modeOfPayment: "", fullname: "", remark: "" } });
-  const openEdit = (side, index) => setEditor({ side, index, row: { ...draft[side][index] } });
+  // Submit ke baad badalna: sirf owner ya jise Super Admin ne "Edit" diya
+  const openNew = (side) => (editLocked ? toast.error(LOCK_MSG) : setEditor({ side, index: -1, row: { amount: 0, modeOfPayment: "", fullname: "", remark: "" } }));
+  const openEdit = (side, index) => (editLocked ? toast.error(LOCK_MSG) : setEditor({ side, index, row: { ...draft[side][index] } }));
   const saveRow = () => {
     const { side, index, row } = editor;
     setDraft((d) => {
@@ -308,6 +311,7 @@ const OfficeQuickEntry = ({ date, isAdmin }) => {
           <StatusPill tone="warn">Today's office entry is not done yet</StatusPill>
         )}
         {status?.updatedBy && <StatusPill tone="lock">Edit: {status.updatedBy}</StatusPill>}
+        {editLocked && <StatusPill tone="lock">🔒 Submitted — only the owner can change it</StatusPill>}
       </Stack>
 
       <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1 }}>
@@ -389,11 +393,11 @@ const OfficeQuickEntry = ({ date, isAdmin }) => {
       <SaveBar
         label={`In ${inr(t.in)} · Out ${inr(t.out)}`}
         amount={t.in - t.out}
-        sub={invalidCount ? { text: `${invalidCount} incomplete ${invalidCount === 1 ? "entry" : "entries"}`, color: Q.bad } : { text: "Remaining (In − Out)" }}
+        sub={editLocked ? { text: LOCK_MSG, color: Q.bad } : invalidCount ? { text: `${invalidCount} incomplete ${invalidCount === 1 ? "entry" : "entries"}`, color: Q.bad } : { text: "Remaining (In − Out)" }}
         buttonText={submitted ? "Update" : "Submit"}
         color={Q.office}
         busy={busy}
-        disabled={invalidCount > 0 || t.in + t.out === 0}
+        disabled={invalidCount > 0 || t.in + t.out === 0 || editLocked}
         onClick={() => setConfirm(true)}
       />
 

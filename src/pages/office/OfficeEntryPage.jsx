@@ -362,7 +362,7 @@ const OfficeEntryPage = () => {
                           variant="contained"
                           color="secondary"
                           onClick={handleUpdateOfficeSubmit}
-                          disabled={isEditDisabled}
+                          disabled={isEditDisabled || (!isAdminAuthenticated && me !== undefined && !me?.canEdit)}
                           sx={{
                             "&:hover": { backgroundColor: "#ab47bc" }, // Better hover color
                             "&:disabled": { backgroundColor: "#b39ddb" },

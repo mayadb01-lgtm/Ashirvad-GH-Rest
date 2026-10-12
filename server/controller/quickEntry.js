@@ -32,6 +32,7 @@ router.get("/me", async (req, res) => {
       reports: admin ? Object.keys(REPORTS) : acc?.reports || [],
       reportDays: admin ? null : acc?.reportDays ?? 0,
       classic: admin ? true : acc?.classic !== false, // purane (classic) entry pages
+      canEdit: admin ? true : acc?.canEdit === true, // submit ho chuki entry badal sake
     },
   });
 });

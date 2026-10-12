@@ -80,7 +80,7 @@ router.get("/login-log", async (req, res) => {
   }
 });
 
-// PUT /api/v1/staff-accounts/:id/access  { modules, entryDays (null = koi bhi din), reports, reportDays (null = koi rok nahi), classic (purane entry pages) }
+// PUT /api/v1/staff-accounts/:id/access  { modules, entryDays (null = koi bhi din), reports, reportDays (null = koi rok nahi), classic (purane entry pages), canEdit (submit ke baad badlav) }
 router.put("/:id/access", async (req, res) => {
   try {
     const u = await User.findById(req.params.id, { name: 1 }).lean();
@@ -93,6 +93,7 @@ router.put("/:id/access", async (req, res) => {
       reports: [...new Set((b.reports || []).filter((r) => REPORTS[r]))],
       reportDays: days(b.reportDays, 3650),
       classic: b.classic !== false,
+      canEdit: b.canEdit === true,
       updatedBy: req.user?.name || req.user?.email || "",
     };
     const saved = await UserAccess.findOneAndUpdate({ userId: String(u._id) }, { $set: doc }, { upsert: true, new: true }).lean();

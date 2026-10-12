@@ -602,6 +602,8 @@ const RestEntryPage = () => {
                           "&:hover": { backgroundColor: "secondary" },
                         }}
                         onClick={handleEditRestEntry}
+                        disabled={!isAdminAuthenticated && me !== undefined && !me?.canEdit}
+                        title={!isAdminAuthenticated && me && !me.canEdit ? "Already submitted. Only the owner can change it." : undefined}
                       >
                         Edit
                       </Button>
