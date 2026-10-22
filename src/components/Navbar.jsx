@@ -24,7 +24,7 @@ const Navbar = () => {
     (state) => state.admin
   );
   const { isAuthenticated, user } = useAppSelector((state) => state.user);
-  const isSuperUserOrAdmin = admin?.isSuperAdmin || user?.isSuperUser || false;
+  const isSuperUserOrAdmin = admin?.isSuperAdmin || admin?.viewOnly === true || user?.isSuperUser || false;
   const dispatch = useAppDispatch();
   const location = useLocation();
 

@@ -45,7 +45,7 @@ const App = () => {
   const dispatch = useAppDispatch();
   const { admin } = useAppSelector((state) => state.admin);
   const { user } = useAppSelector((state) => state.user);
-  const isSuperUserOrAdmin = admin?.isSuperAdmin || user?.isSuperUser || false;
+  const isSuperUserOrAdmin = admin?.isSuperAdmin || admin?.viewOnly === true || user?.isSuperUser || false;
 
   useEffect(() => {
     dispatch(loadUser());
