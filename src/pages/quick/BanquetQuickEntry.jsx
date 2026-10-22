@@ -11,6 +11,7 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PrintIcon from "@mui/icons-material/Print";
 import { API, ChipChoice, EditorDialog, MoneyField, Q, Section, StatusPill, apiError, inr, num } from "./shared";
+import { BUSINESS } from "../../business";
 // Occasion ki list (dropdown); list mein na ho to khud bhi likh sakte hain
 const OCCASIONS = ["Wedding", "Engagement", "Reception", "Birthday", "Anniversary", "Baby shower", "Naming ceremony", "Religious / Puja", "Corporate meeting", "Conference / Seminar", "Kitty party", "Family get-together", "Farewell", "Other"];
 
@@ -78,7 +79,7 @@ const printBill = (b) => {
   <style>body{font-family:Arial,sans-serif;margin:28px;color:#111}h1{margin:0;font-size:22px}table{width:100%;border-collapse:collapse;margin-top:14px}
   th,td{border:1px solid #ccc;padding:6px 8px;font-size:13px}th{background:#f3f4f6;text-align:left}.r{text-align:right}.muted{color:#555;font-size:12px}
   .tot td{border:none;padding:3px 8px}.big{font-size:16px;font-weight:700}</style></head><body>
-  <h1>Hotel Ashirvad, Songadh — Banquet</h1>
+  <h1>${BUSINESS.name}${BUSINESS.city ? `, ${BUSINESS.city}` : ""} — Banquet</h1>
   <div class="muted">${b.status === "billed" ? "TAX INVOICE / BILL" : "BOOKING ESTIMATE"} · ${b.billNo ? `Bill ${b.billNo} · ` : ""}Booking ${b.bookingNo} · ${b.billedAt || dayjs().format(F)}</div>
   <p><b>${b.customer?.name || ""}</b>${b.customer?.company ? ` · ${b.customer.company}` : ""}${b.customer?.mobile ? ` · ${b.customer.mobile}` : ""}<br/>
   ${b.customer?.address || ""}${b.customer?.gstin ? `<br/>GSTIN: ${b.customer.gstin}` : ""}</p>

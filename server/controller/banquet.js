@@ -8,6 +8,7 @@ import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import { BanquetItem, BanquetPackage, BanquetAddon, BanquetHall, BanquetBooking, banquetTotals } from "../model/banquet.js";
 import AppSetting from "../model/appSetting.js";
 import { allowedStaffDates, isAdminLike, dateOk as staffDateOk } from "../middleware/staffAccess.js";
+import { HALL_NAME } from "../business.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -109,7 +110,7 @@ const seedOnce = async () => {
     await AppSetting.updateOne({ _id: "banquetPackagesV2" }, { $set: { value: true, at: new Date() } }, { upsert: true });
     await AppSetting.updateOne({ _id: "banquetPackagesTiers" }, { $set: { value: true, at: new Date() } }, { upsert: true });
     await BanquetAddon.insertMany(SEED_ADDONS.map(([name, price], i) => ({ name, price, unit: "fixed", sort: i })));
-    await BanquetHall.create({ name: "Hotel Ashirvad, Songadh", rentPerHour: 2500, rentPerDay: 0, minHours: 3 });
+    await BanquetHall.create({ name: HALL_NAME, rentPerHour: 2500, rentPerDay: 0, minHours: 3 });
     await AppSetting.updateOne({ _id: "banquetSeeded" }, { $set: { value: true, at: new Date() } }, { upsert: true });
   }
   // V2 (owner 08-10-2026): Diwali Dinner hatao, har package mein selection ke options. Purane (fix item wale) package band, naye jodo.
@@ -142,7 +143,7 @@ const seedOnce = async () => {
   // Owner 08-10-2026: hall rent ₹2,500 / hour, per day wala band
   const v4 = await AppSetting.findById("banquetHallRent2500").lean();
   if (!v4) {
-    await BanquetHall.updateMany({ name: "Hotel Ashirvad, Songadh" }, { $set: { rentPerHour: 2500 } });
+    await BanquetHall.updateMany({ name: HALL_NAME }, { $set: { rentPerHour: 2500 } });
     await BanquetHall.updateMany({}, { $set: { rentPerDay: 0 } });
     await AppSetting.updateOne({ _id: "banquetHallRent2500" }, { $set: { value: true, at: new Date() } }, { upsert: true });
   }

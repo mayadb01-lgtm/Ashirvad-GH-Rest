@@ -1,13 +1,7 @@
 // Invoice ke common hisaab / details (frontend). Server bhi yahi hisaab dobara karta hai.
-export const HOTEL = {
-  name: "Hotel Ashirvad",
-  tagline: "Banquet Hall | Restaurant | Guest House",
-  address: "Pratima Complex, RTO Check Post, Vankvel, N.H. 53, Bhadbhuja, Dist. Songadh, Gujarat – 394670",
-  phones: "74339 95595, 63597 48847",
-  gstin: "24NDUPS9580R1ZQ",
-  state: "Gujarat",
-  stateCode: "24",
-};
+// Hotel ka naam / pata / GSTIN: src/business.js (har business ki apni)
+import { BUSINESS } from "../../business";
+export const HOTEL = BUSINESS;
 
 export const BUSINESSES = ["Guest House", "Restaurant", "Banquet Hall", "Other"];
 export const TAX_RATES = [0, 5, 12, 18, 28];

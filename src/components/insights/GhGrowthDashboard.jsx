@@ -9,6 +9,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
 import { API, COLORS, Kpi, PageTitle, Section, inr, kTick, lakh , MonthRangeBar, MonthStepBar } from "./shared";
+import { BUSINESS } from "../../business";
 
 const F = "DD-MM-YYYY";
 const Split = ({ obj }) => {
@@ -38,7 +39,7 @@ const GhGrowthDashboard = () => {
   const [end, setEnd] = useState(dayjs());
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("Hello {name} 🙏 Welcome back to Ashirvad Guest House. We have a special rate for you this time. Message us on this number to book.");
+  const [msg, setMsg] = useState(`Hello {name} 🙏 Welcome back to ${BUSINESS.shortName || BUSINESS.name} Guest House. We have a special rate for you this time. Message us on this number to book.`);
 
   useEffect(() => {
     let off = false;
