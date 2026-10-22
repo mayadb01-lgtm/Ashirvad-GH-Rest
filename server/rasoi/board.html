@@ -11,7 +11,7 @@
 /* Layout: sticky tab bar over one 960px column; each tab is a stack of panels — tiles, tables (own scroll), task cards, recipe cards */
 :root{
   /* App jaisa naram (soft) theme: Ashirvad app ke rang aur font */
-  --bg:#F6F7F9; --surface:#FFFFFF; --ink:#0F172A; --muted:#64748B; --line:#E5E7EB;
+  --bg:#F6F7F9; --surface:#FFFFFF; --ink:#0F172A; --ink2:#334155; --muted:#64748B; --line:#E5E7EB;
   --brand:#0F766E; --brand-ink:#FFFFFF; --haldi:#B45309; --haldi-soft:#FEF3E2;
   --ok:#15803D; --ok-soft:#E8F5EC; --warn:#B45309; --warn-soft:#FDF0E1; --info:#0369A1; --info-soft:#E6F1F8;
   --display:"Inter","Noto Sans Devanagari",system-ui,sans-serif; --body:"Inter","Noto Sans Devanagari","Segoe UI",system-ui,sans-serif; --mono:"Inter","Noto Sans Devanagari",system-ui,sans-serif;
@@ -104,6 +104,65 @@ label.f{display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--muted)}
 pre.copy{white-space:pre-wrap;font-family:var(--mono);font-size:13px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;margin:0;max-height:260px;overflow:auto}
 @media (max-width:520px){.bar{grid-template-columns:72px 1fr 76px}}
 @media (prefers-reduced-motion: reduce){.prog>i{transition:none}}
+
+/* ===== App layout: poori screen, PC par baayein menu, phone par upar tabs ===== */
+[hidden]{display:none!important}
+html,body{margin:0}
+body{font-size:15px}
+.app{min-height:100vh}
+.side{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--line);padding:10px 12px 0}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand h1{font-size:19px}
+.brand .sub{display:none}
+.sidefoot{display:flex;align-items:center;gap:8px}
+.side .tabs{position:static;background:transparent;margin:8px -12px 0;padding:0 12px 10px}
+.tab{display:inline-flex;align-items:center;gap:8px}
+.tab::before{font-size:16px;line-height:1}
+.tab[data-tab=aaj]::before{content:"📋"} .tab[data-tab=team]::before{content:"👥"} .tab[data-tab=fc]::before{content:"📈"}
+.tab[data-tab=sabzi]::before{content:"🥬"} .tab[data-tab=month]::before{content:"📦"} .tab[data-tab=recipe]::before{content:"📖"}
+.tab[data-tab=fam]::before{content:"🍲"} .tab[data-tab=lab]::before{content:"💡"} .tab[data-tab=rates]::before{content:"₹";font-weight:800}
+.main{min-width:0}
+.topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:12px 14px}
+.datebox{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.datebox strong{font-size:17px;margin-left:6px}
+.btn.icon{min-width:38px;padding:7px 0;font-size:18px;line-height:1}
+.content{padding:0 14px 48px;display:grid;gap:16px}
+.pickhint{display:none}
+@media (min-width:1024px){
+  .app{display:grid;grid-template-columns:248px minmax(0,1fr)}
+  .side{height:100vh;border-bottom:0;border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:16px;overflow:auto}
+  .brand{flex-direction:column;align-items:stretch;gap:12px;order:0}
+  .brand h1{font-size:22px}
+  .brand .sub{display:block;font-size:13px}
+  .sidefoot{justify-content:space-between}
+  .side .tabs{flex-direction:column;flex-wrap:nowrap;overflow:visible;margin:0;padding:0;gap:4px}
+  .side .tab{border:0;border-radius:10px;padding:10px 12px;background:transparent;color:var(--ink2,#334155);font-size:15px;justify-content:flex-start;white-space:normal;text-align:left}
+  .side .tab:hover{background:var(--bg)}
+  .side .tab[aria-selected="true"]{background:#E6F4F2;color:var(--brand)}
+  .topbar{position:sticky;top:0;z-index:10;background:rgba(246,247,249,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:12px 24px}
+  .content{padding:20px 24px 56px;max-width:1600px}
+  /* Aaj: baayein ghravy, daayein taiyari + top dish */
+  #tab-aaj{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);align-items:start}
+  #tab-aaj>.tiles{grid-column:1/-1}
+  #tab-aaj>section.panel:nth-of-type(1){grid-row:span 2}
+  #aajTiles{grid-template-columns:repeat(5,minmax(0,1fr))}
+  /* Team: kaam ke block columns mein */
+  #blocks{grid-template-columns:repeat(auto-fill,minmax(360px,1fr));align-items:start}
+  /* Forecast: do column */
+  #tab-fc{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+  #tab-fc>section.panel:first-child,#tab-fc>.tiles,#tab-fc>section.panel:last-child{grid-column:1/-1}
+  /* Recipe + Lab: baayein list, daayein detail (khidki nahi) */
+  #tab-recipe,#tab-lab{grid-template-columns:minmax(300px,400px) minmax(0,1fr);align-items:start}
+  #tab-recipe>section.panel,#tab-lab>section.panel{grid-column:1/-1}
+  #recipeCards,#labCards{grid-column:1;grid-template-columns:1fr;max-height:calc(100vh - 230px);overflow:auto;padding-right:4px}
+  #recipeDetail:not([hidden]),#labDetail:not([hidden]),.pickhint{grid-column:2;grid-row:2 / span 3;position:sticky;top:76px;inset:auto;margin:0;max-width:none;max-height:calc(100vh - 96px);overflow:auto;box-shadow:0 1px 2px rgba(15,23,42,.04);z-index:1}
+  #recipeDetail:not([hidden])~.pickhint,#labDetail:not([hidden])~.pickhint{display:none}
+  .pickhint{display:grid;place-items:center;min-height:320px;border:2px dashed var(--line);border-radius:16px;font-size:42px;color:var(--muted)}
+  .cards .rcard{padding:10px 12px}
+  /* Parivar: chips baayein */
+  .lefts{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+}
+@media (min-width:1500px){#tab-aaj{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}}
 </style>
 <style>
 .lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
@@ -111,27 +170,16 @@ pre.copy{white-space:pre-wrap;font-family:var(--mono);font-size:13px;background:
 .lang button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink)}
 </style>
 
-<div class="wrap">
-  <header class="top">
-    <div>
-      <h1 data-i="title">Ashirvad Rasoi Board</h1>
-      <p class="sub" data-i="subtitle"></p>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <div class="brandtxt"><h1 data-i="title">Ashirvad Manager</h1><p class="sub" data-i="subtitle"></p></div>
+      <div class="sidefoot">
+        <div class="lang" role="group" aria-label="Language / भाषा"><button type="button" data-lang="hi">हिंदी</button><button type="button" data-lang="en">English</button></div>
+        <span id="saveState" class="pill save"></span>
+      </div>
     </div>
-    <div class="row">
-      <div class="lang" role="group" aria-label="Language / भाषा"><button type="button" data-lang="hi">हिंदी</button><button type="button" data-lang="en">English</button></div>
-      <button class="btn" id="prev" data-ia="prevDay">‹</button>
-      <button class="btn" id="today" data-i="today"></button>
-      <button class="btn" id="next" data-ia="nextDay">›</button>
-    </div>
-  </header>
-  <div class="row">
-    <strong id="dateLabel" style="font-size:18px"></strong>
-    <span id="busyPill" class="pill"></span>
-    <span id="fcPill" class="pill info"></span>
-    <span id="saveState" class="pill save"></span>
-  </div>
-
-  <nav class="tabs" role="tablist" data-ia="tabsLabel">
+    <nav class="tabs" role="tablist" data-ia="tabsLabel">
     <button class="tab" role="tab" data-tab="aaj" data-i="tAaj"></button>
     <button class="tab" role="tab" data-tab="team" data-i="tTeam"></button>
     <button class="tab" role="tab" data-tab="fc" data-i="tFc"></button>
@@ -142,7 +190,18 @@ pre.copy{white-space:pre-wrap;font-family:var(--mono);font-size:13px;background:
     <button class="tab" role="tab" data-tab="lab" data-i="tLab"></button>
     <button class="tab" role="tab" data-tab="rates" data-i="tRates"></button>
   </nav>
-
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div class="datebox">
+        <button class="btn icon" id="prev" data-ia="prevDay">‹</button>
+        <button class="btn" id="today" data-i="today"></button>
+        <button class="btn icon" id="next" data-ia="nextDay">›</button>
+        <strong id="dateLabel"></strong>
+      </div>
+      <div class="row"><span id="busyPill" class="pill"></span><span id="fcPill" class="pill info"></span></div>
+    </header>
+    <div class="content">
   <!-- AAJ -->
   <section id="tab-aaj" class="detail">
     <div class="tiles" id="aajTiles"></div>
@@ -261,8 +320,9 @@ pre.copy{white-space:pre-wrap;font-family:var(--mono);font-size:13px;background:
       </div>
       <div class="chips" id="recipeKind" role="group"></div>
     </section>
-    <div id="recipeDetail" class="panel" hidden></div>
     <div class="cards" id="recipeCards"></div>
+    <div id="recipeDetail" class="panel" hidden></div>
+    <div class="pickhint" id="recipeHint">📖</div>
   </section>
 
   <!-- FAMILY -->
@@ -313,9 +373,12 @@ pre.copy{white-space:pre-wrap;font-family:var(--mono);font-size:13px;background:
       <div class="row"><button class="btn primary" id="aiGo" data-i="aiGo"></button><button class="btn" id="aiStop" data-i="stop" hidden></button><span class="hi" id="aiMsg"></span></div>
       <div id="aiOut"></div>
     </section>
-    <div id="labDetail" class="panel" hidden></div>
     <div class="cards" id="labCards"></div>
+    <div id="labDetail" class="panel" hidden></div>
+    <div class="pickhint" id="labHint">💡</div>
   </section>
+    </div>
+  </main>
 </div>
 
 <script>
