@@ -1,6 +1,6 @@
 // 🔐 Dashboard password: Super Admin login ke baad dashboard kholne ke liye ek alag password.
 // - Password app ke code mein nahi, database mein (bcrypt hash) har admin ka alag: appsettings "dashPassword:<adminId>"
-// - Sahi password → "dash_unlock" cookie (browser band hone tak / max 12 ghante)
+// - Sahi password → "dash_unlock" cookie: 30 minute tak dashboard mein kuch na kiya to phir lock (browser band → bhi lock)
 // - Dashboard wali report APIs (owner, insights, forecast, biz, performance, ...) bina unlock ke 423 dengi
 // - Password bhool gaye → apna admin LOGIN password daal ke naya bana sakte hain
 import { Router } from "express";
@@ -27,12 +27,13 @@ const getHash = async (id) => {
   return hash;
 };
 
+const IDLE = "30m"; // itni der dashboard mein kuch na kiya → phir password
 export const dashState = async (req) => {
   const hash = await getHash(req.user._id);
   if (!hash) return { set: false, unlocked: true };
   try {
     const d = jwt.verify(req.cookies?.[COOKIE] || "", process.env.JWT_SECRET_KEY);
-    return { set: true, unlocked: d.k === "dash" && String(d.id) === String(req.user._id) && d.v === tag(hash) };
+    return { set: true, unlocked: d.k === "dash" && String(d.id) === String(req.user._id) && d.v === tag(hash), iat: d.iat, hash };
   } catch {
     return { set: true, unlocked: false };
   }
@@ -46,7 +47,11 @@ export const dashGuard = async (req, res, next) => {
   if (!LOCKED.some((p) => path === p || path.startsWith(p + "/"))) return next();
   try {
     const s = await dashState(req);
-    if (s.unlocked) return next();
+    if (s.unlocked) {
+      // kaam chal raha hai → 30 minute phir se shuru (har minute mein ek baar naya cookie)
+      if (s.hash && s.iat && Date.now() / 1000 - s.iat > 60) unlockCookie(res, req.user._id, s.hash);
+      return next();
+    }
     return res.status(423).json({ success: false, dashLocked: true, message: "Dashboard is locked. Please enter the dashboard password." });
   } catch (e) {
     return res.status(500).json({ success: false, message: e.message });
@@ -54,7 +59,7 @@ export const dashGuard = async (req, res, next) => {
 };
 
 const unlockCookie = (res, adminId, hash) =>
-  res.cookie(COOKIE, jwt.sign({ id: String(adminId), k: "dash", v: tag(hash) }, process.env.JWT_SECRET_KEY, { expiresIn: "12h" }), OPTS);
+  res.cookie(COOKIE, jwt.sign({ id: String(adminId), k: "dash", v: tag(hash) }, process.env.JWT_SECRET_KEY, { expiresIn: IDLE }), OPTS);
 
 // galat password: 5 baar ke baad 15 minute ruko
 const fails = new Map();
@@ -73,7 +78,8 @@ router.use((req, res, next) => (isAdmin(req.user) ? next() : res.status(403).jso
 
 router.get("/status", async (req, res) => {
   try {
-    res.json({ success: true, data: await dashState(req) });
+    const { set, unlocked } = await dashState(req); // hash / iat bahar nahi bhejte
+    res.json({ success: true, data: { set, unlocked } });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
   }
