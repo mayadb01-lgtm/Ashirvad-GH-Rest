@@ -33,7 +33,7 @@ export const scaleDeep = (v, f, key = "") => {
   return v;
 };
 
-// Is account ke liye: har GET (dekhna) khula, aankde kam karke. Likhna / badalna / mitana band.
+// Is account ke liye: har GET (dekhna) khula, aankde kam karke. Likhna / badalna / mitana: server kuch nahi karta, sirf "Saved" jawab.
 // Ye GET bhi band: backup (asli data download), view-account list.
 const BLOCK_GET = ["/api/v1/backup", "/api/v1/admin/view-accounts", "/api/v1/import"];
 const OPEN_WRITE = ["/api/v1/dash-lock/"]; // apna dashboard password
@@ -46,8 +46,11 @@ export const viewOnlyGate = (req, res, next) => {
   const isGet = req.method === "GET";
   const blockedGet = isGet && BLOCK_GET.some((p) => path === p || path.startsWith(p + "/"));
   const openWrite = OPEN_WRITE.some((p) => path.startsWith(p));
-  if (blockedGet || (!isGet && !openWrite)) {
-    return res.status(403).json({ success: false, viewOnly: true, message: "This account can only view. Saving or changing is not allowed." });
+  if (blockedGet) return res.status(404).json({ success: false, message: "Not found" });
+  // Save / badlaav / delete: kuch nahi hota, lekin jawab "ho gaya" jaisa (malik ki marzi se). Asli data kabhi nahi badalta.
+  if (!isGet && !openWrite) {
+    const body = req.body && typeof req.body === "object" && !Array.isArray(req.body) ? req.body : {};
+    return res.status(200).json({ success: true, message: "Saved successfully", data: { ...body, _id: body._id || undefined } });
   }
   if (isGet) {
     const f = scaleOf(u);
