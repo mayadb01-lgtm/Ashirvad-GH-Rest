@@ -177,17 +177,26 @@ const mandiSchema = new mongoose.Schema(
 const Mandi = mongoose.models.KitchenMandi || mongoose.model("KitchenMandi", mandiSchema, "kitchen_mandi");
 const MANDI_RES = "9ef84268-d588-465a-a308-a864a43d0070";
 const SAMPLE_KEY = "579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b"; // data.gov.in ki public sample key (apni key: env DATAGOV_KEY)
-let mandiAt = 0, mandiBusy = null;
+let mandiAt = 0, mandiBusy = null, keyCache = null;
+// Apni data.gov.in key: env DATAGOV_KEY, warna malik ne Manager se jo save ki (kabhi wapas nahi bheji jaati), warna public sample key
+async function apiKey() {
+  if (process.env.DATAGOV_KEY) return process.env.DATAGOV_KEY;
+  if (keyCache === null) keyCache = (await KitchenDoc.findById("secret/datagov").lean().catch(() => null))?.data?.key || "";
+  return keyCache || SAMPLE_KEY;
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+class RateLimited extends Error {}
 const dmyIso = (s) => { const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(s || "")); return m ? `${m[3]}-${m[2]}-${m[1]}` : null; };
 async function pullMandi() {
-  const key = process.env.DATAGOV_KEY || SAMPLE_KEY;
+  const key = await apiKey();
   let off = 0, total = Infinity, pages = 0; const ops = [];
   while (off < total && pages < 40) {
     const url = `https://api.data.gov.in/resource/${MANDI_RES}?api-key=${encodeURIComponent(key)}&format=json&limit=100&offset=${off}&filters%5Bstate.keyword%5D=Gujarat&filters%5Bdistrict%5D=Surat`;
     const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 20000);
-    let j; try { j = await (await fetch(url, { signal: ctl.signal })).json(); } finally { clearTimeout(t); }
+    let j; try { const rs = await fetch(url, { signal: ctl.signal }); if (rs.status === 429) throw new RateLimited(); j = await rs.json(); } finally { clearTimeout(t); }
     const recs = j?.records || []; total = Number(j?.total) || 0; pages++;
     if (!recs.length) break;
+    await sleep(800);
     recs.forEach((r) => {
       const date = dmyIso(r.arrival_date); if (!date) return;
       const id = [date, r.market, r.commodity, r.variety].join("|");
@@ -202,13 +211,14 @@ async function pullMandi() {
 const KIRANA_TERMS = ["Cummin Seed(Jeera)", "Coriander Seed", "Dry Chillies", "Ajwan", "Fennel", "Mustard", "Sesamum", "Turmeric",
   "Arhar (Tur/Red Gram)(Whole)", "Green Gram (Moong)(Whole)", "Black Gram (Urd Beans)(Whole)", "Bengal Gram(Gram)(Whole)", "Kabuli Chana",
   "Wheat", "Rice", "Bajra", "Groundnut", "Soyabean", "Methi Seeds"];
-let kiranaAt = 0, kiranaBusy = null;
+let kiranaAt = 0, kiranaBusy = null, lastLimit = null;
 async function pullTerm(term, key, ops) {
   let off = 0, total = Infinity, pages = 0;
   while (off < total && pages < 12) {
     const url = `https://api.data.gov.in/resource/${MANDI_RES}?api-key=${encodeURIComponent(key)}&format=json&limit=100&offset=${off}&filters%5Bstate.keyword%5D=Gujarat&filters%5Bcommodity%5D=${encodeURIComponent(term)}`;
     const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 20000);
-    let j; try { j = await (await fetch(url, { signal: ctl.signal })).json(); } catch { break; } finally { clearTimeout(t); }
+    let j; try { const rs = await fetch(url, { signal: ctl.signal }); if (rs.status === 429) throw new RateLimited(); j = await rs.json(); } catch (e) { if (e instanceof RateLimited) throw e; break; } finally { clearTimeout(t); }
+    await sleep(800);
     const recs = j?.records || []; total = Number(j?.total) || 0; pages++;
     if (!recs.length) break;
     recs.forEach((r) => {
@@ -220,19 +230,19 @@ async function pullTerm(term, key, ops) {
   }
 }
 async function pullKirana() {
-  const key = process.env.DATAGOV_KEY || SAMPLE_KEY; const ops = [];
-  for (const term of KIRANA_TERMS) await pullTerm(term, key, ops);
-  if (ops.length) await Mandi.bulkWrite(ops, { ordered: false });
+  const key = await apiKey(); const ops = [];
+  try { for (const term of KIRANA_TERMS) await pullTerm(term, key, ops); }
+  finally { if (ops.length) await Mandi.bulkWrite(ops, { ordered: false }); }
   return ops.length;
 }
 router.get("/mandi", async (req, res) => {
   try {
     if (Date.now() - kiranaAt > 6 * 3600 * 1000 && !kiranaBusy) {
       kiranaAt = Date.now(); // background — jawab ke liye intezaar nahi
-      kiranaBusy = pullKirana().catch(() => { kiranaAt = 0; }).finally(() => { kiranaBusy = null; });
+      kiranaBusy = pullKirana().catch((e) => { kiranaAt = Date.now() - (e instanceof RateLimited ? 5 : 5.5) * 3600 * 1000; lastLimit = e instanceof RateLimited ? new Date() : lastLimit; }).finally(() => { kiranaBusy = null; });
     }
     if (Date.now() - mandiAt > 3 * 3600 * 1000) {
-      mandiBusy ||= pullMandi().then(() => { mandiAt = Date.now(); }).catch(() => {}).finally(() => { mandiBusy = null; });
+      mandiBusy ||= pullMandi().then(() => { mandiAt = Date.now(); }).catch((e) => { if (e instanceof RateLimited) { lastLimit = new Date(); mandiAt = Date.now() - 2 * 3600 * 1000; } }).finally(() => { mandiBusy = null; });
       await Promise.race([mandiBusy, new Promise((r) => setTimeout(r, 15000))]);
     }
     const since = new Date(Date.now() - 10 * 864e5).toISOString().slice(0, 10);
@@ -241,7 +251,22 @@ router.get("/mandi", async (req, res) => {
     const seen = new Set(), latest = [];
     rows.forEach((r) => { const k = (r.scope || "surat") + "|" + r.market + "|" + r.commodity + "|" + r.variety + "|" + (r.grade || ""); if (seen.has(k)) return; seen.add(k); latest.push({ ...r, min: r.min / 100, max: r.max / 100, modal: r.modal / 100 }); });
     const surat = latest.filter((r) => r.scope !== "gujarat"), gujarat = latest.filter((r) => r.scope === "gujarat");
-    res.json({ success: true, source: "Agmarknet (data.gov.in)", unit: "₹/kg", fetchedAt: mandiAt ? new Date(mandiAt) : null, kiranaBusy: !!kiranaBusy, rows: surat, kirana: gujarat });
+    res.json({ success: true, source: "Agmarknet (data.gov.in)", unit: "₹/kg", fetchedAt: mandiAt ? new Date(mandiAt) : null, kiranaBusy: !!kiranaBusy, ownKey: !!(process.env.DATAGOV_KEY || keyCache), rateLimitedAt: lastLimit, rows: surat, kirana: gujarat });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+// Malik apni data.gov.in key save kare (sirf Super Admin; key kabhi wapas nahi bheji jaati)
+router.post("/datagov-key", async (req, res) => {
+  try {
+    const u = req.user;
+    if (!(u?.constructor?.modelName === "Admin" && u.viewOnly !== true)) return res.status(403).json({ success: false, message: "Only the owner can set this." });
+    const key = String(req.body?.key || "").trim();
+    if (key && !/^[A-Za-z0-9]{20,80}$/.test(key)) return res.status(400).json({ success: false, message: "This does not look like a data.gov.in API key." });
+    await KitchenDoc.updateOne({ _id: "secret/datagov" }, { $set: { col: "secret", data: { key }, by: who(u), at: new Date() } }, { upsert: true });
+    keyCache = key; mandiAt = 0; kiranaAt = 0;
+    res.json({ success: true, set: !!key });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
   }
