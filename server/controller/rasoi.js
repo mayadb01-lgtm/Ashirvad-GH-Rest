@@ -272,4 +272,24 @@ router.post("/datagov-key", async (req, res) => {
   }
 });
 
+// Asli kharcha (din ki entry ke Expenses se): sirf maal / utility ke naam aur rakam, staff-personal nahi. Sirf padhta hai.
+router.get("/spend", async (req, res) => {
+  try {
+    const now = new Date(), d30 = new Date(now - 30 * 864e5), d365 = new Date(now - 365 * 864e5);
+    const rows = await mongoose.connection.db.collection("restentries").aggregate([
+      { $match: { entryCreateDate: { $gte: d365 } } },
+      { $unwind: "$expenses" },
+      { $match: { "expenses.categoryName": { $in: ["Food & Beverages", "Utility"] } } },
+      { $group: { _id: { c: "$expenses.categoryName", n: { $trim: { input: { $toLower: "$expenses.expenseName" } } } },
+        name: { $first: "$expenses.expenseName" }, y: { $sum: "$expenses.amount" }, ny: { $sum: 1 },
+        m: { $sum: { $cond: [{ $gte: ["$entryCreateDate", d30] }, "$expenses.amount", 0] } },
+        nm: { $sum: { $cond: [{ $gte: ["$entryCreateDate", d30] }, 1, 0] } } } },
+      { $sort: { y: -1 } }, { $limit: 80 },
+    ]).toArray();
+    res.json({ success: true, rows: rows.map((r) => ({ cat: r._id.c, name: String(r.name || "").trim(), year: Math.round(r.y), yearTimes: r.ny, month: Math.round(r.m), monthTimes: r.nm })) });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
 export default router;

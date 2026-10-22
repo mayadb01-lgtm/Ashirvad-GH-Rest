@@ -120,7 +120,7 @@ body{font-size:15px}
 .tab::before{font-size:16px;line-height:1}
 .tab[data-tab=aaj]::before{content:"📋"} .tab[data-tab=team]::before{content:"👥"} .tab[data-tab=fc]::before{content:"📈"}
 .tab[data-tab=sabzi]::before{content:"🥬"} .tab[data-tab=month]::before{content:"📦"} .tab[data-tab=recipe]::before{content:"📖"}
-.tab[data-tab=fam]::before{content:"🍲"} .tab[data-tab=lab]::before{content:"💡"} .tab[data-tab=rates]::before{content:"₹";font-weight:800} .tab[data-tab=cmp]::before{content:"⚖️"}
+.tab[data-tab=fam]::before{content:"🍲"} .tab[data-tab=lab]::before{content:"💡"} .tab[data-tab=rates]::before{content:"₹";font-weight:800} .tab[data-tab=cmp]::before{content:"⚖️"} .tab[data-tab=pack]::before{content:"🥡"}
 .st{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12.5px;font-weight:700;white-space:nowrap}
 .st.ok{background:var(--ok-soft);color:var(--ok)} .st.mid{background:var(--warn-soft);color:var(--warn)} .st.bad{background:#FDE8E8;color:#B91C1C} .st.low{background:var(--info-soft);color:var(--info)} .st.def{background:var(--line);color:var(--muted)}
 .main{min-width:0}
@@ -191,6 +191,7 @@ body{font-size:15px}
     <button class="tab" role="tab" data-tab="fam" data-i="tFam"></button>
     <button class="tab" role="tab" data-tab="lab" data-i="tLab"></button>
     <button class="tab" role="tab" data-tab="cmp" data-i="tCmp"></button>
+    <button class="tab" role="tab" data-tab="pack" data-i="tPack"></button>
     <button class="tab" role="tab" data-tab="rates" data-i="tRates"></button>
   </nav>
   </aside>
@@ -354,6 +355,16 @@ body{font-size:15px}
   <!-- RATE COMPARE -->
   <section id="tab-cmp" class="detail" hidden>
     <section class="panel">
+      <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><h2 data-i="topTitle"></h2><div class="row" style="gap:6px" id="topSort" role="group"></div></div>
+      <p class="note" data-i="topNote"></p>
+      <div class="tablebox"><table><thead><tr><th>#</th><th data-i="thItem"></th><th class="n" data-i="thTQty"></th><th class="n" data-i="thTSpend"></th><th class="n" data-i="thCFair"></th><th class="n" data-i="thCYour"></th><th class="n" data-i="thCDiff"></th></tr></thead><tbody id="topRows"></tbody></table></div>
+    </section>
+    <section class="panel">
+      <div class="row" style="justify-content:space-between"><h2 data-i="spendTitle"></h2><span class="hi" id="spendTot"></span></div>
+      <p class="note" data-i="spendNote"></p>
+      <div class="tablebox"><table><thead><tr><th>#</th><th data-i="thSName"></th><th class="n" data-i="thS30"></th><th class="n" data-i="thS365"></th><th class="n" data-i="thSAvg"></th></tr></thead><tbody id="spendRows"></tbody></table></div>
+    </section>
+    <section class="panel">
       <div class="row" style="justify-content:space-between"><h2 data-i="cmpTitle"></h2><span class="hi" id="cmpAsOf"></span></div>
       <p class="note" data-i="cmpNote"></p>
       <div class="tiles" id="cmpTiles"></div>
@@ -368,6 +379,25 @@ body{font-size:15px}
       <h2 data-i="cmpWhyTitle"></h2>
       <div class="tablebox"><table><thead><tr><th data-i="cmpWhyT1"></th><th class="n" data-i="cmpWhyT2"></th><th data-i="cmpWhyT3"></th></tr></thead><tbody id="cmpWhyRows"></tbody></table></div>
       <p class="note" data-i="cmpWhyNote"></p>
+    </section>
+  </section>
+
+  <!-- PARCEL PACKING -->
+  <section id="tab-pack" class="detail" hidden>
+    <section class="panel">
+      <h2 data-i="packTitle"></h2>
+      <p class="note" data-i="packNote"></p>
+      <div class="row" style="gap:12px;align-items:end;flex-wrap:wrap">
+        <label class="f" for="packOrders"><span data-i="packOrdersL"></span><input type="number" id="packOrders" min="0" step="1" style="width:110px"></label>
+        <span class="hi" id="packPlastik"></span>
+      </div>
+      <div class="tiles" id="packTiles"></div>
+      <div class="tablebox"><table><thead><tr><th data-i="thPItem"></th><th data-i="thPBest"></th><th class="n" data-i="thPUse"></th><th class="n" data-i="thPMonth"></th><th class="n" data-i="thPMarket"></th><th class="n" data-i="thCYour"></th><th class="n" data-i="thCDiff"></th><th class="n" data-i="thPCost"></th></tr></thead><tbody id="packRows"></tbody></table></div>
+      <div class="row" style="gap:10px"><button class="btn" id="packReset" data-i="packReset"></button></div>
+    </section>
+    <section class="panel">
+      <h2 data-i="packTipsTitle"></h2>
+      <ul id="packTips" style="margin:0;padding-left:20px;display:grid;gap:6px"></ul>
     </section>
   </section>
 
@@ -477,7 +507,18 @@ const UI={
  noPerm:["आपको बदलने की अनुमति नहीं - सिर्फ़ देख सकते हैं","You don't have permission to edit - view only"], saveFail:["सेव नहीं हुआ - इंटरनेट जाँचें","Not saved - check internet"], liveStop:["लाइव अपडेट रुक गया - पेज दोबारा खोलें","Live updates stopped - reload the page"],
  close:["बंद करें","Close"],
  backTitle:["पिछले 8 हफ़्ते: असली बिक्री बनाम पूर्वानुमान","Last 8 weeks: actual sales vs forecast"], smartPh:["ख़ाली = स्मार्ट (अपने आप)","blank = smart (automatic)"],
- tRates:["दरें (रेट)","Rates"], tCmp:["भाव तुलना","Rate check"],
+ tRates:["दरें (रेट)","Rates"], tCmp:["भाव तुलना","Rate check"], tPack:["पार्सल पैकिंग","Parcel packing"],
+ topTitle:["सबसे ज़्यादा इस्तेमाल होने वाला सामान (अगले 30 दिन)","Most used items (next 30 days)"],
+ topNote:["रेसिपी × पूर्वानुमान बिक्री + बैंक्वेट ऑर्डर से। जिनका मंडी भाव है उनका सही भाव और ± % भी दिखता है।","From recipes × forecast sales + banquet orders. Where a mandi price exists, the fair rate and ± % are shown too."],
+ thTQty:["मात्रा / महीना","Qty / month"], thTSpend:["ख़र्च / महीना","Spend / month"],
+ spendTitle:["असली ख़र्च - दिन की एंट्री से","Actual spend - from daily entries"],
+ spendNote:["रेस्टोरेंट की रोज़ की एंट्री के 'ख़र्च' में जो नाम से लिखा गया (खाने-पीने का सामान और यूटिलिटी)। स्टाफ़, किराया, निजी ख़र्च इसमें नहीं।","What was written by name in the restaurant's daily entry 'Expenses' (food & beverages and utility). Staff, rent and personal spend are not included."],
+ thSName:["ख़र्च का नाम","Expense name"], thS30:["पिछले 30 दिन","Last 30 days"], thS365:["पिछले 12 महीने","Last 12 months"], thSAvg:["महीने का औसत","Monthly avg"],
+ packTitle:["पार्सल पैकिंग का सामान - रोज़ के ऑर्डर से अंदाज़","Parcel packing material - estimate from daily orders"],
+ packNote:["इस ऐप में पार्सल ऑर्डर गिनती नहीं है (वो POS में है), इसलिए ऊपर रोज़ के औसत पार्सल ऑर्डर डालें। 'एक ऑर्डर में' = एक पार्सल में औसत कितना लगता है - आप बदल सकते हैं। बाज़ार भाव = IndiaMART जैसी साइट पर थोक लिस्टिंग का मोटा दायरा (GST अलग), सरकारी भाव नहीं - अपने सप्लायर का भाव 'आपकी दर' में डालें।","This app does not count parcel orders (that is in the POS), so enter your average daily parcel orders above. 'Per order' = average used in one parcel - you can change it. Market rate = rough range from wholesale listings like IndiaMART (GST extra), not a government price - enter your supplier's rate in 'Your rate'."],
+ packOrdersL:["रोज़ के पार्सल ऑर्डर (औसत)","Parcel orders per day (avg)"],
+ thPItem:["सामान","Item"], thPBest:["सबसे ठीक साइज़ / क्वालिटी","Best size / quality"], thPUse:["एक ऑर्डर में","Per order"], thPMonth:["महीने में","Per month"], thPMarket:["बाज़ार भाव ₹/नग","Market ₹/pc"], thPCost:["ख़र्च / महीना","Cost / month"],
+ packReset:["सारे अंदाज़ वापस","Reset estimates"], packTipsTitle:["पैकिंग के लिए ज़रूरी बातें","Packing tips"],
  cmpTitle:["भाव तुलना: मंडी + होटल तक का ख़र्च बनाम आपका रेट","Rate check: mandi + delivery cost vs your rate"],
  cmpNote:["'सही भाव' = आज का सरकारी मंडी भाव + होटल तक पहुँचाने का % (कमीशन, गाड़ी, छँटाई-बिगाड़, सप्लायर का मुनाफ़ा)। हर सामान का % नीचे बदल सकते हैं - आपके हिसाब से सेव रहेगा। 'आपकी दर' = सप्लायर के बिल का भाव (यहीं बदलें)। ± % = आपकी दर सही भाव से कितनी ऊपर/नीचे। मंडी भाव अपने आप रोज़ बदलते हैं; आपकी दर तभी बदलेगी जब आप बदलेंगे।","'Fair rate' = today's government mandi price + % for getting it to the hotel (commission, transport, sorting/spoilage, supplier margin). You can change each item's % below - it stays saved. 'Your rate' = the supplier's bill rate (edit here). ± % = how far your rate is above/below the fair rate. Mandi prices update by themselves every day; your rate changes only when you change it."],
  thCMandi:["मंडी भाव ₹/kg","Mandi ₹/kg"], thCPct:["+ % होटल तक","+ % to hotel"], thCFair:["सही भाव ₹","Fair rate ₹"], thCYour:["आपकी दर ₹","Your rate ₹"], thCDiff:["± %","± %"], thCMonth:["₹ फ़र्क / महीना","₹ diff / month"], thCStatus:["स्थिति","Status"],
@@ -1058,6 +1099,76 @@ $("mandiApply").onclick=()=>{ const b=$("mandiApply"); if(b.dataset.sure!=="1"){
   cmpItems().filter(x=>x.kind==="veg").forEach(x=>{rates[x.k]=Math.round(x.fair*2)/2; n++});
   applyRates(); saveRates(); $("mandiMsg").textContent=T(`${n} सब्ज़ियों के रेट भरे ✓`,`${n} vegetable rates filled ✓`); renderCmp() };
 
+// ---------- SABSE ZYADA ISTEMAAL + ASLI KHARCH ----------
+let topSort="qty", SPEND=null;
+function loadSpend(){ if(!db||!db.spend||SPEND) return; SPEND={rows:[]}; db.spend().then(j=>{SPEND=j; if(tab==="cmp"||tab==="pack") renderTab()}).catch(()=>{SPEND=null}) }
+function renderTop(){
+  if(!$("topRows")) return;
+  const S=[["qty",T("मात्रा से","By quantity")],["rs",T("ख़र्च से","By spend")]];
+  $("topSort").innerHTML=S.map(([v,l])=>`<button class="chip" type="button" data-s="${v}" aria-pressed="${v===topSort}">${esc(l)}</button>`).join("");
+  $("topSort").querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{topSort=b.dataset.s;renderTop()});
+  const mq=monthQty(), cm=Object.fromEntries(cmpItems().map(x=>[x.k,x]));
+  const list=Object.keys(mq).filter(k=>ING[k]&&k!=="water"&&k!=="misc"&&mq[k]>0&&(topSort==="rs"||ING[k].u==="kg"||ING[k].u==="L"))
+    .map(k=>({k,q:mq[k],rs:mq[k]*ING[k].r})).sort((a,b)=>topSort==="qty"?b.q-a.q:b.rs-a.rs).slice(0,20);
+  $("topRows").innerHTML=list.map((x,i)=>{const c=cm[x.k]; const col=!c?"var(--muted)":c.st==="bad"?"#B91C1C":c.st==="mid"?"var(--warn)":c.st==="low"?"var(--info)":"var(--ok)";
+    const q=x.q>=10?Math.round(x.q):Math.round(x.q*10)/10;
+    return `<tr><td class="hi">${i+1}</td><td><b>${esc(ingName(x.k))}</b></td><td class="n"><b>${q}</b> ${esc(unitLabel(x.k))}</td><td class="n">${fmtR(x.rs)}</td><td class="n">${c?"₹"+r1(c.fair):"–"}</td><td class="n">₹${r1(ING[x.k].r)}${rates[x.k]==null?`<span class="hi"> ${T("पुरानी","default")}</span>`:""}</td><td class="n" style="color:${col};font-weight:700">${c?(c.d>=0?"+":"")+Math.round(c.d)+"%":"–"}</td></tr>`}).join("")
+    ||`<tr><td colspan="7" class="empty">–</td></tr>`;
+}
+function renderSpend(){
+  if(!$("spendRows")) return;
+  if(!SPEND||!SPEND.rows){ $("spendRows").innerHTML=`<tr><td colspan="5" class="empty">${T("लोड हो रहा है…","Loading…")}</td></tr>`; return }
+  const rows=SPEND.rows.filter(r=>r.year>0).slice(0,25);
+  $("spendTot").textContent=T("30 दिन: ","30 days: ")+fmtR(SPEND.rows.reduce((a,r)=>a+r.month,0))+" · "+T("12 महीने: ","12 months: ")+fmtR(SPEND.rows.reduce((a,r)=>a+r.year,0));
+  $("spendRows").innerHTML=rows.map((r,i)=>`<tr><td class="hi">${i+1}</td><td><b>${esc(r.name)}</b> <span class="hi">${esc(r.cat==="Utility"?T("यूटिलिटी","Utility"):T("खाना-पीना","Food"))}</span></td><td class="n">${r.month?fmtR(r.month):"–"}<span class="hi"> (${r.monthTimes}×)</span></td><td class="n">${fmtR(r.year)}<span class="hi"> (${r.yearTimes}×)</span></td><td class="n"><b>${fmtR(r.year/12)}</b></td></tr>`).join("")||`<tr><td colspan="5" class="empty">–</td></tr>`;
+}
+
+// ---------- PARCEL PACKING ----------
+const PACK=[
+ ["c400",["PP डिब्बा 400ml (ढक्कन वाला)","PP container 400ml (with lid)"],["सब्ज़ी, दाल, ग्रेवी। माइक्रोवेव-सेफ़ PP, गोल, ढक्कन कसकर बंद हो (लीक-प्रूफ़)। 1 सब्ज़ी = 1 डिब्बा।","Sabzi, dal, gravy. Microwave-safe PP, round, tight leak-proof lid. 1 sabzi = 1 box."],1.6,[2.5,4.5]],
+ ["c100",["चटनी/रायता कप 100ml","Chutney/raita cup 100ml"],["ढक्कन वाला छोटा PP कप - चटनी, रायता, सलाद ड्रेसिंग, अचार।","Small PP cup with lid - chutney, raita, salad dressing, pickle."],1,[0.8,1.6]],
+ ["f450",["सिल्वर फ़ॉइल डिब्बा 450ml (ढक्कन)","Silver foil container 450ml (lid)"],["हाफ़ राइस, जीरा राइस, पुलाव (1 प्लेट)। ढक्कन बोर्ड वाला, किनारे मोड़ कर सील।","Half rice, jeera rice, pulao (1 plate). Board lid, crimp edges to seal."],0.35,[2.5,4]],
+ ["f660",["सिल्वर फ़ॉइल डिब्बा 660ml (ढक्कन)","Silver foil container 660ml (lid)"],["फ़ुल राइस, बिरयानी, नूडल्स, फ़्राइड राइस। गर्म चीज़ के लिए सबसे अच्छा।","Full rice, biryani, noodles, fried rice. Best for hot food."],0.35,[3,5]],
+ ["roll",["सिल्वर फ़ॉइल रोल (मीटर)","Silver foil roll (metre)"],["रोटी/नान लपेटने के लिए - 11-18 माइक्रॉन। बड़ा 1 kg कैटरिंग रोल सस्ता पड़ता है।","For wrapping roti/naan - 11-18 micron. A big 1 kg catering roll works out cheaper."],0.4,[2.5,5]],
+ ["pz8",["पिज़्ज़ा बॉक्स 8\"","Pizza box 8\""],["3-प्लाई कोरुगेटेड (मोटा) - पिज़्ज़ा दबता नहीं। 2-प्लाई सस्ता पर कमज़ोर।","3-ply corrugated (thick) - pizza doesn't get crushed. 2-ply is cheaper but weak."],0.06,[4,10]],
+ ["pz10",["पिज़्ज़ा बॉक्स 10\"","Pizza box 10\""],["3-प्लाई कोरुगेटेड। मीडियम पिज़्ज़ा।","3-ply corrugated. Medium pizza."],0.03,[5,13]],
+ ["bS",["कैरी बैग छोटा (~8×10\")","Carry bag small (~8×10\")"],["1-2 डिब्बे। 120 माइक्रॉन से पतला प्लास्टिक मना है - 120 माइक्रॉन या नॉन-वूवन/पेपर लें।","1-2 boxes. Plastic thinner than 120 micron is banned - use 120 micron or non-woven/paper."],0.45,[0.8,1.8]],
+ ["bM",["कैरी बैग मीडियम (~10×14\")","Carry bag medium (~10×14\")"],["3-5 डिब्बे - सबसे ज़्यादा चलने वाला साइज़।","3-5 boxes - the most-used size."],0.45,[1.5,3]],
+ ["bL",["कैरी बैग बड़ा (~13×16\")","Carry bag large (~13×16\")"],["6+ डिब्बे या पिज़्ज़ा बॉक्स (सपाट रखने के लिए चौड़ा)।","6+ boxes or pizza box (wide enough to keep it flat)."],0.12,[2.5,4.5]]];
+const PACK_TIPS=[["प्लास्टिक कैरी बैग 120 माइक्रॉन से कम का रखना मना है (प्लास्टिक कचरा नियम) - जुर्माना लग सकता है। बिल पर माइक्रॉन लिखवाएँ।","Plastic carry bags under 120 micron are banned (Plastic Waste Management Rules) - you can be fined. Get the micron written on the bill."],
+ ["खाने के डिब्बे 'फ़ूड-ग्रेड' और गर्म के लिए PP (5 नंबर ♷) हों - पतले PET/PS डिब्बे गर्म ग्रेवी में मुड़ते हैं।","Food boxes should be food-grade and PP (code 5) for hot food - thin PET/PS boxes bend with hot gravy."],
+ ["फ़ॉइल डिब्बे का साइज़ सप्लायर हर जगह एक जैसा नहीं लिखते (450/500, 600/660) - पहले 5-10 नमूने लेकर अपने चावल की प्लेट भर कर देखें।","Foil box sizes are labelled differently by suppliers (450/500, 600/660) - try 5-10 samples with your rice portion first."],
+ ["थोक में 500-1000 नग के बॉक्स/कार्टन में लेने से 15-30% सस्ता पड़ता है; पर 2 महीने से ज़्यादा का स्टॉक न रखें (जगह और धूल)।","Buying cartons of 500-1000 pcs is 15-30% cheaper; but don't stock more than 2 months (space and dust)."],
+ ["हर पार्सल में चम्मच/टिश्यू तभी डालें जब ग्राहक माँगे - ये चुपचाप बड़ा ख़र्च बन जाता है।","Add spoon/tissue only when the customer asks - it quietly becomes a big cost."]];
+function packCfg(){ return settings.pack||{} }
+function renderPack(){
+  if(!$("packRows")) return; loadSpend();
+  const P=packCfg(), orders=P.orders==null?20:Number(P.orders);
+  if(document.activeElement!==$("packOrders")) $("packOrders").value=orders;
+  const pl=SPEND&&SPEND.rows?SPEND.rows.filter(r=>/plast|plastik|parcel|pack|disposable|thel/i.test(r.name)):[];
+  const plY=pl.reduce((a,r)=>a+r.year,0);
+  $("packPlastik").textContent=plY?T(`आपकी एंट्री में 'प्लास्टिक/पैकिंग' का असली ख़र्च: 12 महीने में ${fmtR(plY)} (महीने का ~${fmtR(plY/12)})`,`Actual 'plastic/packing' spend in your entries: ${fmtR(plY)} in 12 months (~${fmtR(plY/12)}/month)`):"";
+  let tot=0, totMk=0; const ae=document.activeElement&&document.activeElement.id;
+  $("packRows").innerHTML=PACK.map(([k,nm,best,use,mk])=>{ const u=(P.use||{})[k]!=null?Number(P.use[k]):use, mq=orders*30*u, your=(P.rate||{})[k], mid=(mk[0]+mk[1])/2, rate=your!=null?Number(your):mid;
+    const cost=mq*rate; tot+=cost; totMk+=mq*mid; const d=your!=null?(your/mid-1)*100:null; const col=d==null?"var(--muted)":d>25?"#B91C1C":d>10?"var(--warn)":d<-30?"var(--info)":"var(--ok)";
+    return `<tr><td><b>${esc(T(nm[0],nm[1]))}</b></td><td class="hi" style="min-width:220px">${esc(T(best[0],best[1]))}</td>
+      <td class="n"><input class="sm" type="number" min="0" step="0.05" id="pu-${k}" data-pu="${k}" value="${u}" style="width:70px"></td>
+      <td class="n"><b>${Math.round(mq)}</b></td><td class="n">₹${mk[0]}–${mk[1]}</td>
+      <td class="n"><input class="sm" type="number" min="0" step="0.05" id="pr-${k}" data-pr="${k}" value="${your!=null?your:""}" placeholder="${r1(mid)}" style="width:80px${your!=null?";font-weight:700":""}"></td>
+      <td class="n" style="color:${col};font-weight:700">${d==null?"–":(d>=0?"+":"")+Math.round(d)+"%"}</td><td class="n">${fmtR(cost)}</td></tr>`}).join("")+
+    `<tr class="grp"><td colspan="7">${T("कुल अंदाज़ / महीना","Total estimate / month")}</td><td class="n">${fmtR(tot)}</td></tr>`;
+  if(ae&&(ae.startsWith("pu-")||ae.startsWith("pr-"))){const el=$(ae);if(el){el.focus();const v=el.value;el.value="";el.value=v}}
+  $("packTiles").innerHTML=[[T("महीने के पार्सल","Parcels / month"),Math.round(orders*30)],[T("पैकिंग ख़र्च / महीना","Packing cost / month"),fmtR(tot)],[T("एक पार्सल की पैकिंग","Packing per parcel"),orders?"₹"+r1(tot/(orders*30)):"–"],[T("बाज़ार के बीच के भाव पर","At mid market rate"),fmtR(totMk)]]
+    .map(([k,v])=>`<div class="tile"><span class="k">${esc(k)}</span><span class="v">${v}</span></div>`).join("");
+  const save=(f)=>{settings.pack={...packCfg()}; f(settings.pack); saveSettings(); renderPack()};
+  $("packRows").querySelectorAll("input[data-pu]").forEach(i=>i.addEventListener("change",()=>save(p=>{p.use={...(p.use||{})}; const v=Number(i.value); if(i.value.trim()===""||!(v>=0)) delete p.use[i.dataset.pu]; else p.use[i.dataset.pu]=v})));
+  $("packRows").querySelectorAll("input[data-pr]").forEach(i=>i.addEventListener("change",()=>save(p=>{p.rate={...(p.rate||{})}; const v=Number(i.value); if(i.value.trim()===""||!(v>=0)) delete p.rate[i.dataset.pr]; else p.rate[i.dataset.pr]=v})));
+  $("packTips").innerHTML=PACK_TIPS.map(t=>`<li>${esc(T(t[0],t[1]))}</li>`).join("");
+}
+$("packOrders").addEventListener("change",()=>{const v=Number($("packOrders").value); settings.pack={...packCfg(),orders:v>=0?v:20}; saveSettings(); renderPack()});
+$("packReset").onclick=()=>{const b=$("packReset"); if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent=T("पक्का?","Sure?");setTimeout(()=>{b.dataset.sure="";b.textContent=U("packReset")},4000);return}
+  b.dataset.sure=""; b.textContent=U("packReset"); settings.pack={orders:packCfg().orders}; saveSettings(); renderPack()};
+
 // ---------- BHAAV TULNA: mandi + hotel tak ka % vs aapki dar ----------
 const LEAFY=["coriander","mint","spinach","methi","springonion","curryleaf"], STAPLE=["onion","potato","garlic"];
 const PCT_TYPES=[["leafy",40,["हरी पत्तेदार (धनिया, पुदीना, पालक, मेथी)","Leafy greens (coriander, mint, spinach, methi)"],["जल्दी मुरझाती हैं - छँटाई/बिगाड़ 15-20%, कमीशन-लोडिंग 5%, गाड़ी 5%, सप्लायर 10%","Wilt fast - sorting/spoilage 15-20%, commission-loading 5%, transport 5%, supplier 10%"]],
@@ -1086,7 +1197,7 @@ function cmpItems(){ const out=[];
   return out }
 let cmpFilter="all";
 function renderCmp(){
-  if(!$("cmpRows")) return;
+  if(!$("cmpRows")) return; loadSpend(); renderTop(); renderSpend();
   if(!MANDI){ $("cmpAsOf").textContent=T("भाव लोड हो रहे हैं…","Loading prices…"); $("cmpRows").innerHTML=""; $("cmpTiles").innerHTML=""; return }
   const all=cmpItems(), set=all.filter(x=>!x.isDef), cnt=s=>set.filter(x=>x.st===s).length;
   const extra=set.filter(x=>x.money>0).reduce((a,x)=>a+x.money,0), save=set.filter(x=>x.money<0).reduce((a,x)=>a-x.money,0);
@@ -1430,13 +1541,13 @@ $("rateReset").onclick=()=>{const b=$("rateReset"); if(b.dataset.sure!=="1"){b.d
 function saveRates(){ratesAt=new Date().toISOString(); debounce("rates",()=>write("rates/main",{items:rates,updatedAt:ratesAt},"rates"))}
 
 // ---------- tabs ----------
-const TABS=["aaj","team","fc","sabzi","month","recipe","fam","lab","cmp","rates"];
+const TABS=["aaj","team","fc","sabzi","month","recipe","fam","lab","cmp","pack","rates"];
 function setTab(t){tab=t;try{localStorage.setItem("rasoi-tab",t)}catch(e){}
   document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===t)));
   TABS.forEach(k=>$("tab-"+k).hidden=k!==t); ["recipeDetail","labDetail"].forEach(id=>{const b=$(id); if(b&&!(t==="recipe"&&id==="recipeDetail")){b.hidden=true}}); renderTab(); try{window.scrollTo(0,0)}catch(e){}}
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 document.addEventListener("keydown",e=>{if(e.key==="Escape")["recipeDetail","labDetail"].forEach(id=>{const b=$(id); if(b&&!b.hidden){b.hidden=true;b.innerHTML=""}})});
-function renderTab(){({aaj:renderAaj,team:renderTeam,fc:renderFc,sabzi:renderSabzi,month:()=>{monthOptions();renderMonth()},recipe:renderRecipeList,fam:renderFam,lab:renderLab,cmp:renderCmp,rates:renderRates})[tab]()}
+function renderTab(){({aaj:renderAaj,team:renderTeam,fc:renderFc,sabzi:renderSabzi,month:()=>{monthOptions();renderMonth()},recipe:renderRecipeList,fam:renderFam,lab:renderLab,cmp:renderCmp,pack:renderPack,rates:renderRates})[tab]()}
 function renderAll(){renderHeader();renderTab()}
 
 // ---------- saving ----------
@@ -1467,7 +1578,7 @@ async function loadDay(d){
   else { const v=lsGet("days/"+d); if(v){dayDocs[d]=v;curState=normDay(v)} renderAll() }
 }
 async function loadShared(){
-  const s=await getDoc("settings/main"); if(s) settings={month:{...(s.month||{})},buffer:s.buffer==null?10:s.buffer,fest:{...(s.fest||{})},mandiPct:s.mandiPct==null?20:s.mandiPct,markup:{...(s.markup||{})}};
+  const s=await getDoc("settings/main"); if(s) settings={month:{...(s.month||{})},buffer:s.buffer==null?10:s.buffer,fest:{...(s.fest||{})},mandiPct:s.mandiPct==null?20:s.mandiPct,markup:{...(s.markup||{})},pack:{...(s.pack||{})}};
   SMC={};
   const st=await getDoc("stock/main"); if(st&&st.items) stock={...st.items};
   const bm=await getDoc("bqmap/main"); if(bm&&bm.map) bqmap={...bm.map};
@@ -1491,6 +1602,7 @@ function makeDb(API){
     sales:()=>req("GET","sales"),
     banquet:(f,t)=>req("GET","banquet?from="+f+"&to="+t),
     mandi:()=>req("GET","mandi"),
+    spend:()=>req("GET","spend"),
     setKey:(key)=>req("POST","datagov-key",{key}),
     doc(path){return {
       async get(){const j=await req("GET","doc/"+path); return {exists:!!j.exists,data:()=>j.data}},
