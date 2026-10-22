@@ -20,7 +20,7 @@ const RasoiBoard = ({ height = "calc(100vh - 64px)" }) => {
       .catch((e) => {
         if (!alive) return;
         const s = e?.response?.status;
-        setErr(s === 401 ? "Please log in again." : s === 403 ? "Rasoi Board is not allowed for you. Ask the Super Admin." : "Could not open the Rasoi Board. Check the internet and try again.");
+        setErr(s === 401 ? "Please log in again." : s === 403 ? "Manager is not allowed for you. Ask the Super Admin." : "Could not open Manager. Check the internet and try again.");
       });
     return () => {
       alive = false;
@@ -32,7 +32,7 @@ const RasoiBoard = ({ height = "calc(100vh - 64px)" }) => {
       const w = ref.current?.contentWindow;
       if (w && typeof w.rasoiBoot === "function") w.rasoiBoot(API);
     } catch {
-      setErr("Could not start the Rasoi Board.");
+      setErr("Could not start Manager.");
     }
   };
 
@@ -47,7 +47,7 @@ const RasoiBoard = ({ height = "calc(100vh - 64px)" }) => {
     <Box
       component="iframe"
       ref={ref}
-      title="Rasoi Board"
+      title="Manager"
       srcDoc={html}
       onLoad={onLoad}
       sx={{ border: 0, width: "100%", height, display: "block", bgcolor: "#fff" }}

@@ -1,4 +1,4 @@
-// /rasoi → Manager (aur jise Super Admin ne diya) ke liye poore page par Rasoi Board
+// /manager → "Manager" (kitchen board): sirf jise access hai (Manager apne aap, baaki ko Super Admin tick kare)
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
@@ -12,7 +12,7 @@ const RasoiPage = () => {
   const navigate = useNavigate();
   const [me, setMe] = useState(undefined);
   useEffect(() => {
-    document.title = "Rasoi Board";
+    document.title = "Manager";
     let alive = true;
     axios
       .get(`${API}/quick/me`)
@@ -24,7 +24,7 @@ const RasoiPage = () => {
   }, [navigate]);
 
   if (me === undefined) return null;
-  const back = me.isOwnerAdmin ? "/dashboard" : "/entry";
+  const back = me.isAdmin ? "/" : "/entry";
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#fff" }}>
       <Paper elevation={0} square sx={{ borderBottom: "1px solid #E5E7EB", pt: "env(safe-area-inset-top)" }}>
@@ -33,11 +33,11 @@ const RasoiPage = () => {
             Back
           </Button>
           <Typography fontWeight={800} noWrap>
-            Rasoi Board
+            Manager
           </Typography>
         </Stack>
       </Paper>
-      {me.rasoi ? <RasoiBoard height="calc(100vh - 49px - env(safe-area-inset-top))" /> : <Alert severity="warning" sx={{ m: 2 }}>Rasoi Board is not allowed for you. Ask the Super Admin.</Alert>}
+      {me.rasoi ? <RasoiBoard height="calc(100vh - 49px - env(safe-area-inset-top))" /> : <Alert severity="warning" sx={{ m: 2 }}>Manager is not allowed for you. Ask the Super Admin.</Alert>}
     </Box>
   );
 };

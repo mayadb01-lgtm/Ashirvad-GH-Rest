@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 // 🏠 Welcome page (Super Admin / admin). Staff ko HomeGate seedha /entry bhejta hai.
 import { Box, ButtonBase, Paper, Stack, Typography } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
@@ -13,6 +14,7 @@ import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import BadgeIcon from "@mui/icons-material/Badge";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
+import RestaurantMenuIcon from "@mui/icons-material/RestaurantMenu";
 
 const INK = "#1E293B";
 const MUTED = "#64748B";
@@ -73,6 +75,18 @@ const Home = () => {
   const name = (isAdminAuthenticated ? admin?.name : user?.name) || "";
   const business = import.meta.env.VITE_REACT_APP_BUSINESS_NAME || "Ashirvad";
   const pre = isAdminAuthenticated ? "/admin" : "";
+  // Manager (kitchen board): sirf jise access hai (server batata hai)
+  const [manager, setManager] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    axios
+      .get(`${import.meta.env.VITE_REACT_APP_SERVER_URL}/quick/me`)
+      .then(({ data }) => alive && setManager(data?.me?.rasoi === true))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const modules = [
     { tab: "gh", title: "Guest House", sub: "Rooms, check-in, food bills, dues", color: "#0F766E", icon: <HotelIcon /> },
@@ -122,6 +136,11 @@ const Home = () => {
               <Tile key={m.tab} to={`/entry?tab=${m.tab}`} icon={m.icon} title={m.title} sub={m.sub} color={m.color} big />
             ))}
           </Box>
+          {manager && (
+            <Box sx={{ mt: 1.5 }}>
+              <Tile to="/manager" icon={<RestaurantMenuIcon />} title="Manager" sub="Kitchen plan, team tasks, vegetable order, recipes, rates" color="#9A3412" big />
+            </Box>
+          )}
         </Paper>
 
         {owner.length > 0 && (

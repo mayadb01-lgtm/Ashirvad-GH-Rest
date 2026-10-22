@@ -56,8 +56,6 @@ import GhGrowthDashboard from "../components/insights/GhGrowthDashboard";
 import ForecastDashboard from "../components/insights/ForecastDashboard";
 import PerformanceDashboard from "../components/insights/PerformanceDashboard";
 import GroupDashboard from "../components/owner/GroupDashboard";
-import RasoiBoard from "../components/rasoi/RasoiBoard";
-import RestaurantMenuIcon from "@mui/icons-material/RestaurantMenu";
 import { useMe } from "../utils/staffMe";
 import GHGraph2 from "../components/biz/GHGraph2";
 import RestGraph2 from "../components/biz/RestGraph2";
@@ -135,7 +133,6 @@ const DashboardHeader = () => {
 // Naye tab-wale pages (Reports, Setup...) bhi "Naye combined pages" mein rakhe hain.
 const NAVIGATION = [
   { segment: "home", title: "Today's summary", icon: <TodayIcon /> },
-  { segment: "rasoi", title: "Rasoi Board (kitchen)", icon: <RestaurantMenuIcon /> },
   { segment: "owner-report", title: "Owner Monthly Report", icon: <InsightsIcon /> },
   { segment: "forecast", title: "Forecast & key dates", icon: <TrendingUpIcon /> },
   { segment: "performance", title: "Performance: year vs year", icon: <AssessmentIcon /> },
@@ -407,7 +404,6 @@ const DashboardPage = () => {
     { path: "forecast", element: <ForecastDashboard /> },
     { path: "performance", element: <PerformanceDashboard /> },
     { path: "group", element: <GroupDashboard /> },
-    { path: "rasoi", element: <RasoiBoard /> },
     { path: "kharch-control", element: <KharchControlDashboard /> },
     { path: "data-check", element: <DataAlerts onNavigate={router.navigate} /> },
     { path: "sales-goal/all", element: <SalesGoals2 /> },

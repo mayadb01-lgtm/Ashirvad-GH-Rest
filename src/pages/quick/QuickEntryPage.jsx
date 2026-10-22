@@ -205,8 +205,8 @@ const QuickEntryPage = () => {
               </>
             )}
             {auth.rasoi && (
-              <Button component={RouterLink} to="/rasoi" size="small" variant="outlined" sx={{ textTransform: "none", fontWeight: 700, whiteSpace: "nowrap", color: "#B45309", borderColor: "#F59E0B" }}>
-                {desktop ? "Rasoi Board" : "Rasoi"}
+              <Button component={RouterLink} to="/manager" size="small" variant="outlined" sx={{ textTransform: "none", fontWeight: 700, whiteSpace: "nowrap", color: "#B45309", borderColor: "#F59E0B" }}>
+                Manager
               </Button>
             )}
             {!auth.isOwnerAdmin && auth.reports?.length > 0 && (

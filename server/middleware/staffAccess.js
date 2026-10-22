@@ -209,7 +209,7 @@ export const REPORTS = {
   "banquet-report": { label: "Banquet report & kitchen planning", rules: [R("GET", /^\/api\/v1\/banquet\/report$/, { clamp: "qdmy" }), R("GET", /^\/api\/v1\/banquet\/kitchen$/, { clamp: "qdmy" })] },
   "data-check": { label: "Data check (error alerts)", rules: [R("GET", /^\/api\/v1\/insights\/data-alerts$/)] },
   // Rasoi Board: Manager ko apne aap; baaki staff (head cook, store …) ko Super Admin tick kare
-  rasoi: { label: "Rasoi Board (kitchen plan, recipes, orders)", rules: [R("GET", RASOI_RE), R("PUT", RASOI_RE), R("DELETE", RASOI_RE)] },
+  rasoi: { label: "Manager (kitchen plan, team tasks, orders, recipes)", rules: [R("GET", RASOI_RE), R("PUT", RASOI_RE), R("DELETE", RASOI_RE)] },
 };
 // Manager (purana "manager" department ya ek se zyada business wala) ko Rasoi Board apne aap
 export const rasoiAllowed = (user, acc) => !!acc && (acc.reports?.includes("rasoi") || user?.department === "manager" || (acc.modules?.length || 0) > 1);
@@ -325,7 +325,7 @@ export const staffGuard = async (req, res, next) => {
 
   // Rasoi Board (Manager ko apne aap, baaki ko tick se)
   if (RASOI_RE.test(path) && ["GET", "PUT", "DELETE"].includes(method)) {
-    return rasoiAllowed(user, acc) ? next() : deny(res, "Rasoi Board is not allowed for you. Ask the Super Admin.");
+    return rasoiAllowed(user, acc) ? next() : deny(res, "Manager is not allowed for you. Ask the Super Admin.");
   }
 
   // Report?
