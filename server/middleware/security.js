@@ -20,6 +20,8 @@ const PUBLIC_ROUTES = new Set([
   "POST /api/v1/admin/reset-password",
   // external scheduler (cron-job.org etc.) – protected by secret key inside the route
   "GET /api/v1/backup/run-scheduled",
+  // doosre hotel ka server — route ke andar GROUP_KEY se check
+  "GET /api/v1/group/summary",
 ]);
 
 const RATE_LIMITED = new Set([
@@ -32,6 +34,7 @@ const RATE_LIMITED = new Set([
   "POST /api/v1/admin/reset-password/request",
   "POST /api/v1/admin/reset-password",
   "GET /api/v1/backup/run-scheduled",
+  "GET /api/v1/group/summary",
 ]);
 
 const routeKey = (req) => `${req.method} ${req.originalUrl.split("?")[0].replace(/\/+$/, "")}`;

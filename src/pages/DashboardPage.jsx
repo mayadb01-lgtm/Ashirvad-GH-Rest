@@ -55,6 +55,7 @@ import PurchaseAnalyticsDashboard from "../components/insights/PurchaseAnalytics
 import GhGrowthDashboard from "../components/insights/GhGrowthDashboard";
 import ForecastDashboard from "../components/insights/ForecastDashboard";
 import PerformanceDashboard from "../components/insights/PerformanceDashboard";
+import GroupDashboard from "../components/owner/GroupDashboard";
 import GHGraph2 from "../components/biz/GHGraph2";
 import RestGraph2 from "../components/biz/RestGraph2";
 import MergedGraph2 from "../components/biz/MergedGraph2";
@@ -134,6 +135,7 @@ const NAVIGATION = [
   { segment: "owner-report", title: "Owner Monthly Report", icon: <InsightsIcon /> },
   { segment: "forecast", title: "Forecast & key dates", icon: <TrendingUpIcon /> },
   { segment: "performance", title: "Performance: year vs year", icon: <AssessmentIcon /> },
+  { segment: "group", title: "Group: all hotels", icon: <InsightsIcon /> },
   { segment: "guest-dues", title: "Guest Dues & Reminders", icon: <WhatsAppIcon /> },
   { kind: "header", title: "Business Growth" },
   { segment: "profit-loss", title: "Profit & Loss", icon: <AssessmentIcon /> },
@@ -393,6 +395,7 @@ const DashboardPage = () => {
     { path: "gh-growth", element: <GhGrowthDashboard /> },
     { path: "forecast", element: <ForecastDashboard /> },
     { path: "performance", element: <PerformanceDashboard /> },
+    { path: "group", element: <GroupDashboard /> },
     { path: "kharch-control", element: <KharchControlDashboard /> },
     { path: "data-check", element: <DataAlerts onNavigate={router.navigate} /> },
     { path: "sales-goal/all", element: <SalesGoals2 /> },

@@ -40,7 +40,7 @@ export const dashState = async (req) => {
 };
 
 // Sirf dashboard ki report APIs. Entry wale raaste (entry, restEntry, officeBook, quick ...) isse bahar.
-const LOCKED = ["/api/v1/owner", "/api/v1/insights", "/api/v1/forecast", "/api/v1/biz", "/api/v1/performance", "/api/v1/staff-accounts", "/api/v1/office-types", "/api/v1/backup"];
+const LOCKED = ["/api/v1/owner", "/api/v1/insights", "/api/v1/forecast", "/api/v1/biz", "/api/v1/performance", "/api/v1/staff-accounts", "/api/v1/office-types", "/api/v1/backup", "/api/v1/group"];
 export const dashGuard = async (req, res, next) => {
   if (!isAdmin(req.user)) return next();
   const path = req.originalUrl.split("?")[0];
