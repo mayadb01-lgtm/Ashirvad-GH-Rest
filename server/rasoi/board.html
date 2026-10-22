@@ -575,7 +575,7 @@ function dim(y,m){return new Date(y,m+1,0).getDate()}
 const G=Object.fromEntries(DATA.gravies.map(g=>[g.id,g]));
 const ING=DATA.ing, WF=DATA.wf;
 const BASE=Object.fromEntries(Object.entries(ING).map(([k,i])=>[k,i.r]));
-let rates={}, ratesAt=null;
+let rates={}, ratesAt=null, ratesSrc={}, ratesSaved={};
 const rawCost=(rk,useBase)=>{let c=0; for(const k in rk){const i=ING[k]; if(!i)continue; const r=useBase?BASE[k]:i.r; c+=(i.u==="kg"||i.u==="L")?rk[k]/1000*r:rk[k]*r} return c};
 let GCK={}, MCK={};
 function applyRates(){ for(const k in ING) ING[k].r=(rates[k]!=null&&rates[k]>=0)?Number(rates[k]):BASE[k];
@@ -1141,7 +1141,7 @@ function renderTop(){
     .map(k=>({k,q:mq[k],rs:mq[k]*ING[k].r})).sort((a,b)=>topSort==="qty"?b.q-a.q:b.rs-a.rs).slice(0,20);
   $("topRows").innerHTML=list.map((x,i)=>{const c=cm[x.k]; const col=!c?"var(--muted)":c.st==="bad"?"#B91C1C":c.st==="mid"?"var(--warn)":c.st==="low"?"var(--info)":"var(--ok)";
     const q=x.q>=10?Math.round(x.q):Math.round(x.q*10)/10;
-    return `<tr><td class="hi">${i+1}</td><td><b>${esc(ingName(x.k))}</b></td><td class="n"><b>${q}</b> ${esc(unitLabel(x.k))}</td><td class="n">${fmtR(x.rs)}</td><td class="n">${c?"₹"+r1(c.fair):"–"}</td><td class="n">₹${r1(ING[x.k].r)}${rates[x.k]==null?`<span class="hi"> ${T("पुरानी","default")}</span>`:""}</td><td class="n" style="color:${col};font-weight:700">${c?(c.d>=0?"+":"")+Math.round(c.d)+"%":"–"}</td></tr>`}).join("")
+    return `<tr><td class="hi">${i+1}</td><td><b>${esc(ingName(x.k))}</b></td><td class="n"><b>${q}</b> ${esc(unitLabel(x.k))}</td><td class="n">${fmtR(x.rs)}</td><td class="n">${c?"₹"+r1(c.fair):"–"}</td><td class="n">₹${r1(ING[x.k].r)}${rates[x.k]==null?`<span class="hi"> ${T("पुरानी","default")}</span>`:""}${srcTag(x.k)}</td><td class="n" style="color:${col};font-weight:700">${c?(c.d>=0?"+":"")+Math.round(c.d)+"%":"–"}</td></tr>`}).join("")
     ||`<tr><td colspan="7" class="empty">–</td></tr>`;
 }
 function renderSpend(){
@@ -1186,12 +1186,12 @@ function renderPack(){
   $("packPlastik").innerHTML=allY?esc(T(`असली पैकिंग ख़र्च (12 महीने): ${fmtR(allY)} = महीने का ~${fmtR(allY/12)}`,`Actual packing spend (12 months): ${fmtR(allY)} = ~${fmtR(allY/12)}/month`))+
     `<br><span class="hi">${esc(T(`Krishna Plastik (ऑफ़िस बुक) ${fmtR(poY)}`,`Krishna Plastik (office book) ${fmtR(poY)}`))}${po.length?" ["+po.map(r=>esc(monN(Number(r.month.slice(5))-1))+" "+fmtR(r.amount)).join(", ")+"]":""} + ${esc(T(`रेस्टोरेंट 'Plastik' ${fmtR(plY)}`,`restaurant 'Plastik' ${fmtR(plY)}`))}</span>`:"";
   let tot=0, totMk=0; const ae=document.activeElement&&document.activeElement.id;
-  $("packRows").innerHTML=PACK.map(([k,nm,best,use,mk])=>{ const u=(P.use||{})[k]!=null?Number(P.use[k]):use, mq=orders*30*u, your=(P.rate||{})[k], mid=(mk[0]+mk[1])/2, rate=your!=null?Number(your):mid;
+  $("packRows").innerHTML=PACK.map(([k,nm,best,use,mk])=>{ const u=(P.use||{})[k]!=null?Number(P.use[k]):use, mq=orders*30*u, your=(P.rate||{})[k]!=null?P.rate[k]:(rates[k]!=null&&ratesSrc[k]?rates[k]:null), mid=(mk[0]+mk[1])/2, rate=your!=null?Number(your):mid;
     const cost=mq*rate; tot+=cost; totMk+=mq*mid; const d=your!=null?(your/mid-1)*100:null; const col=d==null?"var(--muted)":d>25?"#B91C1C":d>10?"var(--warn)":d<-30?"var(--info)":"var(--ok)";
     return `<tr><td><b>${esc(T(nm[0],nm[1]))}</b></td><td class="hi" style="min-width:220px">${esc(T(best[0],best[1]))}</td>
       <td class="n"><input class="sm" type="number" min="0" step="0.05" id="pu-${k}" data-pu="${k}" value="${u}" style="width:70px"></td>
       <td class="n"><b>${Math.round(mq)}</b></td><td class="n">₹${mk[0]}–${mk[1]}</td>
-      <td class="n"><input class="sm" type="number" min="0" step="0.05" id="pr-${k}" data-pr="${k}" value="${your!=null?your:""}" placeholder="${r1(mid)}" style="width:80px${your!=null?";font-weight:700":""}"></td>
+      <td class="n"><input class="sm" type="number" min="0" step="0.05" id="pr-${k}" data-pr="${k}" value="${your!=null?your:""}" placeholder="${r1(mid)}" style="width:80px${your!=null?";font-weight:700":""}">${(P.rate||{})[k]==null?srcTag(k):""}</td>
       <td class="n" style="color:${col};font-weight:700">${d==null?"–":(d>=0?"+":"")+Math.round(d)+"%"}</td><td class="n">${fmtR(cost)}</td></tr>`}).join("")+
     `<tr class="grp"><td colspan="7">${T("कुल अंदाज़ / महीना","Total estimate / month")}</td><td class="n">${fmtR(tot)}</td></tr>`;
   if(ae&&(ae.startsWith("pu-")||ae.startsWith("pr-"))){const el=$(ae);if(el){el.focus();const v=el.value;el.value="";el.value=v}}
@@ -1325,7 +1325,7 @@ function renderCmp(){
       <td class="n">₹${r1(x.base)}<br><span class="hi">${mk(x.where)}${x.grade?" · "+esc(x.grade):""}</span></td>
       <td class="n"><input class="sm" type="number" min="0" max="200" step="1" id="pct-${x.k}" data-pk="${x.k}" value="${x.pct}" style="width:64px" aria-label="${esc(ingName(x.k))} %"><span class="hi">%</span></td>
       <td class="n"><b>₹${r1(x.fair)}</b></td>
-      <td class="n"><input class="sm" type="number" min="0" step="0.5" id="cy-${x.k}" data-yk="${x.k}" value="${x.isDef?"":x.your}" placeholder="${x.your}" style="width:80px${x.isDef?"":";font-weight:700"}" aria-label="${esc(ingName(x.k))} ₹"></td>
+      <td class="n"><input class="sm" type="number" min="0" step="0.5" id="cy-${x.k}" data-yk="${x.k}" value="${x.isDef?"":x.your}" placeholder="${x.your}" style="width:80px${x.isDef?"":";font-weight:700"}" aria-label="${esc(ingName(x.k))} ₹">${srcTag(x.k)}</td>
       <td class="n" style="color:${col};font-weight:700">${(x.d>=0?"+":"")+Math.round(x.d)+"%"}</td>
       <td class="n" style="color:${col}">${x.isDef||!x.q?"–":(x.money>=0?"+":"−")+fmtR(Math.abs(x.money))}</td>
       <td>${x.isDef?`<span class="st def">${T("पुरानी दर - सप्लायर का भाव डालें","Default rate - enter supplier's rate")}</span>`:`<span class="st ${x.st}">${SL[x.st]}</span>`}</td></tr>`});
@@ -1631,7 +1631,7 @@ function renderRates(){
   keys.forEach(k=>{const i=ING[k]; if(i.g!==g){g=i.g;html+=`<tr class="grp"><td colspan="5">${esc(gname(g))}</td></tr>`}
     const u=i.u==="pc"?unitW("pc"):i.u, cur=i.r, base=BASE[k], ch=base?((cur/base-1)*100):0, isCh=rates[k]!=null&&Number(rates[k])!==base;
     html+=`<tr><td><b>${esc(ingName(k))}</b> <span class="hi">${esc(lang==="hi"?(i.n.split(" / ")[1]||""):(i.n.split(" / ")[0]))}</span></td><td>₹ / ${esc(u)}</td><td class="n">${base}</td>
-      <td class="n"><input class="sm" type="number" min="0" step="0.5" id="rate-${k}" data-k="${k}" value="${isCh?cur:""}" placeholder="${base}" aria-label="${esc(ingName(k))}" style="width:90px${isCh?";border-color:var(--haldi);font-weight:700":""}"></td>
+      <td class="n"><input class="sm" type="number" min="0" step="0.5" id="rate-${k}" data-k="${k}" value="${isCh?cur:""}" placeholder="${base}" aria-label="${esc(ingName(k))}" style="width:90px${isCh?";border-color:var(--haldi);font-weight:700":""}">${srcTag(k)}</td>
       <td class="n" style="color:${!isCh?"var(--muted)":ch>0?"var(--warn)":"var(--ok)"}">${isCh?(ch>0?"+":"")+ch.toFixed(0)+"%":"–"}</td></tr>`});
   $("rateRows").innerHTML=html||`<tr><td colspan="5" class="empty">${T("कुछ नहीं मिला","Nothing found")}</td></tr>`;
   if(ae&&ae.startsWith("rate-")){const el=$(ae);if(el){el.focus();const v=el.value;el.value="";el.value=v}}
@@ -1643,7 +1643,11 @@ function renderRates(){
 $("rateQ").addEventListener("input",renderRates); $("rateChangedOnly").addEventListener("change",renderRates);
 $("rateReset").onclick=()=>{const b=$("rateReset"); if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent=U("resetSure");setTimeout(()=>{b.dataset.sure="";b.textContent=U("resetAll")},4000);return}
   b.dataset.sure=""; b.textContent=U("resetAll"); rates={}; applyRates(); saveRates(); renderRates()};
-function saveRates(){ratesAt=new Date().toISOString(); debounce("rates",()=>write("rates/main",{items:rates,updatedAt:ratesAt},"rates"))}
+function saveRates(){ratesAt=new Date().toISOString(); debounce("rates",()=>{
+  const ch=[...new Set([...Object.keys(rates),...Object.keys(ratesSaved)])].filter(k=>rates[k]!==ratesSaved[k]); ch.forEach(k=>delete ratesSrc[k]);
+  ratesSaved={...rates}; write("rates/main",{items:rates,updatedAt:ratesAt,changed:ch},"rates")})}
+// Purchase bill se aaya rate: "बिल: vendor · तारीख़"
+function srcTag(k){ const x=ratesSrc[k]; if(!x) return ""; return `<br><span class="hi" title="${esc(x.vendor||"")} ${esc(x.billNo||"")}">🧾 ${esc(T("बिल","Bill"))}: ${esc(String(x.vendor||"").slice(0,18))}${x.date?" · "+esc(x.date.slice(0,5)):""}</span>` }
 
 // ---------- tabs ----------
 const TABS=["aaj","team","fc","sabzi","month","recipe","fam","lab","cmp","pack","buy","rates"];
@@ -1687,7 +1691,7 @@ async function loadShared(){
   SMC={};
   const st=await getDoc("stock/main"); if(st&&st.items) stock={...st.items};
   const bm=await getDoc("bqmap/main"); if(bm&&bm.map) bqmap={...bm.map};
-  const rt=await getDoc("rates/main"); if(rt&&rt.items){rates={...rt.items}; ratesAt=rt.updatedAt||null; applyRates()}
+  const rt=await getDoc("rates/main"); if(rt&&rt.items){rates={...rt.items}; ratesSaved={...rt.items}; ratesSrc={...(rt.src||{})}; ratesAt=rt.updatedAt||null; applyRates()}
   if(db){ try{ const q=await db.collection("days").get(); q.docs.forEach(doc=>{dayDocs[doc.id]=doc.data()}) }catch(e){}
           try{ const q=await db.collection("ideas").get(); savedIdeas=q.docs.map(d=>({...d.data(),id:d.id})).filter(x=>x&&x.name&&Array.isArray(x.items)) }catch(e){} }
 }

@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 // Restaurant purchase bill (maal ka bill): photo + vendor + rakam + mode (Cash / Payable).
 // ⚠️ Naya collection ("purchasebills"). Restaurant ki din ki entry (restentries) ko ye nahi chhoota —
 // app bill save hone par Expenses / Payables mein ek line bana deta hai, jo din ke Update se save hoti hai.
-const itemSchema = new mongoose.Schema({ name: String, qty: Number, unit: String, rate: Number, amount: Number }, { _id: false });
+const itemSchema = new mongoose.Schema({ key: { type: String, default: "" }, name: String, qty: Number, unit: String, rate: Number, amount: Number }, { _id: false });
 const purchaseBillSchema = new mongoose.Schema(
   {
     date: { type: String, required: true }, // restaurant ka din DD-MM-YYYY

@@ -7,6 +7,7 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import PurchaseBill from "../model/purchaseBill.js";
 import PurchaseItem from "../model/purchaseItem.js";
+import { applyBillRates, catalogItems } from "./rasoi.js";
 import { allowedStaffDates, isAdminLike, dateOk as staffDateOk } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
@@ -20,6 +21,7 @@ const ok = (d) => dayjs(d, F, true).isValid();
 const bad = (res, message, code = 400) => res.status(code).json({ success: false, message });
 const dateOk = (req, d) => staffDateOk(req, d);
 
+const CATKEYS = new Set(catalogItems().map((x) => x.key));
 const fields = (b) => withTotals({
   billDate: clean(b.billDate, 20),
   billNo: clean(b.billNo, 40),
@@ -36,7 +38,7 @@ const fields = (b) => withTotals({
   mode: (b.book === "office" ? ["Cash", "PP", "PPS", "PPC", "Payable"] : ["Cash", "Payable"]).includes(b.mode) ? b.mode : "Cash",
   items: (Array.isArray(b.items) ? b.items : [])
     .slice(0, 80)
-    .map((x) => ({ name: clean(x.name, 80), qty: Number(x.qty) || 0, unit: clean(x.unit, 12), rate: Math.round((Number(x.rate) || 0) * 100) / 100, amount: Math.round((Number(x.amount) || 0) * 100) / 100 }))
+    .map((x) => ({ key: CATKEYS.has(clean(x.key, 30)) ? clean(x.key, 30) : "", name: clean(x.name, 80), qty: Number(x.qty) || 0, unit: clean(x.unit, 12), rate: Math.round((Number(x.rate) || 0) * 100) / 100, amount: Math.round((Number(x.amount) || 0) * 100) / 100 }))
     .filter((x) => x.name || x.amount),
   extra: Math.round((Number(b.extra) || 0) * 100) / 100,
   note: clean(b.note, 300),
@@ -55,9 +57,9 @@ function withTotals(f) {
 const rememberItems = async (bill) => {
   const vid = bill.vendor?._id || "";
   for (const it of bill.items || []) {
-    const key = String(it.name || "").trim().toLowerCase().replace(/\s+/g, " ");
+    const key = it.key ? `k:${it.key}` : String(it.name || "").trim().toLowerCase().replace(/\s+/g, " ");
     if (!key) continue;
-    const set = { name: String(it.name).trim(), unit: it.unit || "kg", lastRate: Number(it.rate) || 0, lastVendorId: vid, lastDate: bill.date };
+    const set = { name: String(it.name).trim(), ckey: it.key || "", unit: it.unit || "kg", lastRate: Number(it.rate) || 0, lastVendorId: vid, lastDate: bill.date };
     if (vid && Number(it.rate)) set[`vendorRates.${vid}`] = Number(it.rate);
     await PurchaseItem.updateOne({ key }, { $set: set, $inc: { uses: 1 } }, { upsert: true }).catch(() => {});
   }
@@ -67,7 +69,7 @@ const rememberItems = async (bill) => {
 router.get("/items", async (req, res) => {
   try {
     const list = await PurchaseItem.find({}, { key: 0, __v: 0 }).sort({ uses: -1, updatedAt: -1 }).limit(1000).lean();
-    res.json({ success: true, data: list });
+    res.json({ success: true, data: list, catalog: catalogItems() });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
   }
@@ -110,6 +112,7 @@ router.post("/", async (req, res) => {
     if (f.mode === "Payable" && !f.vendor.isVendor) return bad(res, "For Payable, choose a listed vendor");
     const doc = await PurchaseBill.create({ ...f, date: b.date, entryCreateDate: dayjs(b.date, F).startOf("day").toDate(), enteredBy: who(req) });
     await rememberItems(doc);
+    await applyBillRates(doc, req.user);
     res.json({ success: true, data: doc });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
@@ -129,6 +132,7 @@ router.put("/:id([a-f0-9]{24})", async (req, res) => {
     Object.assign(doc, f, { book: doc.book, updatedBy: who(req) });
     await doc.save();
     await rememberItems(doc);
+    await applyBillRates(doc, req.user);
     res.json({ success: true, data: doc });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });

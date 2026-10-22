@@ -1,6 +1,6 @@
 // Restaurant purchase bill: 1) Scan / photo → text apne aap bhare (free OCR, phone/browser mein) → check karke save
 //                           2) Manual. Mode sirf Cash ya Payable (udhaar → vendor ke Payables mein).
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { Alert, Autocomplete, Box, Button, Chip, LinearProgress, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
@@ -60,7 +60,21 @@ const normUnit = (u) => {
   return UNITS.includes(x) ? x : "pcs";
 };
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
-const NEW_ITEM = { name: "", qty: 1, unit: "kg", rate: 0, amount: 0 };
+const NEW_ITEM = { key: "", name: "", qty: 1, unit: "kg", rate: 0, amount: 0 };
+
+// Saamaan ki ek hi list (Manager catalogue + pichhle bills): spelling galti aur duplicate naam se bachne ke liye
+const norm = (s) => String(s || "").toLowerCase().normalize("NFC").replace(/[^a-z0-9\u0900-\u097f]+/g, "");
+const lev = (a, b) => {
+  if (Math.abs(a.length - b.length) > 2) return 9;
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[b.length];
+};
+const UNIT_OK = { kg: ["kg", "g"], L: ["ltr", "ml"], pc: ["pcs", "dozen"], g: ["g", "kg"] };
 
 const NUM = /(\d{1,3}(?:,\d{2,3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/g;
 const toNum = (s) => Number(String(s).replace(/,/g, "")) || 0;
@@ -132,12 +146,16 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
   const [ocr, setOcr] = useState({ busy: false, progress: 0, msg: "" });
   const [busy, setBusy] = useState(false);
   const [memory, setMemory] = useState([]); // pichhle bills ke items (naam, unit, rate)
+  const [catalog, setCatalog] = useState([]); // Manager ki saamaan list
   const [lastBill, setLastBill] = useState(null); // chune vendor ka aakhri bill
   useEffect(() => {
     if (!open) return;
     axios
       .get(`${API}/purchase/items`)
-      .then(({ data }) => setMemory(data.data || []))
+      .then(({ data }) => {
+        setMemory(data.data || []);
+        setCatalog(data.catalog || []);
+      })
       .catch(() => setMemory([]));
   }, [open]);
   const vendorId = f?.vendor?._id || "";
@@ -149,24 +167,60 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
       .then(({ data }) => setLastBill(data.data ? { ...data.data, vendorId } : null))
       .catch(() => setLastBill(null));
   }, [open, vendorId]);
+  // Dropdown ke options: catalogue (Hindi + English + desi naam) + pichhle bills ke naye naam
+  const opts = useMemo(() => {
+    const byKey = {};
+    const list = catalog.map((c) => {
+      const o = { ...c, name: c.en || c.hi, label: c.hi && c.en ? `${c.en} / ${c.hi}` : c.en || c.hi, terms: [c.en, c.hi, ...String(c.alias || "").split(/\s+/), String(c.alias || "")].map(norm).filter(Boolean), uses: 0 };
+      byKey[c.key] = o;
+      return o;
+    });
+    const find = (n) => list.find((o) => o.terms.includes(n));
+    memory.forEach((m) => {
+      const o = (m.ckey && byKey[m.ckey]) || find(norm(m.name));
+      if (o) Object.assign(o, { lastRate: m.lastRate, vendorRates: m.vendorRates, uses: (o.uses || 0) + (m.uses || 0) });
+      else list.push({ key: "", name: m.name, label: m.name, unit: m.unit, group: "Other (old bills)", terms: [norm(m.name)], lastRate: m.lastRate, vendorRates: m.vendorRates, uses: m.uses || 0 });
+    });
+    return list.sort((a, b) => (b.uses || 0) - (a.uses || 0));
+  }, [catalog, memory]);
+  // Likhe naam se list ka saamaan: pakka (same naam) ya milta-julta (1-2 akshar ka farak)
+  const matchItem = (text) => {
+    const n = norm(text);
+    if (!n) return null;
+    const ex = opts.find((o) => o.terms.includes(n));
+    if (ex) return { o: ex, exact: true };
+    if (n.length < 4) return null;
+    let best = null, bd = 9;
+    for (const o of opts) for (const t of o.terms) {
+      const d = t.startsWith(n) ? 1 : lev(n, t);
+      if (d < bd) { bd = d; best = o; }
+    }
+    return bd <= 2 ? { o: best, exact: false } : null;
+  };
+  const autoKey = (it) => {
+    if (it.key) return it;
+    const m = matchItem(it.name);
+    return m?.exact ? { ...it, key: m.o.key, name: m.o.name } : it;
+  };
   const rateFor = (m) => (vendorId && m?.vendorRates?.[vendorId]) || m?.lastRate || 0;
   const useLastBill = () =>
     setF((x) => ({
       ...x,
-      items: lastBill.items.map((it) => ({ name: it.name, qty: it.qty || 1, unit: it.unit || "kg", rate: it.rate || 0, amount: r2((it.qty || 1) * (it.rate || 0)) })),
+      items: lastBill.items.map((it) => ({ key: it.key || "", name: it.name, qty: it.qty || 1, unit: it.unit || "kg", rate: it.rate || 0, amount: r2((it.qty || 1) * (it.rate || 0)) })),
       extra: 0,
     }));
   // Yaad wala item chuna → unit + rate apne aap
   const pickItem = (i, val) => {
     const name = typeof val === "string" ? val : val?.name || "";
-    const m = typeof val === "string" ? memory.find((x) => x.name.toLowerCase() === val.trim().toLowerCase()) : val;
+    const mm = typeof val === "string" ? matchItem(val) : null;
+    const m = typeof val === "string" ? (mm?.exact ? mm.o : null) : val;
     setF((x) => ({
       ...x,
       items: x.items.map((it, j) => {
         if (j !== i) return it;
-        if (!m) return { ...it, name };
+        if (!m) return { ...it, key: "", name, suggest: mm?.o || null };
         const rate = rateFor(m) || it.rate;
-        return { ...it, name: m.name, unit: m.unit || it.unit, rate, amount: r2(num(it.qty) * num(rate)) };
+        return { ...it, key: m.key || "", suggest: null, name: m.name, unit: m.unit || it.unit, rate, amount: r2(num(it.qty) * num(rate)) };
       }),
     }));
   };
@@ -235,7 +289,7 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
         billDate: x.billDate || p.billDate,
         billNo: x.billNo || p.billNo,
         vendor: x.vendor || (p.vendor ? options.find((o) => o._id === p.vendor._id) || null : null),
-        items: p.items.length ? p.items : x.items,
+        items: p.items.length ? p.items.map(autoKey) : x.items,
         extra: p.items.length && p.amount ? r2(p.amount - p.items.reduce((t, it) => t + it.amount, 0)) : x.extra,
         note: x.note || (p.header && !p.vendor ? `Bill: ${p.header.slice(0, 60)}` : x.note),
       }));
@@ -245,9 +299,15 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
     }
   };
 
-  const valid = f.vendor && f.items.length > 0 && grand > 0 && (f.mode === "Cash" || f.vendor?.isVendor) && f.items.every((it) => it.name.trim() && num(it.amount) > 0);
+  const dupIdx = (() => {
+    const seen = {}, d = new Set();
+    f.items.forEach((it, i) => { const k = it.key || norm(it.name); if (!k) return; if (k in seen) { d.add(i); d.add(seen[k]); } else seen[k] = i; });
+    return d;
+  })();
+  const valid = dupIdx.size === 0 && f.vendor && f.items.length > 0 && grand > 0 && (f.mode === "Cash" || f.vendor?.isVendor) && f.items.every((it) => it.name.trim() && num(it.amount) > 0);
   const save = async () => {
     if (!f.vendor) return toast.error("Choose the vendor / expense item");
+    if (dupIdx.size) return toast.error("Same item is added twice — merge it into one line");
     if (!f.items.length || !f.items.every((it) => it.name.trim() && num(it.amount) > 0)) return toast.error("Fill every item: name, qty and rate");
     if (!(grand > 0)) return toast.error("Enter the bill amount");
     if (f.mode === "Payable" && !f.vendor.isVendor) return toast.error("For Payable, choose a listed vendor");
@@ -263,7 +323,7 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
         amount: grand,
         mode: f.mode,
         book,
-        items: f.items.map((it) => ({ name: it.name.trim(), qty: num(it.qty), unit: it.unit, rate: num(it.rate), amount: num(it.amount) })),
+        items: f.items.map((it) => ({ key: it.key || "", name: it.name.trim(), qty: num(it.qty), unit: it.unit, rate: num(it.rate), amount: num(it.amount) })),
         extra: f.items.length ? num(f.extra) : 0,
         note: f.note,
         source: photos.length && f.ocrText ? "scan" : "manual",
@@ -392,25 +452,52 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
                   freeSolo
                   fullWidth
                   size="small"
-                  options={memory}
+                  options={opts}
+                  groupBy={(o) => o.group || ""}
+                  filterOptions={(list, { inputValue }) => {
+                    const n = norm(inputValue);
+                    if (!n) return list.slice(0, 60);
+                    return list.filter((o) => o.terms.some((t) => t.includes(n))).slice(0, 40);
+                  }}
                   getOptionLabel={(o) => (typeof o === "string" ? o : o?.name || "")}
                   renderOption={(props, o) => (
-                    <li {...props} key={o._id || o.name}>
-                      <Box sx={{ flex: 1 }}>{o.name}</Box>
+                    <li {...props} key={(o.key || "x") + o.label}>
+                      <Box sx={{ flex: 1 }}>{o.label}</Box>
                       <Typography variant="caption" color={Q.muted}>
-                        {inr(rateFor(o))}/{o.unit}
+                        {rateFor(o) ? `${inr(rateFor(o))}/` : ""}{o.unit}
                       </Typography>
                     </li>
                   )}
                   inputValue={it.name}
-                  onInputChange={(e, v, reason) => reason === "input" && setItem(i, "name", v)}
+                  onInputChange={(e, v, reason) => reason === "input" && setF((x) => ({ ...x, items: x.items.map((y, j) => (j === i ? { ...y, name: v, key: "", suggest: null } : y)) }))}
                   onChange={(e, v) => pickItem(i, v)}
-                  renderInput={(params) => <TextField {...params} label={`Item ${i + 1}`} error={!it.name.trim()} />}
+                  onBlur={() => !it.key && it.name.trim() && pickItem(i, it.name)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={`Item ${i + 1}`}
+                      error={!it.name.trim() || dupIdx.has(i)}
+                      helperText={
+                        dupIdx.has(i)
+                          ? "Already in this bill — use one line"
+                          : it.key
+                          ? `✓ ${opts.find((o) => o.key === it.key)?.label || it.name}${(() => { const c = opts.find((o) => o.key === it.key); return c?.iu && UNIT_OK[c.iu] && !UNIT_OK[c.iu].includes(it.unit) ? ` · use unit ${UNIT_OK[c.iu][0]} so Manager rate updates` : ""; })()}`
+                          : it.name.trim()
+                          ? "New name — not in the list (Manager rate will not update)"
+                          : ""
+                      }
+                    />
+                  )}
                 />
                 <Button size="small" color="error" onClick={() => set("items", f.items.filter((_, j) => j !== i))} sx={{ minWidth: 36 }}>
                   ✕
                 </Button>
               </Stack>
+              {it.suggest && !it.key && (
+                <Button size="small" variant="outlined" color="warning" onClick={() => pickItem(i, it.suggest)} sx={{ mt: 0.5, fontWeight: 700, textTransform: "none" }}>
+                  Did you mean: {it.suggest.label}? — tap to use
+                </Button>
+              )}
               <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
                 <TextField size="small" label="Qty" value={it.qty} onChange={(e) => setItem(i, "qty", e.target.value.replace(/[^0-9.]/g, ""))} inputProps={{ inputMode: "decimal" }} sx={{ width: 74 }} />
                 <TextField size="small" select label="Unit" value={it.unit} onChange={(e) => setItem(i, "unit", e.target.value)} SelectProps={{ native: true }} sx={{ width: 96 }}>

@@ -1,0 +1,1532 @@
+[
+{
+"key": "tomato",
+"hi": "टमाटर",
+"en": "Tomato",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "tamatar tameta"
+},
+{
+"key": "onion",
+"hi": "प्याज़",
+"en": "Onion",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "kanda pyaz pyaaj dungli"
+},
+{
+"key": "potato",
+"hi": "आलू",
+"en": "Potato",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "aloo alu bataka batata"
+},
+{
+"key": "ginger",
+"hi": "अदरक",
+"en": "Ginger",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "adrak adu"
+},
+{
+"key": "garlic",
+"hi": "लहसुन",
+"en": "Garlic",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "lasan lahsun lehsun"
+},
+{
+"key": "gchilli",
+"hi": "हरी मिर्च",
+"en": "Green chilli",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "hari mirch lila marcha marcha"
+},
+{
+"key": "coriander",
+"hi": "हरा धनिया",
+"en": "Coriander",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "dhaniya kothmir kothimbir hara dhania"
+},
+{
+"key": "mint",
+"hi": "पुदीना",
+"en": "Mint",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "pudina fudino"
+},
+{
+"key": "capsicum",
+"hi": "शिमला मिर्च",
+"en": "Capsicum",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "shimla mirch simla"
+},
+{
+"key": "cabbage",
+"hi": "पत्ता गोभी",
+"en": "Cabbage",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "kobi patta gobi"
+},
+{
+"key": "carrot",
+"hi": "गाजर",
+"en": "Carrot",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "gajar"
+},
+{
+"key": "beans",
+"hi": "फ्रेंच बीन्स",
+"en": "Beans",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "fansi french beans"
+},
+{
+"key": "peas",
+"hi": "हरे मटर (frozen)",
+"en": "Peas",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "matar vatana mutter"
+},
+{
+"key": "gobi",
+"hi": "फूल गोभी",
+"en": "Cauliflower",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "fulavar phool gobi cauliflower"
+},
+{
+"key": "bhindi",
+"hi": "भिंडी",
+"en": "Bhindi",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "bhinda okra"
+},
+{
+"key": "baingan",
+"hi": "बैंगन",
+"en": "Brinjal",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "ringan bengan brinjal"
+},
+{
+"key": "mushroom",
+"hi": "मशरूम",
+"en": "Mushroom",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": ""
+},
+{
+"key": "corn",
+"hi": "स्वीट कॉर्न",
+"en": "Sweet corn",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": ""
+},
+{
+"key": "spinach",
+"hi": "पालक",
+"en": "Spinach",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "palak"
+},
+{
+"key": "methi",
+"hi": "मेथी (ताज़ी)",
+"en": "Fresh methi",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "methi bhaji"
+},
+{
+"key": "lemon",
+"hi": "नींबू",
+"en": "Lemon",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "limbu nimbu"
+},
+{
+"key": "celery",
+"hi": "सेलेरी",
+"en": "Celery",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": ""
+},
+{
+"key": "springonion",
+"hi": "हरा प्याज़",
+"en": "Spring onion",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "lila kanda hara pyaz"
+},
+{
+"key": "curryleaf",
+"hi": "कढ़ी पत्ता",
+"en": "Curry leaves",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "limdo kadi patta"
+},
+{
+"key": "cucumber",
+"hi": "ककड़ी",
+"en": "Cucumber",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "kakdi kheera"
+},
+{
+"key": "beetroot",
+"hi": "चुकंदर",
+"en": "Beetroot",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": "chukandar beet"
+},
+{
+"key": "babycorn",
+"hi": "बेबी कॉर्न",
+"en": "Baby corn",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": ""
+},
+{
+"key": "broccoli",
+"hi": "ब्रोकली",
+"en": "Broccoli",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": ""
+},
+{
+"key": "colcapsicum",
+"hi": "लाल-पीली शिमला मिर्च",
+"en": "Colour capsicum",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": ""
+},
+{
+"key": "mixveg",
+"hi": "मिक्स सब्ज़ी (औसत)",
+"en": "Mix veg avg",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": ""
+},
+{
+"key": "salad",
+"hi": "सलाद सब्ज़ी (औसत)",
+"en": "Salad veg avg",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": ""
+},
+{
+"key": "fruit",
+"hi": "फल (अनानास, सेब)",
+"en": "Fruits",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": ""
+},
+{
+"key": "pineapple",
+"hi": "अनानास",
+"en": "Pineapple",
+"unit": "kg",
+"iu": "kg",
+"group": "Sabzi",
+"alias": ""
+},
+{
+"key": "paneer",
+"hi": "पनीर",
+"en": "Paneer",
+"unit": "kg",
+"iu": "kg",
+"group": "Dairy",
+"alias": "panir"
+},
+{
+"key": "butter",
+"hi": "मक्खन",
+"en": "Butter",
+"unit": "kg",
+"iu": "kg",
+"group": "Dairy",
+"alias": "makhan makkhan amul butter"
+},
+{
+"key": "cream",
+"hi": "फ्रेश क्रीम",
+"en": "Fresh cream",
+"unit": "ltr",
+"iu": "L",
+"group": "Dairy",
+"alias": "malai fresh cream"
+},
+{
+"key": "milk",
+"hi": "दूध",
+"en": "Milk",
+"unit": "ltr",
+"iu": "L",
+"group": "Dairy",
+"alias": "dudh doodh"
+},
+{
+"key": "curd",
+"hi": "दही",
+"en": "Curd",
+"unit": "kg",
+"iu": "kg",
+"group": "Dairy",
+"alias": "dahi"
+},
+{
+"key": "ghee",
+"hi": "घी",
+"en": "Ghee",
+"unit": "kg",
+"iu": "kg",
+"group": "Dairy",
+"alias": "ghi"
+},
+{
+"key": "khoya",
+"hi": "खोया",
+"en": "Khoya",
+"unit": "kg",
+"iu": "kg",
+"group": "Dairy",
+"alias": "mava mawa"
+},
+{
+"key": "cheese",
+"hi": "प्रोसेस्ड चीज़",
+"en": "Processed cheese",
+"unit": "kg",
+"iu": "kg",
+"group": "Dairy",
+"alias": "cheese amul cheese"
+},
+{
+"key": "mozz",
+"hi": "मोज़रेला",
+"en": "Mozzarella",
+"unit": "kg",
+"iu": "kg",
+"group": "Dairy",
+"alias": "mozzarella pizza cheese"
+},
+{
+"key": "mayo",
+"hi": "मेयोनीज़",
+"en": "Mayo",
+"unit": "kg",
+"iu": "kg",
+"group": "Dairy",
+"alias": ""
+},
+{
+"key": "cashew",
+"hi": "काजू",
+"en": "Cashew",
+"unit": "kg",
+"iu": "kg",
+"group": "Dry Fruit",
+"alias": "kaju"
+},
+{
+"key": "magaz",
+"hi": "मगज़",
+"en": "Melon seeds",
+"unit": "kg",
+"iu": "kg",
+"group": "Dry Fruit",
+"alias": "magaj melon seeds"
+},
+{
+"key": "raisin",
+"hi": "किशमिश",
+"en": "Raisins",
+"unit": "kg",
+"iu": "kg",
+"group": "Dry Fruit",
+"alias": "kismis drakh"
+},
+{
+"key": "almond",
+"hi": "बादाम",
+"en": "Almond",
+"unit": "kg",
+"iu": "kg",
+"group": "Dry Fruit",
+"alias": "badam"
+},
+{
+"key": "pista",
+"hi": "पिस्ता",
+"en": "Pista",
+"unit": "kg",
+"iu": "kg",
+"group": "Dry Fruit",
+"alias": "pista"
+},
+{
+"key": "dryfruit",
+"hi": "ड्राई फ्रूट मिक्स",
+"en": "Dry fruit mix",
+"unit": "kg",
+"iu": "kg",
+"group": "Dry Fruit",
+"alias": ""
+},
+{
+"key": "kesar",
+"hi": "केसर",
+"en": "Saffron (gram me)",
+"unit": "g",
+"iu": "g",
+"group": "Dry Fruit",
+"alias": "saffron"
+},
+{
+"key": "peanut",
+"hi": "मूंगफली",
+"en": "Peanut",
+"unit": "kg",
+"iu": "kg",
+"group": "Dry Fruit",
+"alias": "sing singdana mungfali"
+},
+{
+"key": "basmati",
+"hi": "बासमती चावल",
+"en": "Basmati",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": "basmati chokha"
+},
+{
+"key": "rice_reg",
+"hi": "साधा चावल",
+"en": "Regular rice",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": "chokha chawal kolam"
+},
+{
+"key": "tuvar",
+"hi": "तुअर दाल",
+"en": "Tuvar dal",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": "tuver dal toor dal arhar"
+},
+{
+"key": "moong",
+"hi": "मूंग दाल",
+"en": "Moong dal",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": "mag dal moong dal"
+},
+{
+"key": "urad",
+"hi": "साबुत उड़द",
+"en": "Whole urad",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": "adad"
+},
+{
+"key": "rajma",
+"hi": "राजमा",
+"en": "Rajma",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": "rajma"
+},
+{
+"key": "masoor",
+"hi": "मसूर दाल",
+"en": "Masoor",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": ""
+},
+{
+"key": "chanadal",
+"hi": "चना दाल",
+"en": "Chana dal",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": "chana dal"
+},
+{
+"key": "atta",
+"hi": "गेहूं आटा",
+"en": "Atta",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": "gehu aata ghau no lot aata"
+},
+{
+"key": "maida",
+"hi": "मैदा",
+"en": "Maida",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": "maida"
+},
+{
+"key": "besan",
+"hi": "बेसन",
+"en": "Besan",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": "chana lot besan"
+},
+{
+"key": "cornflour",
+"hi": "कॉर्नफ्लोर",
+"en": "Cornflour",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": "corn flour makai"
+},
+{
+"key": "riceflour",
+"hi": "चावल आटा",
+"en": "Rice flour",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": ""
+},
+{
+"key": "arrowroot",
+"hi": "अरारोट",
+"en": "Arrowroot",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": ""
+},
+{
+"key": "noodles",
+"hi": "नूडल्स (सूखे)",
+"en": "Noodles",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": "noodles hakka"
+},
+{
+"key": "breadcrumbs",
+"hi": "ब्रेड चूरा",
+"en": "Bread crumbs",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": ""
+},
+{
+"key": "sev",
+"hi": "सेव-गाठिया",
+"en": "Sev",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": ""
+},
+{
+"key": "roastedchana",
+"hi": "भुने चने",
+"en": "Roasted chana",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": ""
+},
+{
+"key": "boondi",
+"hi": "बूंदी",
+"en": "Boondi",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": ""
+},
+{
+"key": "oil",
+"hi": "रिफाइंड तेल",
+"en": "Refined oil",
+"unit": "ltr",
+"iu": "L",
+"group": "Tel",
+"alias": "refined tel tel sunflower"
+},
+{
+"key": "gnoil",
+"hi": "मूंगफली तेल",
+"en": "Groundnut oil",
+"unit": "ltr",
+"iu": "L",
+"group": "Tel",
+"alias": "sing tel singtel groundnut oil"
+},
+{
+"key": "mustardoil",
+"hi": "सरसों तेल",
+"en": "Mustard oil",
+"unit": "ltr",
+"iu": "L",
+"group": "Tel",
+"alias": "sarso tel"
+},
+{
+"key": "oliveoil",
+"hi": "ऑलिव ऑयल",
+"en": "Olive oil",
+"unit": "ltr",
+"iu": "L",
+"group": "Tel",
+"alias": ""
+},
+{
+"key": "soy",
+"hi": "सोया सॉस",
+"en": "Soy sauce",
+"unit": "ltr",
+"iu": "L",
+"group": "Sauce",
+"alias": "soya sauce"
+},
+{
+"key": "chillisauce",
+"hi": "चिली सॉस",
+"en": "Chilli sauce",
+"unit": "ltr",
+"iu": "L",
+"group": "Sauce",
+"alias": ""
+},
+{
+"key": "ketchup",
+"hi": "केचप",
+"en": "Ketchup",
+"unit": "kg",
+"iu": "kg",
+"group": "Sauce",
+"alias": "tomato ketchup"
+},
+{
+"key": "vinegar",
+"hi": "सिरका",
+"en": "Vinegar",
+"unit": "ltr",
+"iu": "L",
+"group": "Sauce",
+"alias": "sirka"
+},
+{
+"key": "honey",
+"hi": "शहद",
+"en": "Honey",
+"unit": "kg",
+"iu": "kg",
+"group": "Sauce",
+"alias": ""
+},
+{
+"key": "sugar",
+"hi": "चीनी",
+"en": "Sugar",
+"unit": "kg",
+"iu": "kg",
+"group": "Sauce",
+"alias": "khand chini sakar"
+},
+{
+"key": "jaggery",
+"hi": "गुड़",
+"en": "Jaggery",
+"unit": "kg",
+"iu": "kg",
+"group": "Sauce",
+"alias": "gol gud"
+},
+{
+"key": "salt",
+"hi": "नमक",
+"en": "Salt",
+"unit": "kg",
+"iu": "kg",
+"group": "Sauce",
+"alias": "namak mithu"
+},
+{
+"key": "syrup",
+"hi": "सिरप (रोज़/चॉको/क्रश)",
+"en": "Syrup",
+"unit": "ltr",
+"iu": "L",
+"group": "Sauce",
+"alias": ""
+},
+{
+"key": "mangopulp",
+"hi": "आम पल्प",
+"en": "Mango pulp",
+"unit": "kg",
+"iu": "kg",
+"group": "Sauce",
+"alias": ""
+},
+{
+"key": "olivejal",
+"hi": "ऑलिव-हालापेनो",
+"en": "Olives-jalapeno",
+"unit": "kg",
+"iu": "kg",
+"group": "Sauce",
+"alias": ""
+},
+{
+"key": "kashmiri",
+"hi": "कश्मीरी लाल मिर्च पाउडर",
+"en": "Kashmiri chilli",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": "kashmiri marchu"
+},
+{
+"key": "redchilli",
+"hi": "लाल मिर्च पाउडर",
+"en": "Red chilli powder",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": "lal mirch powder marchu"
+},
+{
+"key": "drychilli",
+"hi": "साबुत लाल मिर्च",
+"en": "Dry red chilli",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": "sukhi lal mirch sukka marcha"
+},
+{
+"key": "turmeric",
+"hi": "हल्दी",
+"en": "Turmeric",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": "haldi haldar"
+},
+{
+"key": "corpowder",
+"hi": "धनिया पाउडर",
+"en": "Coriander powder",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": "dhana powder dhaniya powder"
+},
+{
+"key": "corseed",
+"hi": "साबुत धनिया",
+"en": "Coriander seeds",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": "dhana sabut dhaniya"
+},
+{
+"key": "cumin",
+"hi": "जीरा",
+"en": "Cumin",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": "jeera jiru jeeru"
+},
+{
+"key": "cardamom",
+"hi": "छोटी इलायची",
+"en": "Green cardamom",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": "elaichi elchi"
+},
+{
+"key": "blackcard",
+"hi": "बड़ी इलायची",
+"en": "Black cardamom",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "cloves",
+"hi": "लौंग",
+"en": "Cloves",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": "laung lavang"
+},
+{
+"key": "cinnamon",
+"hi": "दालचीनी",
+"en": "Cinnamon",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": "dalchini taj"
+},
+{
+"key": "pepper",
+"hi": "काली मिर्च",
+"en": "Black pepper",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": "kali mirch mari"
+},
+{
+"key": "whitepepper",
+"hi": "सफ़ेद मिर्च",
+"en": "White pepper",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "bayleaf",
+"hi": "तेज पत्ता",
+"en": "Bay leaf",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "mace",
+"hi": "जावित्री",
+"en": "Mace",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "nutmeg",
+"hi": "जायफल",
+"en": "Nutmeg",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "fennel",
+"hi": "सौंफ",
+"en": "Fennel",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": "saunf variyali"
+},
+{
+"key": "ajwain",
+"hi": "अजवाइन",
+"en": "Ajwain",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": "ajmo"
+},
+{
+"key": "mustard",
+"hi": "राई",
+"en": "Mustard seeds",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": "rai"
+},
+{
+"key": "amchur",
+"hi": "अमचूर",
+"en": "Amchur",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "blacksalt",
+"hi": "काला नमक",
+"en": "Black salt",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "hing",
+"hi": "हींग",
+"en": "Hing",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": "hing"
+},
+{
+"key": "kasurimethi",
+"hi": "कसूरी मेथी",
+"en": "Kasuri methi",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": "kasuri methi"
+},
+{
+"key": "drycoconut",
+"hi": "सूखा नारियल",
+"en": "Dry coconut",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": "kopra khopra"
+},
+{
+"key": "sesame",
+"hi": "तिल",
+"en": "Sesame",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": "til tal"
+},
+{
+"key": "poppy",
+"hi": "खसखस",
+"en": "Poppy seeds",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": "khaskhas khus khus"
+},
+{
+"key": "oregano",
+"hi": "ओरेगैनो",
+"en": "Oregano",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "chilliflakes",
+"hi": "चिली फ्लेक्स",
+"en": "Chilli flakes",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "garlicpowder",
+"hi": "लहसुन पाउडर",
+"en": "Garlic powder",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "onionpowder",
+"hi": "प्याज़ पाउडर",
+"en": "Onion powder",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "drymint",
+"hi": "सूखा पुदीना",
+"en": "Dried mint",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "rosepetal",
+"hi": "गुलाब पंखुड़ी",
+"en": "Rose petals",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "shahijeera",
+"hi": "शाही जीरा",
+"en": "Shahi jeera",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "staranise",
+"hi": "चक्र फूल",
+"en": "Star anise",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "citric",
+"hi": "नींबू सत्त",
+"en": "Citric acid",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "bakingpowder",
+"hi": "बेकिंग पाउडर",
+"en": "Baking powder",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "soda_bicarb",
+"hi": "खाने का सोडा",
+"en": "Baking soda",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "drybasil",
+"hi": "सूखी बेसिल",
+"en": "Dried basil",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "dryginger",
+"hi": "सोंठ",
+"en": "Dry ginger",
+"unit": "kg",
+"iu": "kg",
+"group": "Masala",
+"alias": ""
+},
+{
+"key": "papad",
+"hi": "पापड़",
+"en": "Papad",
+"unit": "pcs",
+"iu": "pc",
+"group": "Ready Maal",
+"alias": "papad"
+},
+{
+"key": "pickle",
+"hi": "अचार",
+"en": "Pickle",
+"unit": "kg",
+"iu": "kg",
+"group": "Ready Maal",
+"alias": ""
+},
+{
+"key": "pizzabase",
+"hi": "पिज़्ज़ा बेस 8\"",
+"en": "Pizza base",
+"unit": "pcs",
+"iu": "pc",
+"group": "Ready Maal",
+"alias": ""
+},
+{
+"key": "bun",
+"hi": "बर्गर बन",
+"en": "Burger bun",
+"unit": "pcs",
+"iu": "pc",
+"group": "Ready Maal",
+"alias": ""
+},
+{
+"key": "bread",
+"hi": "ब्रेड स्लाइस",
+"en": "Bread slice",
+"unit": "pcs",
+"iu": "pc",
+"group": "Ready Maal",
+"alias": ""
+},
+{
+"key": "tortilla",
+"hi": "टॉर्टिला-रोटी रैप",
+"en": "Wrap",
+"unit": "pcs",
+"iu": "pc",
+"group": "Ready Maal",
+"alias": ""
+},
+{
+"key": "springsheet",
+"hi": "स्प्रिंग रोल शीट",
+"en": "Spring roll sheet",
+"unit": "pcs",
+"iu": "pc",
+"group": "Ready Maal",
+"alias": ""
+},
+{
+"key": "fries",
+"hi": "फ्रोज़न फ्राइज़",
+"en": "Frozen fries",
+"unit": "kg",
+"iu": "kg",
+"group": "Ready Maal",
+"alias": ""
+},
+{
+"key": "smiley",
+"hi": "स्माइली",
+"en": "Smiley",
+"unit": "pcs",
+"iu": "pc",
+"group": "Ready Maal",
+"alias": ""
+},
+{
+"key": "nuggets",
+"hi": "नगेट्स",
+"en": "Nuggets",
+"unit": "pcs",
+"iu": "pc",
+"group": "Ready Maal",
+"alias": ""
+},
+{
+"key": "colddrink",
+"hi": "कोल्ड ड्रिंक 250ml",
+"en": "Cold drink",
+"unit": "pcs",
+"iu": "pc",
+"group": "Ready Maal",
+"alias": "thanda cold drink"
+},
+{
+"key": "soda",
+"hi": "सोडा बोतल",
+"en": "Soda",
+"unit": "pcs",
+"iu": "pc",
+"group": "Ready Maal",
+"alias": ""
+},
+{
+"key": "icecream",
+"hi": "आइसक्रीम (बल्क)",
+"en": "Ice cream",
+"unit": "kg",
+"iu": "kg",
+"group": "Ready Maal",
+"alias": ""
+},
+{
+"key": "kulfi",
+"hi": "कुल्फी",
+"en": "Kulfi",
+"unit": "pcs",
+"iu": "pc",
+"group": "Ready Maal",
+"alias": ""
+},
+{
+"key": "wafer",
+"hi": "वेफर",
+"en": "Wafer",
+"unit": "pcs",
+"iu": "pc",
+"group": "Ready Maal",
+"alias": ""
+},
+{
+"key": "teapatti",
+"hi": "चाय पत्ती",
+"en": "Tea leaves",
+"unit": "kg",
+"iu": "kg",
+"group": "Ready Maal",
+"alias": "chai patti cha"
+},
+{
+"key": "coffee",
+"hi": "कॉफ़ी",
+"en": "Coffee",
+"unit": "kg",
+"iu": "kg",
+"group": "Ready Maal",
+"alias": "coffee"
+},
+{
+"key": "greentea",
+"hi": "ग्रीन टी बैग",
+"en": "Green tea bag",
+"unit": "pcs",
+"iu": "pc",
+"group": "Ready Maal",
+"alias": ""
+},
+{
+"key": "sabja",
+"hi": "सब्जा",
+"en": "Sabja seeds",
+"unit": "kg",
+"iu": "kg",
+"group": "Ready Maal",
+"alias": ""
+},
+{
+"key": "kulhad",
+"hi": "कुल्हड़",
+"en": "Kulhad",
+"unit": "pcs",
+"iu": "pc",
+"group": "Ready Maal",
+"alias": ""
+},
+{
+"key": "gulabjamun",
+"hi": "गुलाब जामुन",
+"en": "Gulab jamun",
+"unit": "pcs",
+"iu": "pc",
+"group": "Mithai",
+"alias": ""
+},
+{
+"key": "rasgulla",
+"hi": "रसगुल्ला",
+"en": "Rasgulla",
+"unit": "pcs",
+"iu": "pc",
+"group": "Mithai",
+"alias": ""
+},
+{
+"key": "rasmalai",
+"hi": "रसमलाई",
+"en": "Ras malai",
+"unit": "pcs",
+"iu": "pc",
+"group": "Mithai",
+"alias": ""
+},
+{
+"key": "jalebi",
+"hi": "जलेबी",
+"en": "Jalebi",
+"unit": "kg",
+"iu": "kg",
+"group": "Mithai",
+"alias": ""
+},
+{
+"key": "halwamoong",
+"hi": "मूंग दाल हलवा",
+"en": "Moong halwa",
+"unit": "kg",
+"iu": "kg",
+"group": "Mithai",
+"alias": ""
+},
+{
+"key": "halwagajar",
+"hi": "गाजर हलवा",
+"en": "Gajar halwa",
+"unit": "kg",
+"iu": "kg",
+"group": "Mithai",
+"alias": ""
+},
+{
+"key": "shrikhand",
+"hi": "श्रीखंड",
+"en": "Shrikhand",
+"unit": "kg",
+"iu": "kg",
+"group": "Mithai",
+"alias": ""
+},
+{
+"key": "basundi",
+"hi": "बासुंदी",
+"en": "Basundi",
+"unit": "kg",
+"iu": "kg",
+"group": "Mithai",
+"alias": ""
+},
+{
+"key": "rabdi",
+"hi": "रबड़ी",
+"en": "Rabdi",
+"unit": "kg",
+"iu": "kg",
+"group": "Mithai",
+"alias": ""
+},
+{
+"key": "malpua",
+"hi": "मालपुआ",
+"en": "Malpua",
+"unit": "pcs",
+"iu": "pc",
+"group": "Mithai",
+"alias": ""
+},
+{
+"key": "charcoal",
+"hi": "कोयला (धुंगार)",
+"en": "Charcoal",
+"unit": "pcs",
+"iu": "pc",
+"group": "Other",
+"alias": ""
+},
+{
+"key": "mineralwater",
+"hi": "मिनरल वाटर 1L",
+"en": "Mineral water",
+"unit": "pcs",
+"iu": "pc",
+"group": "Ready Maal",
+"alias": "pani bottle bisleri"
+},
+{
+"key": "colddrink750",
+"hi": "कोल्ड ड्रिंक 750ml",
+"en": "Cold drink",
+"unit": "pcs",
+"iu": "pc",
+"group": "Ready Maal",
+"alias": ""
+},
+{
+"key": "bajra",
+"hi": "बाजरा आटा",
+"en": "Bajra flour",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": "bajra lot bajri"
+},
+{
+"key": "kabuli",
+"hi": "काबुली चना",
+"en": "Kabuli chana",
+"unit": "kg",
+"iu": "kg",
+"group": "Anaaj-Dal",
+"alias": "chole kabuli chana"
+},
+{
+"key": "nagalipapad",
+"hi": "नागली पापड़",
+"en": "Nagli papad",
+"unit": "pcs",
+"iu": "pc",
+"group": "Ready Maal",
+"alias": ""
+},
+{
+"key": "c400",
+"hi": "PP डिब्बा 400ml",
+"en": "PP container 400ml",
+"unit": "pcs",
+"iu": "pc",
+"group": "Packing",
+"alias": "container dabba dibba 400 ml"
+},
+{
+"key": "c100",
+"hi": "चटनी कप 100ml",
+"en": "Chutney cup 100ml",
+"unit": "pcs",
+"iu": "pc",
+"group": "Packing",
+"alias": "cup chutney raita 100 ml"
+},
+{
+"key": "f450",
+"hi": "सिल्वर फ़ॉइल डिब्बा 450ml",
+"en": "Silver foil container 450ml",
+"unit": "pcs",
+"iu": "pc",
+"group": "Packing",
+"alias": "foil silver dabba 450"
+},
+{
+"key": "f660",
+"hi": "सिल्वर फ़ॉइल डिब्बा 660ml",
+"en": "Silver foil container 660ml",
+"unit": "pcs",
+"iu": "pc",
+"group": "Packing",
+"alias": "foil silver dabba 660"
+},
+{
+"key": "roll",
+"hi": "सिल्वर फ़ॉइल रोल",
+"en": "Silver foil roll",
+"unit": "pcs",
+"iu": "m",
+"group": "Packing",
+"alias": "foil roll silver paper"
+},
+{
+"key": "pz8",
+"hi": "पिज़्ज़ा बॉक्स 8\"",
+"en": "Pizza box 8 inch",
+"unit": "pcs",
+"iu": "pc",
+"group": "Packing",
+"alias": "pizza box 8"
+},
+{
+"key": "pz10",
+"hi": "पिज़्ज़ा बॉक्स 10\"",
+"en": "Pizza box 10 inch",
+"unit": "pcs",
+"iu": "pc",
+"group": "Packing",
+"alias": "pizza box 10"
+},
+{
+"key": "bS",
+"hi": "कैरी बैग छोटा",
+"en": "Carry bag small",
+"unit": "pcs",
+"iu": "pc",
+"group": "Packing",
+"alias": "theli theli bag small plastic"
+},
+{
+"key": "bM",
+"hi": "कैरी बैग मीडियम",
+"en": "Carry bag medium",
+"unit": "pcs",
+"iu": "pc",
+"group": "Packing",
+"alias": "theli bag medium plastic"
+},
+{
+"key": "bL",
+"hi": "कैरी बैग बड़ा",
+"en": "Carry bag large",
+"unit": "pcs",
+"iu": "pc",
+"group": "Packing",
+"alias": "theli bag large plastic"
+}
+]

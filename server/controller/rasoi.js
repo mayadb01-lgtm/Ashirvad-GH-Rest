@@ -69,7 +69,17 @@ router.put(/^\/doc\/(.+)$/, async (req, res) => {
   try {
     // Rate badla → itihaas mein likho (kaun, kab, pehle kitna)
     if (p === "rates/main") {
-      const old = (await KitchenDoc.findById(p).lean())?.data?.items || {};
+      const prevDoc = (await KitchenDoc.findById(p).lean())?.data || {};
+      const old = prevDoc.items || {};
+      // Board sirf badle hue rate bhejta hai (changed) - bill se aaye naye rate purane board se mitte nahi
+      if (Array.isArray(data.changed)) {
+        const items = { ...old }, src = { ...(prevDoc.src || {}) };
+        for (const k of data.changed.map(String).slice(0, 500)) {
+          if (data.items?.[k] == null) delete items[k]; else items[k] = Number(data.items[k]);
+          delete src[k];
+        }
+        data.items = items; data.src = src; delete data.changed;
+      } else if (prevDoc.src && !data.src) data.src = prevDoc.src;
       const now = data.items || {};
       const rows = Object.keys({ ...old, ...now })
         .filter((k) => Number(old[k]) !== Number(now[k]))
@@ -295,5 +305,33 @@ router.get("/spend", async (req, res) => {
     res.status(500).json({ success: false, message: e.message });
   }
 });
+
+// Purchase bill save hone par: catalogue wale saamaan ki Manager dar = bill ki dar (unit badal kar)
+const CAT = (() => { try { return JSON.parse(fs.readFileSync(path.join(path.dirname(BOARD_FILE), "items.json"), "utf8")); } catch { return []; } })();
+const CATK = Object.fromEntries(CAT.map((x) => [x.key, x]));
+export const catalogItems = () => CAT;
+const CONV = { kg: { kg: 1, g: 1000 }, L: { ltr: 1, ml: 1000 }, pc: { pcs: 1, dozen: 1 / 12 }, g: { g: 1, kg: 1 / 1000 } };
+export async function applyBillRates(bill, user) {
+  try {
+    const its = (bill.items || []).filter((x) => x.key && CATK[x.key] && Number(x.rate) > 0);
+    if (!its.length) return 0;
+    const doc = (await KitchenDoc.findById("rates/main").lean())?.data || {};
+    const items = { ...(doc.items || {}) }, src = { ...(doc.src || {}) }, hist = [];
+    for (const x of its) {
+      const f = CONV[CATK[x.key].iu]?.[x.unit];
+      if (!f) continue;
+      const r = Math.round(Number(x.rate) * f * 100) / 100;
+      if (Number(items[x.key]) !== r) hist.push({ code: x.key, rate: r, prev: items[x.key] == null ? null : Number(items[x.key]), by: who(user), source: "bill" });
+      items[x.key] = r;
+      src[x.key] = { vendor: String(bill.vendor?.name || bill.vendor?.expenseName || "").slice(0, 60), date: bill.date, billNo: String(bill.billNo || "").slice(0, 30), unit: x.unit, rate: Number(x.rate) };
+    }
+    if (hist.length) await RateHistory.insertMany(hist);
+    await KitchenDoc.updateOne({ _id: "rates/main" }, { $set: { col: "rates", data: { ...doc, items, src, updatedAt: new Date().toISOString() }, by: who(user), at: new Date() } }, { upsert: true });
+    return hist.length;
+  } catch (e) {
+    console.warn("applyBillRates", e.message);
+    return 0;
+  }
+}
 
 export default router;

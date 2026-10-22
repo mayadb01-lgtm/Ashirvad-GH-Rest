@@ -6,6 +6,7 @@ const purchaseItemSchema = new mongoose.Schema(
   {
     key: { type: String, required: true, unique: true }, // naam chhote akshar mein
     name: { type: String, required: true },
+    ckey: { type: String, default: "" }, // Manager catalogue ka code (tomato, paneer…)
     unit: { type: String, default: "kg" },
     lastRate: { type: Number, default: 0 },
     lastVendorId: { type: String, default: "" },
