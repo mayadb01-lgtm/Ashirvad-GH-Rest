@@ -115,7 +115,8 @@ const RoomCalendar = ({ pageDate, isAdmin, onOpenRoom, onCheckout }) => {
       if (!grp) g.push((grp = { floor, rooms: [] }));
       grp.rooms.push(r);
     });
-    g.forEach((x) => (x.label = `Floor ${x.floor} · ${x.rooms[0].roomNo}–${x.rooms[x.rooms.length - 1].roomNo}`));
+    // room number 1, 2, 3… (floor wala number nahi) → "Rooms 1–11"
+    g.forEach((x) => (x.label = `${x.floor ? `Floor ${x.floor}` : "Rooms"} · ${x.rooms[0].roomNo}–${x.rooms[x.rooms.length - 1].roomNo}`));
     return g;
   }, [rooms]);
 
