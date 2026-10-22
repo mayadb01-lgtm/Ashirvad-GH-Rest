@@ -11,7 +11,7 @@ import RestEntry from "../model/restEntry.js";
 import OfficeBook from "../model/officeBook.js";
 import { BanquetBooking, banquetTotals } from "../model/banquet.js";
 import { EVENTS, EVENT_INFO, MUHURAT } from "../utils/forecastCalendar.js";
-import { loadPast, APP_FROM } from "../utils/pastData.js";
+import { loadPast } from "../utils/pastData.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -118,7 +118,7 @@ const SERIES = {
 
 const build = (D, nRooms, today, bookings = []) => {
   const keys = Object.keys(D).sort();
-  const first = keys.find((k) => k >= "2025-01-01" || D[k].fromPast) || keys[0];
+  const first = (D.withPast ? keys.find((k) => k >= "2015-01-01") : keys.find((k) => k >= "2025-01-01")) || keys[0]; // galat saal (jaise 0202) wali entry chhodo
   const val = (col, k) => SERIES[col](D[k]);
   const lastOf = (col) => [...keys].reverse().find((k) => val(col, k) != null);
   const lastData = Object.fromEntries(Object.keys(SERIES).map((c) => [c, lastOf(c)]));
@@ -403,7 +403,7 @@ const build = (D, nRooms, today, bookings = []) => {
   keyDates.sort((x, y) => x.start.localeCompare(y.start));
 
   // Data kitne time ka
-  const firstOf = (f) => keys.find((k) => k >= "2025-01-01" && f(D[k]));
+  const firstOf = (f) => keys.find((k) => k >= "2025-01-01" && !D[k].restPast && f(D[k]));
   const pastKeys = keys.filter((k) => D[k].fromPast);
   const coverage = [
     { item: "Guest House", from: firstOf((x) => x.hasGh), to: lastData.occ },
@@ -422,8 +422,7 @@ const build = (D, nRooms, today, bookings = []) => {
 const addPast = async (D) => {
   const P = await loadPast();
   if (!P.has) return;
-  // 2025 se pehle ka app data forecast pehle bhi nahi ginta tha; un dino ab purana record
-  Object.keys(D).forEach((k) => k < APP_FROM && delete D[k]);
+  Object.defineProperty(D, "withPast", { value: true, enumerable: false }); // itihaas purane records ki pehli tareekh se (keys mein nahi aata)
   Object.entries(P.days).forEach(([k, p]) => {
     const x = (D[k] ||= { occ: 0, rev: 0, ghIn: 0, rest: null, restIn: 0, offIn: 0, offOut: 0, staff: 0, personal: 0, banquet: 0, hasGh: false, hasOff: false });
     let used = false;

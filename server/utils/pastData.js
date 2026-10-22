@@ -1,7 +1,9 @@
-// 📚 Purane records (Tally wagairah) ko baaki reports mein jodna — ek hi niyam sab jagah (Performance page jaisa):
-//  - 2025 se pehle ke mahine: sirf purana record (app ka us samay ka data reports mein nahi ginta).
-//  - 2025 se: purana record sirf un mahino mein jahan app mein GH / restaurant ka koi data nahi.
-//  - Isliye koi bhi din / mahina kabhi do jagah se nahi gina jaata.
+// 📚 Purane records (Tally wagairah) ko baaki reports mein jodna. Niyam (hisse ke hisaab se):
+//  - Jis mahine app mein restaurant ka data hai → us mahine Tally ki restaurant sale / restaurant kharch nahi.
+//  - Jis mahine app mein GH ka data hai → us mahine Tally ki GH kamai nahi.
+//  - Jis mahine app mein office book hai → us mahine Tally ka banquet / office kharch / upad nahi.
+//  - Isliye koi bhi hissa kisi mahine mein kabhi do jagah se nahi gina jaata.
+//  (Performance page ka apna purana niyam hai: controller/performance.js)
 // ⚠️ READ-ONLY: sirf padhta hai. App ki entries ya purane records kabhi nahi badalta.
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat.js";
@@ -22,7 +24,7 @@ const iso = (s) => {
   return d.isValid() ? d.format(ISO) : null;
 };
 
-const EMPTY = { has: false, days: {}, exps: [], appMonths: new Set(), catOf: {} };
+const EMPTY = { has: false, days: {}, exps: [], restMonths: new Set(), ghMonths: new Set(), offMonths: new Set(), catOf: {} };
 let cache = { at: 0, v: null };
 
 // days: { "2024-05-01": { restaurant, gh, banquet, other } } · exps: [{ month, book, head, category, amount, entries }]
@@ -38,8 +40,7 @@ export const loadPast = async () => {
     RestEntry.find({}, { createDate: 1, totalCash: 1, totalCard: 1, totalPP: 1, totalUpad: 1, totalPending: 1, totalExpenses: 1, "expenses.expenseName": 1, "expenses.categoryName": 1 }).lean(),
     OfficeBook.find({}, { createDate: 1, "officeOut.expenseName": 1, "officeOut.fullname": 1, "officeOut.categoryName": 1 }).lean(),
   ]);
-  const appMonths = new Set();
-  const offDays = new Set();
+  const restMonths = new Set(), ghMonths = new Set(), offMonths = new Set();
   const votes = {};
   const vote = (name, cat) => {
     const k = headKey(name);
@@ -48,17 +49,17 @@ export const loadPast = async () => {
   };
   gh.forEach((d) => {
     const k = iso(d.date);
-    if (k && k >= APP_FROM && (d.entry || []).some((e) => SOLD.includes(e.period))) appMonths.add(k.slice(0, 7));
+    if (k && (d.entry || []).some((e) => SOLD.includes(e.period))) ghMonths.add(k.slice(0, 7));
   });
   rest.forEach((d) => {
     const k = iso(d.createDate);
     const sale = n(d.totalCash) + n(d.totalCard) + n(d.totalPP) + n(d.totalUpad) + n(d.totalPending) + n(d.totalExpenses);
-    if (k && k >= APP_FROM && sale >= 1000) appMonths.add(k.slice(0, 7));
+    if (k && sale >= 1000) restMonths.add(k.slice(0, 7));
     (d.expenses || []).forEach((e) => vote(e.expenseName, e.categoryName));
   });
   office.forEach((d) => {
     const k = iso(d.createDate);
-    if (k) offDays.add(k);
+    if (k) offMonths.add(k.slice(0, 7));
     (d.officeOut || []).forEach((e) => vote(e.expenseName || e.fullname, e.categoryName));
   });
   const catOf = {};
@@ -66,18 +67,17 @@ export const loadPast = async () => {
 
   const days = {};
   pd.forEach((p) => {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(p.date) || appMonths.has(p.date.slice(0, 7))) return;
-    const x = (days[p.date] ||= { restaurant: 0, gh: 0, banquet: 0, other: 0 });
-    x.restaurant += n(p.restaurant);
-    x.gh += n(p.gh);
-    // office book wale din (2025 se) banquet / other app se hi
-    if (!(p.date >= APP_FROM && offDays.has(p.date))) {
-      x.banquet += n(p.banquet);
-      x.other += n(p.other);
-    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(p.date)) return;
+    const ym = p.date.slice(0, 7);
+    const x = { restaurant: restMonths.has(ym) ? 0 : n(p.restaurant), gh: ghMonths.has(ym) ? 0 : n(p.gh), banquet: offMonths.has(ym) ? 0 : n(p.banquet), other: offMonths.has(ym) ? 0 : n(p.other) };
+    if (!x.restaurant && !x.gh && !x.banquet && !x.other) return;
+    const d = (days[p.date] ||= { restaurant: 0, gh: 0, banquet: 0, other: 0 });
+    Object.keys(x).forEach((key) => (d[key] += x[key]));
   });
-  const exps = pe.filter((p) => /^\d{4}-\d{2}$/.test(p.month) && !appMonths.has(p.month)).map((p) => ({ month: p.month, book: p.book, head: p.head, category: p.category || "", amount: n(p.amount), entries: n(p.entries) }));
-  const v = { has: true, days, exps, appMonths, catOf };
+  const skipExp = (p) =>
+    p.book === "investment" ? false : p.book === "restaurant" ? restMonths.has(p.month) : p.book === "upad" ? restMonths.has(p.month) || offMonths.has(p.month) : offMonths.has(p.month);
+  const exps = pe.filter((p) => /^\d{4}-\d{2}$/.test(p.month) && !skipExp(p)).map((p) => ({ month: p.month, book: p.book, head: p.head, category: p.category || "", amount: n(p.amount), entries: n(p.entries) }));
+  const v = { has: true, days, exps, restMonths, ghMonths, offMonths, catOf };
   cache = { at: Date.now(), v };
   return v;
 };
