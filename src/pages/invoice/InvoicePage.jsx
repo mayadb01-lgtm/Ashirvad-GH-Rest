@@ -34,6 +34,7 @@ const css = `
 .inv-sum tr.g td{border-top:2px solid ${BROWN};font-size:15px;font-weight:800;color:${BROWN};padding-top:7px}
 .inv-words{font-size:12px;margin-top:10px;padding:8px 10px;background:#FBF6EC;border-left:4px solid ${GOLD}}
 .inv-foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:28px;font-size:11px;color:#4B5563}
+.inv-signs{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-top:20px;font-size:11px;color:#4B5563}
 .inv-sign{text-align:center;min-width:200px}
 .inv-sign div{border-top:1px solid #9CA3AF;margin-top:44px;padding-top:4px;font-weight:700;color:#1F2937}
 .inv-cancel{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);font-size:84px;font-weight:900;color:rgba(220,38,38,.18);border:8px solid rgba(220,38,38,.18);padding:4px 24px;pointer-events:none}
@@ -194,6 +195,12 @@ export const InvoiceDocument = ({ inv }) => {
           {gst ? "Tax is not payable on reverse charge basis." : "This is not a GST tax invoice."}
           <br />
           Computer generated invoice.
+        </div>
+      </div>
+      <div className="inv-signs">
+        <div className="inv-sign">
+          Received / agreed by guest
+          <div>Guest signature</div>
         </div>
         <div className="inv-sign">
           For {HOTEL.name}
