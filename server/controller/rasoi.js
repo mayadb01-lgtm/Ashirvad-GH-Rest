@@ -9,6 +9,8 @@
 // GET    /api/v1/rasoi/list/<days|ideas>
 // GET    /api/v1/rasoi/board          → board ka page (recipes, rates) — sirf login ke baad, public file nahi
 // GET    /api/v1/rasoi/sales          → roz ka restaurant sale (app + purane records), sirf padhna
+// GET    /api/v1/rasoi/banquet?from=YYYY-MM-DD&to=YYYY-MM-DD → banquet booking ka menu (dish × gram × plate), sirf padhna.
+//        Ye sirf kachche maal ki order list ke liye hai — restaurant ki bikri / forecast mein kabhi nahi juda.
 import { Router } from "express";
 import mongoose from "mongoose";
 import fs from "fs";
@@ -16,6 +18,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { loadDaily } from "./forecast.js";
 import { PastDaily } from "../model/pastData.js";
+import { BanquetBooking, BanquetItem } from "../model/banquet.js";
 
 const router = Router();
 const BOARD_FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "rasoi", "board.html");
@@ -40,7 +43,7 @@ const rateSchema = new mongoose.Schema(
 );
 const RateHistory = mongoose.models.KitchenRateHistory || mongoose.model("KitchenRateHistory", rateSchema, "kitchen_rate_history");
 
-const PATH_RE = /^(days\/\d{4}-\d{2}-\d{2}|settings\/main|stock\/main|rates\/main|ideas\/[A-Za-z0-9_-]{1,40})$/;
+const PATH_RE = /^(days\/\d{4}-\d{2}-\d{2}|settings\/main|stock\/main|rates\/main|bqmap\/main|ideas\/[A-Za-z0-9_-]{1,40})$/;
 const who = (u) => String(u?.name || u?.email || "").slice(0, 60);
 const pathOf = (req) => decodeURIComponent(req.params[0] || "").replace(/^\/+|\/+$/g, "");
 
@@ -115,6 +118,50 @@ router.get("/sales", async (req, res) => {
       if (D[k].rest != null) sales[k] = Math.round(D[k].rest);
     });
     res.json({ success: true, sales });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+// Banquet: booking ka menu → har dish ka kul kg / litre / pc (cancel wali booking nahi). Grahak ka naam / mobile nahi bhejte.
+const ISO_RE = /^\d{4}-\d{2}-\d{2}$/;
+router.get("/banquet", async (req, res) => {
+  try {
+    const from = String(req.query.from || ""), to = String(req.query.to || "");
+    if (!ISO_RE.test(from) || !ISO_RE.test(to) || to < from) return res.status(400).json({ success: false, message: "Bad dates" });
+    const a = new Date(from + "T00:00:00+05:30"), b = new Date(to + "T23:59:59+05:30");
+    if ((b - a) / 864e5 > 100) return res.status(400).json({ success: false, message: "Range too long" });
+    const [list, items] = await Promise.all([
+      BanquetBooking.find({ status: { $ne: "cancelled" }, eventCreateDate: { $gte: new Date(a - 864e5), $lte: new Date(+b + 864e5) } }, { customer: 0, payments: 0 }).lean(),
+      BanquetItem.find({}, { name: 1, unit: 1, category: 1 }).lean(),
+    ]);
+    const unitOf = Object.fromEntries(items.map((x) => [String(x._id), x.unit || "kg"]));
+    const n = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+    const out = [];
+    list.forEach((bk) => {
+      const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(bk.eventDate || "");
+      if (!m) return;
+      const date = `${m[3]}-${m[2]}-${m[1]}`;
+      if (date < from || date > to) return;
+      const lines = {};
+      (bk.menus || []).forEach((mn) => {
+        const plates = n(mn.plates);
+        const flat = [...(mn.items || []), ...(mn.choices || []).flatMap((c) => (c.items || []).map((x) => ({ ...x, grams: c.grams })))];
+        flat.forEach((x) => {
+          const key = x.itemId || x.name;
+          const l = (lines[key] ||= { key, name: x.name, category: x.category || "", unit: unitOf[x.itemId] || "kg", qty: 0 });
+          l.qty += (n(x.grams) * plates) / (l.unit === "pc" ? 1 : 1000); // kg / litre / pc
+        });
+      });
+      out.push({
+        id: String(bk._id), no: bk.bookingNo, date, slot: bk.slot || "", occasion: bk.occasion || "", status: bk.status,
+        plates: (bk.menus || []).reduce((t, mn) => t + n(mn.plates), 0) || n(bk.guests),
+        menus: (bk.menus || []).map((mn) => `${mn.name} × ${n(mn.plates)}`),
+        lines: Object.values(lines).map((l) => ({ ...l, qty: Math.round(l.qty * 1000) / 1000 })),
+      });
+    });
+    out.sort((x, y) => (x.date + x.slot).localeCompare(y.date + y.slot));
+    res.json({ success: true, data: out });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
   }

@@ -206,6 +206,7 @@ body{font-size:15px}
   <section id="tab-aaj" class="detail">
     <div class="tiles" id="aajTiles"></div>
     <div class="panel" id="festAlert" style="grid-column:1/-1;background:var(--haldi-soft);border-color:#F3D9B1" hidden></div>
+    <div class="panel" id="bqPanel" style="grid-column:1/-1;background:#F5F3FF;border-color:#DDD6FE" hidden></div>
     <section class="panel">
       <div class="row" style="justify-content:space-between"><h2 data-i="gravyToday"></h2><span class="hi" data-i="rowTap"></span></div>
       <div class="tablebox"><table>
@@ -286,8 +287,13 @@ body{font-size:15px}
         <button class="btn primary" id="copySabzi" data-i="copyWa"></button>
       </div>
       <p class="note" id="sabziHow"></p>
-      <div class="tablebox"><table><thead><tr><th data-i="thItem"></th><th class="n" data-i="thQty"></th><th data-i="thUnit"></th><th class="n" data-i="thRate"></th><th class="n" data-i="thEst"></th></tr></thead><tbody id="sabziRows"></tbody></table></div>
+      <div class="tablebox"><table><thead><tr><th data-i="thItem"></th><th class="n" data-i="thQty"></th><th class="n" data-i="thBq"></th><th data-i="thUnit"></th><th class="n" data-i="thRate"></th><th class="n" data-i="thEst"></th></tr></thead><tbody id="sabziRows"></tbody></table></div>
       <pre class="copy" id="sabziText" hidden></pre>
+    </section>
+    <section class="panel" id="bqMapPanel" hidden>
+      <h2 data-i="bqMapTitle"></h2>
+      <p class="note" data-i="bqMapNote"></p>
+      <div class="tablebox"><table><thead><tr><th data-i="thBqDish"></th><th data-i="thBqRecipe"></th></tr></thead><tbody id="bqMapRows"></tbody></table></div>
     </section>
   </section>
 
@@ -458,6 +464,12 @@ function ingName(k){const i=ING[k]; if(!i) return k; const [hi,en]=i.n.split(" /
 function unitW(u){return ({g:"g",ml:"ml",kg:"kg",L:"L",nag:T("नग","pc"),pc:T("नग","pc"),tukde:T("टुकड़े","pieces"),tukda:T("टुकड़ा","piece"),baar:T("बार","time"),x:T("प्लेट","plate"),"₹":"₹",bottle:T("बोतल","bottle"),glass:T("गिलास","glass")})[u]||u}
 function wfOf(s){const w=parse(s).getDay();return WF[(w+6)%7]}
 function isWeekend(s){const w=parse(s).getDay();return w===0||w===6}
+Object.assign(UI,{
+ thBq:["इसमें बैंक्वेट","Of which banquet"],
+ bqMapTitle:["बैंक्वेट डिश → रेसिपी मिलान","Banquet dish → recipe match"],
+ bqMapNote:["बैंक्वेट मेनू की हर डिश किस रेसिपी से बनती है - उसी से कच्चा माल गिना जाता है। अपने आप मिलान किया है; ग़लत हो तो बदलें। एक बार चुना, हमेशा याद रहेगा।","Which recipe each banquet menu dish is made from - raw materials are counted from it. Matched automatically; change it if wrong. Saved for everyone."],
+ thBqDish:["बैंक्वेट डिश","Banquet dish"], thBqRecipe:["रेसिपी","Recipe"],
+});
 function applyStatic(){
   document.documentElement.lang=lang;
   document.querySelectorAll("[data-i]").forEach(el=>{el.textContent=U(el.dataset.i)});
@@ -800,7 +812,7 @@ function renderFestAlert(){
   if(rows.length) box.innerHTML=`<h2>${T("आने वाले त्योहार (अगले 7 दिन) - माल पहले से मँगवाएँ","Festivals coming (next 7 days) - order stock early")}</h2><ul style="margin:0;padding-left:20px;display:grid;gap:4px">${rows.join("")}</ul>`;
 }
 function renderAaj(){
-  renderFestAlert();
+  renderFestAlert(); renderBqPanel();
   const F=fcOf(cur), P=prepQty(F), pl=plates(F);
   const totPl=pl.reduce((a,x)=>a+x.pl,0), cost=pl.reduce((a,x)=>a+x.pl*COST[x.d.n],0), act=Number(curState.actual)||0;
   $("aajTiles").innerHTML=[
@@ -921,6 +933,53 @@ $("festPct").addEventListener("change",e=>{const v=Number(e.target.value);settin
 const GORDER=["Sabzi","Dairy","Anaaj-Dal","Dry Fruit","Tel","Masala","Sauce","Ready Maal","Mithai","Other"];
 const GNAME={"Sabzi":["सब्ज़ी","Vegetables"],"Dairy":["डेयरी","Dairy"],"Anaaj-Dal":["अनाज-दाल","Grains & pulses"],"Dry Fruit":["सूखे मेवे","Dry fruits"],"Tel":["तेल","Oils"],"Masala":["मसाले","Spices"],"Sauce":["सॉस और अन्य","Sauces & others"],"Ready Maal":["तैयार माल","Ready products"],"Mithai":["मिठाई","Sweets"],"Other":["अन्य","Other"]};
 const gname=g=>GNAME[g]?T(GNAME[g][0],GNAME[g][1]):g;
+// ---------- BANQUET: sirf order list ke liye (restaurant bikri / forecast mein nahi gina jata) ----------
+let BQ={}, BQM={}, bqmap={};
+const MENU_BY_ID=Object.fromEntries(DATA.menu.map(m=>[m.id,m]));
+const normN=x=>String(x||"").toLowerCase().replace(/\(.*?\)/g," ").replace(/[^a-z0-9\u0900-\u097f ]+/g," ").replace(/\s+/g," ").trim();
+const MENU_NORM=DATA.menu.map(m=>[m.id,normN(m.n)]);
+const AUTO={};
+function autoMatch(name){ if(name in AUTO) return AUTO[name]; const n=normN(name); let best=null,bs=0; const A=new Set(n.split(" "));
+  for(const [id,mn] of MENU_NORM){ if(mn===n){best=id;bs=1;break} const B=new Set(mn.split(" ")); let c=0; A.forEach(t=>{if(B.has(t))c++}); const sc=c/(A.size+B.size-c); if(sc>bs){bs=sc;best=id} }
+  return (AUTO[name]=bs>=0.5?best:null) }
+function bqRecipe(l){ const v=bqmap[l.key]; if(v==="ignore") return null; if(v&&MENU_BY_ID[v]) return MENU_BY_ID[v]; const a=autoMatch(l.name); return a?MENU_BY_ID[a]:null }
+function portionOf(m){ const po=String(m.po||""); let g=0; for(const k in m.rk){const i=ING[k]; if(i&&(i.u==="kg"||i.u==="L")) g+=m.rk[k]}
+  const rg=/([\d.]+)\s*(g|ml)\b/i.exec(po), rp=/(\d+)\s*(pc|pcs|nag|balls)\b/i.exec(po);
+  return {g:rg?Number(rg[1]):(g||250), pc:rp?Number(rp[1]):1} }
+function bqDay(s){ const out={raw:{},plates:0,list:BQ[s]||[],unmatched:[]};
+  (BQ[s]||[]).forEach(b=>{ out.plates+=Number(b.plates)||0; (b.lines||[]).forEach(l=>{ const m=bqRecipe(l);
+    if(!m){ if(bqmap[l.key]!=="ignore") out.unmatched.push(l); return }
+    const p=portionOf(m), f=l.unit==="pc"?l.qty/p.pc:l.qty*1000/p.g;
+    for(const k in m.rk) out.raw[k]=(out.raw[k]||0)+m.rk[k]*f; }) });
+  return out }
+function monthRange(s){const y=+s.slice(0,4), m=+s.slice(5,7); return [s.slice(0,7)+"-01", s.slice(0,7)+"-"+String(dim(y,m-1)).padStart(2,"0")]}
+function ensureBQ(s){ if(!db||!db.banquet) return; const [a,b]=monthRange(s); if(BQM[a]) return; BQM[a]=1;
+  db.banquet(a,b).then(j=>{ (j.data||[]).forEach(x=>{ const L2=(BQ[x.date]||=[]); if(!L2.some(y=>y.id===x.id)) L2.push(x) }); renderAll() }).catch(()=>{ delete BQM[a] }) }
+function saveBqmap(){debounce("bqm",()=>write("bqmap/main",{map:bqmap},"bqm"))}
+const qFmt=(k,q)=>{const i=ING[k]; return (i.u==="kg"||i.u==="L")?(q<1?Math.ceil(q*10)/10:half(q)):Math.ceil(q)};
+const unitBq=u=>u==="pc"?T("नग","pcs"):u==="litre"?"L":"kg";
+function renderBqPanel(){
+  const box=$("bqPanel"); if(!box) return; let html="", any=false;
+  for(let i=0;i<=6;i++){ const s=shift(cur,i); ensureBQ(s); const L2=BQ[s]||[]; if(!L2.length) continue; any=true;
+    const d=parse(s), head=`${dayN(d.getDay())} ${d.getDate()} ${monN(d.getMonth())}`;
+    L2.forEach(b=>{ const det=i<=1;
+      html+=`<div style="padding:8px 0;border-top:1px solid #E9E5FB"><b>${esc(head)}</b> · ${esc(b.slot||"")} · ${T("बुकिंग","Booking")} ${esc(b.no||"")}${b.occasion?" · "+esc(b.occasion):""} · <b>${Math.round(b.plates||0)} ${T("प्लेट","plates")}</b>`;
+      if(det&&b.lines&&b.lines.length) html+=`<div class="hi" style="margin-top:4px">${b.lines.map(l=>{const m=bqRecipe(l); return `${esc(l.name)} <b>${l.unit==="pc"?Math.ceil(l.qty):r1(l.qty)} ${unitBq(l.unit)}</b>${m?"":` <span style="color:var(--warn)">(${T("रेसिपी नहीं जुड़ी","no recipe")})</span>`}`}).join(" · ")}</div>`;
+      html+=`</div>` }) }
+  box.hidden=!any;
+  if(any) box.innerHTML=`<div class="row" style="justify-content:space-between"><h2>${T("बैंक्वेट (अगले 7 दिन)","Banquet (next 7 days)")}</h2><span class="hi">${T("बनाने की मात्रा (तैयार डिश) · कच्चा माल सब्ज़ी/महीने की ऑर्डर लिस्ट में जुड़ा है · रेस्टोरेंट बिक्री में नहीं गिना","Quantity to cook (finished dish) · raw materials are added to the vegetable / monthly order lists · not counted in restaurant sales")}</span></div>${html}`;
+}
+function renderBqMap(){
+  const panel=$("bqMapPanel"); if(!panel) return; const seen={};
+  Object.keys(BQ).filter(s=>s>=shift(cur,-1)).forEach(s=>(BQ[s]||[]).forEach(b=>(b.lines||[]).forEach(l=>{seen[l.key]||=l})));
+  const ls=Object.values(seen).sort((a,b)=>a.name.localeCompare(b.name)); panel.hidden=!ls.length; if(!ls.length) return;
+  if(panel.contains(document.activeElement)) return;
+  const opts=DATA.menu.map(m=>`<option value="${m.id}">${esc(L(m.n))}</option>`).join("");
+  $("bqMapRows").innerHTML=ls.map(l=>{const a=autoMatch(l.name), v=bqmap[l.key]||"";
+    return `<tr><td><b>${esc(l.name)}</b><span class="hi"> ${esc(l.category||"")}</span></td><td><select data-bq="${esc(l.key)}" style="max-width:100%"><option value="">${a?T("अपने आप: ","Auto: ")+esc(L(MENU_BY_ID[a].n)):T("- मिलान नहीं, चुनें -","- no match, choose -")}</option><option value="ignore">${T("नहीं गिनना (बाहर से आता है)","Do not count (bought ready)")}</option>${opts}</select></td></tr>`}).join("");
+  $("bqMapRows").querySelectorAll("select[data-bq]").forEach(sel=>{ sel.value=bqmap[sel.dataset.bq]||"";
+    sel.onchange=()=>{ if(sel.value) bqmap[sel.dataset.bq]=sel.value; else delete bqmap[sel.dataset.bq]; saveBqmap(); renderAll() } });
+}
 function listRows(raw,freq,waste){const rows=[];
   for(const k in raw){const i=ING[k]; if(!i||i.f!==freq) continue; let q=amt(k,raw[k])*(1+waste/100); if(q<=0) continue;
     q=(i.u==="kg"||i.u==="L")?(q<1?Math.ceil(q*10)/10:half(q)):Math.ceil(q); rows.push({k,i,q,rs:moneyOf(k,q)})}
@@ -929,14 +988,17 @@ const dLabel=s=>{const d=parse(s);return dayN(d.getDay())+" "+d.getDate()+" "+mo
 function renderSabzi(){
   const sel=Number($("sabziFor").value), waste=Number($("sabziWaste").value)||0;
   const ds=sel===0?[cur]:sel===1?[shift(cur,1)]:[shift(cur,1),shift(cur,2)];
-  const raw={}; let F=0; ds.forEach(s=>{const f=fcOf(s);F+=f;const n=needs(f).raw;for(const k in n) raw[k]=(raw[k]||0)+n[k]});
+  const raw={}, bqr={}; let F=0, bqPl=0, bqNos=[], unm=0; ds.forEach(s=>{ensureBQ(s); const f=fcOf(s);F+=f;const n=needs(f).raw;for(const k in n) raw[k]=(raw[k]||0)+n[k];
+    const b=bqDay(s); bqPl+=b.plates; unm+=b.unmatched.length; b.list.forEach(x=>bqNos.push(x.no)); for(const k in b.raw){raw[k]=(raw[k]||0)+b.raw[k]; bqr[k]=(bqr[k]||0)+b.raw[k]}});
   const rows=listRows(raw,"roz",waste), when=ds.map(dLabel).join(" + ");
-  $("sabziHow").textContent=T(`${when} · पूर्वानुमान ${fmtR(F)} · +${waste}% बर्बादी। फ्रिज में जो बचा है, उतना कम मँगाएँ। दही ख़ुद जमाते हैं तो उतने ही लीटर दूध लें।`,`${when} · forecast ${fmtR(F)} · +${waste}% wastage. Order less by whatever is left in the fridge. If you set curd yourself, buy the same litres of milk instead.`);
+  const bqNote=bqPl?T(` · + बैंक्वेट ${Math.round(bqPl)} प्लेट (बुकिंग ${bqNos.join(", ")}) - "इसमें बैंक्वेट" कॉलम में`,` · + banquet ${Math.round(bqPl)} plates (booking ${bqNos.join(", ")}) - see "Of which banquet"`)+(unm?T(` · ⚠ ${unm} बैंक्वेट डिश की रेसिपी नहीं जुड़ी (नीचे चुनें)`,` · ⚠ ${unm} banquet dishes have no recipe (choose below)`):""):"";
+  $("sabziHow").textContent=T(`${when} · पूर्वानुमान ${fmtR(F)} · +${waste}% बर्बादी। फ्रिज में जो बचा है, उतना कम मँगाएँ। दही ख़ुद जमाते हैं तो उतने ही लीटर दूध लें।`,`${when} · forecast ${fmtR(F)} · +${waste}% wastage. Order less by whatever is left in the fridge. If you set curd yourself, buy the same litres of milk instead.`)+bqNote;
   let g="",html="",tot=0;
-  rows.forEach(r=>{if(r.i.g!==g){g=r.i.g;html+=`<tr class="grp"><td colspan="5">${esc(gname(g))}</td></tr>`} tot+=r.rs;
-    html+=`<tr><td>${esc(ingName(r.k))}</td><td class="n"><b>${r.q}</b></td><td>${unitLabel(r.k)}</td><td class="n">${r.i.r}</td><td class="n">${fmtR(r.rs)}</td></tr>`});
-  html+=`<tr class="grp"><td colspan="4">${T("कुल अनुमान","Total estimate")}</td><td class="n">${fmtR(tot)}</td></tr>`; $("sabziRows").innerHTML=html;
-  $("sabziText").textContent=T("होटल आशीर्वाद - सब्ज़ी/डेयरी ऑर्डर","Hotel Ashirvad - vegetable/dairy order")+"\n"+when+"\n"+rows.map(r=>`${ingName(r.k)} - ${r.q} ${unitLabel(r.k)}`).join("\n");
+  rows.forEach(r=>{if(r.i.g!==g){g=r.i.g;html+=`<tr class="grp"><td colspan="6">${esc(gname(g))}</td></tr>`} tot+=r.rs;
+    const bq=bqr[r.k]?qFmt(r.k,amt(r.k,bqr[r.k])*(1+waste/100)):0;
+    html+=`<tr><td>${esc(ingName(r.k))}</td><td class="n"><b>${r.q}</b></td><td class="n">${bq?bq:""}</td><td>${unitLabel(r.k)}</td><td class="n">${r.i.r}</td><td class="n">${fmtR(r.rs)}</td></tr>`});
+  html+=`<tr class="grp"><td colspan="5">${T("कुल अनुमान","Total estimate")}</td><td class="n">${fmtR(tot)}</td></tr>`; $("sabziRows").innerHTML=html; renderBqMap();
+  $("sabziText").textContent=T("होटल आशीर्वाद - सब्ज़ी/डेयरी ऑर्डर","Hotel Ashirvad - vegetable/dairy order")+"\n"+when+(bqPl?T(" (बैंक्वेट सहित)"," (incl. banquet)"):"")+"\n"+rows.map(r=>`${ingName(r.k)} - ${r.q} ${unitLabel(r.k)}`).join("\n");
 }
 $("sabziFor").addEventListener("change",renderSabzi); $("sabziWaste").addEventListener("input",renderSabzi);
 $("copySabzi").onclick=()=>copyText($("sabziText"),$("copySabzi"));
@@ -945,9 +1007,10 @@ function monthOptions(){const d=parse(cur), sel=$("monthPick"), pv=sel.value; se
   if(pv&&[...sel.options].some(o=>o.value===pv)) sel.value=pv}
 function renderMonth(){
   const mk=$("monthPick").value, [y,m]=mk.split("-").map(Number), n=dim(y,m-1), waste=Number($("monthWaste").value)||0;
-  const raw={},mg={}; let F=0;
-  for(let i=1;i<=n;i++){const s=`${mk}-${String(i).padStart(2,"0")}`, f=fcOf(s); F+=f; const nd=needs(f); for(const k in nd.raw) raw[k]=(raw[k]||0)+nd.raw[k]; for(const k in nd.mg) mg[k]=(mg[k]||0)+nd.mg[k]}
-  $("monthHow").textContent=T(`${monN(m-1)} ${y}: ${n} दिनों की पूर्वानुमान बिक्री ${fmtR(F)} से। सब्ज़ी और डेयरी रोज़ की सूची में हैं, यहाँ सिर्फ़ सूखा सामान।`,`${monN(m-1)} ${y}: based on ${n} days of forecast sales ${fmtR(F)}. Vegetables and dairy are in the daily list; this list is dry goods only.`);
+  const raw={},mg={}; let F=0, bqPl=0, bqN=0; ensureBQ(mk+"-01");
+  for(let i=1;i<=n;i++){const s=`${mk}-${String(i).padStart(2,"0")}`, f=fcOf(s); F+=f; const nd=needs(f); for(const k in nd.raw) raw[k]=(raw[k]||0)+nd.raw[k]; for(const k in nd.mg) mg[k]=(mg[k]||0)+nd.mg[k];
+    const b=bqDay(s); bqPl+=b.plates; bqN+=b.list.length; for(const k in b.raw) raw[k]=(raw[k]||0)+b.raw[k]}
+  $("monthHow").textContent=T(`${monN(m-1)} ${y}: ${n} दिनों की पूर्वानुमान बिक्री ${fmtR(F)} से। सब्ज़ी और डेयरी रोज़ की सूची में हैं, यहाँ सिर्फ़ सूखा सामान।`,`${monN(m-1)} ${y}: based on ${n} days of forecast sales ${fmtR(F)}. Vegetables and dairy are in the daily list; this list is dry goods only.`)+(bqN?T(` + बैंक्वेट: ${bqN} बुकिंग, ${Math.round(bqPl)} प्लेट (अभी तक की बुकिंग)।`,` + banquet: ${bqN} bookings, ${Math.round(bqPl)} plates (bookings so far).`):"");
   const rows=listRows(raw,"mahina",waste); let g="",html="",tot=0,cnt=0;
   rows.forEach(r=>{const st=Number(stock[r.k])||0; let ord=Math.max(0,r.q-st); ord=(r.i.u==="kg"||r.i.u==="L")?(ord<1?Math.ceil(ord*10)/10:half(ord)):Math.ceil(ord);
     const rs=moneyOf(r.k,ord); tot+=rs; if(ord>0)cnt++; r.ord=ord;
@@ -957,7 +1020,7 @@ function renderMonth(){
   const ae=document.activeElement&&document.activeElement.id; $("monthRows").innerHTML=html;
   if(ae&&ae.startsWith("st-")){const el=$(ae);if(el){el.focus();const v=el.value;el.value="";el.value=v}}
   $("monthRows").querySelectorAll("input[data-k]").forEach(inp=>inp.addEventListener("change",()=>{const v=Number(inp.value);if(v>0)stock[inp.dataset.k]=v;else delete stock[inp.dataset.k];saveStock();renderMonth()}));
-  $("monthTiles").innerHTML=[[T("पूर्वानुमान बिक्री","Forecast sales"),fmtR(F)],[T("सूखा सामान","Dry goods"),fmtR(tot)],[T("मँगाने वाले आइटम","Items to order"),cnt]].map(([k,v])=>`<div class="tile"><span class="k">${esc(k)}</span><span class="v">${v}</span></div>`).join("");
+  $("monthTiles").innerHTML=[[T("पूर्वानुमान बिक्री","Forecast sales"),fmtR(F)],[T("सूखा सामान","Dry goods"),fmtR(tot)],[T("मँगाने वाले आइटम","Items to order"),cnt],[T("बैंक्वेट प्लेट","Banquet plates"),Math.round(bqPl)]].map(([k,v])=>`<div class="tile"><span class="k">${esc(k)}</span><span class="v">${v}</span></div>`).join("");
   $("monthText").textContent=T(`होटल आशीर्वाद - ${monN(m-1)} ${y} ख़रीद`,`Hotel Ashirvad - ${monN(m-1)} ${y} purchase`)+"\n"+rows.filter(r=>r.ord>0).map(r=>`${ingName(r.k)} - ${r.ord} ${unitLabel(r.k)}`).join("\n");
   $("masalaRows").innerHTML=DATA.masalas.map(ms=>{const need=mg[ms.id]||0, batch=ms.items.reduce((a,x)=>a+x[2],0); if(need<1) return "";
     return `<tr class="click" data-m="${ms.id}"><td><b>${esc(L(ms.n))}</b></td><td class="n">${Math.round(need).toLocaleString("en-IN")}</td><td class="n">${batch}</td><td class="n"><b>${Math.max(1,Math.ceil(need/batch))}</b></td></tr>`}).join("");
@@ -1205,6 +1268,7 @@ async function loadShared(){
   const s=await getDoc("settings/main"); if(s) settings={month:{...(s.month||{})},buffer:s.buffer==null?10:s.buffer,fest:{...(s.fest||{})}};
   SMC={};
   const st=await getDoc("stock/main"); if(st&&st.items) stock={...st.items};
+  const bm=await getDoc("bqmap/main"); if(bm&&bm.map) bqmap={...bm.map};
   const rt=await getDoc("rates/main"); if(rt&&rt.items){rates={...rt.items}; ratesAt=rt.updatedAt||null; applyRates()}
   if(db){ try{ const q=await db.collection("days").get(); q.docs.forEach(doc=>{dayDocs[doc.id]=doc.data()}) }catch(e){}
           try{ const q=await db.collection("ideas").get(); savedIdeas=q.docs.map(d=>({...d.data(),id:d.id})).filter(x=>x&&x.name&&Array.isArray(x.items)) }catch(e){} }
@@ -1223,6 +1287,7 @@ function makeDb(API){
     return j};
   return {
     sales:()=>req("GET","sales"),
+    banquet:(f,t)=>req("GET","banquet?from="+f+"&to="+t),
     doc(path){return {
       async get(){const j=await req("GET","doc/"+path); return {exists:!!j.exists,data:()=>j.data}},
       async set(body){await req("PUT","doc/"+path,{data:body})},
