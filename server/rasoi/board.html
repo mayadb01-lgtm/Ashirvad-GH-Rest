@@ -360,6 +360,12 @@ body{font-size:15px}
       <div class="tablebox"><table><thead><tr><th data-i="thItem"></th><th class="n" data-i="thMandiRange"></th><th class="n" data-i="thMandiModal"></th><th class="n" data-i="thSongadh"></th><th class="n" data-i="thYourRate"></th><th class="n" data-i="thDiff"></th></tr></thead><tbody id="mandiRows"></tbody></table></div>
       <details><summary class="hi" style="cursor:pointer" data-i="mandiAll"></summary><div class="tablebox"><table><tbody id="mandiAllRows"></tbody></table></div></details>
     </section>
+    <section class="panel" id="kiranaPanel">
+      <div class="row" style="justify-content:space-between"><h2 data-i="kiranaTitle"></h2><span class="hi" id="kiranaAsOf"></span></div>
+      <p class="note" data-i="kiranaNote"></p>
+      <div class="tablebox"><table><thead><tr><th data-i="thItem"></th><th data-i="thKQual"></th><th class="n" data-i="thKMain"></th><th class="n" data-i="thKCheap"></th><th class="n" data-i="thKReady"></th><th class="n" data-i="thYourRate"></th><th class="n" data-i="thDiff"></th></tr></thead><tbody id="kiranaRows"></tbody></table></div>
+      <p class="note" data-i="kiranaOil"></p>
+    </section>
     <section class="panel">
       <h2 data-i="ratesTitle"></h2>
       <p class="note" data-i="ratesNote"></p>
@@ -490,6 +496,10 @@ Object.assign(UI,{
  mandiApply:["इन सब्ज़ियों का रेट मंडी भाव से भरें","Fill these vegetable rates from mandi"],
  thMandiRange:["मंडी कम–ज़्यादा","Mandi min–max"], thMandiModal:["मंडी आम भाव","Mandi modal"], thSongadh:["सोनगढ़","Songadh"], thDiff:["आपका रेट मंडी से","Your rate vs mandi"],
  mandiAll:["सूरत ज़िले के सभी मंडी भाव देखें","See all mandi prices in Surat district"],
+ kiranaTitle:["मसाले, अनाज-दाल - गुजरात APMC थोक भाव (क्वालिटी के साथ)","Spices, grains & pulses - Gujarat APMC wholesale (with quality)"],
+ kiranaNote:["सरकारी Agmarknet से, हर 6 घंटे में नया। ये किसान का कच्चा माल है (साबुत जीरा, साबुत तुअर, गेहूँ) - सफ़ाई, दाल बनाना, पिसाई, पैकिंग, गाड़ी का ख़र्च इसमें नहीं। 'तैयार माल अंदाज़' = इस भाव से मोटा अंदाज़ (दाल ≈ ×1.3, आटा ≈ ×1.25, पाउडर ≈ ×1.25-1.3)। क्वालिटी: FAQ = अच्छी औसत (स्टैंडर्ड), Non-FAQ = हल्की। 'सबसे सस्ती' = FAQ माल में सबसे कम भाव वाली मंडी - वहाँ के व्यापारी से भाव मँगवाकर मिलाएँ।","From government Agmarknet, refreshed every 6 hours. These are farm-produce prices (whole cumin, whole tur, wheat) - cleaning, milling, grinding, packing and transport are not included. 'Ready goods est.' = rough estimate from this price (dal ≈ ×1.3, atta ≈ ×1.25, powder ≈ ×1.25-1.3). Quality: FAQ = fair average (standard), Non-FAQ = lower. 'Cheapest' = market with the lowest FAQ price - ask traders there for a quote and compare."],
+ kiranaOil:["तेल: पैक तेल (मूँगफली, रिफ़ाइंड, सरसों) का सरकारी भाव Agmarknet में नहीं आता; यहाँ मूँगफली/सरसों/सोयाबीन के बीज का भाव दिशा बताता है - बीज 10% महँगा तो तेल भी लगभग उतना महँगा।","Oil: packed oil (groundnut, refined, mustard) prices are not in Agmarknet; the groundnut / mustard / soybean seed price here shows the direction - seed 10% dearer means oil about as much dearer."],
+ thKQual:["मंडी माल · क्वालिटी","Mandi produce · quality"], thKMain:["मुख्य मंडी","Main market"], thKCheap:["सबसे सस्ती (FAQ)","Cheapest (FAQ)"], thKReady:["तैयार माल अंदाज़","Ready goods est."],
  thBq:["इसमें बैंक्वेट","Of which banquet"],
  bqMapTitle:["बैंक्वेट डिश → रेसिपी मिलान","Banquet dish → recipe match"],
  bqMapNote:["बैंक्वेट मेनू की हर डिश किस रेसिपी से बनती है - उसी से कच्चा माल गिना जाता है। अपने आप मिलान किया है; ग़लत हो तो बदलें। एक बार चुना, हमेशा याद रहेगा।","Which recipe each banquet menu dish is made from - raw materials are counted from it. Matched automatically; change it if wrong. Saved for everyone."],
@@ -967,6 +977,32 @@ const MANDI_MAP=[[/^tomato/,"tomato"],[/^onion$/,"onion"],[/^onion green|spring 
 function mandiKey(c){const n=String(c||"").toLowerCase(); for(const [re,k] of MANDI_MAP) if(re.test(n)) return k; return null}
 function mandiOf(k){ if(!MANDI) return null; const pick=mk=>MANDI.rows.filter(r=>r.market===mk&&mandiKey(r.commodity)===k).sort((a,b)=>b.date.localeCompare(a.date)||b.modal-a.modal)[0]||null;
   const su=pick("Surat APMC"), so=pick("Songadh APMC")||pick("Songadh(Badarpada) APMC"); return su||so?{su,so}:null }
+// [सामान, मंडी कमोडिटी, तैयार माल ×, मुख्य मंडियाँ]
+const KIRANA_MAP=[["cumin",/cummin|jeera/i,1,["Unjha APMC"]],["corseed",/^coriander seed/i,1,["Unjha APMC","Gondal APMC","Rajkot APMC"]],["corpowder",/^coriander seed/i,1.25,["Unjha APMC","Gondal APMC"]],
+  ["drychilli",/dry chil/i,1,["Rajkot APMC","Gondal APMC"]],["redchilli",/dry chil/i,1.3,["Rajkot APMC","Gondal APMC"]],["ajwain",/ajw/i,1,["Unjha APMC"]],["fennel",/fennel|soanf|saunf/i,1,["Unjha APMC"]],
+  ["mustard",/^mustard$/i,1,["Rajkot APMC","Deesa APMC"]],["sesame",/sesam/i,1,["Rajkot APMC","Gondal APMC"]],
+  ["tuvar",/arhar|tur\b/i,1.35,["Rajkot APMC"]],["moong",/green gram|moong/i,1.3,["Rajkot APMC"]],["urad",/black gram|urd/i,1,["Rajkot APMC"]],
+  ["chanadal",/bengal gram|^gram/i,1.3,["Rajkot APMC"]],["besan",/bengal gram|^gram/i,1.4,["Rajkot APMC"]],["kabuli",/kabuli/i,1,["Rajkot APMC"]],
+  ["atta",/^wheat$/i,1.25,["Rajkot APMC"]],["rice_reg",/^rice$/i,1,["Surat APMC"]],["bajra",/bajra/i,1.2,["Rajkot APMC","Deesa APMC"]],["peanut",/^groundnut$/i,1.4,["Rajkot APMC","Gondal APMC"]]];
+const SEEDS=[[/^groundnut$/i,["मूँगफली (बीज)","Groundnut (seed)"]],[/^mustard$/i,["सरसों (बीज)","Mustard (seed)"]],[/^soyabean/i,["सोयाबीन","Soybean"]]];
+function kiranaOf(re,pref){ if(!MANDI||!MANDI.kirana) return null; const all=MANDI.kirana.filter(r=>re.test(r.commodity)&&r.modal>0); if(!all.length) return null;
+  const last=all.map(r=>r.date).sort().pop(), rows=all.filter(r=>r.date===last), faq=rows.filter(r=>/^faq$/i.test(r.grade)); const base=faq.length?faq:rows;
+  const ms=base.map(r=>r.modal).sort((a,b)=>a-b), med=ms[Math.floor(ms.length/2)];
+  const main=pref.map(p=>base.find(r=>r.market===p)||rows.find(r=>r.market===p)).find(Boolean)||base.slice().sort((a,b)=>Math.abs(a.modal-med)-Math.abs(b.modal-med))[0];
+  const cheap=base.filter(r=>r.modal>=0.6*med).sort((a,b)=>a.modal-b.modal)[0];
+  return {main,cheap,med,date:last,n:rows.length} }
+function renderKirana(){
+  if(!$("kiranaRows")) return;
+  if(!MANDI||!MANDI.kirana||!MANDI.kirana.length){ $("kiranaAsOf").textContent=MANDI&&MANDI.kiranaBusy?T("भाव आ रहे हैं - 2-3 मिनट बाद फिर खोलें","Prices are loading - reopen in 2-3 minutes"):T("भाव लोड हो रहे हैं…","Loading prices…"); $("kiranaRows").innerHTML=""; return }
+  const mk=r=>esc(String(r.market).replace(/ APMC$/,"").replace(/^The Agricultural Produce Market Committee-/,""));
+  let last="";
+  const rows=KIRANA_MAP.map(([k,re,f,pref])=>{ if(!ING[k]) return ""; const x=kiranaOf(re,pref); if(!x) return ""; if(x.date>last) last=x.date;
+    const m=x.main, c=x.cheap, ready=m.modal*f, r=ING[k].r, d=(r/ready-1)*100, col=d>80?"var(--bad,#B91C1C)":d>40?"var(--warn)":"var(--ok)";
+    return `<tr><td><b>${esc(ingName(k))}</b></td><td class="hi">${esc(m.commodity)}${m.variety&&m.variety!=="Other"?" · "+esc(m.variety):""} · ${esc(m.grade||"")}</td><td class="n">${mk(m)} <b>₹${r1(m.modal)}</b><span class="hi"> (${r1(m.min)}–${r1(m.max)})</span></td><td class="n">${c?mk(c)+" ₹"+r1(c.modal)+(c.variety&&c.variety!==m.variety&&c.variety!=="Other"?`<span class="hi"> (${esc(c.variety)})</span>`:""):"–"}</td><td class="n">₹${Math.round(ready)}${f!==1?`<span class="hi"> ×${f}</span>`:""}</td><td class="n">₹${r}</td><td class="n" style="color:${col}">${(d>=0?"+":"")+Math.round(d)}%</td></tr>`}).join("");
+  const seeds=SEEDS.map(([re,nm])=>{const x=kiranaOf(re,["Rajkot APMC","Gondal APMC"]); return x?`<tr><td><b>${esc(T(nm[0],nm[1]))}</b></td><td class="hi">${esc(x.main.variety||"")} · ${esc(x.main.grade||"")}</td><td class="n">${mk(x.main)} <b>₹${r1(x.main.modal)}</b></td><td class="n">${x.cheap?mk(x.cheap)+" ₹"+r1(x.cheap.modal):"–"}</td><td colspan="3" class="hi">${T("तेल की दिशा के लिए","for oil price direction")}</td></tr>`:""}).join("");
+  $("kiranaRows").innerHTML=(rows||"")+(seeds?`<tr class="grp"><td colspan="7">${T("तेल के बीज","Oilseeds")}</td></tr>`+seeds:"")||`<tr><td colspan="7" class="empty">–</td></tr>`;
+  $("kiranaAsOf").textContent=last?T("गुजरात APMC: ","Gujarat APMC: ")+dLabel(last):"";
+}
 function loadMandi(){ if(!db||!db.mandi) return; db.mandi().then(j=>{MANDI=j; renderAll()}).catch(()=>{}) }
 function renderMandi(){
   if(!$("mandiRows")) return;
@@ -1260,7 +1296,7 @@ $("aiStop").onclick=()=>{aiCtl&&aiCtl.abort()};
 // ---------- RATES ----------
 let rateGrp="__all";
 function renderRates(){
-  renderMandi();
+  renderMandi(); renderKirana();
   const changed=Object.keys(rates).filter(k=>ING[k]&&Number(rates[k])!==BASE[k]);
   const top=DATA.dishes.slice(0,12);
   const oldC=top.reduce((a,d)=>a+(d.rs?d.p*0.72:rawCost(d.raw,true))*d.q,0), newC=top.reduce((a,d)=>a+COST[d.n]*d.q,0);

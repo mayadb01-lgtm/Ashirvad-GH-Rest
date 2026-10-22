@@ -171,7 +171,7 @@ router.get("/banquet", async (req, res) => {
 
 // ---------- Mandi bhaav (data.gov.in "Current Daily Price of Various Commodities from Various Markets (Mandi)") ----------
 const mandiSchema = new mongoose.Schema(
-  { _id: String, date: String, market: String, commodity: String, variety: String, min: Number, max: Number, modal: Number, at: { type: Date, default: Date.now } },
+  { _id: String, date: String, scope: String, market: String, district: String, commodity: String, variety: String, grade: String, min: Number, max: Number, modal: Number, at: { type: Date, default: Date.now } },
   { versionKey: false }
 );
 const Mandi = mongoose.models.KitchenMandi || mongoose.model("KitchenMandi", mandiSchema, "kitchen_mandi");
@@ -198,8 +198,39 @@ async function pullMandi() {
   if (ops.length) await Mandi.bulkWrite(ops, { ordered: false });
   return ops.length;
 }
+// Kirana / masale / anaaj-dal: poore Gujarat ki APMC ke aaj ke thok bhaav (variety + grade = quality). Har 6 ghante, background mein.
+const KIRANA_TERMS = ["Cummin Seed(Jeera)", "Coriander Seed", "Dry Chillies", "Ajwan", "Fennel", "Mustard", "Sesamum", "Turmeric",
+  "Arhar (Tur/Red Gram)(Whole)", "Green Gram (Moong)(Whole)", "Black Gram (Urd Beans)(Whole)", "Bengal Gram(Gram)(Whole)", "Kabuli Chana",
+  "Wheat", "Rice", "Bajra", "Groundnut", "Soyabean", "Methi Seeds"];
+let kiranaAt = 0, kiranaBusy = null;
+async function pullTerm(term, key, ops) {
+  let off = 0, total = Infinity, pages = 0;
+  while (off < total && pages < 12) {
+    const url = `https://api.data.gov.in/resource/${MANDI_RES}?api-key=${encodeURIComponent(key)}&format=json&limit=100&offset=${off}&filters%5Bstate.keyword%5D=Gujarat&filters%5Bcommodity%5D=${encodeURIComponent(term)}`;
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 20000);
+    let j; try { j = await (await fetch(url, { signal: ctl.signal })).json(); } catch { break; } finally { clearTimeout(t); }
+    const recs = j?.records || []; total = Number(j?.total) || 0; pages++;
+    if (!recs.length) break;
+    recs.forEach((r) => {
+      const date = dmyIso(r.arrival_date); if (!date) return;
+      const id = ["G", date, r.market, r.commodity, r.variety, r.grade].join("|");
+      ops.push({ updateOne: { filter: { _id: id }, update: { $set: { date, scope: "gujarat", market: r.market, district: r.district || "", commodity: r.commodity, variety: r.variety || "", grade: r.grade || "", min: Number(r.min_price) || 0, max: Number(r.max_price) || 0, modal: Number(r.modal_price) || 0, at: new Date() } }, upsert: true } });
+    });
+    off += recs.length;
+  }
+}
+async function pullKirana() {
+  const key = process.env.DATAGOV_KEY || SAMPLE_KEY; const ops = [];
+  for (const term of KIRANA_TERMS) await pullTerm(term, key, ops);
+  if (ops.length) await Mandi.bulkWrite(ops, { ordered: false });
+  return ops.length;
+}
 router.get("/mandi", async (req, res) => {
   try {
+    if (Date.now() - kiranaAt > 6 * 3600 * 1000 && !kiranaBusy) {
+      kiranaAt = Date.now(); // background — jawab ke liye intezaar nahi
+      kiranaBusy = pullKirana().catch(() => { kiranaAt = 0; }).finally(() => { kiranaBusy = null; });
+    }
     if (Date.now() - mandiAt > 3 * 3600 * 1000) {
       mandiBusy ||= pullMandi().then(() => { mandiAt = Date.now(); }).catch(() => {}).finally(() => { mandiBusy = null; });
       await Promise.race([mandiBusy, new Promise((r) => setTimeout(r, 15000))]);
@@ -208,8 +239,9 @@ router.get("/mandi", async (req, res) => {
     const rows = await Mandi.find({ date: { $gte: since } }, { _id: 0, at: 0 }).sort({ date: -1 }).lean();
     // har market + commodity ka sabse naya din
     const seen = new Set(), latest = [];
-    rows.forEach((r) => { const k = r.market + "|" + r.commodity + "|" + r.variety; if (seen.has(k)) return; seen.add(k); latest.push({ ...r, min: r.min / 100, max: r.max / 100, modal: r.modal / 100 }); });
-    res.json({ success: true, source: "Agmarknet (data.gov.in)", unit: "₹/kg", fetchedAt: mandiAt ? new Date(mandiAt) : null, rows: latest });
+    rows.forEach((r) => { const k = (r.scope || "surat") + "|" + r.market + "|" + r.commodity + "|" + r.variety + "|" + (r.grade || ""); if (seen.has(k)) return; seen.add(k); latest.push({ ...r, min: r.min / 100, max: r.max / 100, modal: r.modal / 100 }); });
+    const surat = latest.filter((r) => r.scope !== "gujarat"), gujarat = latest.filter((r) => r.scope === "gujarat");
+    res.json({ success: true, source: "Agmarknet (data.gov.in)", unit: "₹/kg", fetchedAt: mandiAt ? new Date(mandiAt) : null, kiranaBusy: !!kiranaBusy, rows: surat, kirana: gujarat });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
   }
