@@ -12,6 +12,7 @@ import StaffSalary from "../model/staffSalary.js";
 import { loadOfficeClassifier, lineName } from "../utils/officeTypes.js";
 import { officeReceivedGhIds } from "../model/ghDueReceipt.js";
 import { BanquetBooking, banquetTotals } from "../model/banquet.js";
+import { loadPast, pastDaysIn, pastCategory } from "../utils/pastData.js";
 
 // Banquet ka bill (event ke din, GST ke bina) — revenue mein
 const banquetRevenue = async (s, e) =>
@@ -165,6 +166,37 @@ router.get("/monthly-summary/:month/:year", async (req, res) => {
       k.netCash += v;
     });
 
+    // 📚 Purane records (Tally): sirf jin mahino mein app ka data nahi (niyam: utils/pastData.js)
+    const P = await loadPast();
+    const pastSum = (s, e) => {
+      const isoA = s.format("YYYY-MM-DD"), isoB = e.format("YYYY-MM-DD"), ym = s.format("YYYY-MM");
+      const d = pastDaysIn(P, isoA, isoB);
+      const x = P.exps.filter((r) => r.month === ym && r.book !== "investment");
+      return {
+        days: d,
+        gh: d.reduce((t, [, p]) => t + p.gh, 0),
+        rest: d.reduce((t, [, p]) => t + p.restaurant, 0),
+        biz: d.reduce((t, [, p]) => t + p.banquet + p.other, 0),
+        restExp: x.filter((r) => r.book === "restaurant").reduce((t, r) => t + r.amount, 0),
+        officeExp: x.filter((r) => r.book === "office" || r.book === "upad").reduce((t, r) => t + r.amount, 0),
+        personal: x.filter((r) => r.book === "personal").reduce((t, r) => t + r.amount, 0),
+        exps: x,
+      };
+    };
+    const pNow = pastSum(start, end), pPrev = pastSum(prevStart, prevEnd);
+    [[kpis, pNow], [prevKpis, pPrev]].forEach(([k, p]) => {
+      if (!p.gh && !p.rest && !p.biz && !p.restExp && !p.officeExp) return;
+      k.ghRevenue += p.gh;
+      k.restSales += p.rest;
+      k.officeIn += p.biz;
+      k.totalRevenue += p.gh + p.rest + p.biz;
+      k.restExpenses += p.restExp;
+      k.officeOut += p.officeExp;
+      k.officeOutPersonal += p.personal;
+      k.netCash += p.gh + p.rest + p.biz - p.restExp - p.officeExp;
+      k.fromPast = true; // is mahine ka data purane records (Tally) se
+    });
+
     /* ---------- Daily series ---------- */
     const daily = [];
     for (let i = 0; i < end.date(); i++) {
@@ -194,6 +226,13 @@ router.get("/monthly-summary/:month/:year", async (req, res) => {
     office.forEach((doc) => {
       const i = dayIdx(doc.createDate);
       if (daily[i]) daily[i].office += sum((doc.officeIn || []).filter((x) => cls("in", x.categoryName, lineName(x)) === "business"), (x) => x.amount);
+    });
+    pNow.days.forEach(([k, p]) => {
+      const i = dayjs(k, "YYYY-MM-DD").date() - 1;
+      if (!daily[i]) return;
+      daily[i].gh += p.gh;
+      daily[i].rest += p.restaurant;
+      daily[i].office += p.banquet + p.other;
     });
     daily.forEach((d) => (d.total = d.gh + d.rest + d.office));
 
@@ -232,6 +271,7 @@ router.get("/monthly-summary/:month/:year", async (req, res) => {
     /* ---------- Restaurant + office categories ---------- */
     const restExpByCat = {};
     rest.forEach((d) => (d.expenses || []).forEach((x) => inc(restExpByCat, x.categoryName || "Other", x.amount)));
+    pNow.exps.filter((x) => x.book === "restaurant").forEach((x) => inc(restExpByCat, pastCategory(P, x), x.amount));
     const restMode = {
       Cash: sum(rest, (r) => r.totalCash),
       Card: sum(rest, (r) => r.totalCard),
@@ -246,6 +286,8 @@ router.get("/monthly-summary/:month/:year", async (req, res) => {
       .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
       .slice(0, 5);
     const o = officeMonthTotals(office, cls);
+    pNow.exps.filter((x) => x.book !== "restaurant").forEach((x) => { inc(o.outByCat, pastCategory(P, x), x.amount); o.allOut += x.amount; });
+    if (pNow.biz) { inc(o.inByCat, "Banquet / other (old records)", pNow.biz); o.allIn += pNow.biz; }
 
     /* ---------- 12-month trend ---------- */
     const trend = [];
@@ -259,6 +301,14 @@ router.get("/monthly-summary/:month/:year", async (req, res) => {
         office: officeMonthTotals(office12.filter((d) => inMonth(d, ms, me)), cls).totalIn,
       });
     }
+    trend.forEach((t, i) => {
+      const ms = trendStart.add(i, "month");
+      const p = pastSum(ms, ms.endOf("month"));
+      t.gh += p.gh;
+      t.rest += p.rest;
+      t.office += p.biz;
+      if (p.gh || p.rest || p.biz) t.fromPast = true;
+    });
     trend.forEach((t) => (t.total = t.gh + t.rest + t.office));
 
     /* ---------- GH unpaid aging (all time, still pending) ---------- */
@@ -281,6 +331,7 @@ router.get("/monthly-summary/:month/:year", async (req, res) => {
 
     /* ---------- Auto insights ---------- */
     const insights = [];
+    if (kpis.fromPast) insights.push({ tone: "info", text: `${start.format("MMMM YYYY")} figures come from old records (Tally): sale and kharch totals only, no room-wise details.` });
     const pct = (a, b) => (b ? round(((a - b) / b) * 100, 1) : null);
     const revChange = pct(kpis.totalRevenue, prevKpis.totalRevenue);
     if (revChange !== null)

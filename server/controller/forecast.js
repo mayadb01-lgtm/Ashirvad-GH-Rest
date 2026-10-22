@@ -11,6 +11,7 @@ import RestEntry from "../model/restEntry.js";
 import OfficeBook from "../model/officeBook.js";
 import { BanquetBooking, banquetTotals } from "../model/banquet.js";
 import { EVENTS, EVENT_INFO, MUHURAT } from "../utils/forecastCalendar.js";
+import { loadPast, APP_FROM } from "../utils/pastData.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -109,15 +110,15 @@ const loadDaily = async () => {
 // Kisi series ki value (null = data nahi)
 const SERIES = {
   occ: (x) => (x && x.hasGh ? x.occ : null),
-  rev: (x) => (x && x.hasGh ? x.rev : null),
+  rev: (x) => (x && x.hasGh ? x.rev : x && x.pastRev != null ? x.pastRev : null), // purane record (Tally) mein sirf GH kamai hai
   ghIn: (x) => (x && x.hasGh ? x.ghIn : null),
   rest: (x) => (x ? x.rest : null),
-  restIn: (x) => (x && x.rest != null ? x.restIn : null),
+  restIn: (x) => (x && x.rest != null && !x.restPast ? x.restIn : null),
 };
 
 const build = (D, nRooms, today, bookings = []) => {
   const keys = Object.keys(D).sort();
-  const first = keys.find((k) => k >= "2025-01-01") || keys[0];
+  const first = keys.find((k) => k >= "2025-01-01" || D[k].fromPast) || keys[0];
   const val = (col, k) => SERIES[col](D[k]);
   const lastOf = (col) => [...keys].reverse().find((k) => val(col, k) != null);
   const lastData = Object.fromEntries(Object.keys(SERIES).map((c) => [c, lastOf(c)]));
@@ -403,11 +404,13 @@ const build = (D, nRooms, today, bookings = []) => {
 
   // Data kitne time ka
   const firstOf = (f) => keys.find((k) => k >= "2025-01-01" && f(D[k]));
+  const pastKeys = keys.filter((k) => D[k].fromPast);
   const coverage = [
     { item: "Guest House", from: firstOf((x) => x.hasGh), to: lastData.occ },
     { item: "Restaurant", from: firstOf((x) => x.rest != null), to: lastData.rest },
     { item: "Office & banquet", from: firstOf((x) => x.hasOff), to: lastOff },
     { item: "Forecast", from: start, to: end },
+    ...(pastKeys.length ? [{ item: "Old records (Tally)", from: pastKeys[0], to: pastKeys[pastKeys.length - 1] }] : []),
   ];
 
   const recent = days(dayjs(start).subtract(70, "day").format(ISO), dayjs(start).subtract(1, "day").format(ISO)).map((k) => ({ date: k, rooms: val("occ", k), gh: val("rev", k), rest: val("rest", k) }));
@@ -415,9 +418,26 @@ const build = (D, nRooms, today, bookings = []) => {
   return { today: start, nRooms, coverage, daily, recent, weeks, months, history, keyDates, banquetMonths, method: { shrink: SHRINK, baseErr: BASE_ERR } };
 };
 
+// Purane records (Tally) ko itihaas mein jodo — sirf jahan app ka data nahi (niyam: utils/pastData.js)
+const addPast = async (D) => {
+  const P = await loadPast();
+  if (!P.has) return;
+  // 2025 se pehle ka app data forecast pehle bhi nahi ginta tha; un dino ab purana record
+  Object.keys(D).forEach((k) => k < APP_FROM && delete D[k]);
+  Object.entries(P.days).forEach(([k, p]) => {
+    const x = (D[k] ||= { occ: 0, rev: 0, ghIn: 0, rest: null, restIn: 0, offIn: 0, offOut: 0, staff: 0, personal: 0, banquet: 0, hasGh: false, hasOff: false });
+    let used = false;
+    if (p.restaurant >= 1000 && x.rest == null) { x.rest = p.restaurant; x.restPast = true; used = true; }
+    if (p.gh > 0 && !x.hasGh) { x.pastRev = p.gh; used = true; }
+    if (p.banquet > 0 && !x.hasOff) { x.banquet += p.banquet; used = true; }
+    if (used) x.fromPast = true;
+  });
+};
+
 router.get("/", async (req, res) => {
   try {
     const { D, nRooms, bookings } = await loadDaily();
+    await addPast(D);
     res.json({ success: true, data: build(D, nRooms, todayIst(), bookings) });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });

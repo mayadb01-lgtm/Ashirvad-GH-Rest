@@ -29,6 +29,7 @@ const banquetMoney = async (from, to) => {
   return { pays, sales };
 };
 import { loadOfficeClassifier, lineName, nk } from "../utils/officeTypes.js";
+import { loadPast, pastDaysIn, pastCategory } from "../utils/pastData.js";
 
 // "Discount on total bill" (naya niyam) kis din se P&L mein ghatega: server pehli baar chalte hi aaj ki tareekh (IST) save karta hai.
 // Isse pehle ke din bilkul waise hi rehte hain (purane records mein Discount ka matlab alag tha).
@@ -261,9 +262,15 @@ router.get("/gh-growth/:start/:end", async (req, res) => {
       m.stays += 1;
       m.roomDays.add(`${e._key}|${e.roomNo}`);
     });
-    const monthly = Object.keys(mt).sort().map((k) => {
+    // 📚 Purane records (Tally): sirf GH kamai (rooms / guest ki jaankari nahi) — jin mahino mein app ka data nahi
+    const P = await loadPast();
+    const pastRev = {};
+    pastDaysIn(P, start.format("YYYY-MM-DD"), end.format("YYYY-MM-DD")).forEach(([k, p]) => p.gh && inc(pastRev, k.slice(0, 7), p.gh));
+    const pastTotal = sum(Object.values(pastRev), (v) => v);
+    const monthly = [...new Set([...Object.keys(mt), ...Object.keys(pastRev)])].sort().map((k) => {
       const dim = dayjs(k + "-01").daysInMonth();
       const m = mt[k];
+      if (!m) return { month: k, label: dayjs(k + "-01").format("MMM YY"), revenue: round(pastRev[k]), occupancy: null, adr: null, fromPast: true };
       return { month: k, label: dayjs(k + "-01").format("MMM YY"), revenue: round(m.revenue), occupancy: round((100 * m.roomDays.size) / (nRooms * dim)), adr: m.stays ? round(m.revenue / m.stays) : 0 };
     });
 
@@ -299,7 +306,8 @@ router.get("/gh-growth/:start/:end", async (req, res) => {
         rooms: nRooms,
         days,
         kpi: {
-          revenue: round(revenue),
+          revenue: round(revenue + pastTotal),
+          pastRevenue: round(pastTotal), // purane records (Tally) se — occupancy / ADR sirf app ke din se
           stays: rows.length,
           occupancy: round((100 * roomDays.size) / (nRooms * days), 1),
           adr: rows.length ? round(revenue / rows.length) : 0,
@@ -356,6 +364,10 @@ router.get("/kharch/:months", async (req, res) => {
       const m = ymOf(d.entryCreateDate);
       (d.officeOut || []).forEach((x) => classify("out", x.categoryName, lineName(x)) === "business" && add(m, x.categoryName, x.expenseName || x.fullname, x.amount, "Office"));
     });
+    // 📚 Purane records (Tally) — sirf jin mahino mein app ka data nahi
+    const P = await loadPast();
+    pastDaysIn(P, start.format("YYYY-MM-DD"), end.format("YYYY-MM-DD")).forEach(([k, p]) => k.slice(0, 7) in sales && (sales[k.slice(0, 7)] += p.restaurant));
+    P.exps.filter((x) => (x.book === "restaurant" || x.book === "office") && x.month in total).forEach((x) => add(x.month, pastCategory(P, x), x.head, x.amount, x.book === "restaurant" ? "Rest (old)" : "Office (old)"));
 
     const monthRows = months.map((m) => ({
       month: m,
@@ -524,6 +536,25 @@ router.get("/pnl/:from/:to", async (req, res) => {
         if (t === "transfer" || t === "loan" || t === "recovery") return; // apne account mein ghumaya — kharch nahi
         addExp(m, c, x.amount);
       });
+    });
+    // 📚 Purane records (Tally) — sirf jin mahino mein app ka data nahi
+    const P = await loadPast();
+    pastDaysIn(P, from.startOf("month").format("YYYY-MM-DD"), to.endOf("month").format("YYYY-MM-DD")).forEach(([k, p]) => {
+      const m = byM[k.slice(0, 7)];
+      if (!m) return;
+      m.ghSales += p.gh;
+      m.restSales += p.restaurant;
+      m.banquetSales += p.banquet;
+      m.otherIncome += p.other;
+      if (p.other) inc(m.otherByCat, "Other (old records)", p.other);
+      m.fromPast = true;
+    });
+    P.exps.forEach((x) => {
+      const m = byM[x.month];
+      if (!m || x.book === "investment") return; // construction / setup kharch nahi (alag Investment)
+      if (x.book === "personal") return (m.personalOut += x.amount);
+      addExp(m, x.book === "upad" ? "Upad" : pastCategory(P, x), x.amount);
+      m.fromPast = true;
     });
     const groups = [...EXP_GROUPS.map(([g]) => g), "Other expenses"];
     // Banquet bill (event ke mahine, GST ke bina)

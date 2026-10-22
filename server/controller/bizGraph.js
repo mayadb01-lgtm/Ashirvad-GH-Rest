@@ -13,6 +13,7 @@ import Room from "../model/room.js";
 import RestEntry from "../model/restEntry.js";
 import OfficeBook from "../model/officeBook.js";
 import { headKey, headLabel } from "../utils/expenseHeads.js";
+import { loadPast } from "../utils/pastData.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -131,6 +132,15 @@ const build = async (ranges) => {
       x.out[c] = (x.out[c] || 0) + n(e.amount);
       x.outTotal += n(e.amount);
     });
+  });
+  // 📚 Purane records (Tally): sirf jin dino app ka data nahi (sirf kamai; rooms / mode ki jaankari nahi)
+  const P = await loadPast();
+  Object.entries(P.days).forEach(([k, p]) => {
+    if (!want(k)) return;
+    const day = get(k);
+    if (!day.rest.has && p.restaurant >= 1000) Object.assign(day.rest, { sale: p.restaurant, has: true, past: true });
+    if (!day.gh.has && p.gh > 0) Object.assign(day.gh, { rev: p.gh, has: true, past: true });
+    if (!day.office.has && p.banquet > 0) day.banquet += p.banquet;
   });
   return { D, nRooms: rooms || 16 };
 };
