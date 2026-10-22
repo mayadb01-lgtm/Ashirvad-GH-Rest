@@ -18,7 +18,9 @@ const NotFound = () => {
     if (taps.current.length >= 5) {
       taps.current = [];
       unlockLogin();
-      navigate("/login", { replace: true });
+      // Pehle se login / admin-login wale pate par ho → page dobara kholo (warna wahi 404 dikhta rehta)
+      if (/^\/(login|admin-login|signup|admin-signup|reset-password)\/?$/.test(window.location.pathname)) window.location.reload();
+      else navigate("/login", { replace: true });
     }
   };
 
