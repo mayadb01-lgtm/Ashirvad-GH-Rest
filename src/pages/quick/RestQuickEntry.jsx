@@ -357,13 +357,23 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
   const edValid = ed && num(ed.row.amount) > 0 && (ed.section === "expenses" ? !!ed.row.expenseName : !!ed.row.fullname);
   // Levana baaki → Room: kaun se room ka bill hai
   const roomOptions = (() => {
+    const GROUP = { today: "Today's guests", stay: "Staying guests (continue stay)", yesterday: "Last night's guests" };
+    const ORDER = { today: 1, stay: 2, yesterday: 3 };
+    const tail = (x) =>
+      x.from === "today"
+        ? ` (${PERIOD_LABEL[x.fromPeriod] || x.fromPeriod || "today"})`
+        : x.from === "stay"
+          ? x.leaving
+            ? " (checking out today)"
+            : ` (staying${x.dayNo ? `, day ${x.dayNo}` : ""})`
+          : " (last night)";
     const g = (occupied.guests || []).map((x) => ({
       ...x,
-      group: x.from === "today" ? "Today's guests" : "Last night's guests",
-      label: `Room ${x.roomNo} · ${x.guestName || "—"}${x.from === "today" ? ` (${PERIOD_LABEL[x.fromPeriod] || x.fromPeriod})` : " (last night)"}`,
+      group: GROUP[x.from] || GROUP.yesterday,
+      label: `Room ${x.roomNo} · ${x.guestName || "—"}${tail(x)}`,
     }));
-    // Sirf jin rooms mein guest ruka hai (aaj ke / kal raat ke). Khaali "other rooms" nahi dikhate.
-    return g;
+    // Sirf jin rooms mein guest ruka hai. Khaali "other rooms" nahi dikhate. Group ke hisaab se kram (heading ek hi baar)
+    return g.sort((a, b) => (ORDER[a.from] || 9) - (ORDER[b.from] || 9) || a.roomNo - b.roomNo);
   })();
   const roomBillPerson = () => {
     const p = (lists?.pending || []).find((x) => /room\s*bill/i.test(x.fullname || ""));

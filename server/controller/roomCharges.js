@@ -8,6 +8,8 @@ import EntryLock from "../model/entryLock.js";
 import Entry from "../model/entry.js";
 import Room from "../model/room.js";
 import Stay from "../model/stay.js";
+import Booking from "../model/booking.js";
+import GuestRegister from "../model/guestRegister.js";
 import RestDueReceipt from "../model/restDueReceipt.js";
 import { allowedStaffDates, isAdminLike, dateOk as staffDateOk } from "../middleware/staffAccess.js";
 
@@ -31,35 +33,93 @@ const bad = (res, message) => res.status(400).json({ success: false, message });
 const canTouch = (req, doc) => staffDateOk(req, doc.date);
 
 // GET /occupied/:date → Restaurant ke liye: aaj kaun se room mein kaun ruka hai
-//   aaj ki GH entry + kal raat wale guest (jo aaj subah naashta karte hain) + saare rooms
+//   1) aaj ki GH entry + kal raat wale guest (jo aaj subah naashta karte hain)
+//   2) GH screen par check-in (stay) — entry submit hone se pehle bhi dikhe; continue stay wale guest bhi
+//   3) aaj check-in hui booking  4) guest register (aaj / kal raat)
+//   ⚠️ Sab sirf PADHA jaata hai.
+const nameOf = (v) => clean(v).replace(/\s+/g, " ");
+const sameName = (a, b) => {
+  const x = nameOf(a).toLowerCase();
+  const y = nameOf(b).toLowerCase();
+  return !x || !y || x === y || x.includes(y) || y.includes(x);
+};
+const phone = (v) => (v && String(v) !== "0" ? String(v).replace(/\D/g, "").slice(0, 15) : "");
+
 router.get("/occupied/:date", async (req, res) => {
   try {
     const date = req.params.date;
     if (!validDate(date)) return bad(res, "Invalid date");
-    const prev = dayjs(date, F).subtract(1, "day").format(F);
-    const [today, yday, rooms] = await Promise.all([
+    const d = dayjs(date, F, true);
+    const prev = d.subtract(1, "day").format(F);
+    const [today, yday, rooms, stays, bookings, regs] = await Promise.all([
       Entry.find({ date }, { entry: 1 }).lean(),
       Entry.find({ date: prev }, { entry: 1 }).lean(),
       Room.find({}, { roomNumber: 1, roomType: 1 }).lean(),
+      Stay.find(
+        { startCreateDate: { $gte: d.subtract(60, "day").startOf("day").toDate(), $lte: d.endOf("day").toDate() } },
+        { roomNo: 1, startDate: 1, period: 1, status: 1, checkoutDate: 1, checkoutTime: 1, guest: 1 }
+      ).lean(),
+      Booking.find({ status: "checkedin", "checkedIn.date": date }, { guestName: 1, mobile: 1, checkedIn: 1 }).lean(),
+      GuestRegister.find({ date: { $in: [date, prev] } }, { date: 1, period: 1, roomNo: 1, firstName: 1, middleName: 1, lastName: 1, companyName: 1, mobile: 1 }).lean(),
     ]);
     const out = [];
     const seen = new Set();
-    const add = (e, from) => {
-      if (!SOLD.includes(e.period) || !e.roomNo) return;
-      const key = `${e.roomNo}|${String(e.fullname || "").trim().toLowerCase()}`;
-      if (seen.has(key)) return;
-      seen.add(key);
-      out.push({
-        roomNo: e.roomNo,
-        period: from === "today" ? e.period : "",
-        guestName: clean(e.fullname),
-        mobile: e.mobileNumber && String(e.mobileNumber) !== "0" ? String(e.mobileNumber) : "",
-        from, // today | yesterday
-        fromPeriod: e.period,
-      });
+    // from: today | stay | yesterday   ·   strong = GH entry (same room mein alag naam = alag guest)
+    const push = (g, strong) => {
+      const roomNo = Number(g.roomNo) || 0;
+      if (!roomNo) return;
+      const name = nameOf(g.guestName);
+      if (strong) {
+        const key = `${roomNo}|${name.toLowerCase()}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+      } else if (out.some((o) => o.roomNo === roomNo && (g.anyRoom || sameName(o.guestName, name)))) return;
+      out.push({ roomNo, period: g.period || "", guestName: name, mobile: phone(g.mobile), from: g.from, fromPeriod: g.fromPeriod || "", ...(g.dayNo ? { dayNo: g.dayNo } : {}), ...(g.leaving ? { leaving: true } : {}) });
     };
-    today.forEach((d) => (d.entry || []).sort((a, b) => (PERIOD_ORDER[a.period] || 9) - (PERIOD_ORDER[b.period] || 9)).forEach((e) => add(e, "today")));
-    yday.forEach((d) => (d.entry || []).filter((e) => /night/i.test(e.period)).forEach((e) => add(e, "yesterday")));
+
+    // 1) GH entry
+    today.forEach((x) =>
+      (x.entry || [])
+        .filter((e) => SOLD.includes(e.period) && e.roomNo)
+        .sort((a, b) => (PERIOD_ORDER[a.period] || 9) - (PERIOD_ORDER[b.period] || 9))
+        .forEach((e) => push({ roomNo: e.roomNo, period: e.period, guestName: e.fullname, mobile: e.mobileNumber, from: "today", fromPeriod: e.period }, true))
+    );
+    // 2) Stay (GH screen par check-in turant save hota hai)
+    stays
+      .filter((s) => s.checkoutTime !== "REMOVED" && s.startDate)
+      .sort((a, b) => a.roomNo - b.roomNo)
+      .forEach((s) => {
+        const start = dayjs(s.startDate, F, true);
+        if (!start.isValid()) return;
+        const diff = d.diff(start, "day");
+        if (diff < 0) return;
+        const base = { roomNo: s.roomNo, guestName: s.guest?.fullname, mobile: s.guest?.mobileNumber };
+        if (diff === 0) return push({ ...base, period: SOLD.includes(s.period) ? s.period : "", from: "today", fromPeriod: s.period });
+        if (s.status === "active") return push({ ...base, from: "stay", dayNo: diff + 1 });
+        // check-out ho gaya: check-out wale din subah tak room mein tha
+        if (s.checkoutDate) {
+          const c = dayjs(s.checkoutDate, F, true);
+          if (c.isValid() && !d.isAfter(c, "day")) push({ ...base, from: "stay", dayNo: diff + 1, leaving: s.checkoutDate === date });
+        }
+      });
+    // kal raat wale (GH entry)
+    yday.forEach((x) =>
+      (x.entry || [])
+        .filter((e) => /night/i.test(e.period || "") && e.roomNo)
+        .forEach((e) => push({ roomNo: e.roomNo, guestName: e.fullname, mobile: e.mobileNumber, from: "yesterday", fromPeriod: e.period }, true))
+    );
+    // 3) Booking jo aaj check-in hui
+    bookings.forEach((b) =>
+      push({ roomNo: b.checkedIn?.roomNo, period: SOLD.includes(b.checkedIn?.period) ? b.checkedIn.period : "", guestName: b.guestName, mobile: b.mobile, from: "today", fromPeriod: b.checkedIn?.period, anyRoom: true })
+    );
+    // 4) Guest register
+    regs.forEach((r) => {
+      const isToday = r.date === date;
+      if (!isToday && !/night/i.test(r.period || "")) return;
+      const guestName = [r.firstName, r.middleName, r.lastName].map(nameOf).filter(Boolean).join(" ") || r.companyName;
+      push({ roomNo: r.roomNo, period: isToday && SOLD.includes(r.period) ? r.period : "", guestName, mobile: r.mobile, from: isToday ? "today" : "yesterday", fromPeriod: r.period, anyRoom: true });
+    });
+
     out.sort((a, b) => a.roomNo - b.roomNo);
     res.json({
       success: true,
