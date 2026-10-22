@@ -54,7 +54,7 @@ export const InvoiceDocument = ({ inv }) => {
     <div className="inv-paper">
       {inv.status === "cancelled" && <div className="inv-cancel">CANCELLED</div>}
       <div className="inv-head">
-        {HOTEL.logo ? <img src={HOTEL.logo} alt={HOTEL.name} /> : <div style={{ fontSize: 22, fontWeight: 800 }}>{HOTEL.name}</div>}
+        {HOTEL.logo ? <img src={HOTEL.logo} alt={HOTEL.name} style={HOTEL.logoHeight ? { height: HOTEL.logoHeight } : undefined} /> : <div style={{ fontSize: 22, fontWeight: 800 }}>{HOTEL.name}</div>}
         <div className="inv-addr">
           {HOTEL.tagline && <div className="inv-tag">{HOTEL.tagline}</div>}
           {HOTEL.address && <div>{HOTEL.address}</div>}
