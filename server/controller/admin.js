@@ -215,6 +215,70 @@ router.post("/change-password", isAuthenticated, async (req, res) => {
 // 🔐 Password reset: referral code wala tarika band (koi bhi admin ka password badal sakta tha).
 // Ab: 1) /reset-password/request { email } → email par OTP   2) /reset-password { email, otpId, code, password }
 const findAdmin = (email) => Admin.findOne({ email: new RegExp("^" + String(email || "").trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$", "i") });
+// 👁️ View-only accounts (malik banata hai): sirf reports, rupaye kam dikhte hain (utils/viewScale.js)
+const realOwner = (req, res) => {
+  if (req.user?.constructor?.modelName !== "Admin" || req.user?.viewOnly) {
+    res.status(403).json({ success: false, message: "Only the owner can do this" });
+    return false;
+  }
+  return true;
+};
+const pctOk = (p) => Number.isFinite(Number(p)) && Number(p) >= 0 && Number(p) <= 90;
+const viewRow = (a) => ({ _id: a._id, name: a.name, email: a.email, percent: Math.round((1 - (Number(a.viewScale) || 1)) * 100), createdAt: a.createdAt });
+
+router.get("/view-accounts", isAuthenticated, async (req, res) => {
+  try {
+    if (!realOwner(req, res)) return;
+    const list = await Admin.find({ viewOnly: true }, { name: 1, email: 1, viewScale: 1, createdAt: 1 }).lean();
+    res.json({ success: true, data: list.map(viewRow) });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+router.post("/view-accounts", isAuthenticated, async (req, res) => {
+  try {
+    if (!realOwner(req, res)) return;
+    const name = String(req.body?.name || "").trim().slice(0, 60) || "Viewer";
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    const password = String(req.body?.password || "");
+    const percent = Number(req.body?.percent ?? 20);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ success: false, message: "Enter a valid email" });
+    if (password.length < 8) return res.status(400).json({ success: false, message: "Password must be at least 8 characters" });
+    if (!pctOk(percent)) return res.status(400).json({ success: false, message: "Percent must be between 0 and 90" });
+    const esc = email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (await Admin.exists({ email: new RegExp("^" + esc + "$", "i") })) return res.status(400).json({ success: false, message: "This email already has an admin account" });
+    const doc = await Admin.create({ name, email, password, viewOnly: true, viewScale: 1 - percent / 100, createdBy: req.user.email || "" });
+    res.json({ success: true, data: viewRow(doc) });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+router.put("/view-accounts/:id([a-f0-9]{24})", isAuthenticated, async (req, res) => {
+  try {
+    if (!realOwner(req, res)) return;
+    const percent = Number(req.body?.percent);
+    if (!pctOk(percent)) return res.status(400).json({ success: false, message: "Percent must be between 0 and 90" });
+    const r = await Admin.updateOne({ _id: req.params.id, viewOnly: true }, { $set: { viewScale: 1 - percent / 100 } });
+    if (!r.matchedCount) return res.status(404).json({ success: false, message: "Account not found" });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+router.delete("/view-accounts/:id([a-f0-9]{24})", isAuthenticated, async (req, res) => {
+  try {
+    if (!realOwner(req, res)) return;
+    const r = await Admin.deleteOne({ _id: req.params.id, viewOnly: true }); // sirf view-only account, asli admin kabhi nahi
+    if (!r.deletedCount) return res.status(404).json({ success: false, message: "Account not found" });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
 router.post("/reset-password/request", async (req, res) => {
   try {
     // Login wala OTP (ADMIN_OTP=off) band ho tab bhi "password bhool gaye" email se chalega — bas email set ho

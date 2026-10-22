@@ -7,6 +7,7 @@
 import { isAuthenticated } from "./auth.js";
 import { staffGuard, isAdminLike } from "./staffAccess.js";
 import { dashGuard } from "../controller/dashLock.js";
+import { viewOnlyGate } from "../utils/viewScale.js";
 
 const PUBLIC_ROUTES = new Set([
   "POST /api/v1/user/create-user",
@@ -84,7 +85,8 @@ export const apiGate = (req, res, next) => {
     }
     // Staff: sirf apna department + sirf aaj (staffAccess.js)
     // Super Admin: dashboard ki report APIs ke liye dashboard password (dashLock.js)
-    return staffGuard(req, res, () => dashGuard(req, res, next));
+    // View-only account (malik ka banaya): sirf reports, aankde kam (utils/viewScale.js)
+    return viewOnlyGate(req, res, () => staffGuard(req, res, () => dashGuard(req, res, next)));
   });
 };
 

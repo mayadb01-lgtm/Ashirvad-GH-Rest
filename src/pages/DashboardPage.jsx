@@ -56,6 +56,7 @@ import GhGrowthDashboard from "../components/insights/GhGrowthDashboard";
 import ForecastDashboard from "../components/insights/ForecastDashboard";
 import PerformanceDashboard from "../components/insights/PerformanceDashboard";
 import GroupDashboard from "../components/owner/GroupDashboard";
+import { useMe } from "../utils/staffMe";
 import GHGraph2 from "../components/biz/GHGraph2";
 import RestGraph2 from "../components/biz/RestGraph2";
 import MergedGraph2 from "../components/biz/MergedGraph2";
@@ -229,6 +230,13 @@ const NAVIGATION = [
   { kind: "header", title: "Old" },
   { segment: "home-classic", title: "Home (old)", icon: <DashboardIcon /> },
 ];
+
+// View-only account: kone mein chhota sa nishaan (malik ko yaad rahe ki aankde kam dikh rahe hain)
+const ViewOnlyMark = () => {
+  const me = useMe();
+  if (!me?.viewOnly) return null;
+  return <Box aria-hidden sx={{ position: "fixed", right: 6, bottom: 6, width: 5, height: 5, borderRadius: "50%", bgcolor: "#94A3B8", opacity: 0.7, zIndex: 2000, pointerEvents: "none" }} />;
+};
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -432,6 +440,7 @@ const DashboardPage = () => {
         navigation={NAVIGATION}
       >
         {routes}
+        <ViewOnlyMark />
       </DashboardLayout>
     </AppProvider>
   );

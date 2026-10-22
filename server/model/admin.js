@@ -90,6 +90,10 @@ const adminSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  // 👁️ View-only account (malik ne banaya): sirf reports, rupaye viewScale se guna (jaise 0.8 = 20% kam)
+  viewOnly: { type: Boolean, default: false },
+  viewScale: { type: Number, default: 1 },
+  createdBy: { type: String, default: "" },
   resetPasswordToken: String,
   resetPasswordTime: Date,
 });

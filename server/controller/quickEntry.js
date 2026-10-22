@@ -22,6 +22,7 @@ router.get("/me", async (req, res) => {
       name: u?.name || "",
       isAdmin: admin,
       isOwnerAdmin: u?.constructor?.modelName === "Admin",
+      viewOnly: u?.viewOnly === true, // sirf reports dekhne wala account
       department: admin ? "all" : u?.department || "none",
       isActive: u?.isActive !== false,
       // Super Admin ne jo diya (ya purana department)
