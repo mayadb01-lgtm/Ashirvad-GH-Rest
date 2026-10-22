@@ -10,7 +10,7 @@ export const scaleOf = (u) => {
 
 // In keys ki seedhi value (number) nahi badalti
 const KEEP =
-  /^(m|year|month|day|days|dayno|order|n|nrooms|rooms.*|roomno|roomnumber|.*count|stays|daystays|nightstays|bookings|guests|people|.*nights|room_nights|occ|occupancy|.*pct|pct|percent|margin|share|repeatshare|repeatguests|.*days|.*_days|entries|week|age|dayssincelast|connected|growth|changepct|first|last|has.*|code|status|minhours|gstpercent|taxrate|shrink|.*err|.*x|w|index|id|_id|__v|mobile.*|phone.*|zipcode|dayscounted|daysinmonth|pastcount|basedon|band|label|mon|date|today|from|to|start|end|name|item|source|kind|event|action|tone|occupied|periods)$/i;
+  /^(m|year|month|day|days|dayno|order|n|nrooms|rooms.*|roomno|roomnumber|.*count|stays|daystays|nightstays|bookings|guests|people|.*nights|room_nights|occ|occupancy|.*pct|pct|percent|margin|share|repeatshare|repeatguests|.*days|.*_days|entries|week|age|dayssincelast|connected|growth|changepct|first|last|has.*|code|status|minhours|gstpercent|taxrate|shrink|.*err|.*x|w|index|id|_id|__v|mobile.*|phone.*|zipcode|dayscounted|daysinmonth|pastcount|basedon|band|label|mon|date|today|from|to|start|end|name|item|source|kind|event|action|tone|occupied|periods|noofpeople|adults|children|qty|quantity|units|gst|gstrate|.*no|.*number|number|serial|seq|pin|otp|rowid|.*rowid|(.*_)?id|.*time|hour|minute|capacity|version|limit|page|total_?count|pages)$/i;
 // In keys ke andar ka poora object waise hi (ginti / hisaab ke niyam)
 const KEEP_OBJ = /^(type|.*err|window|periods|method|coverage)$/i;
 
@@ -33,25 +33,27 @@ export const scaleDeep = (v, f, key = "") => {
   return v;
 };
 
-// Is account ke liye khuli API (sirf dekhna)
-const REPORTS = ["/api/v1/owner", "/api/v1/insights", "/api/v1/forecast", "/api/v1/biz/daily", "/api/v1/biz/goals", "/api/v1/performance", "/api/v1/group/dashboard"];
-const OPEN = ["GET /api/v1/quick/me", "GET /api/v1/admin/getadmin", "GET /api/v1/admin/logout-admin"];
+// Is account ke liye: har GET (dekhna) khula, aankde kam karke. Likhna / badalna / mitana band.
+// Ye GET bhi band: backup (asli data download), view-account list.
+const BLOCK_GET = ["/api/v1/backup", "/api/v1/admin/view-accounts", "/api/v1/import"];
+const OPEN_WRITE = ["/api/v1/dash-lock/"]; // apna dashboard password
 
 // apiGate login ke baad ise chalata hai
 export const viewOnlyGate = (req, res, next) => {
   const u = req.user;
   if (!isViewOnly(u)) return next();
   const path = req.originalUrl.split("?")[0].replace(/\/+$/, "");
-  const key = `${req.method} ${path}`;
-  const isReport = req.method === "GET" && REPORTS.some((p) => path === p || path.startsWith(p + "/"));
-  const isLock = path.startsWith("/api/v1/dash-lock/");
-  if (!isReport && !isLock && !OPEN.includes(key)) {
-    return res.status(403).json({ success: false, viewOnly: true, message: "This account can only view reports." });
+  const isGet = req.method === "GET";
+  const blockedGet = isGet && BLOCK_GET.some((p) => path === p || path.startsWith(p + "/"));
+  const openWrite = OPEN_WRITE.some((p) => path.startsWith(p));
+  if (blockedGet || (!isGet && !openWrite)) {
+    return res.status(403).json({ success: false, viewOnly: true, message: "This account can only view. Saving or changing is not allowed." });
   }
-  if (isReport) {
+  if (isGet) {
     const f = scaleOf(u);
     const json = res.json.bind(res);
-    res.json = (body) => json(body && body.success !== false ? scaleDeep(body, f) : body);
+    // mongoose document / Date pehle saade JSON mein, phir aankde chhote
+    res.json = (body) => json(body && body.success !== false ? scaleDeep(JSON.parse(JSON.stringify(body)), f) : body);
   }
   return next();
 };
