@@ -6,7 +6,7 @@ import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import Entry from "../model/entry.js";
 import RestEntry from "../model/restEntry.js";
 import OfficeBook from "../model/officeBook.js";
-import { isAdminLike, effectiveAccess, datesBack, MODULES, REPORTS } from "../middleware/staffAccess.js";
+import { isAdminLike, effectiveAccess, datesBack, MODULES, REPORTS, rasoiAllowed } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -34,6 +34,7 @@ router.get("/me", async (req, res) => {
       reportDays: admin ? null : acc?.reportDays ?? 0,
       classic: admin ? true : acc?.classic !== false, // purane (classic) entry pages
       canEdit: admin ? true : acc?.canEdit === true, // submit ho chuki entry badal sake
+      rasoi: admin || rasoiAllowed(u, acc), // Rasoi Board (kitchen)
     },
   });
 });

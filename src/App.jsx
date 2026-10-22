@@ -16,6 +16,7 @@ import SecretGate from "./components/SecretGate.jsx";
 
 const EntryPage = lazy(() => import("./pages/EntryPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const RasoiPage = lazy(() => import("./pages/RasoiPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
@@ -68,6 +69,8 @@ const App = () => {
           {/* Nayi PC + mobile entry (staff ya admin, login khud check karta hai) */}
           <Route path="/entry" element={<QuickEntryPage />} />
           <Route path="/my-reports" element={<MyReportsPage />} />
+          {/* Rasoi Board (kitchen): Manager / jise Super Admin ne diya — server khud check karta hai */}
+          <Route path="/rasoi" element={<RasoiPage />} />
           {/* Invoice dekho / PDF (login API khud check karta hai) */}
           <Route path="/invoice/:id" element={<InvoicePage />} />
           <Route

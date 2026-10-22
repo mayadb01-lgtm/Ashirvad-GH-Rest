@@ -196,6 +196,7 @@ export const datesBack = (days) => {
 
 /* ───────── Reports jo Super Admin kisi user ko de sakta hai (har ek ka data din ki seema mein) ─────────
    clamp: ym2 = /:from/:to (YYYY-MM) · dmy2 = /:start/:end (DD-MM-YYYY) · my = /:month/:year · months = /:n · qdmy = ?from&to (DD-MM-YYYY) */
+const RASOI_RE = /^\/api\/v1\/rasoi\/(doc\/.+|list\/(days|ideas)|sales|board)$/;
 export const REPORTS = {
   "owner-report": { label: "Owner monthly report", rules: [R("GET", /^\/api\/v1\/owner\/monthly-summary\/(\d+)\/(\d+)$/, { clamp: "my" })] },
   "profit-loss": { label: "Profit & Loss", rules: [R("GET", /^\/api\/v1\/insights\/pnl\/([^/]+)\/([^/]+)$/, { clamp: "ym2" })] },
@@ -207,7 +208,11 @@ export const REPORTS = {
   "guest-dues": { label: "Guest dues & reminders", rules: [R("GET", /^\/api\/v1\/owner\/dues$/)] },
   "banquet-report": { label: "Banquet report & kitchen planning", rules: [R("GET", /^\/api\/v1\/banquet\/report$/, { clamp: "qdmy" }), R("GET", /^\/api\/v1\/banquet\/kitchen$/, { clamp: "qdmy" })] },
   "data-check": { label: "Data check (error alerts)", rules: [R("GET", /^\/api\/v1\/insights\/data-alerts$/)] },
+  // Rasoi Board: Manager ko apne aap; baaki staff (head cook, store …) ko Super Admin tick kare
+  rasoi: { label: "Rasoi Board (kitchen plan, recipes, orders)", rules: [R("GET", RASOI_RE), R("PUT", RASOI_RE), R("DELETE", RASOI_RE)] },
 };
+// Manager (purana "manager" department ya ek se zyada business wala) ko Rasoi Board apne aap
+export const rasoiAllowed = (user, acc) => !!acc && (acc.reports?.includes("rasoi") || user?.department === "manager" || (acc.modules?.length || 0) > 1);
 
 // Purana tarika (department) — jab tak Super Admin naya access set na kare
 const LEGACY = {
@@ -317,6 +322,11 @@ export const staffGuard = async (req, res, next) => {
     return deny(res, "Could not check your access. Please try again.", 500);
   }
   req.access = acc;
+
+  // Rasoi Board (Manager ko apne aap, baaki ko tick se)
+  if (RASOI_RE.test(path) && ["GET", "PUT", "DELETE"].includes(method)) {
+    return rasoiAllowed(user, acc) ? next() : deny(res, "Rasoi Board is not allowed for you. Ask the Super Admin.");
+  }
 
   // Report?
   for (const key of Object.keys(REPORTS)) {
