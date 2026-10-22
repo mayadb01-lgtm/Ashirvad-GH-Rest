@@ -120,7 +120,7 @@ body{font-size:15px}
 .tab::before{font-size:16px;line-height:1}
 .tab[data-tab=aaj]::before{content:"📋"} .tab[data-tab=team]::before{content:"👥"} .tab[data-tab=fc]::before{content:"📈"}
 .tab[data-tab=sabzi]::before{content:"🥬"} .tab[data-tab=month]::before{content:"📦"} .tab[data-tab=recipe]::before{content:"📖"}
-.tab[data-tab=fam]::before{content:"🍲"} .tab[data-tab=lab]::before{content:"💡"} .tab[data-tab=rates]::before{content:"₹";font-weight:800} .tab[data-tab=cmp]::before{content:"⚖️"} .tab[data-tab=pack]::before{content:"🥡"}
+.tab[data-tab=fam]::before{content:"🍲"} .tab[data-tab=lab]::before{content:"💡"} .tab[data-tab=rates]::before{content:"₹";font-weight:800} .tab[data-tab=cmp]::before{content:"⚖️"} .tab[data-tab=pack]::before{content:"🥡"} .tab[data-tab=buy]::before{content:"🗓️"}
 .st{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12.5px;font-weight:700;white-space:nowrap}
 .st.ok{background:var(--ok-soft);color:var(--ok)} .st.mid{background:var(--warn-soft);color:var(--warn)} .st.bad{background:#FDE8E8;color:#B91C1C} .st.low{background:var(--info-soft);color:var(--info)} .st.def{background:var(--line);color:var(--muted)}
 .main{min-width:0}
@@ -192,6 +192,7 @@ body{font-size:15px}
     <button class="tab" role="tab" data-tab="lab" data-i="tLab"></button>
     <button class="tab" role="tab" data-tab="cmp" data-i="tCmp"></button>
     <button class="tab" role="tab" data-tab="pack" data-i="tPack"></button>
+    <button class="tab" role="tab" data-tab="buy" data-i="tBuy"></button>
     <button class="tab" role="tab" data-tab="rates" data-i="tRates"></button>
   </nav>
   </aside>
@@ -402,6 +403,26 @@ body{font-size:15px}
     </section>
   </section>
 
+  <!-- KHARID SALAH (stock kab karein) -->
+  <section id="tab-buy" class="detail" hidden>
+    <section class="panel">
+      <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><h2 data-i="buyTitle"></h2><span class="hi" id="buyNow"></span></div>
+      <p class="note" data-i="buyNote"></p>
+      <div class="tiles" id="buyTiles"></div>
+      <div class="row" style="gap:8px;flex-wrap:wrap" id="buyFilter" role="group"></div>
+      <div class="tablebox"><table><thead><tr><th data-i="thItem"></th><th data-i="thBAct"></th><th data-i="thBCheap"></th><th class="n" data-i="thBStock"></th><th class="n" data-i="thBToday"></th><th class="n" data-i="thBSave"></th><th data-i="thBHow"></th></tr></thead><tbody id="buyRows"></tbody></table></div>
+    </section>
+    <section class="panel">
+      <h2 data-i="buyCalTitle"></h2>
+      <div class="tablebox"><table><tbody id="buyCal"></tbody></table></div>
+    </section>
+    <section class="panel">
+      <h2 data-i="buyNoTitle"></h2>
+      <div class="tablebox"><table><tbody id="buyNo"></tbody></table></div>
+      <p class="note" data-i="buyRules"></p>
+    </section>
+  </section>
+
   <!-- RATES -->
   <section id="tab-rates" class="detail" hidden>
     <section class="panel" id="mandiPanel">
@@ -508,7 +529,13 @@ const UI={
  noPerm:["आपको बदलने की अनुमति नहीं - सिर्फ़ देख सकते हैं","You don't have permission to edit - view only"], saveFail:["सेव नहीं हुआ - इंटरनेट जाँचें","Not saved - check internet"], liveStop:["लाइव अपडेट रुक गया - पेज दोबारा खोलें","Live updates stopped - reload the page"],
  close:["बंद करें","Close"],
  backTitle:["पिछले 8 हफ़्ते: असली बिक्री बनाम पूर्वानुमान","Last 8 weeks: actual sales vs forecast"], smartPh:["ख़ाली = स्मार्ट (अपने आप)","blank = smart (automatic)"],
- tRates:["दरें (रेट)","Rates"], tCmp:["भाव तुलना","Rate check"], tPack:["पार्सल पैकिंग","Parcel packing"],
+ tRates:["दरें (रेट)","Rates"], tCmp:["भाव तुलना","Rate check"], tBuy:["ख़रीद सलाह","Buy advice"],
+ buyTitle:["कब स्टॉक करें - न ख़राब होने वाला सामान","When to stock up - items that keep"],
+ buyNote:["हर फ़सल का एक मौसम होता है: कटाई के बाद मंडी में माल ज़्यादा आता है तो भाव सबसे नीचे होते हैं, फिर धीरे-धीरे बढ़ते हैं। जो सामान महीनों ठीक रहता है, उसे सस्ते मौसम में कुछ महीनों का एक साथ लेने से बचत होती है। 'बचत/साल' = आपकी महीने की ज़रूरत × सलाह वाला स्टॉक × आम मौसमी फ़र्क - रखने में नुकसान - पैसा फँसने का ख़र्च (1%/महीना)। ये पिछले सालों के आम रुझान पर अंदाज़ है, गारंटी नहीं - बारिश/सरकारी नीति से साल बदल सकता है। ख़रीदने से पहले 'भाव तुलना' में आज का मंडी भाव ज़रूर देखें।","Every crop has a season: after harvest the mandi gets the most arrivals and prices are lowest, then rise slowly. Items that keep for months save money when you buy a few months' worth together in the cheap season. 'Saving/year' = your monthly need × suggested stock × usual seasonal gap - storage loss - money-locked cost (1%/month). This is an estimate from usual past-year trends, not a guarantee - rain or government policy can change a year. Check today's mandi price in 'Rate check' before buying."],
+ thBAct:["अभी क्या करें","What to do now"], thBCheap:["सबसे सस्ता समय","Cheapest time"], thBStock:["एक बार में कितना (पैसा)","How much at once (money)"], thBToday:["आज मंडी","Mandi today"], thBSave:["बचत / साल (अंदाज़)","Saving / year (est.)"], thBHow:["कितने दिन चलता + कैसे रखें","Keeps for + how to store"],
+ buyCalTitle:["साल का ख़रीद कैलेंडर","Yearly buying calendar"],
+ buyNoTitle:["ये स्टॉक न करें - जल्दी ख़राब होते हैं","Don't stock these - they spoil fast"],
+ buyRules:["नियम: (1) स्टॉक सिर्फ़ उतना जितना सलाह में है - ज़्यादा माल = पैसा फँसना + कीड़े/नमी का ख़तरा। (2) हवा-बंद ड्रम/डब्बे, फ़र्श से ऊपर पट्टे पर, धूप-नमी से दूर। (3) पहले आया, पहले निकला (FIFO) - हर बोरी पर ख़रीद की तारीख़ लिखें। (4) बारिश से पहले (जून) स्टोर साफ़ करें, नीम पत्ती/तेज पत्ता रखें। (5) बड़ी ख़रीद पर 2-3 व्यापारियों से भाव लें और FAQ/AGMARK क्वालिटी का सैंपल देखें।","Rules: (1) Stock only as much as suggested - more = money locked + insect/moisture risk. (2) Airtight drums/boxes, on pallets off the floor, away from sun and damp. (3) First in, first out (FIFO) - write the purchase date on every bag. (4) Clean the store before monsoon (June), keep neem/bay leaves. (5) For big buys, take 2-3 quotes and check an FAQ/AGMARK quality sample."], tPack:["पार्सल पैकिंग","Parcel packing"],
  topTitle:["सबसे ज़्यादा इस्तेमाल होने वाला सामान (अगले 30 दिन)","Most used items (next 30 days)"],
  topNote:["रेसिपी × पूर्वानुमान बिक्री + बैंक्वेट ऑर्डर से। जिनका मंडी भाव है उनका सही भाव और ± % भी दिखता है।","From recipes × forecast sales + banquet orders. Where a mandi price exists, the fair rate and ± % are shown too."],
  thTQty:["मात्रा / महीना","Qty / month"], thTSpend:["ख़र्च / महीना","Spend / month"],
@@ -1103,7 +1130,7 @@ $("mandiApply").onclick=()=>{ const b=$("mandiApply"); if(b.dataset.sure!=="1"){
 
 // ---------- SABSE ZYADA ISTEMAAL + ASLI KHARCH ----------
 let topSort="qty", SPEND=null;
-function loadSpend(){ if(!db||!db.spend||SPEND) return; SPEND={rows:[]}; db.spend().then(j=>{SPEND=j; if(tab==="cmp"||tab==="pack") renderTab()}).catch(()=>{SPEND=null}) }
+function loadSpend(){ if(!db||!db.spend||SPEND) return; SPEND={rows:[]}; db.spend().then(j=>{SPEND=j; if(tab==="cmp"||tab==="pack"||tab==="buy") renderTab()}).catch(()=>{SPEND=null}) }
 function renderTop(){
   if(!$("topRows")) return;
   const S=[["qty",T("मात्रा से","By quantity")],["rs",T("ख़र्च से","By spend")]];
@@ -1155,8 +1182,9 @@ function renderPack(){
     [T("सबसे ज़्यादा दिन","Busiest days"),PARCEL.peak.map(([d,n])=>dLabel(d).replace(/^\S+ /,"")+": "+n).join(", ")]].map(([k,v])=>`<div class="tile"><span class="k">${esc(k)}</span><span class="v" style="font-size:18px">${v}</span></div>`).join("");
   $("parcelWd").textContent=T("वार के हिसाब से रोज़ औसत: ","Daily avg by weekday: ")+PARCEL.wd.map((v,i)=>dayN(i)+" "+v).join(" · ")+T(" - रविवार सबसे ज़्यादा, बुधवार सबसे कम। त्योहार पर 2-3 गुना हो जाता है, उस हफ़्ते स्टॉक ज़्यादा रखें।"," - Sunday highest, Wednesday lowest. Festivals go 2-3x, keep extra stock that week.");
   const pl=SPEND&&SPEND.rows?SPEND.rows.filter(r=>/plast|plastik|parcel|pack|disposable|thel/i.test(r.name)):[];
-  const plY=pl.reduce((a,r)=>a+r.year,0);
-  $("packPlastik").textContent=plY?T(`आपकी एंट्री में 'प्लास्टिक/पैकिंग' का असली ख़र्च: 12 महीने में ${fmtR(plY)} (महीने का ~${fmtR(plY/12)})`,`Actual 'plastic/packing' spend in your entries: ${fmtR(plY)} in 12 months (~${fmtR(plY/12)}/month)`):"";
+  const plY=pl.reduce((a,r)=>a+r.year,0), po=(SPEND&&SPEND.packOffice)||[], poY=po.reduce((a,r)=>a+r.amount,0), allY=plY+poY;
+  $("packPlastik").innerHTML=allY?esc(T(`असली पैकिंग ख़र्च (12 महीने): ${fmtR(allY)} = महीने का ~${fmtR(allY/12)}`,`Actual packing spend (12 months): ${fmtR(allY)} = ~${fmtR(allY/12)}/month`))+
+    `<br><span class="hi">${esc(T(`Krishna Plastik (ऑफ़िस बुक) ${fmtR(poY)}`,`Krishna Plastik (office book) ${fmtR(poY)}`))}${po.length?" ["+po.map(r=>esc(monN(Number(r.month.slice(5))-1))+" "+fmtR(r.amount)).join(", ")+"]":""} + ${esc(T(`रेस्टोरेंट 'Plastik' ${fmtR(plY)}`,`restaurant 'Plastik' ${fmtR(plY)}`))}</span>`:"";
   let tot=0, totMk=0; const ae=document.activeElement&&document.activeElement.id;
   $("packRows").innerHTML=PACK.map(([k,nm,best,use,mk])=>{ const u=(P.use||{})[k]!=null?Number(P.use[k]):use, mq=orders*30*u, your=(P.rate||{})[k], mid=(mk[0]+mk[1])/2, rate=your!=null?Number(your):mid;
     const cost=mq*rate; tot+=cost; totMk+=mq*mid; const d=your!=null?(your/mid-1)*100:null; const col=d==null?"var(--muted)":d>25?"#B91C1C":d>10?"var(--warn)":d<-30?"var(--info)":"var(--ok)";
@@ -1177,6 +1205,74 @@ function renderPack(){
 $("packOrders").addEventListener("change",()=>{const t=$("packOrders").value.trim(), v=Number(t); const p={...packCfg()}; if(t===""||!(v>=0)) delete p.orders; else p.orders=v; settings.pack=p; saveSettings(); renderPack()});
 $("packReset").onclick=()=>{const b=$("packReset"); if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent=T("पक्का?","Sure?");setTimeout(()=>{b.dataset.sure="";b.textContent=U("packReset")},4000);return}
   b.dataset.sure=""; b.textContent=U("packReset"); settings.pack={}; saveSettings(); renderPack()};
+
+// ---------- KHARID SALAH: kab stock karein ----------
+// [key, sabse saste mahine (1-12), ek baar me kitne mahine ka stock, aam mausami farak %, rakhne me nuksan %, kitne din chalta, kaise rakhein, kyun]
+const BUY=[
+ ["cumin",[3,4,5],8,15,2,["साबुत 12 महीने","Whole 12 months"],["हवा-बंद ड्रम, सूखी जगह","Airtight drum, dry place"],["नई फ़सल फ़रवरी-मार्च, ऊंझा में मार्च-मई सबसे ज़्यादा आवक","New crop Feb-Mar, peak arrivals at Unjha Mar-May"]],
+ ["corseed",[3,4],8,15,3,["साबुत 12 महीने, पाउडर 3-4","Whole 12 months, powder 3-4"],["साबुत रखें, पाउडर हर महीने पिसवाएँ","Keep whole, grind monthly"],["कटाई फ़रवरी-मार्च (गुजरात/राजस्थान)","Harvest Feb-Mar (Gujarat/Rajasthan)"]],
+ ["drychilli",[2,3,4],6,20,4,["8-10 महीने (रंग धीरे फीका)","8-10 months (colour fades slowly)"],["हवा-बंद, अंधेरी ठंडी जगह; हो सके तो कोल्ड स्टोरेज","Airtight, dark cool place; cold storage if possible"],["नई मिर्च जनवरी-अप्रैल (गोंडल, गुंटूर)","New chilli Jan-Apr (Gondal, Guntur)"]],
+ ["redchilli",[2,3,4],4,15,4,["पाउडर 4-6 महीने","Powder 4-6 months"],["सस्ते मौसम में साबुत मिर्च लेकर 2 महीने का पिसवाते रहें","Buy whole chilli in season, grind 2 months at a time"],["साबुत मिर्च के भाव के साथ चलता है","Follows whole chilli prices"]],
+ ["kashmiri",[2,3,4],4,15,4,["पाउडर 4-6 महीने","Powder 4-6 months"],["हवा-बंद, अंधेरा","Airtight, dark"],["मिर्च की नई फ़सल के बाद","After new chilli crop"]],
+ ["turmeric",[3,4,5],8,12,1,["साबुत 12+ महीने","Whole 12+ months"],["सूखी जगह; पाउडर 3 महीने का","Dry place; powder for 3 months"],["कटाई फ़रवरी-अप्रैल","Harvest Feb-Apr"]],
+ ["fennel",[3,4,5],8,12,2,["12 महीने","12 months"],["हवा-बंद","Airtight"],["ऊंझा में नई सौंफ मार्च-अप्रैल","New fennel at Unjha Mar-Apr"]],
+ ["ajwain",[3,4],8,12,2,["12 महीने","12 months"],["हवा-बंद","Airtight"],["नई फ़सल फ़रवरी-मार्च","New crop Feb-Mar"]],
+ ["mustard",[3,4],8,10,1,["12 महीने","12 months"],["सूखी जगह","Dry place"],["रबी कटाई फ़रवरी-मार्च","Rabi harvest Feb-Mar"]],
+ ["tuvar",[1,2,3],6,12,3,["6-8 महीने (बारिश में कीड़ा)","6-8 months (insects in monsoon)"],["हवा-बंद ड्रम, नीम पत्ती; जून से पहले ख़त्म करें","Airtight drum, neem leaves; finish before June"],["नई तुअर दिसंबर-फ़रवरी","New tur Dec-Feb"]],
+ ["chanadal",[3,4],5,10,3,["5-6 महीने","5-6 months"],["हवा-बंद","Airtight"],["चना कटाई फ़रवरी-अप्रैल","Chana harvest Feb-Apr"]],
+ ["kabuli",[3,4],6,10,2,["8-10 महीने","8-10 months"],["हवा-बंद","Airtight"],["कटाई फ़रवरी-अप्रैल","Harvest Feb-Apr"]],
+ ["moong",[10,11],4,10,3,["5-6 महीने","5-6 months"],["हवा-बंद","Airtight"],["खरीफ़ मूंग सितंबर-अक्टूबर","Kharif moong Sep-Oct"]],
+ ["urad",[10,11],5,10,2,["8 महीने","8 months"],["हवा-बंद","Airtight"],["खरीफ़ उड़द सितंबर-नवंबर","Kharif urad Sep-Nov"]],
+ ["rajma",[11,12],5,8,2,["8-10 महीने","8-10 months"],["हवा-बंद","Airtight"],["नई फ़सल अक्टूबर-नवंबर","New crop Oct-Nov"]],
+ ["basmati",[11,12,1],6,8,1,["12-24 महीने (पुराना चावल अच्छा पकता है)","12-24 months (aged rice cooks better)"],["बोरी पट्टे पर, सूखी जगह","Bags on pallets, dry place"],["नई फ़सल अक्टूबर-दिसंबर","New crop Oct-Dec"]],
+ ["rice_reg",[11,12,1],6,6,1,["12 महीने","12 months"],["बोरी पट्टे पर","Bags on pallets"],["खरीफ़ धान अक्टूबर-दिसंबर","Kharif paddy Oct-Dec"]],
+ ["gnoil",[11,12,1],4,8,0,["सील डब्बा 9 महीने","Sealed tin 9 months"],["सील डब्बे, धूप से दूर; खुला डब्बा 1 महीने में ख़त्म","Sealed tins, away from sun; finish an opened tin in a month"],["मूंगफली की नई फ़सल अक्टूबर-नवंबर (सौराष्ट्र)","New groundnut Oct-Nov (Saurashtra)"]],
+ ["sugar",[12,1,2,3],4,5,1,["12 महीने","12 months"],["सूखी जगह","Dry place"],["पेराई नवंबर-अप्रैल","Crushing season Nov-Apr"]],
+ ["cashew",[4,5,6],4,8,2,["6-9 महीने","6-9 months"],["हवा-बंद, ठंडी जगह; बारिश में फ्रिज/कोल्ड","Airtight, cool; fridge/cold in monsoon"],["नई काजू मार्च-जून","New cashew Mar-Jun"]],
+ ["garlic",[3,4,5],6,30,8,["सूखा लहसुन 6-8 महीने","Dry garlic 6-8 months"],["हवादार जाली/बोरी, बंद प्लास्टिक में नहीं","Airy mesh bags, not closed plastic"],["कटाई मार्च-अप्रैल; सितंबर-दिसंबर महंगा","Harvest Mar-Apr; costly Sep-Dec"]],
+ ["onion",[4,5],2,40,15,["रबी प्याज़ 4-5 महीने","Rabi onion 4-5 months"],["हवादार जगह, फैलाकर; सड़ा रोज़ निकालें","Airy place, spread out; remove rotten daily"],["रबी प्याज़ अप्रैल-मई सस्ता; अगस्त-नवंबर सबसे महंगा","Rabi onion cheap Apr-May; dearest Aug-Nov"]]];
+const NOSTOCK=[[["आटा, मैदा, बेसन","Atta, maida, besan"],["1-2 महीने में कीड़ा/गंध। हर महीने लें; या अप्रैल में गेहूं लेकर चक्की से महीने-महीने पिसवाएँ।","Insects/smell in 1-2 months. Buy monthly; or buy wheat in April and get it milled monthly."]],
+ [["पिसे मसाले (धनिया, मिर्च, हल्दी पाउडर)","Ground spices"],["3-4 महीने में खुशबू-रंग उड़ जाता है। साबुत स्टॉक करें, पाउडर 1-2 महीने का।","Lose aroma/colour in 3-4 months. Stock whole, powder for 1-2 months."]],
+ [["सब्ज़ी, पनीर, दूध, क्रीम, खोया","Vegetables, paneer, milk, cream, khoya"],["रोज़ लें (सिर्फ़ रबी प्याज़-लहसुन अपवाद)।","Buy daily (only rabi onion and garlic are exceptions)."]],
+ [["आलू","Potato"],["कोल्ड स्टोरेज के बिना 3-4 हफ़्ते में अंकुर। 1-2 हफ़्ते का ही लें।","Sprouts in 3-4 weeks without cold storage. Buy 1-2 weeks at a time."]],
+ [["रिफाइंड तेल (पाम/सोया)","Refined oil (palm/soy)"],["विदेश से आयात - भाव आयात शुल्क/डॉलर से चलता है, मौसम से नहीं। 1-2 महीने का ही लें।","Imported - price follows import duty/dollar, not season. Buy 1-2 months only."]],
+ [["तिल, खसखस, मगज़, सूखा नारियल","Sesame, poppy, magaz, dry coconut"],["तेल वाले बीज 3-4 महीने में कड़वे (rancid) हो जाते हैं।","Oily seeds go rancid in 3-4 months."]]];
+let buyFilter="all";
+function buyStatus(months){ const m=new Date().getMonth()+1, nx=m%12+1;
+  if(months.includes(m)) return "now"; if(months.includes(nx)) return "soon"; return "wait" }
+function nextWin(months){ const m=new Date().getMonth()+1; for(let i=1;i<=12;i++){const x=(m-1+i)%12+1; if(months.includes(x)) return x} return months[0] }
+function renderBuy(){
+  if(!$("buyRows")) return; loadSpend();
+  const mq=monthQty(), cm=Object.fromEntries((MANDI?cmpItems():[]).map(x=>[x.k,x])), cur=new Date().getMonth()+1;
+  const rows=BUY.filter(b=>ING[b[0]]).map(([k,mon,stk,sw,loss,shelf,how,why])=>{ const q=mq[k]||0, r=ING[k].r, st=buyStatus(mon);
+    const net=Math.max(0,(sw-loss-stk/2)/100), save=q*12*r*net; return {k,mon,stk,sw,loss,shelf,how,why,q,r,st,save,qty:q*stk} });
+  // packing (Krishna Plastik): kabhi kharab nahi, thok me sasta
+  const po=(SPEND&&SPEND.packOffice)||[], poM=po.reduce((a,r)=>a+r.amount,0)/12;
+  const sum=rows.filter(x=>x.q>0).reduce((a,x)=>a+x.save,0)+poM*12*0.08;
+  const nowL=rows.filter(x=>x.st==="now"&&x.q>0);
+  $("buyNow").textContent=T("इस महीने (","This month (")+monN(cur-1)+"): "+(nowL.length?nowL.map(x=>ingName(x.k)).join(", "):T("कुछ ख़ास नहीं - ज़रूरत भर लें","nothing special - buy as needed"));
+  $("buyTiles").innerHTML=[[T("अभी स्टॉक करें","Stock now"),nowL.length,"ok"],[T("अगले महीने तैयारी","Get ready next month"),rows.filter(x=>x.st==="soon"&&x.q>0).length,"mid"],[T("अभी सिर्फ़ ज़रूरत भर","Only as needed now"),rows.filter(x=>x.st==="wait"&&x.q>0).length,"def"],[T("सही समय पर लें तो बचत/साल (अंदाज़)","Saving/year if timed right (est.)"),fmtR(sum),"ok"]]
+    .map(([k,v,c])=>`<div class="tile"><span class="k">${esc(k)}</span><span class="v"><span class="st ${c}" style="font-size:20px;padding:2px 12px">${v}</span></span></div>`).join("");
+  const F=[["all",T("सभी","All")],["now",T("अभी लें","Buy now")],["soon",T("अगले महीने","Next month")],["wait",T("रुकें","Wait")]];
+  $("buyFilter").innerHTML=F.map(([v,l])=>`<button class="chip" type="button" data-f="${v}" aria-pressed="${v===buyFilter}">${esc(l)}</button>`).join("");
+  $("buyFilter").querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{buyFilter=b.dataset.f;renderBuy()});
+  const ord={now:0,soon:1,wait:2};
+  const list=rows.filter(x=>x.q*x.r>=100&&(buyFilter==="all"||x.st===buyFilter)).sort((a,b)=>ord[a.st]-ord[b.st]||b.save-a.save);
+  const mr=ms=>ms.map(m=>monN(m-1)).join("-");
+  let html=list.map(x=>{ const c=cm[x.k]; const act=x.st==="now"?`<span class="st ok">${T("अभी ख़रीदें - स्टॉक करें","Buy now - stock up")}</span>`:x.st==="soon"?`<span class="st mid">${T("अगले महीने से - जगह/पैसा तैयार रखें","From next month - prepare space/money")}</span>`:`<span class="st def">${T("रुकें - ज़रूरत भर लें","Wait - buy as needed")}</span><br><span class="hi">${T("अगला मौका: ","Next chance: ")}${esc(monN(nextWin(x.mon)-1))}</span>`;
+    const qty=x.qty>=10?Math.round(x.qty):Math.round(x.qty*10)/10;
+    return `<tr><td><b>${esc(ingName(x.k))}</b><br><span class="hi">${esc(T(x.why[0],x.why[1]))}</span></td><td>${act}</td><td><b>${esc(mr(x.mon))}</b><br><span class="hi">${T("आम फ़र्क ~","usual gap ~")}${x.sw}%</span></td>
+      <td class="n"><b>${x.stk} ${T("महीने","months")}</b><br><span class="hi">${x.q?qty+" "+esc(unitLabel(x.k))+" · "+fmtR(x.qty*x.r):"–"}</span></td>
+      <td class="n">${c?"₹"+r1(c.base)+`<br><span class="hi">${esc(String(c.where).replace(/ APMC$/,""))}</span>`:"–"}</td>
+      <td class="n" style="color:var(--ok);font-weight:700">${x.q&&x.save>=1?fmtR(x.save):"–"}</td>
+      <td class="hi" style="min-width:200px"><b style="color:var(--ink)">${esc(T(x.shelf[0],x.shelf[1]))}</b><br>${esc(T(x.how[0],x.how[1]))}</td></tr>`}).join("");
+  if(buyFilter==="all"||buyFilter==="now") html+=`<tr><td><b>${T("पार्सल पैकिंग (Krishna Plastik)","Parcel packing (Krishna Plastik)")}</b><br><span class="hi">${T("कभी ख़राब नहीं होता; भाव कच्चे तेल से चलता है","Never spoils; price follows crude oil")}</span></td><td><span class="st ok">${T("कभी भी - 3 महीने का एक साथ","Any time - 3 months at once")}</span></td><td><b>${T("थोक में","In bulk")}</b><br><span class="hi">${T("कार्टन पर ~10-15% कम","~10-15% less per carton")}</span></td><td class="n"><b>3 ${T("महीने","months")}</b><br><span class="hi">${poM?fmtR(poM*3):"–"}</span></td><td class="n">–</td><td class="n" style="color:var(--ok);font-weight:700">${poM?fmtR(poM*12*0.08):"–"}</td><td class="hi"><b style="color:var(--ink)">${T("सालों","Years")}</b><br>${T("धूल से बचाकर, डिब्बों में","In cartons, away from dust")}</td></tr>`;
+  $("buyRows").innerHTML=html||`<tr><td colspan="7" class="empty">–</td></tr>`;
+  // calendar: har mahine kya
+  const cal=[]; for(let m=1;m<=12;m++){ const it=BUY.filter(b=>ING[b[0]]&&b[1].includes(m)).map(b=>ingName(b[0])); cal.push(`<tr${m===cur?' style="background:var(--ok-soft)"':""}><td><b>${esc(monN(m-1))}</b>${m===cur?` <span class="st ok">${T("अभी","now")}</span>`:""}</td><td>${it.length?esc(it.join(", ")):`<span class="hi">${T("ज़रूरत भर","as needed")}</span>`}</td></tr>`) }
+  $("buyCal").innerHTML=cal.join("");
+  $("buyNo").innerHTML=NOSTOCK.map(([n,w])=>`<tr><td><b>${esc(T(n[0],n[1]))}</b></td><td class="hi">${esc(T(w[0],w[1]))}</td></tr>`).join("");
+}
 
 // ---------- BHAAV TULNA: mandi + hotel tak ka % vs aapki dar ----------
 const LEAFY=["coriander","mint","spinach","methi","springonion","curryleaf"], STAPLE=["onion","potato","garlic"];
@@ -1550,13 +1646,13 @@ $("rateReset").onclick=()=>{const b=$("rateReset"); if(b.dataset.sure!=="1"){b.d
 function saveRates(){ratesAt=new Date().toISOString(); debounce("rates",()=>write("rates/main",{items:rates,updatedAt:ratesAt},"rates"))}
 
 // ---------- tabs ----------
-const TABS=["aaj","team","fc","sabzi","month","recipe","fam","lab","cmp","pack","rates"];
+const TABS=["aaj","team","fc","sabzi","month","recipe","fam","lab","cmp","pack","buy","rates"];
 function setTab(t){tab=t;try{localStorage.setItem("rasoi-tab",t)}catch(e){}
   document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===t)));
   TABS.forEach(k=>$("tab-"+k).hidden=k!==t); ["recipeDetail","labDetail"].forEach(id=>{const b=$(id); if(b&&!(t==="recipe"&&id==="recipeDetail")){b.hidden=true}}); renderTab(); try{window.scrollTo(0,0)}catch(e){}}
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 document.addEventListener("keydown",e=>{if(e.key==="Escape")["recipeDetail","labDetail"].forEach(id=>{const b=$(id); if(b&&!b.hidden){b.hidden=true;b.innerHTML=""}})});
-function renderTab(){({aaj:renderAaj,team:renderTeam,fc:renderFc,sabzi:renderSabzi,month:()=>{monthOptions();renderMonth()},recipe:renderRecipeList,fam:renderFam,lab:renderLab,cmp:renderCmp,pack:renderPack,rates:renderRates})[tab]()}
+function renderTab(){({aaj:renderAaj,team:renderTeam,fc:renderFc,sabzi:renderSabzi,month:()=>{monthOptions();renderMonth()},recipe:renderRecipeList,fam:renderFam,lab:renderLab,cmp:renderCmp,pack:renderPack,buy:renderBuy,rates:renderRates})[tab]()}
 function renderAll(){renderHeader();renderTab()}
 
 // ---------- saving ----------

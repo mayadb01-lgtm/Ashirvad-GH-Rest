@@ -286,7 +286,11 @@ router.get("/spend", async (req, res) => {
         nm: { $sum: { $cond: [{ $gte: ["$entryCreateDate", d30] }, 1, 0] } } } },
       { $sort: { y: -1 } }, { $limit: 80 },
     ]).toArray();
-    res.json({ success: true, rows: rows.map((r) => ({ cat: r._id.c, name: String(r.name || "").trim(), year: Math.round(r.y), yearTimes: r.ny, month: Math.round(r.m), monthTimes: r.nm })) });
+    // Packing ka maal (Krishna Plastik) Office Book se bhi aata hai
+    const pk = {}; const PK = /kris?h?na\s*p(a)?l?a?st|krishna pal/i;
+    for await (const d of mongoose.connection.db.collection("officebooks").find({ entryCreateDate: { $gte: d365 } }, { projection: { officeOut: 1, entryCreateDate: 1 } }))
+      for (const e of d.officeOut || []) if (PK.test(e.fullname || "")) { const m = d.entryCreateDate.toISOString().slice(0, 7); pk[m] = (pk[m] || 0) + (Number(e.amount) || 0); }
+    res.json({ success: true, packOffice: Object.entries(pk).sort().map(([month, amount]) => ({ month, amount: Math.round(amount) })), rows: rows.map((r) => ({ cat: r._id.c, name: String(r.name || "").trim(), year: Math.round(r.y), yearTimes: r.ny, month: Math.round(r.m), monthTimes: r.nm })) });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
   }
