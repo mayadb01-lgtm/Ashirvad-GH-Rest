@@ -11,6 +11,8 @@
 // GET    /api/v1/rasoi/sales          → roz ka restaurant sale (app + purane records), sirf padhna
 // GET    /api/v1/rasoi/banquet?from=YYYY-MM-DD&to=YYYY-MM-DD → banquet booking ka menu (dish × gram × plate), sirf padhna.
 //        Ye sirf kachche maal ki order list ke liye hai — restaurant ki bikri / forecast mein kabhi nahi juda.
+// GET    /api/v1/rasoi/mandi          → Surat district APMC (Surat, Songadh …) ke aaj ke sabzi bhaav (sarkari Agmarknet / data.gov.in).
+//        Server har 3 ghante mein naya laata hai aur kitchen_mandi mein itihaas rakhta hai (naya collection).
 import { Router } from "express";
 import mongoose from "mongoose";
 import fs from "fs";
@@ -162,6 +164,52 @@ router.get("/banquet", async (req, res) => {
     });
     out.sort((x, y) => (x.date + x.slot).localeCompare(y.date + y.slot));
     res.json({ success: true, data: out });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+// ---------- Mandi bhaav (data.gov.in "Current Daily Price of Various Commodities from Various Markets (Mandi)") ----------
+const mandiSchema = new mongoose.Schema(
+  { _id: String, date: String, market: String, commodity: String, variety: String, min: Number, max: Number, modal: Number, at: { type: Date, default: Date.now } },
+  { versionKey: false }
+);
+const Mandi = mongoose.models.KitchenMandi || mongoose.model("KitchenMandi", mandiSchema, "kitchen_mandi");
+const MANDI_RES = "9ef84268-d588-465a-a308-a864a43d0070";
+const SAMPLE_KEY = "579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b"; // data.gov.in ki public sample key (apni key: env DATAGOV_KEY)
+let mandiAt = 0, mandiBusy = null;
+const dmyIso = (s) => { const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(s || "")); return m ? `${m[3]}-${m[2]}-${m[1]}` : null; };
+async function pullMandi() {
+  const key = process.env.DATAGOV_KEY || SAMPLE_KEY;
+  let off = 0, total = Infinity, pages = 0; const ops = [];
+  while (off < total && pages < 40) {
+    const url = `https://api.data.gov.in/resource/${MANDI_RES}?api-key=${encodeURIComponent(key)}&format=json&limit=100&offset=${off}&filters%5Bstate.keyword%5D=Gujarat&filters%5Bdistrict%5D=Surat`;
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 20000);
+    let j; try { j = await (await fetch(url, { signal: ctl.signal })).json(); } finally { clearTimeout(t); }
+    const recs = j?.records || []; total = Number(j?.total) || 0; pages++;
+    if (!recs.length) break;
+    recs.forEach((r) => {
+      const date = dmyIso(r.arrival_date); if (!date) return;
+      const id = [date, r.market, r.commodity, r.variety].join("|");
+      ops.push({ updateOne: { filter: { _id: id }, update: { $set: { date, market: r.market, commodity: r.commodity, variety: r.variety || "", min: Number(r.min_price) || 0, max: Number(r.max_price) || 0, modal: Number(r.modal_price) || 0, at: new Date() } }, upsert: true } });
+    });
+    off += recs.length;
+  }
+  if (ops.length) await Mandi.bulkWrite(ops, { ordered: false });
+  return ops.length;
+}
+router.get("/mandi", async (req, res) => {
+  try {
+    if (Date.now() - mandiAt > 3 * 3600 * 1000) {
+      mandiBusy ||= pullMandi().then(() => { mandiAt = Date.now(); }).catch(() => {}).finally(() => { mandiBusy = null; });
+      await Promise.race([mandiBusy, new Promise((r) => setTimeout(r, 15000))]);
+    }
+    const since = new Date(Date.now() - 10 * 864e5).toISOString().slice(0, 10);
+    const rows = await Mandi.find({ date: { $gte: since } }, { _id: 0, at: 0 }).sort({ date: -1 }).lean();
+    // har market + commodity ka sabse naya din
+    const seen = new Set(), latest = [];
+    rows.forEach((r) => { const k = r.market + "|" + r.commodity + "|" + r.variety; if (seen.has(k)) return; seen.add(k); latest.push({ ...r, min: r.min / 100, max: r.max / 100, modal: r.modal / 100 }); });
+    res.json({ success: true, source: "Agmarknet (data.gov.in)", unit: "₹/kg", fetchedAt: mandiAt ? new Date(mandiAt) : null, rows: latest });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
   }

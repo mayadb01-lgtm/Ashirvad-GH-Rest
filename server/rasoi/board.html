@@ -287,8 +287,14 @@ body{font-size:15px}
         <button class="btn primary" id="copySabzi" data-i="copyWa"></button>
       </div>
       <p class="note" id="sabziHow"></p>
-      <div class="tablebox"><table><thead><tr><th data-i="thItem"></th><th class="n" data-i="thQty"></th><th class="n" data-i="thBq"></th><th data-i="thUnit"></th><th class="n" data-i="thRate"></th><th class="n" data-i="thEst"></th></tr></thead><tbody id="sabziRows"></tbody></table></div>
+      <div class="tablebox"><table><thead><tr><th data-i="thItem"></th><th class="n" data-i="thQty"></th><th class="n" data-i="thBq"></th><th data-i="thUnit"></th><th class="n" data-i="thRate"></th><th class="n" data-i="thMandi"></th><th class="n" data-i="thEst"></th></tr></thead><tbody id="sabziRows"></tbody></table></div>
       <pre class="copy" id="sabziText" hidden></pre>
+    </section>
+    <section class="panel">
+      <div class="row" style="justify-content:space-between"><h2 data-i="dairyTitle"></h2><button class="btn primary" id="copyDairy" data-i="copyWa"></button></div>
+      <p class="note" id="dairyHow"></p>
+      <div class="tablebox"><table><thead><tr><th data-i="thItem"></th><th class="n" data-i="thQty"></th><th class="n" data-i="thBq"></th><th data-i="thUnit"></th><th class="n" data-i="thRate"></th><th class="n" data-i="thEst"></th></tr></thead><tbody id="dairyRows"></tbody></table></div>
+      <pre class="copy" id="dairyText" hidden></pre>
     </section>
     <section class="panel" id="bqMapPanel" hidden>
       <h2 data-i="bqMapTitle"></h2>
@@ -344,6 +350,16 @@ body{font-size:15px}
 
   <!-- RATES -->
   <section id="tab-rates" class="detail" hidden>
+    <section class="panel" id="mandiPanel">
+      <div class="row" style="justify-content:space-between"><h2 data-i="mandiTitle"></h2><span class="hi" id="mandiAsOf"></span></div>
+      <p class="note" data-i="mandiNote"></p>
+      <div class="row" style="align-items:end;gap:12px">
+        <label class="f" for="mandiPct"><span data-i="mandiPctL"></span><input type="number" id="mandiPct" min="0" max="200" step="5" style="width:100px"></label>
+        <button class="btn primary" id="mandiApply" data-i="mandiApply"></button><span class="hi" id="mandiMsg"></span>
+      </div>
+      <div class="tablebox"><table><thead><tr><th data-i="thItem"></th><th class="n" data-i="thMandiRange"></th><th class="n" data-i="thMandiModal"></th><th class="n" data-i="thSongadh"></th><th class="n" data-i="thYourRate"></th><th class="n" data-i="thDiff"></th></tr></thead><tbody id="mandiRows"></tbody></table></div>
+      <details><summary class="hi" style="cursor:pointer" data-i="mandiAll"></summary><div class="tablebox"><table><tbody id="mandiAllRows"></tbody></table></div></details>
+    </section>
     <section class="panel">
       <h2 data-i="ratesTitle"></h2>
       <p class="note" data-i="ratesNote"></p>
@@ -465,6 +481,15 @@ function unitW(u){return ({g:"g",ml:"ml",kg:"kg",L:"L",nag:T("नग","pc"),pc:T
 function wfOf(s){const w=parse(s).getDay();return WF[(w+6)%7]}
 function isWeekend(s){const w=parse(s).getDay();return w===0||w===6}
 Object.assign(UI,{
+ sabziTitle:["सब्ज़ी का ऑर्डर (रोज़)","Vegetable order (daily)"],
+ dairyTitle:["डेयरी का ऑर्डर (रोज़): दूध, दही, पनीर, क्रीम, खोया","Dairy order (daily): milk, curd, paneer, cream, khoya"],
+ thMandi:["मंडी ₹/kg","Mandi ₹/kg"],
+ mandiTitle:["आज के मंडी भाव - सूरत APMC","Today's mandi prices - Surat APMC"],
+ mandiNote:["सरकारी Agmarknet (data.gov.in) से, हर 3 घंटे में अपने आप नया। ये थोक (मंडी) भाव हैं - सब्ज़ीवाले का भाव इससे ऊपर होता है (गाड़ी, दलाली, छँटाई)। सोनगढ़ APMC का भाव भी साथ में।","From government Agmarknet (data.gov.in), refreshed every 3 hours. These are wholesale (mandi) prices - your vendor's price is higher (transport, commission, sorting). Songadh APMC price shown alongside."],
+ mandiPctL:["मंडी से ऊपर % (आपका सब्ज़ीवाला)","% above mandi (your vendor)"],
+ mandiApply:["इन सब्ज़ियों का रेट मंडी भाव से भरें","Fill these vegetable rates from mandi"],
+ thMandiRange:["मंडी कम–ज़्यादा","Mandi min–max"], thMandiModal:["मंडी आम भाव","Mandi modal"], thSongadh:["सोनगढ़","Songadh"], thDiff:["आपका रेट मंडी से","Your rate vs mandi"],
+ mandiAll:["सूरत ज़िले के सभी मंडी भाव देखें","See all mandi prices in Surat district"],
  thBq:["इसमें बैंक्वेट","Of which banquet"],
  bqMapTitle:["बैंक्वेट डिश → रेसिपी मिलान","Banquet dish → recipe match"],
  bqMapNote:["बैंक्वेट मेनू की हर डिश किस रेसिपी से बनती है - उसी से कच्चा माल गिना जाता है। अपने आप मिलान किया है; ग़लत हो तो बदलें। एक बार चुना, हमेशा याद रहेगा।","Which recipe each banquet menu dish is made from - raw materials are counted from it. Matched automatically; change it if wrong. Saved for everyone."],
@@ -933,6 +958,35 @@ $("festPct").addEventListener("change",e=>{const v=Number(e.target.value);settin
 const GORDER=["Sabzi","Dairy","Anaaj-Dal","Dry Fruit","Tel","Masala","Sauce","Ready Maal","Mithai","Other"];
 const GNAME={"Sabzi":["सब्ज़ी","Vegetables"],"Dairy":["डेयरी","Dairy"],"Anaaj-Dal":["अनाज-दाल","Grains & pulses"],"Dry Fruit":["सूखे मेवे","Dry fruits"],"Tel":["तेल","Oils"],"Masala":["मसाले","Spices"],"Sauce":["सॉस और अन्य","Sauces & others"],"Ready Maal":["तैयार माल","Ready products"],"Mithai":["मिठाई","Sweets"],"Other":["अन्य","Other"]};
 const gname=g=>GNAME[g]?T(GNAME[g][0],GNAME[g][1]):g;
+// ---------- MANDI BHAAV (Surat APMC, Agmarknet) ----------
+let MANDI=null;
+const MANDI_MAP=[[/^tomato/,"tomato"],[/^onion$/,"onion"],[/^onion green|spring onion/,"springonion"],[/^potato/,"potato"],[/^ginger/,"ginger"],[/^garlic/,"garlic"],[/^green chil/,"gchilli"],
+  [/^coriander/,"coriander"],[/^mint|pudina/,"mint"],[/^capsicum/,"capsicum"],[/^cabbage/,"cabbage"],[/^carrot/,"carrot"],[/beans|frasbean|cluster/,"beans"],[/^peas/,"peas"],
+  [/^cauliflower/,"gobi"],[/^bhindi/,"bhindi"],[/^brinjal/,"baingan"],[/^spinach|palak/,"spinach"],[/^methi/,"methi"],[/^lemon|lime/,"lemon"],[/^cucumb/,"cucumber"],
+  [/^beetroot/,"beetroot"],[/^mushroom/,"mushroom"],[/^pineapple/,"pineapple"],[/^sweet corn|^maize.*green/,"corn"],[/^curry leaf/,"curryleaf"]];
+function mandiKey(c){const n=String(c||"").toLowerCase(); for(const [re,k] of MANDI_MAP) if(re.test(n)) return k; return null}
+function mandiOf(k){ if(!MANDI) return null; const pick=mk=>MANDI.rows.filter(r=>r.market===mk&&mandiKey(r.commodity)===k).sort((a,b)=>b.date.localeCompare(a.date)||b.modal-a.modal)[0]||null;
+  const su=pick("Surat APMC"), so=pick("Songadh APMC")||pick("Songadh(Badarpada) APMC"); return su||so?{su,so}:null }
+function loadMandi(){ if(!db||!db.mandi) return; db.mandi().then(j=>{MANDI=j; renderAll()}).catch(()=>{}) }
+function renderMandi(){
+  if(!$("mandiRows")) return;
+  if(document.activeElement!==$("mandiPct")) $("mandiPct").value=settings.mandiPct==null?20:settings.mandiPct;
+  if(!MANDI){ $("mandiAsOf").textContent=T("भाव लोड हो रहे हैं…","Loading prices…"); $("mandiRows").innerHTML=""; return }
+  const dates=MANDI.rows.filter(r=>r.market==="Surat APMC").map(r=>r.date).sort(); const last=dates[dates.length-1];
+  $("mandiAsOf").textContent=last?T("सूरत APMC: ","Surat APMC: ")+dLabel(last):T("आज का भाव अभी नहीं आया","No price reported yet");
+  const keys=Object.keys(ING).filter(k=>ING[k].g==="Sabzi"&&mandiOf(k));
+  $("mandiRows").innerHTML=keys.map(k=>{const m=mandiOf(k), su=m.su, so=m.so, r=ING[k].r, ref=su?su.modal:so.modal, d=ref?((r/ref-1)*100):0;
+    const col=d>80?"var(--bad,#B91C1C)":d>40?"var(--warn)":"var(--ok)";
+    return `<tr><td><b>${esc(ingName(k))}</b>${su&&su.date!==last?` <span class="hi">(${esc(dLabel(su.date))})</span>`:""}</td><td class="n">${su?`₹${r1(su.min)}–${r1(su.max)}`:"–"}</td><td class="n"><b>${su?"₹"+r1(su.modal):"–"}</b></td><td class="n">${so?"₹"+r1(so.modal):"–"}</td><td class="n">₹${r}</td><td class="n" style="color:${col}">${ref?(d>=0?"+":"")+Math.round(d)+"%":"–"}</td></tr>`}).join("")
+    ||`<tr><td colspan="6" class="empty">${T("आज हमारी सब्ज़ियों का भाव नहीं आया","No prices today for our vegetables")}</td></tr>`;
+  $("mandiAllRows").innerHTML=MANDI.rows.slice().sort((a,b)=>a.market.localeCompare(b.market)||a.commodity.localeCompare(b.commodity)).map(r=>`<tr><td>${esc(r.market)}</td><td>${esc(r.commodity)}${r.variety&&r.variety!=="Other"?" · "+esc(r.variety):""}</td><td class="n">${esc(dLabel(r.date))}</td><td class="n">₹${r1(r.min)}–${r1(r.max)}</td><td class="n"><b>₹${r1(r.modal)}</b></td></tr>`).join("");
+}
+$("mandiPct").addEventListener("change",()=>{const v=Number($("mandiPct").value); settings.mandiPct=Number.isFinite(v)&&v>=0?v:20; saveSettings()});
+$("mandiApply").onclick=()=>{ const b=$("mandiApply"); if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent=T("पक्का? सब्ज़ी के रेट बदलेंगे","Sure? Vegetable rates will change");setTimeout(()=>{b.dataset.sure="";b.textContent=U("mandiApply")},4000);return}
+  b.dataset.sure=""; b.textContent=U("mandiApply"); const pct=Number(settings.mandiPct==null?20:settings.mandiPct); let n=0;
+  Object.keys(ING).filter(k=>ING[k].g==="Sabzi").forEach(k=>{const m=mandiOf(k); const ref=m&&(m.su||m.so); if(ref&&ref.modal>0){rates[k]=Math.round(ref.modal*(1+pct/100)*2)/2; n++}});
+  applyRates(); saveRates(); $("mandiMsg").textContent=T(`${n} सब्ज़ियों के रेट भरे ✓`,`${n} vegetable rates filled ✓`); renderRates() };
+
 // ---------- BANQUET: sirf order list ke liye (restaurant bikri / forecast mein nahi gina jata) ----------
 let BQ={}, BQM={}, bqmap={};
 const MENU_BY_ID=Object.fromEntries(DATA.menu.map(m=>[m.id,m]));
@@ -992,16 +1046,25 @@ function renderSabzi(){
     const b=bqDay(s); bqPl+=b.plates; unm+=b.unmatched.length; b.list.forEach(x=>bqNos.push(x.no)); for(const k in b.raw){raw[k]=(raw[k]||0)+b.raw[k]; bqr[k]=(bqr[k]||0)+b.raw[k]}});
   const rows=listRows(raw,"roz",waste), when=ds.map(dLabel).join(" + ");
   const bqNote=bqPl?T(` · + बैंक्वेट ${Math.round(bqPl)} प्लेट (बुकिंग ${bqNos.join(", ")}) - "इसमें बैंक्वेट" कॉलम में`,` · + banquet ${Math.round(bqPl)} plates (booking ${bqNos.join(", ")}) - see "Of which banquet"`)+(unm?T(` · ⚠ ${unm} बैंक्वेट डिश की रेसिपी नहीं जुड़ी (नीचे चुनें)`,` · ⚠ ${unm} banquet dishes have no recipe (choose below)`):""):"";
-  $("sabziHow").textContent=T(`${when} · पूर्वानुमान ${fmtR(F)} · +${waste}% बर्बादी। फ्रिज में जो बचा है, उतना कम मँगाएँ। दही ख़ुद जमाते हैं तो उतने ही लीटर दूध लें।`,`${when} · forecast ${fmtR(F)} · +${waste}% wastage. Order less by whatever is left in the fridge. If you set curd yourself, buy the same litres of milk instead.`)+bqNote;
-  let g="",html="",tot=0;
-  rows.forEach(r=>{if(r.i.g!==g){g=r.i.g;html+=`<tr class="grp"><td colspan="6">${esc(gname(g))}</td></tr>`} tot+=r.rs;
-    const bq=bqr[r.k]?qFmt(r.k,amt(r.k,bqr[r.k])*(1+waste/100)):0;
-    html+=`<tr><td>${esc(ingName(r.k))}</td><td class="n"><b>${r.q}</b></td><td class="n">${bq?bq:""}</td><td>${unitLabel(r.k)}</td><td class="n">${r.i.r}</td><td class="n">${fmtR(r.rs)}</td></tr>`});
-  html+=`<tr class="grp"><td colspan="5">${T("कुल अनुमान","Total estimate")}</td><td class="n">${fmtR(tot)}</td></tr>`; $("sabziRows").innerHTML=html; renderBqMap();
-  $("sabziText").textContent=T("होटल आशीर्वाद - सब्ज़ी/डेयरी ऑर्डर","Hotel Ashirvad - vegetable/dairy order")+"\n"+when+(bqPl?T(" (बैंक्वेट सहित)"," (incl. banquet)"):"")+"\n"+rows.map(r=>`${ingName(r.k)} - ${r.q} ${unitLabel(r.k)}`).join("\n");
+  $("sabziHow").textContent=T(`${when} · पूर्वानुमान ${fmtR(F)} · +${waste}% बर्बादी। फ्रिज में जो बचा है, उतना कम मँगाएँ।`,`${when} · forecast ${fmtR(F)} · +${waste}% wastage. Order less by whatever is left in the fridge.`)+bqNote;
+  const one=(list,rowsId,withMandi)=>{ let g="",html="",tot=0,mt=0,mc=0; const cols=withMandi?7:6;
+    list.forEach(r=>{if(r.i.g!==g){g=r.i.g;html+=`<tr class="grp"><td colspan="${cols}">${esc(gname(g))}</td></tr>`} tot+=r.rs;
+      const bq=bqr[r.k]?qFmt(r.k,amt(r.k,bqr[r.k])*(1+waste/100)):0, md=withMandi?mandiOf(r.k):null, mv=md?(md.su||md.so).modal:null;
+      if(mv){mt+=mv*r.q; mc+=r.rs}
+      html+=`<tr><td>${esc(ingName(r.k))}</td><td class="n"><b>${r.q}</b></td><td class="n">${bq?bq:""}</td><td>${unitLabel(r.k)}</td><td class="n">${r.i.r}</td>${withMandi?`<td class="n">${mv?"₹"+r1(mv):"–"}</td>`:""}<td class="n">${fmtR(r.rs)}</td></tr>`});
+    html+=`<tr class="grp"><td colspan="${cols-1}">${T("कुल अनुमान","Total estimate")}</td><td class="n">${fmtR(tot)}</td></tr>`; $(rowsId).innerHTML=html; return {tot,mt,mc} };
+  const veg=rows.filter(r=>r.i.g!=="Dairy"), dairy=rows.filter(r=>r.i.g==="Dairy");
+  const a=one(veg,"sabziRows",true); one(dairy,"dairyRows",false);
+  if(a.mt>0) $("sabziHow").textContent+=T(` · मंडी भाव (सूरत APMC) पर यही सब्ज़ी लगभग ${fmtR(a.mt)}, आपके रेट पर ${fmtR(a.mc)}।`,` · At mandi prices (Surat APMC) these vegetables cost about ${fmtR(a.mt)}, at your rates ${fmtR(a.mc)}.`);
+  $("dairyHow").textContent=when+(bqPl?T(" · बैंक्वेट सहित"," · incl. banquet"):"")+T(` · +${waste}% बर्बादी। दही ख़ुद जमाते हैं तो उतने ही लीटर दूध लें।`,` · +${waste}% wastage. If you set curd yourself, buy the same litres of milk instead.`);
+  renderBqMap();
+  const hdr=(t)=>t+"\n"+when+(bqPl?T(" (बैंक्वेट सहित)"," (incl. banquet)"):"")+"\n";
+  $("sabziText").textContent=hdr(T("होटल आशीर्वाद - सब्ज़ी ऑर्डर","Hotel Ashirvad - vegetable order"))+veg.map(r=>`${ingName(r.k)} - ${r.q} ${unitLabel(r.k)}`).join("\n");
+  $("dairyText").textContent=hdr(T("होटल आशीर्वाद - डेयरी ऑर्डर","Hotel Ashirvad - dairy order"))+dairy.map(r=>`${ingName(r.k)} - ${r.q} ${unitLabel(r.k)}`).join("\n");
 }
 $("sabziFor").addEventListener("change",renderSabzi); $("sabziWaste").addEventListener("input",renderSabzi);
 $("copySabzi").onclick=()=>copyText($("sabziText"),$("copySabzi"));
+$("copyDairy").onclick=()=>copyText($("dairyText"),$("copyDairy"));
 function monthOptions(){const d=parse(cur), sel=$("monthPick"), pv=sel.value; sel.innerHTML="";
   for(let i=0;i<3;i++){const x=new Date(d.getFullYear(),d.getMonth()+i,1);const o=document.createElement("option");o.value=localDate(x).slice(0,7);o.textContent=monN(x.getMonth())+" "+x.getFullYear();sel.appendChild(o)}
   if(pv&&[...sel.options].some(o=>o.value===pv)) sel.value=pv}
@@ -1197,6 +1260,7 @@ $("aiStop").onclick=()=>{aiCtl&&aiCtl.abort()};
 // ---------- RATES ----------
 let rateGrp="__all";
 function renderRates(){
+  renderMandi();
   const changed=Object.keys(rates).filter(k=>ING[k]&&Number(rates[k])!==BASE[k]);
   const top=DATA.dishes.slice(0,12);
   const oldC=top.reduce((a,d)=>a+(d.rs?d.p*0.72:rawCost(d.raw,true))*d.q,0), newC=top.reduce((a,d)=>a+COST[d.n]*d.q,0);
@@ -1265,7 +1329,7 @@ async function loadDay(d){
   else { const v=lsGet("days/"+d); if(v){dayDocs[d]=v;curState=normDay(v)} renderAll() }
 }
 async function loadShared(){
-  const s=await getDoc("settings/main"); if(s) settings={month:{...(s.month||{})},buffer:s.buffer==null?10:s.buffer,fest:{...(s.fest||{})}};
+  const s=await getDoc("settings/main"); if(s) settings={month:{...(s.month||{})},buffer:s.buffer==null?10:s.buffer,fest:{...(s.fest||{})},mandiPct:s.mandiPct==null?20:s.mandiPct};
   SMC={};
   const st=await getDoc("stock/main"); if(st&&st.items) stock={...st.items};
   const bm=await getDoc("bqmap/main"); if(bm&&bm.map) bqmap={...bm.map};
@@ -1288,6 +1352,7 @@ function makeDb(API){
   return {
     sales:()=>req("GET","sales"),
     banquet:(f,t)=>req("GET","banquet?from="+f+"&to="+t),
+    mandi:()=>req("GET","mandi"),
     doc(path){return {
       async get(){const j=await req("GET","doc/"+path); return {exists:!!j.exists,data:()=>j.data}},
       async set(body){await req("PUT","doc/"+path,{data:body})},
@@ -1303,7 +1368,7 @@ const boot=async()=>{await loadShared();await loadDay(cur)};
 let booted=false;
 window.rasoiBoot=async(API)=>{ if(booted) return; booted=true; db=makeDb(API);
   try{const j=await db.sales(); if(j&&j.sales){Object.assign(HIST,j.sales); SMC={}}}catch(e){}
-  boot() };
+  boot(); loadMandi() };
 if(window.RASOI_API) window.rasoiBoot(window.RASOI_API);
 })();
 </script>
