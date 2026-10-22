@@ -29,7 +29,7 @@ const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const n = (v) => (v == null || v === "" ? null : Number(v));
 const fin = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 const todayIst = () => dayjs(new Date(Date.now() + IST_MS).toISOString().slice(0, 10));
-const BOOKS = new Set(["restaurant", "office", "upad", "personal"]);
+const BOOKS = new Set(["restaurant", "office", "upad", "personal", "investment"]); // investment = construction / setup (alag, roz ke kharch mein nahi)
 
 // App ka data graph mein isi din se gina jaata hai. Isse pehle ke mahine poore purane records (Tally) se.
 const APP_FROM = "2025-01-01";
@@ -178,7 +178,7 @@ router.get("/", async (req, res) => {
     });
     const expenses = Object.values(expAgg).map((x) => {
       const k = headKey(x.head);
-      const category = x.book === "upad" ? "Upad" : x.book === "personal" ? "Personal" : x.category || catOf[k] || (k === "not split" || k.startsWith("purant") ? "Not split" : "Other (old records)");
+      const category = x.book === "upad" ? "Upad" : x.book === "personal" ? "Personal" : x.book === "investment" ? x.category || "Construction" : x.category || catOf[k] || (k === "not split" || k.startsWith("purant") ? "Not split" : "Other (old records)");
       return { ...x, amount: Math.round(x.amount), category };
     });
 

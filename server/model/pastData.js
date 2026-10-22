@@ -21,7 +21,7 @@ const pastExpenseSchema = new Schema(
   {
     month: { type: String, required: true, match: /^\d{4}-\d{2}$/ },
     source: { type: String, required: true },
-    book: { type: String, required: true, enum: ["restaurant", "office", "upad", "personal"] },
+    book: { type: String, required: true, enum: ["restaurant", "office", "upad", "personal", "investment"] },
     head: { type: String, required: true }, // Tally cost centre (vendor / item / staff)
     category: { type: String, default: "" }, // app wali category (Food & Beverages, Utility, Staff ...)
     amount: { type: Number, default: 0 },

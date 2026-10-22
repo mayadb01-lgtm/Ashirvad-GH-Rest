@@ -5,7 +5,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGri
 import { Section } from "./shared";
 
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const BOOK = { restaurant: { label: "Restaurant kharch", color: "#EA580C" }, office: { label: "Office kharch", color: "#0F766E" }, upad: { label: "Upad (staff)", color: "#7C3AED" }, personal: { label: "Personal", color: "#94A3B8" } };
+const BOOK = { restaurant: { label: "Restaurant kharch", color: "#EA580C" }, office: { label: "Office kharch", color: "#0F766E" }, upad: { label: "Upad (staff)", color: "#7C3AED" }, personal: { label: "Personal", color: "#94A3B8" }, investment: { label: "Investment / construction", color: "#B45309" } };
 const money = (v) => {
   if (v == null || !isFinite(v)) return "—";
   const a = Math.abs(v), s = v < 0 ? "−" : "";
@@ -27,10 +27,10 @@ const ExpenseSection = ({ expenses = [], months = [], Y, B, ms = [], win = [] })
       const s = (b) => rs.filter((r) => r.book === b).reduce((a, r) => a + r.amount, 0);
       const sale = months.filter((r) => r.year === y && inWin(r)).reduce((a, r) => a + (r.restaurant || 0), 0);
       const src = [...new Set(rs.map((r) => r.source))];
-      return { year: String(y), y, restaurant: s("restaurant"), office: s("office"), upad: s("upad"), personal: s("personal"), sale, total: s("restaurant") + s("office") + s("upad"), src: src.join(", ") };
+      return { year: String(y), y, restaurant: s("restaurant"), office: s("office"), upad: s("upad"), personal: s("personal"), investment: s("investment"), sale, total: s("restaurant") + s("office") + s("upad"), src: src.join(", ") };
     });
     // Chune hue do saal: head-wise
-    const pick = (y) => expenses.filter((r) => r.year === y && ms.includes(r.m) && (book === "all" ? r.book !== "personal" : r.book === book));
+    const pick = (y) => expenses.filter((r) => r.year === y && ms.includes(r.m) && (book === "all" ? r.book !== "personal" && r.book !== "investment" : r.book === book));
     const sumBy = (rows, key) => rows.reduce((o, r) => ((o[r[key]] = (o[r[key]] || 0) + r.amount), o), {});
     const hY = sumBy(pick(Y), "head"), hB = B != null ? sumBy(pick(B), "head") : {};
     const heads = [...new Set([...Object.keys(hY), ...Object.keys(hB)])].map((h) => ({ head: h, y: hY[h] || 0, b: hB[h] || 0 })).sort((a, b) => b.y + b.b - (a.y + a.b)).slice(0, 15);
@@ -42,7 +42,9 @@ const ExpenseSection = ({ expenses = [], months = [], Y, B, ms = [], win = [] })
     const restY = expenses.filter((r) => r.year === Y && ms.includes(r.m) && r.book === "restaurant").reduce((a, r) => a + r.amount, 0);
     const restB = expenses.filter((r) => r.year === B && ms.includes(r.m) && r.book === "restaurant").reduce((a, r) => a + r.amount, 0);
     const missingOffice = yearRows.filter((r) => r.office === 0 && r.total > 0).map((r) => r.year);
-    return { yearRows, heads, cats, totY, totB, saleY, saleB, restY, restB, missingOffice };
+    // Investment / construction: poore saal ka (window nahi), alag dikhate hain
+    const invest = years.map((y) => ({ year: y, amount: expenses.filter((r) => r.year === y && r.book === "investment").reduce((a, r) => a + r.amount, 0) })).filter((r) => r.amount);
+    return { invest, yearRows, heads, cats, totY, totB, saleY, saleB, restY, restB, missingOffice };
   }, [expenses, months, Y, B, ms, win, book]);
 
   if (!expenses.length) return null;
@@ -95,6 +97,11 @@ const ExpenseSection = ({ expenses = [], months = [], Y, B, ms = [], win = [] })
           2021–2024 from Tally (cost centres), 2025 on from the app. Personal kharch is not in the bars: Tally kept very little of it, so years can't be compared.
           {v.missingOffice.length ? ` No office kharch was recorded in Tally for ${v.missingOffice.join(", ")}.` : ""}
         </Typography>
+        {v.invest.length > 0 && (
+          <Typography variant="caption" display="block" sx={{ mt: 0.5, color: BOOK.investment.color, fontWeight: 600 }}>
+            Investment / construction (kept separate, not in the bars): {v.invest.map((r) => `${r.year} ${money(r.amount)}`).join(" · ")}. Pick "Investment" below to see it head by head.
+          </Typography>
+        )}
       </Section>
 
       {B != null && (
@@ -105,6 +112,7 @@ const ExpenseSection = ({ expenses = [], months = [], Y, B, ms = [], win = [] })
             <ToggleButton value="office">Office</ToggleButton>
             <ToggleButton value="upad">Upad</ToggleButton>
             <ToggleButton value="personal">Personal</ToggleButton>
+            {v.invest.length > 0 && <ToggleButton value="investment">Investment</ToggleButton>}
           </ToggleButtonGroup>
         }>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 1.5 }}>
