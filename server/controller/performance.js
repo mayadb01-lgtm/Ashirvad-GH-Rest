@@ -31,8 +31,10 @@ const fin = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 const todayIst = () => dayjs(new Date(Date.now() + IST_MS).toISOString().slice(0, 10));
 const BOOKS = new Set(["restaurant", "office", "upad", "personal"]);
 
+// App ka data graph mein isi din se gina jaata hai. Isse pehle ke mahine poore purane records (Tally) se.
+const APP_FROM = "2025-01-01";
 // Kis din app mein koi bhi entry hai (GH / restaurant / office book) — ye din purane data se kabhi nahi bharenge
-const appDateSet = (D) => new Set(Object.keys(D).filter((k) => D[k].hasGh || D[k].rest != null || D[k].hasOff));
+const appDateSet = (D) => new Set(Object.keys(D).filter((k) => k >= APP_FROM && (D[k].hasGh || D[k].rest != null || D[k].hasOff)));
 
 // App ke kharch: mahina × book × head (category bhi)
 const appExpenses = async (thisMonth) => {
@@ -107,7 +109,7 @@ router.get("/", async (req, res) => {
     try {
       pastDays = (await PastDaily.find({}, { _id: 0, date: 1, source: 1, restaurant: 1, gh: 1, banquet: 1 }).lean())
         .filter((p) => !appMonths.has(p.date.slice(0, 7)) && p.date.slice(0, 7) < thisMonth)
-        .map((p) => ({ ...p, restaurant: D[p.date]?.rest != null ? 0 : p.restaurant, gh: D[p.date]?.hasGh ? 0 : p.gh, banquet: D[p.date]?.hasOff ? 0 : p.banquet }));
+        .map((p) => (p.date < APP_FROM ? p : { ...p, restaurant: D[p.date]?.rest != null ? 0 : p.restaurant, gh: D[p.date]?.hasGh ? 0 : p.gh, banquet: D[p.date]?.hasOff ? 0 : p.banquet }));
     } catch (e) { pastDays = []; }
     const pm = {};
     pastDays.forEach((p) => {
@@ -228,7 +230,8 @@ router.post("/past-import", async (req, res) => {
       return true;
     };
     // Har cheez alag check: jis din app mein restaurant entry hai us din Tally ki restaurant sale nahi, GH entry hai to GH nahi, office book hai to banquet nahi
-    const restD = new Set(Object.keys(D).filter((k) => D[k].rest != null)), ghD = new Set(Object.keys(D).filter((k) => D[k].hasGh)), offD = new Set(Object.keys(D).filter((k) => D[k].hasOff));
+    const counted = Object.keys(D).filter((k) => k >= APP_FROM); // 2025 se pehle ka app data graph mein nahi ginta, wahan purana record hi chalega
+    const restD = new Set(counted.filter((k) => D[k].rest != null)), ghD = new Set(counted.filter((k) => D[k].hasGh)), offD = new Set(counted.filter((k) => D[k].hasOff));
     const days = [];
     daily.forEach((r) => {
       const s = String(r?.date || "");
