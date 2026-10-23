@@ -23,6 +23,9 @@ const PUBLIC_ROUTES = new Set([
   "GET /api/v1/backup/run-scheduled",
   // doosre hotel ka server — route ke andar GROUP_KEY se check
   "GET /api/v1/group/summary",
+  // staff bharti ka khula form (spam rok jobs.js + rate limit)
+  "GET /api/v1/jobs/open",
+  "POST /api/v1/jobs/apply",
 ]);
 
 const RATE_LIMITED = new Set([
@@ -36,6 +39,7 @@ const RATE_LIMITED = new Set([
   "POST /api/v1/admin/reset-password",
   "GET /api/v1/backup/run-scheduled",
   "GET /api/v1/group/summary",
+  "POST /api/v1/jobs/apply",
 ]);
 
 const routeKey = (req) => `${req.method} ${req.originalUrl.split("?")[0].replace(/\/+$/, "")}`;

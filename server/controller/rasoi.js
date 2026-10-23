@@ -21,6 +21,7 @@ import { fileURLToPath } from "url";
 import { loadDaily } from "./forecast.js";
 import { PastDaily } from "../model/pastData.js";
 import { BanquetBooking, BanquetItem } from "../model/banquet.js";
+import { Candidate, candFields, ROLES, STATUSES } from "./jobs.js";
 
 const router = Router();
 const BOARD_FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "rasoi", "board.html");
@@ -45,7 +46,7 @@ const rateSchema = new mongoose.Schema(
 );
 const RateHistory = mongoose.models.KitchenRateHistory || mongoose.model("KitchenRateHistory", rateSchema, "kitchen_rate_history");
 
-const PATH_RE = /^(days\/\d{4}-\d{2}-\d{2}|settings\/main|stock\/main|rates\/main|bqmap\/main|ideas\/[A-Za-z0-9_-]{1,40})$/;
+const PATH_RE = /^(days\/\d{4}-\d{2}-\d{2}|settings\/main|hiring\/main|stock\/main|rates\/main|bqmap\/main|ideas\/[A-Za-z0-9_-]{1,40})$/;
 const who = (u) => String(u?.name || u?.email || "").slice(0, 60);
 const pathOf = (req) => decodeURIComponent(req.params[0] || "").replace(/^\/+|\/+$/g, "");
 
@@ -310,6 +311,49 @@ router.get("/spend", async (req, res) => {
     for await (const d of mongoose.connection.db.collection("officebooks").find({ entryCreateDate: { $gte: d365 } }, { projection: { officeOut: 1, entryCreateDate: 1 } }))
       for (const e of d.officeOut || []) if (PK.test(e.fullname || "")) { const m = d.entryCreateDate.toISOString().slice(0, 7); pk[m] = (pk[m] || 0) + (Number(e.amount) || 0); }
     res.json({ success: true, packOffice: Object.entries(pk).sort().map(([month, amount]) => ({ month, amount: Math.round(amount) })), rows: rows.map((r) => ({ cat: r._id.c, name: String(r.name || "").trim(), year: Math.round(r.y), yearTimes: r.ny, month: Math.round(r.m), monthTimes: r.nm })) });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+// ---------- Staff bharti: candidate list (sirf Manager login) ----------
+router.get("/hiring", async (req, res) => {
+  try {
+    const rows = await Candidate.find({ at: { $gte: new Date(Date.now() - 365 * 864e5) } }).sort({ updatedAt: -1 }).limit(1000).lean();
+    res.set("Cache-Control", "no-store").json({ success: true, rows: rows.map((r) => ({ ...r, id: String(r._id), _id: undefined })), roles: ROLES, statuses: STATUSES });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+router.put("/hiring/add", async (req, res) => {
+  try {
+    const f = candFields(req.body || {});
+    if (f.name.length < 2 || !/^\d{10}$/.test(f.phone)) return res.status(400).json({ success: false, message: "Name and 10-digit mobile are required" });
+    const old = await Candidate.findOne({ phone: f.phone });
+    if (old) return res.status(409).json({ success: false, message: `Already in the list: ${old.name}` });
+    const c = await Candidate.create({ ...f, source: f.referredBy ? "referral" : "manual", by: who(req.user) });
+    res.json({ success: true, id: String(c._id) });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+router.put("/hiring/:id([a-f0-9]{24})", async (req, res) => {
+  try {
+    const b = req.body || {}, set = { updatedAt: new Date(), by: who(req.user) };
+    if (b.status != null) { if (!STATUSES.includes(b.status)) return res.status(400).json({ success: false, message: "Bad status" }); set.status = b.status; }
+    if (b.notes != null) set.notes = String(b.notes).slice(0, 500);
+    if (b.interviewAt != null) set.interviewAt = String(b.interviewAt).slice(0, 20);
+    const r = await Candidate.updateOne({ _id: req.params.id }, { $set: set });
+    if (!r.matchedCount) return res.status(404).json({ success: false, message: "Not found" });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+router.delete("/hiring/:id([a-f0-9]{24})", async (req, res) => {
+  try {
+    await Candidate.deleteOne({ _id: req.params.id });
+    res.json({ success: true });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
   }

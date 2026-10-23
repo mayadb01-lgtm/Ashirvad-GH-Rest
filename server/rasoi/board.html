@@ -120,7 +120,11 @@ body{font-size:15px}
 .tab::before{font-size:16px;line-height:1}
 .tab[data-tab=aaj]::before{content:"📋"} .tab[data-tab=team]::before{content:"👥"} .tab[data-tab=fc]::before{content:"📈"}
 .tab[data-tab=sabzi]::before{content:"🥬"} .tab[data-tab=month]::before{content:"📦"} .tab[data-tab=recipe]::before{content:"📖"}
-.tab[data-tab=fam]::before{content:"🍲"} .tab[data-tab=lab]::before{content:"💡"} .tab[data-tab=rates]::before{content:"₹";font-weight:800} .tab[data-tab=cmp]::before{content:"⚖️"} .tab[data-tab=pack]::before{content:"🥡"} .tab[data-tab=buy]::before{content:"🗓️"}
+.tab[data-tab=fam]::before{content:"🍲"} .tab[data-tab=lab]::before{content:"💡"} .tab[data-tab=rates]::before{content:"₹";font-weight:800} .tab[data-tab=cmp]::before{content:"⚖️"} .tab[data-tab=pack]::before{content:"🥡"} .tab[data-tab=buy]::before{content:"🗓️"} .tab[data-tab=hire]::before{content:"🧑‍🍳"}
+.cand td{vertical-align:top} .cand .act{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px} .cand a.btn{text-decoration:none;display:inline-flex;align-items:center;min-height:30px;padding:3px 10px;font-size:13px}
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+.hrole{border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:grid;gap:6px} .hrole .row{flex-wrap:nowrap;min-width:0} .hrole input[type=number]{width:58px;flex:none} .hrole input[type=text]{width:100%;min-width:0}
+#hireQR img,#hireQR canvas{width:180px;height:180px}
 .st{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12.5px;font-weight:700;white-space:nowrap}
 .st.ok{background:var(--ok-soft);color:var(--ok)} .st.mid{background:var(--warn-soft);color:var(--warn)} .st.bad{background:#FDE8E8;color:#B91C1C} .st.low{background:var(--info-soft);color:var(--info)} .st.def{background:var(--line);color:var(--muted)}
 .main{min-width:0}
@@ -193,6 +197,7 @@ body{font-size:15px}
     <button class="tab" role="tab" data-tab="cmp" data-i="tCmp"></button>
     <button class="tab" role="tab" data-tab="pack" data-i="tPack"></button>
     <button class="tab" role="tab" data-tab="buy" data-i="tBuy"></button>
+    <button class="tab" role="tab" data-tab="hire" data-i="tHire"></button>
     <button class="tab" role="tab" data-tab="rates" data-i="tRates"></button>
   </nav>
   </aside>
@@ -423,6 +428,55 @@ body{font-size:15px}
     </section>
   </section>
 
+  <!-- STAFF BHARTI -->
+  <section id="tab-hire" class="detail" hidden>
+    <section class="panel">
+      <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><h2 data-i="hireTitle"></h2><button class="btn" id="hireReload" data-i="hireReload"></button></div>
+      <div class="tiles" id="hireTiles"></div>
+      <div class="row" style="gap:8px;flex-wrap:wrap" id="hireFilter" role="group"></div>
+      <div class="tablebox"><table class="cand"><thead><tr><th data-i="thHName"></th><th data-i="thHWork"></th><th data-i="thHDetail"></th><th data-i="thHStatus"></th><th data-i="thHNote"></th></tr></thead><tbody id="hireRows"></tbody></table></div>
+      <details><summary class="hi" style="cursor:pointer;font-weight:600" data-i="hireAddT"></summary>
+        <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px">
+          <input type="text" id="haName" data-ph="hName" style="flex:1 1 160px"><input type="text" id="haPhone" data-ph="hPhone" inputmode="tel" style="flex:1 1 140px">
+          <select id="haRole" style="flex:1 1 160px"></select><input type="text" id="haRef" data-ph="hRef" style="flex:1 1 160px">
+          <button class="btn primary" id="haSave" data-i="hAdd"></button><span class="hi" id="haMsg"></span>
+        </div>
+      </details>
+    </section>
+    <section class="panel">
+      <h2 data-i="hShareTitle"></h2>
+      <p class="note" data-i="hShareNote"></p>
+      <div class="row" style="gap:16px;flex-wrap:wrap;align-items:flex-start">
+        <div style="display:grid;gap:8px;justify-items:center"><div id="hireQR" style="background:#fff;padding:10px;border-radius:12px;border:1px solid var(--line)"></div><button class="btn" id="hireQRdl" data-i="hQRdl"></button></div>
+        <div style="flex:1 1 320px;display:grid;gap:8px;min-width:0">
+          <div class="row" style="gap:8px;flex-wrap:wrap"><input type="text" id="hireLink" readonly style="flex:1 1 220px"><button class="btn" id="hireCopyLink" data-i="hCopyLink"></button></div>
+          <div class="row" style="gap:6px;flex-wrap:wrap" id="hireLang" role="group"></div>
+          <textarea id="hireText" rows="9" style="width:100%"></textarea>
+          <div class="row" style="gap:8px;flex-wrap:wrap"><a class="btn primary" id="hireWa" target="_blank" rel="noopener" style="text-decoration:none" data-i="hWa"></a><button class="btn" id="hireCopy" data-i="hCopy"></button></div>
+          <p class="hi" style="margin:0" data-i="hPortals"></p>
+          <div class="row" style="gap:6px;flex-wrap:wrap" id="hirePortals"></div>
+        </div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2 data-i="hOpenTitle"></h2>
+      <p class="note" data-i="hOpenNote"></p>
+      <div class="hgrid" id="hireOpen"></div>
+      <div class="row" style="gap:12px;flex-wrap:wrap;align-items:end">
+        <label class="f" style="flex:1 1 220px"><span data-i="hPerks"></span><input type="text" id="hPerksIn" maxlength="200"></label>
+        <label class="f"><span data-i="hContact"></span><input type="text" id="hContactIn" inputmode="tel" maxlength="14" style="width:150px"></label>
+        <label class="f"><span data-i="hBonus"></span><input type="number" id="hBonusIn" min="0" step="100" style="width:110px"></label>
+        <label class="row" style="gap:6px;font-size:14px"><input type="checkbox" id="hShowSal"> <span data-i="hShowSal"></span></label>
+        <button class="btn primary" id="hireSaveOpen" data-i="hSaveOpen"></button><span class="hi" id="hireOpenMsg"></span>
+      </div>
+    </section>
+    <section class="panel">
+      <h2 data-i="hNeedTitle"></h2>
+      <div class="tiles" id="hireNeed"></div>
+      <p class="note" data-i="hNeedNote"></p>
+    </section>
+  </section>
+
   <!-- RATES -->
   <section id="tab-rates" class="detail" hidden>
     <section class="panel" id="mandiPanel">
@@ -529,7 +583,18 @@ const UI={
  noPerm:["आपको बदलने की अनुमति नहीं - सिर्फ़ देख सकते हैं","You don't have permission to edit - view only"], saveFail:["सेव नहीं हुआ - इंटरनेट जाँचें","Not saved - check internet"], liveStop:["लाइव अपडेट रुक गया - पेज दोबारा खोलें","Live updates stopped - reload the page"],
  close:["बंद करें","Close"],
  backTitle:["पिछले 8 हफ़्ते: असली बिक्री बनाम पूर्वानुमान","Last 8 weeks: actual sales vs forecast"], smartPh:["ख़ाली = स्मार्ट (अपने आप)","blank = smart (automatic)"],
- tRates:["दरें (रेट)","Rates"], tCmp:["भाव तुलना","Rate check"], tBuy:["ख़रीद सलाह","Buy advice"],
+ tRates:["दरें (रेट)","Rates"], tCmp:["भाव तुलना","Rate check"], tHire:["स्टाफ़ भर्ती","Staff hiring"],
+ hireTitle:["नौकरी के लिए आए लोग","Job applicants"], hireReload:["ताज़ा करें","Refresh"],
+ thHName:["नाम / फ़ोन","Name / phone"], thHWork:["काम","Work"], thHDetail:["अनुभव, सैलरी, कहाँ से","Experience, salary, from"], thHStatus:["स्थिति","Status"], thHNote:["नोट / इंटरव्यू","Note / interview"],
+ hireAddT:["+ किसी को ख़ुद जोड़ें (फ़ोन/रेफ़रल से आया)","+ Add someone yourself (came by phone/referral)"], hName:["नाम","Name"], hPhone:["मोबाइल","Mobile"], hRef:["किसने भेजा (स्टाफ़)","Referred by (staff)"], hAdd:["जोड़ें","Add"],
+ hShareTitle:["भर्ती का फ़ॉर्म और मैसेज - ऐसे फैलाएँ","Application form and message - share it"],
+ hShareNote:["QR को काउंटर, गेट, पार्सल बैग/बिल पर लगाएँ; लिंक और मैसेज WhatsApp ग्रुप/स्टेटस, Facebook ग्रुप में भेजें। जो फ़ॉर्म भरेगा वो ऊपर की लिस्ट में अपने आप आएगा। हमारे स्टाफ़ से भी कहें - रेफ़रल पर बोनस।","Put the QR at the counter, gate, parcel bags/bills; send the link and message in WhatsApp groups/status and Facebook groups. Anyone who fills the form appears in the list above automatically. Ask your staff too - referral bonus."],
+ hQRdl:["QR डाउनलोड","Download QR"], hCopyLink:["लिंक कॉपी","Copy link"], hWa:["WhatsApp पर भेजें","Send on WhatsApp"], hCopy:["मैसेज कॉपी","Copy message"],
+ hPortals:["मुफ़्त जॉब डालने की जगह (मालिक के अकाउंट से):","Free places to post the job (owner's account):"],
+ hOpenTitle:["कौन-सी जगह खाली है","Open positions"], hOpenNote:["जितने लोग चाहिए वो संख्या डालें (0 = नहीं चाहिए)। यही फ़ॉर्म और मैसेज में दिखेगा।","Enter how many you need (0 = not needed). This shows on the form and in the message."],
+ hPerks:["सुविधा (जैसे: खाना + रहना, हफ़्ते में 1 छुट्टी)","Perks (e.g. food + stay, 1 weekly off)"], hContact:["संपर्क नंबर","Contact number"], hBonus:["रेफ़रल बोनस ₹","Referral bonus ₹"], hShowSal:["फ़ॉर्म पर सैलरी दिखाएँ","Show salary on form"], hSaveOpen:["सेव करें","Save"],
+ hNeedTitle:["कितना स्टाफ़ चाहिए - बिक्री के अंदाज़ से","How much staff - from forecast sales"],
+ hNeedNote:["मोटा नियम (अंदाज़): ग्राहक = बिक्री ÷ ₹300। भीड़ वाले दिन हर ~40 ग्राहक पर 1 वेटर, हर ~₹12,000 बिक्री पर 1 कुक/तंदूर, हर 2 कुक पर 1 हेल्पर, हर ~120 ग्राहक पर 1 बर्तन वाला। हफ़्ते की छुट्टी के लिए 15% ज़्यादा। अपनी लाइन के हिसाब से कम-ज़्यादा करें।","Rule of thumb (estimate): guests = sales ÷ ₹300. On busy days 1 waiter per ~40 guests, 1 cook/tandoor per ~₹12,000 sales, 1 helper per 2 cooks, 1 dishwasher per ~120 guests. Add 15% for weekly offs. Adjust to your line."], tBuy:["ख़रीद सलाह","Buy advice"],
  buyTitle:["कब स्टॉक करें - न ख़राब होने वाला सामान","When to stock up - items that keep"],
  buyNote:["हर फ़सल का एक मौसम होता है: कटाई के बाद मंडी में माल ज़्यादा आता है तो भाव सबसे नीचे होते हैं, फिर धीरे-धीरे बढ़ते हैं। जो सामान महीनों ठीक रहता है, उसे सस्ते मौसम में कुछ महीनों का एक साथ लेने से बचत होती है। 'बचत/साल' = आपकी महीने की ज़रूरत × सलाह वाला स्टॉक × आम मौसमी फ़र्क - रखने में नुकसान - पैसा फँसने का ख़र्च (1%/महीना)। ये पिछले सालों के आम रुझान पर अंदाज़ है, गारंटी नहीं - बारिश/सरकारी नीति से साल बदल सकता है। ख़रीदने से पहले 'भाव तुलना' में आज का मंडी भाव ज़रूर देखें।","Every crop has a season: after harvest the mandi gets the most arrivals and prices are lowest, then rise slowly. Items that keep for months save money when you buy a few months' worth together in the cheap season. 'Saving/year' = your monthly need × suggested stock × usual seasonal gap - storage loss - money-locked cost (1%/month). This is an estimate from usual past-year trends, not a guarantee - rain or government policy can change a year. Check today's mandi price in 'Rate check' before buying."],
  thBAct:["अभी क्या करें","What to do now"], thBCheap:["सबसे सस्ता समय","Cheapest time"], thBStock:["एक बार में कितना (पैसा)","How much at once (money)"], thBToday:["आज मंडी","Mandi today"], thBSave:["बचत / साल (अंदाज़)","Saving / year (est.)"], thBHow:["कितने दिन चलता + कैसे रखें","Keeps for + how to store"],
@@ -1278,6 +1343,91 @@ function renderBuy(){
   $("buyNo").innerHTML=NOSTOCK.map(([n,w])=>`<tr><td><b>${esc(T(n[0],n[1]))}</b></td><td class="hi">${esc(T(w[0],w[1]))}</td></tr>`).join("");
 }
 
+// ---------- STAFF BHARTI ----------
+let HIRE=null, HSET=null, hireFilter="new", hireLang="hi";
+const HST={new:["नया","New","def"],called:["फ़ोन किया","Called","mid"],interview:["इंटरव्यू","Interview","mid"],trial:["ट्रायल","Trial","low"],hired:["रख लिया","Hired","ok"],no:["मना / नहीं","No","bad"]};
+const appOrigin=()=>{ try{ const o=window.parent.location.origin; if(o&&o!=="null") return o }catch(e){} try{ if(location.origin&&location.origin!=="null") return location.origin }catch(e){} return "https://rad.davrisha.in" };
+const applyURL=()=>appOrigin()+"/apply";
+async function loadHire(force){ if(!db||!db.hiring) return; if(HIRE&&!force) return;
+  try{ HIRE=await db.hiring() }catch(e){ HIRE={rows:[],roles:{},err:e.message} }
+  if(!HSET){ HSET=(await getDoc("hiring/main"))||{}; }
+  if(tab==="hire") renderHire() }
+function roleN(k){ const r=HIRE&&HIRE.roles&&HIRE.roles[k]; return r?T(r[0],r[1]):k }
+function renderHire(){
+  if(!$("hireRows")) return; if(!HIRE){ $("hireRows").innerHTML=`<tr><td colspan="5" class="empty">${T("लोड हो रहा है…","Loading…")}</td></tr>`; loadHire(); return }
+  const rows=HIRE.rows||[], cnt=s=>rows.filter(r=>r.status===s).length, d30=Date.now()-30*864e5;
+  $("hireTiles").innerHTML=[[T("नए फ़ॉर्म","New forms"),cnt("new"),"def"],[T("फ़ोन किया","Called"),cnt("called"),"mid"],[T("इंटरव्यू","Interview"),cnt("interview"),"mid"],[T("ट्रायल पर","On trial"),cnt("trial"),"low"],[T("रखे गए (30 दिन)","Hired (30 days)"),rows.filter(r=>r.status==="hired"&&new Date(r.updatedAt)>d30).length,"ok"],[T("कुल","Total"),rows.length,"def"]]
+    .map(([k,v,c])=>`<div class="tile"><span class="k">${esc(k)}</span><span class="v"><span class="st ${c}" style="font-size:20px;padding:2px 12px">${v}</span></span></div>`).join("");
+  const F=[["new",T("नए","New")],["active",T("चल रहे","In progress")],["hired",T("रखे गए","Hired")],["no",T("मना","No")],["all",T("सभी","All")]];
+  $("hireFilter").innerHTML=F.map(([v,l])=>`<button class="chip" type="button" data-f="${v}" aria-pressed="${v===hireFilter}">${esc(l)}</button>`).join("");
+  $("hireFilter").querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{hireFilter=b.dataset.f;renderHire()});
+  const list=rows.filter(r=>hireFilter==="all"||r.status===hireFilter||(hireFilter==="active"&&["called","interview","trial"].includes(r.status)));
+  const ae=document.activeElement&&document.activeElement.id;
+  $("hireRows").innerHTML=list.map(r=>{ const ph=String(r.phone||""), wa=`https://wa.me/91${ph}?text=${encodeURIComponent(T(`नमस्ते ${r.name}, ${HSET.hotel||"Hotel Ashirvad"} से बात कर रहे हैं - आपने नौकरी का फ़ॉर्म भरा था।`,`Hello ${r.name}, this is ${HSET.hotel||"Hotel Ashirvad"} - you filled our job form.`))}`;
+    return `<tr><td><b>${esc(r.name)}</b><br><span class="hi">${esc(ph)}</span><div class="act"><a class="btn" href="tel:+91${esc(ph)}">📞 ${T("कॉल","Call")}</a><a class="btn" href="${wa}" target="_blank" rel="noopener">WhatsApp</a></div></td>
+      <td>${(r.roles||[]).map(k=>`<span class="pill info" style="margin:0 4px 4px 0;display:inline-block">${esc(roleN(k))}</span>`).join("")}<br><span class="hi">${esc(T("कब से: ","Join: "))}${esc(r.join||"–")}${r.stay?" · "+T("रहना चाहिए","needs stay"):""}</span></td>
+      <td class="hi">${r.exp?`<b style="color:var(--ink)">${r.exp} ${T("साल","yrs")}</b> · `:""}${r.salary?"₹"+Number(r.salary).toLocaleString("en-IN")+T("/महीना","/month"):""}<br>${esc(r.lastPlace||"")}${r.area?" · "+esc(r.area):""}${r.referredBy?`<br>${T("रेफ़रल: ","Referral: ")}<b>${esc(r.referredBy)}</b>`:""}${r.note?`<br>"${esc(r.note)}"`:""}<br>${esc(new Date(r.at).toLocaleDateString(lang==="hi"?"hi-IN":"en-IN"))}${r.applies>1?` · ${r.applies}× ${T("भरा","applied")}`:""}</td>
+      <td><select data-hs="${r.id}">${Object.entries(HST).map(([k,v])=>`<option value="${k}"${k===r.status?" selected":""}>${esc(T(v[0],v[1]))}</option>`).join("")}</select></td>
+      <td><input type="text" id="hn-${r.id}" data-hn="${r.id}" value="${esc(r.notes||"")}" placeholder="${esc(T("नोट","Note"))}" style="width:100%;min-width:140px"><input type="text" id="hi-${r.id}" data-hi="${r.id}" value="${esc(r.interviewAt||"")}" placeholder="${esc(T("इंटरव्यू: 25-10 4 बजे","Interview: 25-10 4pm"))}" style="width:100%;margin-top:4px"><button class="btn" data-hd="${r.id}" style="margin-top:4px;min-height:28px;font-size:12px">${T("हटाएँ","Delete")}</button></td></tr>` }).join("")
+    ||`<tr><td colspan="5" class="empty">${HIRE.err?esc(HIRE.err):T("अभी कोई नहीं - नीचे का QR/लिंक फैलाएँ","Nobody yet - share the QR/link below")}</td></tr>`;
+  if(ae&&(ae.startsWith("hn-")||ae.startsWith("hi-"))){const el=$(ae);if(el){el.focus()}}
+  const upd=async(id,b)=>{ try{ await db.hireSet(id,b); const r=rows.find(x=>x.id===id); Object.assign(r,b,{updatedAt:new Date().toISOString()}); renderHire() }catch(e){ alertMsg(e) } };
+  $("hireRows").querySelectorAll("select[data-hs]").forEach(el=>el.onchange=()=>upd(el.dataset.hs,{status:el.value}));
+  $("hireRows").querySelectorAll("input[data-hn]").forEach(el=>el.onchange=()=>upd(el.dataset.hn,{notes:el.value}));
+  $("hireRows").querySelectorAll("input[data-hi]").forEach(el=>el.onchange=()=>upd(el.dataset.hi,{interviewAt:el.value}));
+  $("hireRows").querySelectorAll("button[data-hd]").forEach(b=>b.onclick=async()=>{ if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent=T("पक्का?","Sure?");return}
+    try{ await db.hireDel(b.dataset.hd); HIRE.rows=rows.filter(x=>x.id!==b.dataset.hd); renderHire() }catch(e){ alertMsg(e) } });
+  // add form roles
+  if(!$("haRole").options.length) $("haRole").innerHTML=Object.keys(HIRE.roles||{}).map(k=>`<option value="${k}">${esc(roleN(k))}</option>`).join("");
+  renderHireOpen(); renderHireShare(); renderHireNeed();
+}
+function alertMsg(e){ $("haMsg").textContent=e&&e.code==="invalid_argument"?T("इसकी अनुमति नहीं (सिर्फ़ मालिक)","Not allowed (owner only)"):(e&&e.message)||"Error" }
+function renderHireOpen(){ const o=HSET.open||{};
+  if(document.activeElement&&document.activeElement.closest&&document.activeElement.closest("#hireOpen")) return;
+  $("hireOpen").innerHTML=Object.keys(HIRE.roles||{}).filter(k=>k!=="other").map(k=>`<div class="hrole"><b>${esc(roleN(k))}</b><div class="row" style="gap:6px"><input type="number" min="0" max="20" data-on="${k}" value="${(o[k]&&o[k].n)||0}" style="width:70px" aria-label="${esc(roleN(k))}"><input type="text" data-os="${k}" value="${esc((o[k]&&o[k].sal)||"")}" placeholder="${esc(T("सैलरी: 12000-15000","Salary: 12000-15000"))}" style="flex:1;min-width:0"></div></div>`).join("");
+  if(document.activeElement!==$("hPerksIn")) $("hPerksIn").value=HSET.perks||"";
+  if(document.activeElement!==$("hContactIn")) $("hContactIn").value=HSET.contact||"";
+  if(document.activeElement!==$("hBonusIn")) $("hBonusIn").value=HSET.bonus||"";
+  $("hShowSal").checked=!!HSET.showSalary }
+$("hireSaveOpen").onclick=async()=>{ const open={};
+  $("hireOpen").querySelectorAll("[data-on]").forEach(i=>{const k=i.dataset.on,n=Math.max(0,Math.min(20,Number(i.value)||0)),sal=($("hireOpen").querySelector(`[data-os="${k}"]`).value||"").slice(0,30); if(n||sal) open[k]={n,sal}});
+  HSET={...HSET,open,perks:$("hPerksIn").value.slice(0,200),contact:$("hContactIn").value.replace(/[^0-9+ ]/g,"").slice(0,14),bonus:Number($("hBonusIn").value)||0,showSalary:$("hShowSal").checked,hotel:HSET.hotel||"Hotel Ashirvad"};
+  try{ await db.doc("hiring/main").set(HSET); $("hireOpenMsg").textContent=T("सेव ✓","Saved ✓") }catch(e){ $("hireOpenMsg").textContent=e.code==="invalid_argument"?T("अनुमति नहीं","Not allowed"):e.message }
+  renderHireShare() };
+function hireMsg(){ const o=HSET.open||{}, link=applyURL(), H=HSET.hotel||"Hotel Ashirvad", ks=Object.keys(o).filter(k=>o[k].n>0);
+  const R=(k,i)=>{const r=HIRE.roles[k]||[k,k]; const gu={cook_pun:"પંજાબી કૂક",cook_chi:"ચાઇનીઝ કૂક",tandoor:"તંદૂર કૂક",cook_guj:"ગુજરાતી / કાઠિયાવાડી કૂક",cook_fast:"ફાસ્ટ ફૂડ કૂક",helper:"કિચન હેલ્પર",dish:"વાસણ ધોવા વાળા",captain:"કેપ્ટન",waiter:"વેઇટર",hall:"હોલ હેલ્પર / સફાઈ",roomboy:"રૂમ બોય",reception:"રિસેપ્શન"}; return i==="gu"?(gu[k]||r[1]):i==="hi"?r[0]:r[1]};
+  const lines=ks.map(k=>`• ${R(k,hireLang)} - ${o[k].n}${o[k].sal?` (₹${o[k].sal})`:""}`).join("\n")||"• "+({hi:"कुक, वेटर, हेल्पर",gu:"કૂક, વેઇટર, હેલ્પર",en:"Cook, waiter, helper"})[hireLang];
+  const perks=HSET.perks?`\n✓ ${HSET.perks}`:"", call=HSET.contact?`\n📞 ${HSET.contact}`:"", bonus=HSET.bonus?({hi:`\n🎁 हमारे स्टाफ़ के ज़रिए आए और 1 महीना टिके तो स्टाफ़ को ₹${HSET.bonus} बोनस`,gu:`\n🎁 અમારા સ્ટાફ દ્વારા આવે અને 1 મહિનો ટકે તો સ્ટાફને ₹${HSET.bonus} બોનસ`,en:`\n🎁 ₹${HSET.bonus} bonus to our staff member who refers someone who stays 1 month`})[hireLang]:"";
+  return ({hi:`🍽️ ${H} में नौकरी\n\nजगह खाली है:\n${lines}${perks}\n\nफ़ॉर्म भरें (1 मिनट): ${link}${call}${bonus}`,
+    gu:`🍽️ ${H} માં નોકરી\n\nજગ્યા ખાલી છે:\n${lines}${perks}\n\nફોર્મ ભરો (1 મિનિટ): ${link}${call}${bonus}`,
+    en:`🍽️ Jobs at ${H}\n\nOpen positions:\n${lines}${perks}\n\nApply (1 minute): ${link}${call}${bonus}`})[hireLang] }
+let qrLib=null;
+function loadQR(){ if(qrLib) return qrLib; qrLib=new Promise((ok,bad)=>{ if(window.QRCode) return ok(); const sc=document.createElement("script"); sc.src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"; sc.onload=ok; sc.onerror=bad; document.head.appendChild(sc) }); return qrLib }
+function renderHireShare(){
+  const link=applyURL(); $("hireLink").value=link;
+  $("hireLang").innerHTML=[["hi","हिंदी"],["gu","ગુજરાતી"],["en","English"]].map(([v,l])=>`<button class="chip" type="button" data-l="${v}" aria-pressed="${v===hireLang}">${l}</button>`).join("");
+  $("hireLang").querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>{hireLang=b.dataset.l;renderHireShare()});
+  if(document.activeElement!==$("hireText")) $("hireText").value=hireMsg();
+  $("hireWa").href="https://wa.me/?text="+encodeURIComponent($("hireText").value);
+  $("hirePortals").innerHTML=[["Apna","https://employer.apna.co/"],["WorkIndia","https://www.workindia.in/employers/"],["Indeed","https://employers.indeed.com/"],["Facebook Jobs / Groups","https://www.facebook.com/groups/"],["OLX Jobs","https://www.olx.in/"]].map(([n,u])=>`<a class="btn" href="${u}" target="_blank" rel="noopener" style="text-decoration:none">${esc(n)} ↗</a>`).join("");
+  if($("hireQR").dataset.link!==link) loadQR().then(()=>{ $("hireQR").innerHTML=""; new window.QRCode($("hireQR"),{text:link,width:360,height:360,correctLevel:window.QRCode.CorrectLevel.M}); $("hireQR").dataset.link=link }).catch(()=>{ $("hireQR").innerHTML=`<img crossorigin="anonymous" alt="QR" src="https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=0&data=${encodeURIComponent(link)}">`; $("hireQR").dataset.link=link });
+}
+$("hireText").addEventListener("input",()=>{$("hireWa").href="https://wa.me/?text="+encodeURIComponent($("hireText").value)});
+$("hireCopy").onclick=()=>{ try{navigator.clipboard.writeText($("hireText").value)}catch(e){$("hireText").select();document.execCommand("copy")} $("hireCopy").textContent=T("कॉपी ✓","Copied ✓"); setTimeout(()=>$("hireCopy").textContent=U("hCopy"),2000) };
+$("hireCopyLink").onclick=()=>{ try{navigator.clipboard.writeText($("hireLink").value)}catch(e){$("hireLink").select();document.execCommand("copy")} $("hireCopyLink").textContent=T("कॉपी ✓","Copied ✓"); setTimeout(()=>$("hireCopyLink").textContent=U("hCopyLink"),2000) };
+$("hireQRdl").onclick=()=>{ const c=$("hireQR").querySelector("canvas"), im=$("hireQR").querySelector("img"); const url=c?c.toDataURL("image/png"):im&&im.src; if(!url) return;
+  // bada QR + naam (print ke liye)
+  const cv=document.createElement("canvas"); cv.width=900; cv.height=1080; const x=cv.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,900,1080);
+  const img=new Image(); img.onload=()=>{ x.drawImage(img,90,170,720,720); x.fillStyle="#0F766E"; x.font="bold 54px sans-serif"; x.textAlign="center"; x.fillText((HSET.hotel||"Hotel Ashirvad"),450,80); x.fillStyle="#111"; x.font="bold 44px sans-serif"; x.fillText("नौकरी चाहिए? QR स्कैन करें · Job? Scan",450,145); x.font="32px sans-serif"; x.fillText(applyURL().replace(/^https?:\/\//,""),450,960); if(HSET.contact) x.fillText("📞 "+HSET.contact,450,1020);
+    const a=document.createElement("a"); a.href=cv.toDataURL("image/png"); a.download="job-qr.png"; document.body.appendChild(a); a.click(); a.remove() }; img.src=url };
+$("hireReload").onclick=()=>{HIRE=null; renderHire(); loadHire(true)};
+$("haSave").onclick=async()=>{ const b={name:$("haName").value,phone:$("haPhone").value,roles:[$("haRole").value],referredBy:$("haRef").value};
+  try{ await db.hireAdd(b); $("haMsg").textContent=T("जोड़ा ✓","Added ✓"); ["haName","haPhone","haRef"].forEach(i=>$(i).value=""); hireFilter="new"; loadHire(true) }catch(e){ $("haMsg").textContent=e.message||"Error" } };
+function renderHireNeed(){ const t0=localDate(new Date()); let sum=0, peak=0; for(let i=0;i<30;i++){const f=fcOf(shift(t0,i)); sum+=f; if(f>peak) peak=f}
+  const avgG=sum/30/300, pkG=peak/300, waiter=Math.ceil(pkG/40), cook=Math.ceil(peak/12000), helper=Math.ceil(cook/2), dish=Math.ceil(pkG/120), off=x=>Math.ceil(x*1.15);
+  $("hireNeed").innerHTML=[[T("ग्राहक/दिन (औसत)","Guests/day (avg)"),Math.round(avgG)],[T("भीड़ वाला दिन","Busiest day"),Math.round(pkG)],[T("वेटर/कैप्टन","Waiters/captain"),off(waiter)],[T("कुक + तंदूर","Cooks + tandoor"),off(cook)],[T("किचन हेल्पर","Kitchen helpers"),off(helper)],[T("बर्तन","Dishwash"),off(dish)]]
+    .map(([k,v])=>`<div class="tile"><span class="k">${esc(k)}</span><span class="v">${v}</span></div>`).join("") }
+
 // ---------- BHAAV TULNA: mandi + hotel tak ka % vs aapki dar ----------
 const LEAFY=["coriander","mint","spinach","methi","springonion","curryleaf"], STAPLE=["onion","potato","garlic"];
 const PCT_TYPES=[["leafy",40,["हरी पत्तेदार (धनिया, पुदीना, पालक, मेथी)","Leafy greens (coriander, mint, spinach, methi)"],["जल्दी मुरझाती हैं - छँटाई/बिगाड़ 15-20%, कमीशन-लोडिंग 5%, गाड़ी 5%, सप्लायर 10%","Wilt fast - sorting/spoilage 15-20%, commission-loading 5%, transport 5%, supplier 10%"]],
@@ -1654,13 +1804,13 @@ function saveRates(){ratesAt=new Date().toISOString(); debounce("rates",()=>{
 function srcTag(k){ const x=ratesSrc[k]; if(!x) return ""; return `<br><span class="hi" title="${esc(x.vendor||"")} ${esc(x.billNo||"")}">🧾 ${esc(T("बिल","Bill"))}: ${esc(String(x.vendor||"").slice(0,18))}${x.date?" · "+esc(x.date.slice(0,5)):""}</span>` }
 
 // ---------- tabs ----------
-const TABS=["aaj","team","fc","sabzi","month","recipe","fam","lab","cmp","pack","buy","rates"];
+const TABS=["aaj","team","fc","sabzi","month","recipe","fam","lab","cmp","pack","buy","hire","rates"];
 function setTab(t){tab=t;try{localStorage.setItem("rasoi-tab",t)}catch(e){}
   document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===t)));
   TABS.forEach(k=>$("tab-"+k).hidden=k!==t); ["recipeDetail","labDetail"].forEach(id=>{const b=$(id); if(b&&!(t==="recipe"&&id==="recipeDetail")){b.hidden=true}}); renderTab(); try{window.scrollTo(0,0)}catch(e){}}
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 document.addEventListener("keydown",e=>{if(e.key==="Escape")["recipeDetail","labDetail"].forEach(id=>{const b=$(id); if(b&&!b.hidden){b.hidden=true;b.innerHTML=""}})});
-function renderTab(){({aaj:renderAaj,team:renderTeam,fc:renderFc,sabzi:renderSabzi,month:()=>{monthOptions();renderMonth()},recipe:renderRecipeList,fam:renderFam,lab:renderLab,cmp:renderCmp,pack:renderPack,buy:renderBuy,rates:renderRates})[tab]()}
+function renderTab(){({aaj:renderAaj,team:renderTeam,fc:renderFc,sabzi:renderSabzi,month:()=>{monthOptions();renderMonth()},recipe:renderRecipeList,fam:renderFam,lab:renderLab,cmp:renderCmp,pack:renderPack,buy:renderBuy,hire:renderHire,rates:renderRates})[tab]()}
 function renderAll(){renderHeader();renderTab()}
 
 // ---------- saving ----------
@@ -1716,6 +1866,10 @@ function makeDb(API){
     banquet:(f,t)=>req("GET","banquet?from="+f+"&to="+t),
     mandi:()=>req("GET","mandi"),
     spend:()=>req("GET","spend"),
+    hiring:()=>req("GET","hiring"),
+    hireSet:(id,b)=>req("PUT","hiring/"+id,b),
+    hireAdd:(b)=>req("PUT","hiring/add",b),
+    hireDel:(id)=>req("DELETE","hiring/"+id),
     setKey:(key)=>req("POST","datagov-key",{key}),
     doc(path){return {
       async get(){const j=await req("GET","doc/"+path); return {exists:!!j.exists,data:()=>j.data}},

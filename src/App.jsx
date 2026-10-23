@@ -17,6 +17,7 @@ import SecretGate from "./components/SecretGate.jsx";
 const EntryPage = lazy(() => import("./pages/EntryPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const RasoiPage = lazy(() => import("./pages/RasoiPage"));
+const JobApplyPage = lazy(() => import("./pages/JobApplyPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
@@ -72,6 +73,8 @@ const App = () => {
           {/* Manager (kitchen board): sirf jise access hai — server khud check karta hai */}
           <Route path="/manager" element={<RasoiPage />} />
           <Route path="/rasoi" element={<Navigate to="/manager" replace />} />
+          {/* Staff bharti: khula form (bina login) */}
+          <Route path="/apply" element={<JobApplyPage />} />
           {/* Invoice dekho / PDF (login API khud check karta hai) */}
           <Route path="/invoice/:id" element={<InvoicePage />} />
           <Route

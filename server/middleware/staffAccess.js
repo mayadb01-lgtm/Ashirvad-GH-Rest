@@ -196,7 +196,7 @@ export const datesBack = (days) => {
 
 /* ───────── Reports jo Super Admin kisi user ko de sakta hai (har ek ka data din ki seema mein) ─────────
    clamp: ym2 = /:from/:to (YYYY-MM) · dmy2 = /:start/:end (DD-MM-YYYY) · my = /:month/:year · months = /:n · qdmy = ?from&to (DD-MM-YYYY) */
-const RASOI_RE = /^\/api\/v1\/rasoi\/(doc\/.+|list\/(days|ideas)|sales|board|banquet|mandi|spend)$/;
+const RASOI_RE = /^\/api\/v1\/rasoi\/(doc\/.+|list\/(days|ideas)|sales|board|banquet|mandi|spend|hiring|hiring\/add|hiring\/[a-f0-9]{24})$/;
 export const REPORTS = {
   "owner-report": { label: "Owner monthly report", rules: [R("GET", /^\/api\/v1\/owner\/monthly-summary\/(\d+)\/(\d+)$/, { clamp: "my" })] },
   "profit-loss": { label: "Profit & Loss", rules: [R("GET", /^\/api\/v1\/insights\/pnl\/([^/]+)\/([^/]+)$/, { clamp: "ym2" })] },
