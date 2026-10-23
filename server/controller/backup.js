@@ -2,6 +2,7 @@ import { Router } from "express";
 import crypto from "crypto";
 import BackupLog from "../model/backupLog.js";
 import { runAutoBackup } from "../utils/autoBackup.js";
+import { saveAppPassword, mailInfo } from "../utils/mailAuth.js";
 
 const router = Router();
 const isAdminLike = (u) => u && (u.role === "Admin" || u.isSuperUser === true);
@@ -11,7 +12,7 @@ router.get("/status", async (req, res) => {
   if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Admin only" });
   const logs = await BackupLog.find().sort({ createdAt: -1 }).limit(10).lean();
   const lastGood = logs.find((l) => l.ok) || (await BackupLog.findOne({ ok: true }).sort({ createdAt: -1 }).lean());
-  res.json({ success: true, lastGood, logs });
+  res.json({ success: true, lastGood, logs, mail: await mailInfo() });
 });
 
 // POST /api/v1/backup/run  → abhi backup lo aur email karo (admin)
@@ -19,6 +20,19 @@ router.post("/run", async (req, res) => {
   if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Admin only" });
   const log = await runAutoBackup("manual");
   res.status(log.ok ? 200 : 500).json({ success: log.ok, log, message: log.ok ? "Backup emailed" : log.error });
+});
+
+// POST /api/v1/backup/mail-password → malik Gmail App Password daale (pehle Gmail se check, phir encrypt karke save; wapas kabhi nahi dikhta)
+router.post("/mail-password", async (req, res) => {
+  const u = req.user;
+  if (!(u?.constructor?.modelName === "Admin" && u.viewOnly !== true)) return res.status(403).json({ success: false, message: "Only the owner can set this." });
+  try {
+    await saveAppPassword(req.body?.appPassword, u.email || u.name);
+    const log = await runAutoBackup("manual");
+    res.json({ success: true, backupOk: log.ok, message: log.ok ? "Saved. Backup emailed." : "Saved, but backup failed: " + log.error });
+  } catch (e) {
+    res.status(e.status || 500).json({ success: false, message: e.message });
+  }
 });
 
 // GET /api/v1/backup/run-scheduled?key=SECRET

@@ -1,19 +1,11 @@
-import nodemailer from "nodemailer";
+import { makeTransport } from "./mailAuth.js";
 import fs from "fs";
 
 const sendMailWithAttachment = async () => {
   const BUSINESS_NAME =
     process.env.VITE_REACT_APP_BUSINESS_NAME || "Your Business";
 
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMPT_HOST,
-    port: process.env.SMPT_PORT,
-    service: process.env.SMPT_SERVICE,
-    auth: {
-      user: process.env.SMPT_MAIL,
-      pass: process.env.SMPT_PASSWORD,
-    },
-  });
+  const transporter = await makeTransport();
 
   const mailOptions = {
     from: `"${BUSINESS_NAME} Backup Service" <${process.env.SMPT_MAIL}>`,

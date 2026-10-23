@@ -1,6 +1,6 @@
 // 🔐 Super Admin OTP: password ke baad email par 6 ankon ka code
 import crypto from "crypto";
-import nodemailer from "nodemailer";
+import { makeTransport } from "./mailAuth.js";
 import AdminOtp from "../model/adminOtp.js";
 
 const sha = (s) => crypto.createHash("sha256").update(String(s)).digest("hex");
@@ -20,12 +20,7 @@ export const sendOtp = async (admin, purpose) => {
   // Purane bina use kiye OTP band
   await AdminOtp.updateMany({ adminId: String(admin._id), purpose, used: false }, { $set: { used: true } });
   const doc = await AdminOtp.create({ adminId: String(admin._id), purpose, codeHash: sha(`${admin._id}:${code}`), expiresAt: new Date(Date.now() + 10 * 60 * 1000) });
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMPT_HOST,
-    port: process.env.SMPT_PORT,
-    service: process.env.SMPT_SERVICE,
-    auth: { user: process.env.SMPT_MAIL, pass: process.env.SMPT_PASSWORD },
-  });
+  const transporter = await makeTransport();
   const name = process.env.VITE_REACT_APP_BUSINESS_NAME || "Ashirvad";
   const what = purpose === "login" ? "login" : "password reset";
   await transporter.sendMail({
