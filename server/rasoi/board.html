@@ -120,7 +120,11 @@ body{font-size:15px}
 .tab::before{font-size:16px;line-height:1}
 .tab[data-tab=aaj]::before{content:"📋"} .tab[data-tab=team]::before{content:"👥"} .tab[data-tab=fc]::before{content:"📈"}
 .tab[data-tab=sabzi]::before{content:"🥬"} .tab[data-tab=month]::before{content:"📦"} .tab[data-tab=recipe]::before{content:"📖"}
-.tab[data-tab=fam]::before{content:"🍲"} .tab[data-tab=lab]::before{content:"💡"} .tab[data-tab=rates]::before{content:"₹";font-weight:800} .tab[data-tab=cmp]::before{content:"⚖️"} .tab[data-tab=pack]::before{content:"🥡"} .tab[data-tab=buy]::before{content:"🗓️"} .tab[data-tab=hire]::before{content:"🧑‍🍳"}
+.tab[data-tab=fam]::before{content:"🍲"} .tab[data-tab=lab]::before{content:"💡"} .tab[data-tab=rates]::before{content:"₹";font-weight:800} .tab[data-tab=cmp]::before{content:"⚖️"} .tab[data-tab=pack]::before{content:"🥡"} .tab[data-tab=buy]::before{content:"🗓️"} .tab[data-tab=hire]::before{content:"🧑‍🍳"} .tab[data-tab=qc]::before{content:"✅"} .tab[data-tab=menu]::before{content:"📊"}
+.qcrow{display:grid;grid-template-columns:minmax(150px,1.2fr) auto 2fr;gap:8px;align-items:center;padding:8px 0;border-top:1px dashed var(--line)}
+.qcrow .chips{display:flex;gap:6px;flex-wrap:wrap} .okb[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:#fff} .nob[aria-pressed="true"]{background:#B91C1C;border-color:#B91C1C;color:#fff}
+.chip.iss[aria-pressed="true"]{background:#FDE8E8;border-color:#B91C1C;color:#B91C1C}
+@media (max-width:640px){.qcrow{grid-template-columns:1fr}}
 .cand td{vertical-align:top} .cand .act{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px} .cand a.btn{text-decoration:none;display:inline-flex;align-items:center;min-height:30px;padding:3px 10px;font-size:13px}
 .hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
 .hrole{border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:grid;gap:6px} .hrole .row{flex-wrap:nowrap;min-width:0} .hrole input[type=number]{width:58px;flex:none} .hrole input[type=text]{width:100%;min-width:0}
@@ -198,6 +202,8 @@ body{font-size:15px}
     <button class="tab" role="tab" data-tab="pack" data-i="tPack"></button>
     <button class="tab" role="tab" data-tab="buy" data-i="tBuy"></button>
     <button class="tab" role="tab" data-tab="hire" data-i="tHire"></button>
+    <button class="tab" role="tab" data-tab="qc" data-i="tQc"></button>
+    <button class="tab" role="tab" data-tab="menu" data-i="tMenu"></button>
     <button class="tab" role="tab" data-tab="rates" data-i="tRates"></button>
   </nav>
   </aside>
@@ -477,6 +483,53 @@ body{font-size:15px}
     </section>
   </section>
 
+  <!-- ROZ KI JAANCH: taste-check + barbaadi -->
+  <section id="tab-qc" class="detail" hidden>
+    <section class="panel">
+      <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><h2 data-i="qcTitle"></h2><span class="hi" id="qcDate"></span></div>
+      <p class="note" data-i="qcNote"></p>
+      <div class="row" style="gap:8px;align-items:end;flex-wrap:wrap"><label class="f"><span data-i="qcBy"></span><input type="text" id="qcByIn" maxlength="30" style="width:180px"></label><span class="hi" id="qcProg"></span></div>
+      <div id="qcList"></div>
+    </section>
+    <section class="panel">
+      <h2 data-i="wTitle"></h2>
+      <p class="note" data-i="wNote"></p>
+      <div class="row" style="gap:8px;flex-wrap:wrap;align-items:end">
+        <label class="f" style="flex:2 1 220px"><span data-i="wItem"></span><input type="text" id="wItem" list="wItems" autocomplete="off"><datalist id="wItems"></datalist></label>
+        <label class="f"><span data-i="wQty"></span><input type="number" id="wQty" min="0" step="0.1" style="width:90px"></label>
+        <label class="f"><span data-i="wUnit"></span><select id="wUnit"></select></label>
+        <label class="f" style="flex:1 1 180px"><span data-i="wReason"></span><select id="wReason"></select></label>
+        <button class="btn primary" id="wAdd" data-i="wAdd"></button><span class="hi" id="wMsg"></span>
+      </div>
+      <div class="tablebox"><table><thead><tr><th data-i="thItem"></th><th class="n" data-i="wQty"></th><th data-i="wReason"></th><th class="n">₹</th><th></th></tr></thead><tbody id="wRows"></tbody></table></div>
+    </section>
+    <section class="panel">
+      <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><h2 data-i="qrTitle"></h2><div class="row" style="gap:6px" id="qrRange" role="group"></div></div>
+      <div class="tiles" id="qrTiles"></div>
+      <div class="row" style="gap:16px;flex-wrap:wrap;align-items:flex-start">
+        <div style="flex:1 1 300px;min-width:0"><h3 style="margin:4px 0" data-i="qrTopW"></h3><div class="tablebox"><table><tbody id="qrWaste"></tbody></table></div></div>
+        <div style="flex:1 1 300px;min-width:0"><h3 style="margin:4px 0" data-i="qrTopQ"></h3><div class="tablebox"><table><tbody id="qrQc"></tbody></table></div></div>
+      </div>
+      <p class="note" id="qrTip"></p>
+    </section>
+  </section>
+
+  <!-- MENU MUNAFA -->
+  <section id="tab-menu" class="detail" hidden>
+    <section class="panel">
+      <h2 data-i="mTitle"></h2>
+      <p class="note" data-i="mNote"></p>
+      <div class="tiles" id="mTiles"></div>
+      <div class="row" style="gap:8px;flex-wrap:wrap" id="mFilter" role="group"></div>
+      <div class="row" style="gap:8px;flex-wrap:wrap" id="mCat"></div>
+      <div class="tablebox"><table><thead><tr><th data-i="thDish"></th><th class="n" data-i="thMPl"></th><th class="n" data-i="thMPrice"></th><th class="n" data-i="thMCost"></th><th class="n" data-i="thMMargin"></th><th class="n" data-i="thMProfit"></th><th data-i="thMClass"></th></tr></thead><tbody id="mRows"></tbody></table></div>
+    </section>
+    <section class="panel">
+      <h2 data-i="mHowTitle"></h2>
+      <div class="tablebox"><table><tbody id="mHow"></tbody></table></div>
+    </section>
+  </section>
+
   <!-- RATES -->
   <section id="tab-rates" class="detail" hidden>
     <section class="panel" id="mandiPanel">
@@ -583,7 +636,18 @@ const UI={
  noPerm:["आपको बदलने की अनुमति नहीं - सिर्फ़ देख सकते हैं","You don't have permission to edit - view only"], saveFail:["सेव नहीं हुआ - इंटरनेट जाँचें","Not saved - check internet"], liveStop:["लाइव अपडेट रुक गया - पेज दोबारा खोलें","Live updates stopped - reload the page"],
  close:["बंद करें","Close"],
  backTitle:["पिछले 8 हफ़्ते: असली बिक्री बनाम पूर्वानुमान","Last 8 weeks: actual sales vs forecast"], smartPh:["ख़ाली = स्मार्ट (अपने आप)","blank = smart (automatic)"],
- tRates:["दरें (रेट)","Rates"], tCmp:["भाव तुलना","Rate check"], tHire:["स्टाफ़ भर्ती","Staff hiring"],
+ tRates:["दरें (रेट)","Rates"], tCmp:["भाव तुलना","Rate check"], tQc:["रोज़ की जाँच","Daily checks"], tMenu:["मेन्यू मुनाफ़ा","Menu profit"],
+ qcTitle:["स्वाद जाँच - सर्विस से पहले हर ग्रेवी","Taste check - every gravy before service"],
+ qcNote:["हेड कुक या मैनेजर हर ग्रेवी चखकर 'ठीक' या 'गड़बड़' दबाए; गड़बड़ हो तो क्या ग़लत है चुनें और सर्विस से पहले सुधारें। रोज़ एक ही कसौटी = रोज़ एक जैसा स्वाद।","Head cook or manager tastes each gravy and taps 'OK' or 'Problem'; if a problem, pick what is wrong and fix it before service. Same check every day = same taste every day."],
+ qcBy:["किसने चखा","Checked by"],
+ wTitle:["आज की बर्बादी (फेंका गया खाना / सामान)","Today's waste (food / items thrown)"],
+ wNote:["रात को बंद करते समय 1 मिनट: क्या फेंका, कितना, क्यों। ₹ अपने आप लगता है (आपकी दरों से)। इसी से पता चलेगा पैसा कहाँ जा रहा है।","At closing, 1 minute: what was thrown, how much, why. ₹ is calculated automatically (from your rates). This shows where money is going."],
+ wItem:["क्या (डिश / ग्रेवी / सामान)","What (dish / gravy / item)"], wQty:["कितना","How much"], wUnit:["इकाई","Unit"], wReason:["क्यों","Why"], wAdd:["जोड़ें","Add"],
+ qrTitle:["हफ़्ते / महीने की रिपोर्ट","Weekly / monthly report"], qrTopW:["सबसे ज़्यादा बर्बादी","Most waste"], qrTopQ:["स्वाद में सबसे ज़्यादा गड़बड़","Most taste problems"],
+ mTitle:["मेन्यू मुनाफ़ा - कौन-सी डिश कमाती है","Menu profit - which dishes earn"],
+ mNote:["हर डिश: कितनी बिकती है (POS बिक्री जुलाई-अक्टूबर 2026 से, अगले 30 दिन के पूर्वानुमान पर) × हर प्लेट का मुनाफ़ा (दाम - कच्चे माल की लागत आपकी दरों से)। अपने ही ग्रुप की बाकी डिशों से तुलना करके 4 हिस्से: ⭐ स्टार, 🐎 मेहनती, 🧩 पहेली, 🐶 कमज़ोर। गैस, स्टाफ़, किराया इसमें नहीं।","Each dish: how much it sells (from POS sales Jul-Oct 2026, on the next 30 days' forecast) × profit per plate (price - raw material cost at your rates). Compared with other dishes in the same group, 4 classes: ⭐ Star, 🐎 Workhorse, 🧩 Puzzle, 🐶 Weak. Gas, staff, rent not included."],
+ thDish:["डिश","Dish"], thMPl:["प्लेट / महीना","Plates / month"], thMPrice:["दाम ₹","Price ₹"], thMCost:["लागत ₹","Cost ₹"], thMMargin:["मुनाफ़ा/प्लेट","Profit/plate"], thMProfit:["मुनाफ़ा/महीना","Profit/month"], thMClass:["क्या करें","What to do"],
+ mHowTitle:["4 हिस्से - क्या मतलब, क्या करें","4 classes - meaning and action"], tHire:["स्टाफ़ भर्ती","Staff hiring"],
  hireTitle:["नौकरी के लिए आए लोग","Job applicants"], hireReload:["ताज़ा करें","Refresh"],
  thHName:["नाम / फ़ोन","Name / phone"], thHWork:["काम","Work"], thHDetail:["अनुभव, सैलरी, कहाँ से","Experience, salary, from"], thHStatus:["स्थिति","Status"], thHNote:["नोट / इंटरव्यू","Note / interview"],
  hireAddT:["+ किसी को ख़ुद जोड़ें (फ़ोन/रेफ़रल से आया)","+ Add someone yourself (came by phone/referral)"], hName:["नाम","Name"], hPhone:["मोबाइल","Mobile"], hRef:["किसने भेजा (स्टाफ़)","Referred by (staff)"], hAdd:["जोड़ें","Add"],
@@ -688,7 +752,7 @@ document.querySelectorAll("[data-lang]").forEach(b=>b.onclick=()=>{lang=b.datase
 let db=null, cur=localDate(new Date()), tab="aaj", role="all";
 let settings={month:{},buffer:10,fest:{}}, stock={}, dayDocs={};
 let curState=emptyDay(), yState=emptyDay();
-function emptyDay(){return {done:{},left:{},note:"",fc:null,actual:null}}
+function emptyDay(){return {done:{},left:{},note:"",fc:null,actual:null,waste:[],qc:{}}}
 try{const t=localStorage.getItem("rasoi-tab");if(t)tab=t;const r=localStorage.getItem("rasoi-role");if(r)role=r}catch(e){}
 
 // ---------- forecast core ----------
@@ -1343,6 +1407,95 @@ function renderBuy(){
   $("buyNo").innerHTML=NOSTOCK.map(([n,w])=>`<tr><td><b>${esc(T(n[0],n[1]))}</b></td><td class="hi">${esc(T(w[0],w[1]))}</td></tr>`).join("");
 }
 
+// ---------- ROZ KI JAANCH: swaad + barbaadi ----------
+const QC_ITEMS=()=>DATA.gravies.filter(g=>!/stock|sauce mix|lep|chutney|mix|aata|paste|puree/i.test(g.n)).map(g=>[g.id,L(g.n)]).concat([["dal",T("दाल फ्राई / तड़का","Dal fry / tadka")],["rice",T("चावल / बिरयानी","Rice / biryani")],["roti",T("रोटी / नान","Roti / naan")]]);
+const QC_ISS=[["saltH","नमक ज़्यादा","Too salty"],["saltL","नमक कम","Less salt"],["thin","पतली","Too thin"],["thick","बहुत गाढ़ी","Too thick"],["color","रंग फीका","Pale colour"],["sour","खट्टी","Sour"],["burnt","जली / कड़वी","Burnt / bitter"],["stale","बासी गंध","Stale smell"],["spice","तीखा कम/ज़्यादा","Spice off"]];
+const W_REASON=[["left","बचा हुआ (ज़्यादा बना)","Leftover (made too much)"],["bad","ख़राब बना / जला","Badly made / burnt"],["spoil","सड़ा / एक्सपायर","Spoiled / expired"],["drop","गिर गया","Dropped"],["return","ग्राहक ने लौटाया","Returned by guest"],["other","दूसरा","Other"]];
+let qcRange=7;
+function wasteIndex(){ const out=[]; DATA.dishes.forEach(d=>out.push({t:"d",k:d.n,label:L(d.n),u:"plate"})); DATA.gravies.forEach(g=>out.push({t:"g",k:g.id,label:L(g.n),u:"kg"}));
+  Object.keys(ING).filter(k=>k!=="water"&&k!=="misc").forEach(k=>out.push({t:"i",k,label:ingName(k),u:ING[k].u==="L"?"L":ING[k].u==="pc"?"pc":"kg"})); return out }
+let WIDX=null;
+function wasteRs(w){ if(w.t==="d"){const c=COST[w.k]; return c?c*w.qty:0} if(w.t==="g"){const g=DATA.gravies.find(x=>x.id===w.k); return g?(g.ck||0)*w.qty:0} if(w.t==="i"&&ING[w.k]){const i=ING[w.k]; return (i.u==="g"?w.qty*1000:w.qty)*i.r} return 0 }
+function renderQc(){
+  if(!$("qcList")) return; WIDX ||= wasteIndex();
+  $("qcDate").textContent=dLabel(cur);
+  if(document.activeElement!==$("qcByIn")) { try{ $("qcByIn").value=$("qcByIn").value||localStorage.getItem("rasoi-qcby")||"" }catch(e){} }
+  const Q=curState.qc||{}, items=QC_ITEMS(); const done=items.filter(([k])=>Q[k]).length;
+  $("qcProg").textContent=T(`${done}/${items.length} जाँची`,`${done}/${items.length} checked`);
+  $("qcList").innerHTML=items.map(([k,n])=>{ const q=Q[k]; return `<div class="qcrow"><div><b>${esc(n)}</b>${q?`<br><span class="hi">${esc(q.by||"")} ${esc(q.at||"")}</span>`:""}</div>
+    <div class="chips"><button class="chip okb" type="button" data-qk="${k}" data-qv="ok" aria-pressed="${!!(q&&q.ok)}">✓ ${T("ठीक","OK")}</button><button class="chip nob" type="button" data-qk="${k}" data-qv="no" aria-pressed="${!!(q&&!q.ok)}">✕ ${T("गड़बड़","Problem")}</button></div>
+    <div class="chips">${q&&!q.ok?QC_ISS.map(([i,h,e])=>`<button class="chip iss" type="button" data-qi="${k}" data-iv="${i}" aria-pressed="${(q.iss||[]).includes(i)}">${esc(T(h,e))}</button>`).join(""):""}</div></div>`}).join("");
+  const stamp=()=>{const n=new Date(); return String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0")};
+  const by=()=>{const v=$("qcByIn").value.trim().slice(0,30); try{localStorage.setItem("rasoi-qcby",v)}catch(e){} return v};
+  $("qcList").querySelectorAll("[data-qk]").forEach(b=>b.onclick=()=>{ const k=b.dataset.qk, ok=b.dataset.qv==="ok"; curState.qc={...(curState.qc||{})};
+    if(curState.qc[k]&&curState.qc[k].ok===ok) delete curState.qc[k]; else curState.qc[k]={ok,iss:ok?[]:((curState.qc[k]&&curState.qc[k].iss)||[]),by:by(),at:stamp()}; saveDay(); renderQc() });
+  $("qcList").querySelectorAll("[data-qi]").forEach(b=>b.onclick=()=>{ const k=b.dataset.qi, i=b.dataset.iv, q={...curState.qc[k]}; q.iss=(q.iss||[]).includes(i)?q.iss.filter(x=>x!==i):[...(q.iss||[]),i]; curState.qc={...curState.qc,[k]:q}; saveDay(); renderQc() });
+  // barbaadi
+  if(!$("wItems").options.length) $("wItems").innerHTML=WIDX.map(w=>`<option value="${esc(w.label)}">`).join("");
+  if(!$("wReason").options.length) $("wReason").innerHTML=W_REASON.map(([k,h,e])=>`<option value="${k}">${esc(T(h,e))}</option>`).join("");
+  const sel=WIDX.find(w=>w.label===$("wItem").value); const units=sel?(sel.t==="d"?["plate"]:[sel.u]):["plate","kg","L","pc"];
+  const uName=u=>({plate:T("प्लेट","plate"),kg:"kg",L:T("लीटर","litre"),pc:T("नग","pc")})[u]||u;
+  if($("wUnit").dataset.u!==units.join()){ $("wUnit").innerHTML=units.map(u=>`<option value="${u}">${esc(uName(u))}</option>`).join(""); $("wUnit").dataset.u=units.join() }
+  const W=curState.waste||[]; const tot=W.reduce((a,w)=>a+(w.rs||0),0);
+  $("wRows").innerHTML=W.map((w,i)=>`<tr><td><b>${esc(w.name)}</b><br><span class="hi">${esc(w.by||"")} ${esc(w.at||"")}</span></td><td class="n">${w.qty} ${esc(uName(w.unit))}</td><td>${esc(T(...(W_REASON.find(r=>r[0]===w.reason)||["","—","—"]).slice(1)))}</td><td class="n">${fmtR(w.rs||0)}</td><td><button class="btn" data-wd="${i}" style="min-height:28px;font-size:12px">✕</button></td></tr>`).join("")
+    +(W.length?`<tr class="grp"><td colspan="3">${T("आज कुल","Today total")}</td><td class="n">${fmtR(tot)}</td><td></td></tr>`:`<tr><td colspan="5" class="empty">${T("आज कुछ नहीं लिखा","Nothing written today")}</td></tr>`);
+  $("wRows").querySelectorAll("[data-wd]").forEach(b=>b.onclick=()=>{ curState.waste=(curState.waste||[]).filter((_,i)=>i!==Number(b.dataset.wd)); saveDay(); renderQc() });
+  renderQcReport();
+}
+$("wItem").addEventListener("change",()=>renderQc());
+$("wAdd").onclick=()=>{ WIDX ||= wasteIndex(); const sel=WIDX.find(w=>w.label===$("wItem").value.trim()), qty=Number($("wQty").value);
+  if(!(qty>0)) { $("wMsg").textContent=T("कितना - लिखें","Enter how much"); return }
+  const name=sel?sel.label:$("wItem").value.trim().slice(0,60); if(!name){ $("wMsg").textContent=T("क्या फेंका - लिखें","Enter what"); return }
+  const w={t:sel?sel.t:"x",k:sel?sel.k:"",name,qty:Math.round(qty*100)/100,unit:$("wUnit").value,reason:$("wReason").value,by:$("qcByIn").value.trim().slice(0,30),at:(()=>{const n=new Date();return String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0")})()};
+  w.rs=Math.round(wasteRs(w)); curState.waste=[...(curState.waste||[]),w].slice(-80); saveDay(); $("wItem").value=""; $("wQty").value=""; $("wMsg").textContent=T("जोड़ा ✓","Added ✓"); renderQc() };
+function renderQcReport(){
+  $("qrRange").innerHTML=[[7,T("7 दिन","7 days")],[30,T("30 दिन","30 days")]].map(([v,l])=>`<button class="chip" type="button" data-r="${v}" aria-pressed="${v===qcRange}">${l}</button>`).join("");
+  $("qrRange").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{qcRange=Number(b.dataset.r);renderQcReport()});
+  const days=[]; for(let i=0;i<qcRange;i++) days.push(shift(cur,-i));
+  const docs=days.map(d=>d===cur?curState:dayDocs[d]).filter(Boolean);
+  const byItem={}, byReason={}; let wRs=0, wDays=0, checks=0, probs=0, qDays=0; const qcBy={};
+  docs.forEach(d=>{ const W=d.waste||[]; if(W.length) wDays++; W.forEach(w=>{wRs+=w.rs||0; (byItem[w.name] ||= {rs:0,n:0}); byItem[w.name].rs+=w.rs||0; byItem[w.name].n++; byReason[w.reason]=(byReason[w.reason]||0)+(w.rs||0)});
+    const Q=d.qc||{}; const ks=Object.keys(Q); if(ks.length) qDays++; ks.forEach(k=>{checks++; const q=Q[k]; (qcBy[k] ||= {n:0,bad:0,iss:{}}); qcBy[k].n++; if(!q.ok){probs++; qcBy[k].bad++; (q.iss||[]).forEach(i=>qcBy[k].iss[i]=(qcBy[k].iss[i]||0)+1)}}) });
+  const sales=days.reduce((a,d)=>a+(actualOf(d)||0),0);
+  $("qrTiles").innerHTML=[[T("बर्बादी ₹","Waste ₹"),fmtR(wRs)],[T("बिक्री का %","% of sales"),sales?(wRs/sales*100).toFixed(1)+"%":"–"],[T("बर्बादी लिखी (दिन)","Waste logged (days)"),`${wDays}/${qcRange}`],[T("स्वाद जाँच (दिन)","Taste checked (days)"),`${qDays}/${qcRange}`],[T("गड़बड़ मिली","Problems found"),checks?`${probs} (${Math.round(probs/checks*100)}%)`:"–"]]
+    .map(([k,v])=>`<div class="tile"><span class="k">${esc(k)}</span><span class="v">${v}</span></div>`).join("");
+  $("qrWaste").innerHTML=Object.entries(byItem).sort((a,b)=>b[1].rs-a[1].rs).slice(0,10).map(([n,v])=>`<tr><td>${esc(n)}</td><td class="n">${v.n}×</td><td class="n"><b>${fmtR(v.rs)}</b></td></tr>`).join("")
+    +(Object.keys(byReason).length?`<tr class="grp"><td colspan="3">${T("वजह से","By reason")}</td></tr>`+Object.entries(byReason).sort((a,b)=>b[1]-a[1]).map(([r,v])=>`<tr><td colspan="2">${esc(T(...(W_REASON.find(x=>x[0]===r)||["","—","—"]).slice(1)))}</td><td class="n">${fmtR(v)}</td></tr>`).join(""):"")||`<tr><td class="empty">–</td></tr>`;
+  const QN=Object.fromEntries(QC_ITEMS());
+  $("qrQc").innerHTML=Object.entries(qcBy).filter(([k,v])=>v.bad).sort((a,b)=>b[1].bad/b[1].n-a[1].bad/a[1].n).slice(0,10).map(([k,v])=>{const top=Object.entries(v.iss).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([i])=>{const x=QC_ISS.find(q=>q[0]===i);return x?T(x[1],x[2]):i}).join(", ");
+    return `<tr><td>${esc(QN[k]||k)}<br><span class="hi">${esc(top)}</span></td><td class="n"><b style="color:#B91C1C">${v.bad}/${v.n}</b></td></tr>`}).join("")||`<tr><td class="empty">${T("कोई गड़बड़ नहीं 👍","No problems 👍")}</td></tr>`;
+  const left=byReason.left||0;
+  $("qrTip").textContent=wRs?(left>wRs*0.4?T("ज़्यादातर बर्बादी 'बचा हुआ' है - पूर्वानुमान वाली मात्रा से ही प्रेप करें, शाम 8 बजे के बाद ग्रेवी छोटे बैच में बनाएँ।","Most waste is 'leftover' - prep only the forecast quantity, make gravy in small batches after 8 pm."):(byReason.spoil||0)>wRs*0.3?T("सड़ने वाली बर्बादी ज़्यादा है - सब्ज़ी/डेयरी कम मात्रा में, ज़्यादा बार मँगवाएँ और FIFO रखें।","Spoilage is high - order veg/dairy in smaller, more frequent lots and keep FIFO."):(byReason.bad||0)>wRs*0.3?T("'ख़राब बना' ज़्यादा है - स्वाद जाँच रोज़ करें और रेसिपी कार्ड के हिसाब से ही बनवाएँ।","'Badly made' is high - do taste checks daily and cook strictly by the recipe card."):""):T("रोज़ बर्बादी लिखेंगे तो यहाँ पता चलेगा पैसा कहाँ जा रहा है।","Log waste daily and this shows where money goes.");
+}
+
+// ---------- MENU MUNAFA (menu engineering) ----------
+let menuF="all", menuCat="__all";
+const MCLS={star:["⭐ स्टार","⭐ Star","ok","ख़ूब बिकती + अच्छा मुनाफ़ा। क्वालिटी कभी न गिरे, मेन्यू में सबसे ऊपर/हाइलाइट रखें, दाम ₹10 तक बढ़ा सकते हैं।","Sells a lot + good profit. Never let quality drop, keep at the top/highlighted, can raise price up to ₹10."],
+  horse:["🐎 मेहनती","🐎 Workhorse","mid","ख़ूब बिकती पर मुनाफ़ा कम। दाम ₹10-20 बढ़ाएँ या पोर्शन/महँगा सामान (बटर, क्रीम, काजू) थोड़ा कम करें।","Sells a lot but low profit. Raise price ₹10-20 or trim portion/costly items (butter, cream, cashew) slightly."],
+  puzzle:["🧩 पहेली","🧩 Puzzle","low","मुनाफ़ा अच्छा पर कम बिकती। वेटर सुझाएँ, नाम/फ़ोटो बेहतर करें, कॉम्बो में डालें।","Good profit but sells little. Have waiters suggest it, better name/photo, put it in combos."],
+  dog:["🐶 कमज़ोर","🐶 Weak","bad","कम बिकती + कम मुनाफ़ा। मेन्यू से हटाने पर सोचें (रसोई का काम और स्टॉक दोनों घटेगा) या बदलकर नई डिश।","Sells little + low profit. Consider removing (less kitchen work and stock) or replace with a new dish."]};
+function menuRows(){ const t0=localDate(new Date()); let F=0; for(let i=0;i<30;i++) F+=fcOf(shift(t0,i));
+  const rows=DATA.dishes.filter(d=>d.p>0&&d.q>0).map(d=>{const c=COST[d.n]||0, m=d.p-c, pl=F*d.q/1e5; return {n:d.n,c:d.c,p:d.p,cost:c,m,pl,profit:m*pl,fc:d.p?c/d.p:0}});
+  const by={}; rows.forEach(r=>(by[r.c] ||= []).push(r));
+  Object.values(by).forEach(list=>{ const med=a=>{const s=[...a].sort((x,y)=>x-y); return s[Math.floor(s.length/2)]||0}; const popT=list.reduce((a,r)=>a+r.pl,0)/list.length*0.7, mM=med(list.map(r=>r.m));
+    list.forEach(r=>{const hp=r.pl>=popT, hm=r.m>=mM; r.cls=hp&&hm?"star":hp?"horse":hm?"puzzle":"dog"}) });
+  return {rows,F} }
+function renderMenu(){
+  if(!$("mRows")) return; const {rows}=menuRows();
+  const tot=rows.reduce((a,r)=>a+r.profit,0), sales=rows.reduce((a,r)=>a+r.p*r.pl,0), cnt=c=>rows.filter(r=>r.cls===c).length;
+  $("mTiles").innerHTML=[[T("खाने का मुनाफ़ा/महीना (कच्चे माल के बाद)","Food profit/month (after raw material)"),fmtR(tot),"ok"],[T("फ़ूड कॉस्ट %","Food cost %"),sales?Math.round((1-tot/sales)*100)+"%":"–","mid"],[T(MCLS.star[0],MCLS.star[1]),cnt("star"),"ok"],[T(MCLS.horse[0],MCLS.horse[1]),cnt("horse"),"mid"],[T(MCLS.puzzle[0],MCLS.puzzle[1]),cnt("puzzle"),"low"],[T(MCLS.dog[0],MCLS.dog[1]),cnt("dog"),"bad"]]
+    .map(([k,v,c])=>`<div class="tile"><span class="k">${esc(k)}</span><span class="v"><span class="st ${c}" style="font-size:20px;padding:2px 12px">${v}</span></span></div>`).join("");
+  const F=[["all",T("सभी","All")],["star",T(MCLS.star[0],MCLS.star[1])],["horse",T(MCLS.horse[0],MCLS.horse[1])],["puzzle",T(MCLS.puzzle[0],MCLS.puzzle[1])],["dog",T(MCLS.dog[0],MCLS.dog[1])]];
+  $("mFilter").innerHTML=F.map(([v,l])=>`<button class="chip" type="button" data-f="${v}" aria-pressed="${v===menuF}">${esc(l)}</button>`).join("");
+  $("mFilter").querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{menuF=b.dataset.f;renderMenu()});
+  const cats=[...new Set(rows.map(r=>r.c))];
+  $("mCat").innerHTML=`<select id="mCatSel"><option value="__all">${T("सभी ग्रुप","All groups")}</option>${cats.map(c=>`<option value="${esc(c)}"${c===menuCat?" selected":""}>${esc(c)}</option>`).join("")}</select>`;
+  $("mCatSel").onchange=e=>{menuCat=e.target.value;renderMenu()};
+  const list=rows.filter(r=>(menuF==="all"||r.cls===menuF)&&(menuCat==="__all"||r.c===menuCat)).sort((a,b)=>b.profit-a.profit);
+  $("mRows").innerHTML=list.map(r=>`<tr><td><b>${esc(L(r.n))}</b><br><span class="hi">${esc(r.c)}</span></td><td class="n">${Math.round(r.pl)}</td><td class="n">${fmtR(r.p)}</td><td class="n">${fmtR(r.cost)}<br><span class="hi">${Math.round(r.fc*100)}%</span></td><td class="n"><b>${fmtR(r.m)}</b></td><td class="n">${fmtR(r.profit)}</td><td><span class="st ${MCLS[r.cls][2]}">${esc(T(MCLS[r.cls][0],MCLS[r.cls][1]))}</span>${r.fc>0.45?`<br><span class="hi" style="color:#B91C1C">${T("लागत 45%+ - दाम/पोर्शन देखें","Cost 45%+ - check price/portion")}</span>`:""}</td></tr>`).join("")||`<tr><td colspan="7" class="empty">–</td></tr>`;
+  $("mHow").innerHTML=Object.values(MCLS).map(c=>`<tr><td style="white-space:nowrap"><span class="st ${c[2]}">${esc(T(c[0],c[1]))}</span></td><td class="hi">${esc(T(c[3],c[4]))}</td></tr>`).join("");
+}
+
 // ---------- STAFF BHARTI ----------
 let HIRE=null, HSET=null, hireFilter="new", hireLang="hi";
 const HST={new:["नया","New","def"],called:["फ़ोन किया","Called","mid"],interview:["इंटरव्यू","Interview","mid"],trial:["ट्रायल","Trial","low"],hired:["रख लिया","Hired","ok"],no:["मना / नहीं","No","bad"]};
@@ -1804,13 +1957,13 @@ function saveRates(){ratesAt=new Date().toISOString(); debounce("rates",()=>{
 function srcTag(k){ const x=ratesSrc[k]; if(!x) return ""; return `<br><span class="hi" title="${esc(x.vendor||"")} ${esc(x.billNo||"")}">🧾 ${esc(T("बिल","Bill"))}: ${esc(String(x.vendor||"").slice(0,18))}${x.date?" · "+esc(x.date.slice(0,5)):""}</span>` }
 
 // ---------- tabs ----------
-const TABS=["aaj","team","fc","sabzi","month","recipe","fam","lab","cmp","pack","buy","hire","rates"];
+const TABS=["aaj","team","fc","sabzi","month","recipe","fam","lab","cmp","pack","buy","hire","qc","menu","rates"];
 function setTab(t){tab=t;try{localStorage.setItem("rasoi-tab",t)}catch(e){}
   document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===t)));
   TABS.forEach(k=>$("tab-"+k).hidden=k!==t); ["recipeDetail","labDetail"].forEach(id=>{const b=$(id); if(b&&!(t==="recipe"&&id==="recipeDetail")){b.hidden=true}}); renderTab(); try{window.scrollTo(0,0)}catch(e){}}
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 document.addEventListener("keydown",e=>{if(e.key==="Escape")["recipeDetail","labDetail"].forEach(id=>{const b=$(id); if(b&&!b.hidden){b.hidden=true;b.innerHTML=""}})});
-function renderTab(){({aaj:renderAaj,team:renderTeam,fc:renderFc,sabzi:renderSabzi,month:()=>{monthOptions();renderMonth()},recipe:renderRecipeList,fam:renderFam,lab:renderLab,cmp:renderCmp,pack:renderPack,buy:renderBuy,hire:renderHire,rates:renderRates})[tab]()}
+function renderTab(){({aaj:renderAaj,team:renderTeam,fc:renderFc,sabzi:renderSabzi,month:()=>{monthOptions();renderMonth()},recipe:renderRecipeList,fam:renderFam,lab:renderLab,cmp:renderCmp,pack:renderPack,buy:renderBuy,hire:renderHire,qc:renderQc,menu:renderMenu,rates:renderRates})[tab]()}
 function renderAll(){renderHeader();renderTab()}
 
 // ---------- saving ----------
@@ -1828,7 +1981,7 @@ function saveDay(){SMC={}; const d=cur, body={...curState,date:d}; dayDocs[d]=bo
 function saveSettings(){debounce("set",()=>write("settings/main",settings,"set"))}
 function saveStock(){debounce("stock",()=>write("stock/main",{items:stock},"stock"))}
 function lsGet(path){try{const v=localStorage.getItem("rasoi:"+path);return v?JSON.parse(v):null}catch(e){return null}}
-function normDay(v){return v?{done:{...(v.done||{})},left:{...(v.left||{})},note:v.note||"",fc:v.fc||null,actual:v.actual||null}:emptyDay()}
+function normDay(v){return v?{done:{...(v.done||{})},left:{...(v.left||{})},note:v.note||"",fc:v.fc||null,actual:v.actual||null,waste:Array.isArray(v.waste)?v.waste.slice():[],qc:{...(v.qc||{})}}:emptyDay()}
 
 // ---------- loading ----------
 let unsub=null;
