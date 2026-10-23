@@ -22,6 +22,7 @@ import { loadDaily } from "./forecast.js";
 import { PastDaily } from "../model/pastData.js";
 import { BanquetBooking, BanquetItem } from "../model/banquet.js";
 import { Candidate, candFields, ROLES, STATUSES } from "./jobs.js";
+import { importText, PosDaily, PosFile } from "../rasoi/posImport.js";
 
 const router = Router();
 const BOARD_FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "rasoi", "board.html");
@@ -311,6 +312,33 @@ router.get("/spend", async (req, res) => {
     for await (const d of mongoose.connection.db.collection("officebooks").find({ entryCreateDate: { $gte: d365 } }, { projection: { officeOut: 1, entryCreateDate: 1 } }))
       for (const e of d.officeOut || []) if (PK.test(e.fullname || "")) { const m = d.entryCreateDate.toISOString().slice(0, 7); pk[m] = (pk[m] || 0) + (Number(e.amount) || 0); }
     res.json({ success: true, packOffice: Object.entries(pk).sort().map(([month, amount]) => ({ month, amount: Math.round(amount) })), rows: rows.map((r) => ({ cat: r._id.c, name: String(r.name || "").trim(), year: Math.round(r.y), yearTimes: r.ny, month: Math.round(r.m), monthTimes: r.nm })) });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+// ---------- POS report (My Hotel Sense CSV) → din-wise + file backup ----------
+router.put("/pos/upload", async (req, res) => {
+  try {
+    const { name, text } = req.body || {};
+    if (!text || String(text).length > 3_000_000) return res.status(400).json({ success: false, message: "File missing or too big" });
+    const r = await importText(name, text, who(req.user));
+    res.json({ success: true, ...r });
+  } catch (e) {
+    res.status(400).json({ success: false, message: e.message });
+  }
+});
+router.get("/pos/summary", async (req, res) => {
+  try {
+    const to = /^\d{4}-\d{2}-\d{2}$/.test(req.query.to || "") ? req.query.to : "9999-12-31";
+    const from = /^\d{4}-\d{2}-\d{2}$/.test(req.query.from || "") ? req.query.from : new Date(Date.now() - 400 * 864e5).toISOString().slice(0, 10);
+    const [days, files] = await Promise.all([
+      PosDaily.find({ _id: { $gte: from, $lte: to } }).sort({ _id: 1 }).lean(),
+      PosFile.find({}, { text: 0 }).sort({ at: -1 }).limit(60).lean(),
+    ]);
+    const metaByType = {};
+    files.forEach((f) => { if (!metaByType[f.type] && f.meta && Object.keys(f.meta).length) metaByType[f.type] = f.meta; });
+    res.set("Cache-Control", "no-store").json({ success: true, days: days.map((d) => ({ d: d._id, ...d.data })), files: files.map((f) => ({ name: f.name, type: f.type, from: f.from, to: f.to, rows: f.rows, at: f.at, by: f.by })), dishMeta: metaByType.dish || {}, metaByType });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
   }

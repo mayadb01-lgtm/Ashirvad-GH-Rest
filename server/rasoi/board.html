@@ -120,7 +120,8 @@ body{font-size:15px}
 .tab::before{font-size:16px;line-height:1}
 .tab[data-tab=aaj]::before{content:"📋"} .tab[data-tab=team]::before{content:"👥"} .tab[data-tab=fc]::before{content:"📈"}
 .tab[data-tab=sabzi]::before{content:"🥬"} .tab[data-tab=month]::before{content:"📦"} .tab[data-tab=recipe]::before{content:"📖"}
-.tab[data-tab=fam]::before{content:"🍲"} .tab[data-tab=lab]::before{content:"💡"} .tab[data-tab=rates]::before{content:"₹";font-weight:800} .tab[data-tab=cmp]::before{content:"⚖️"} .tab[data-tab=pack]::before{content:"🥡"} .tab[data-tab=buy]::before{content:"🗓️"} .tab[data-tab=hire]::before{content:"🧑‍🍳"} .tab[data-tab=qc]::before{content:"✅"} .tab[data-tab=menu]::before{content:"📊"}
+.tab[data-tab=fam]::before{content:"🍲"} .tab[data-tab=lab]::before{content:"💡"} .tab[data-tab=rates]::before{content:"₹";font-weight:800} .tab[data-tab=cmp]::before{content:"⚖️"} .tab[data-tab=pack]::before{content:"🥡"} .tab[data-tab=buy]::before{content:"🗓️"} .tab[data-tab=hire]::before{content:"🧑‍🍳"} .tab[data-tab=qc]::before{content:"✅"} .tab[data-tab=menu]::before{content:"📊"} .tab[data-tab=pos]::before{content:"🧾"}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:16px;text-align:center;cursor:pointer;background:var(--bg)} .drop.on{border-color:var(--brand);background:var(--ok-soft)}
 .qcrow{display:grid;grid-template-columns:minmax(150px,1.2fr) auto 2fr;gap:8px;align-items:center;padding:8px 0;border-top:1px dashed var(--line)}
 .qcrow .chips{display:flex;gap:6px;flex-wrap:wrap} .okb[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:#fff} .nob[aria-pressed="true"]{background:#B91C1C;border-color:#B91C1C;color:#fff}
 .chip.iss[aria-pressed="true"]{background:#FDE8E8;border-color:#B91C1C;color:#B91C1C}
@@ -204,6 +205,7 @@ body{font-size:15px}
     <button class="tab" role="tab" data-tab="hire" data-i="tHire"></button>
     <button class="tab" role="tab" data-tab="qc" data-i="tQc"></button>
     <button class="tab" role="tab" data-tab="menu" data-i="tMenu"></button>
+    <button class="tab" role="tab" data-tab="pos" data-i="tPos"></button>
     <button class="tab" role="tab" data-tab="rates" data-i="tRates"></button>
   </nav>
   </aside>
@@ -530,6 +532,37 @@ body{font-size:15px}
     </section>
   </section>
 
+  <!-- POS REPORT -->
+  <section id="tab-pos" class="detail" hidden>
+    <section class="panel">
+      <h2 data-i="posTitle"></h2>
+      <p class="note" data-i="posNote"></p>
+      <label class="drop" id="posDrop" for="posFile"><b data-i="posDrop"></b><br><span class="hi" data-i="posDrop2"></span><input type="file" id="posFile" multiple accept=".csv,.xlsx,.xls,text/csv" hidden></label>
+      <div id="posMsg" class="hi"></div>
+      <details><summary class="hi" style="cursor:pointer;font-weight:600" data-i="posFiles"></summary><div class="tablebox"><table><tbody id="posFileRows"></tbody></table></div></details>
+    </section>
+    <section class="panel">
+      <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><h2 data-i="posSum"></h2><div class="row" style="gap:6px" id="posRange" role="group"></div></div>
+      <div class="tiles" id="posTiles"></div>
+      <div class="row" style="gap:16px;flex-wrap:wrap;align-items:flex-start">
+        <div style="flex:1 1 320px;min-width:0"><h3 style="margin:4px 0" data-i="posWd"></h3><div class="tablebox"><table><thead><tr><th></th><th class="n" data-i="posFoot"></th><th class="n" data-i="posOrd"></th><th class="n" data-i="posSale"></th></tr></thead><tbody id="posWdRows"></tbody></table></div></div>
+        <div style="flex:1 1 320px;min-width:0"><h3 style="margin:4px 0" data-i="posMon"></h3><div class="tablebox"><table><thead><tr><th></th><th class="n" data-i="posFoot"></th><th class="n" data-i="posSale"></th><th class="n" data-i="posPP"></th><th class="n" data-i="posWt"></th></tr></thead><tbody id="posMonRows"></tbody></table></div></div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2 data-i="posSpace"></h2>
+      <div class="tablebox"><table><thead><tr><th></th><th class="n" data-i="posOrd"></th><th class="n" data-i="posShare"></th><th class="n" data-i="posAmt"></th><th class="n" data-i="posTicket"></th><th class="n" data-i="posTat"></th></tr></thead><tbody id="posSpaceRows"></tbody></table></div>
+      <p class="note" id="posSpaceNote"></p>
+    </section>
+    <section class="panel">
+      <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><h2 data-i="posDish"></h2><input type="search" id="posQ" data-ph="rateSearch" style="min-width:200px"></div>
+      <div class="row" style="gap:16px;flex-wrap:wrap;align-items:flex-start">
+        <div style="flex:2 1 420px;min-width:0"><div class="tablebox" style="max-height:520px"><table><thead><tr><th>#</th><th data-i="thDish"></th><th class="n" data-i="posQty"></th><th class="n" data-i="posPerDay"></th><th class="n" data-i="posAmtEst"></th><th class="n" data-i="posTrend"></th></tr></thead><tbody id="posDishRows"></tbody></table></div></div>
+        <div style="flex:1 1 260px;min-width:0"><div class="tablebox"><table><thead><tr><th data-i="posCat"></th><th class="n" data-i="posQty"></th><th class="n" data-i="posAmt"></th></tr></thead><tbody id="posCatRows"></tbody></table></div></div>
+      </div>
+    </section>
+  </section>
+
   <!-- RATES -->
   <section id="tab-rates" class="detail" hidden>
     <section class="panel" id="mandiPanel">
@@ -636,7 +669,14 @@ const UI={
  noPerm:["आपको बदलने की अनुमति नहीं - सिर्फ़ देख सकते हैं","You don't have permission to edit - view only"], saveFail:["सेव नहीं हुआ - इंटरनेट जाँचें","Not saved - check internet"], liveStop:["लाइव अपडेट रुक गया - पेज दोबारा खोलें","Live updates stopped - reload the page"],
  close:["बंद करें","Close"],
  backTitle:["पिछले 8 हफ़्ते: असली बिक्री बनाम पूर्वानुमान","Last 8 weeks: actual sales vs forecast"], smartPh:["ख़ाली = स्मार्ट (अपने आप)","blank = smart (automatic)"],
- tRates:["दरें (रेट)","Rates"], tCmp:["भाव तुलना","Rate check"], tQc:["रोज़ की जाँच","Daily checks"], tMenu:["मेन्यू मुनाफ़ा","Menu profit"],
+ tRates:["दरें (रेट)","Rates"], tCmp:["भाव तुलना","Rate check"], tPos:["POS रिपोर्ट","POS reports"],
+ posTitle:["POS की रिपोर्ट डालें (My Hotel Sense)","Upload POS reports (My Hotel Sense)"],
+ posNote:["POS से Dish-wise, Category-wise, Space-wise, Space type-wise, Footfall और Per-person रिपोर्ट (CSV या Excel) निकालकर यहाँ डालें - एक साथ कई फ़ाइलें चलेंगी। हर फ़ाइल हमारे सर्वर पर बैकअप के रूप में भी रखी जाती है। वही तारीख़ें दोबारा आएँ तो पुराना हिस्सा बदल जाता है, दोहरा नहीं गिनता। मेन्यू मुनाफ़ा और पार्सल का हिसाब अपने आप इन्हीं से चलने लगता है।","Export Dish-wise, Category-wise, Space-wise, Space type-wise, Footfall and Per-person reports (CSV or Excel) from the POS and drop them here - many files at once. Each file is also kept on our server as a backup. Same dates again replace the old part, never counted twice. Menu profit and parcel numbers switch to these automatically."],
+ posDrop:["फ़ाइलें यहाँ खींचें या दबाकर चुनें","Drag files here or tap to choose"], posDrop2:["CSV / Excel · कई फ़ाइलें एक साथ","CSV / Excel · many files together"], posFiles:["डाली हुई फ़ाइलें (बैकअप)","Uploaded files (backup)"],
+ posSum:["बिक्री का सार","Sales summary"], posWd:["वार के हिसाब से (रोज़ औसत)","By weekday (daily avg)"], posMon:["महीने के हिसाब से","By month"],
+ posFoot:["ग्राहक","Guests"], posOrd:["ऑर्डर","Orders"], posSale:["बिक्री (हॉल+AC)","Sale (hall+AC)"], posPP:["₹/ग्राहक","₹/guest"], posWt:["खाना/ग्राहक","Food/guest"],
+ posSpace:["कहाँ से बिक्री - हॉल, AC, पार्सल और टेबल","Where sales come from - hall, AC, parcel and tables"], posShare:["हिस्सा","Share"], posAmt:["रकम","Amount"], posTicket:["औसत बिल","Avg bill"], posTat:["टेबल पर समय","Time at table"],
+ posDish:["डिश की बिक्री","Dish sales"], posQty:["मात्रा","Qty"], posPerDay:["रोज़","Per day"], posAmtEst:["रकम (अंदाज़)","Amount (est.)"], posTrend:["पिछले 30 दिन vs पहले","Last 30 days vs before"], posCat:["ग्रुप","Group"], tQc:["रोज़ की जाँच","Daily checks"], tMenu:["मेन्यू मुनाफ़ा","Menu profit"],
  qcTitle:["स्वाद जाँच - सर्विस से पहले हर ग्रेवी","Taste check - every gravy before service"],
  qcNote:["हेड कुक या मैनेजर हर ग्रेवी चखकर 'ठीक' या 'गड़बड़' दबाए; गड़बड़ हो तो क्या ग़लत है चुनें और सर्विस से पहले सुधारें। रोज़ एक ही कसौटी = रोज़ एक जैसा स्वाद।","Head cook or manager tastes each gravy and taps 'OK' or 'Problem'; if a problem, pick what is wrong and fix it before service. Same check every day = same taste every day."],
  qcBy:["किसने चखा","Checked by"],
@@ -674,7 +714,7 @@ const UI={
  packTitle:["पार्सल पैकिंग का सामान - रोज़ के ऑर्डर से अंदाज़","Parcel packing material - estimate from daily orders"],
  packNote:["रोज़ के पार्सल ऑर्डर अपने आप: POS की 'Take Out' रिपोर्ट (जुलाई-अक्टूबर 2026) से - हर ₹1,579 की बिक्री पर औसत 1 पार्सल, अगले 30 दिन के पूर्वानुमान पर लगाया। चाहें तो अपनी गिनती डालें (ख़ाली छोड़ें = अपने आप)। 'एक ऑर्डर में' = एक पार्सल में औसत कितना लगता है - आप बदल सकते हैं। बाज़ार भाव = IndiaMART जैसी साइट पर थोक लिस्टिंग का मोटा दायरा (GST अलग), सरकारी भाव नहीं - अपने सप्लायर का भाव 'आपकी दर' में डालें।","Daily parcel orders are automatic: from the POS 'Take Out' report (Jul-Oct 2026) - on average 1 parcel per ₹1,579 of sales, applied to the next 30 days' forecast. You can type your own count (leave empty = automatic). 'Per order' = average used in one parcel - you can change it. Market rate = rough range from wholesale listings like IndiaMART (GST extra), not a government price - enter your supplier's rate in 'Your rate'."],
  packOrdersL:["रोज़ के पार्सल ऑर्डर (औसत)","Parcel orders per day (avg)"],
- parcelTitle:["पार्सल का हिसाब - POS रिपोर्ट से (4 जुलाई - 21 अक्टूबर 2026)","Parcel facts - from POS report (4 Jul - 21 Oct 2026)"],
+ parcelTitle:["पार्सल का हिसाब - POS रिपोर्ट से","Parcel facts - from POS reports"],
  thPItem:["सामान","Item"], thPBest:["सबसे ठीक साइज़ / क्वालिटी","Best size / quality"], thPUse:["एक ऑर्डर में","Per order"], thPMonth:["महीने में","Per month"], thPMarket:["बाज़ार भाव ₹/नग","Market ₹/pc"], thPCost:["ख़र्च / महीना","Cost / month"],
  packReset:["सारे अंदाज़ वापस","Reset estimates"], packTipsTitle:["पैकिंग के लिए ज़रूरी बातें","Packing tips"],
  cmpTitle:["भाव तुलना: मंडी + होटल तक का ख़र्च बनाम आपका रेट","Rate check: mandi + delivery cost vs your rate"],
@@ -1304,10 +1344,10 @@ const PACK_TIPS=[["प्लास्टिक कैरी बैग 120 मा
  ["हर पार्सल में चम्मच/टिश्यू तभी डालें जब ग्राहक माँगे - ये चुपचाप बड़ा ख़र्च बन जाता है।","Add spoon/tissue only when the customer asks - it quietly becomes a big cost."]];
 function packCfg(){ return settings.pack||{} }
 // POS "Space type wise" report, 4 Jul - 21 Oct 2026 (110 din): Take Out 2,164 order, ₹7,48,144; kul bikri ₹34,16,813
-const PARCEL={days:110,orders:2164,amt:748144,total:3416813,perRs:1579,avg:19.6,last30:20.4,peak:[["2026-08-28",55],["2026-10-20",46]],wd:[24.5,18.5,18.2,16.0,17.7,21.9,20.6]};
+let PARCEL={days:110,orders:2164,amt:748144,total:3416813,perRs:1579,avg:19.6,last30:20.4,peak:[["2026-08-28",55],["2026-10-20",46]],wd:[24.5,18.5,18.2,16.0,17.7,21.9,20.6]};
 function autoOrders(){ const t0=localDate(new Date()); let F=0; for(let i=0;i<30;i++) F+=fcOf(shift(t0,i)); return Math.round(F/30/PARCEL.perRs*10)/10 }
 function renderPack(){
-  if(!$("packRows")) return; loadSpend();
+  if(!$("packRows")) return; loadSpend(); loadPos();
   const P=packCfg(), auto=autoOrders(), orders=P.orders==null?auto:Number(P.orders);
   if(document.activeElement!==$("packOrders")){ $("packOrders").value=P.orders==null?"":P.orders; $("packOrders").placeholder=String(auto) }
   $("parcelFacts").innerHTML=[[T("कुल पार्सल","Total parcels"),PARCEL.orders.toLocaleString("en-IN")],[T("रोज़ औसत","Daily avg"),PARCEL.avg],[T("पिछले 30 दिन औसत","Last 30 days avg"),PARCEL.last30],
@@ -1469,22 +1509,27 @@ function renderQcReport(){
 }
 
 // ---------- MENU MUNAFA (menu engineering) ----------
-let menuF="all", menuCat="__all";
+let menuF="all", menuCat="__all", MENU_SRC=0;
 const MCLS={star:["⭐ स्टार","⭐ Star","ok","ख़ूब बिकती + अच्छा मुनाफ़ा। क्वालिटी कभी न गिरे, मेन्यू में सबसे ऊपर/हाइलाइट रखें, दाम ₹10 तक बढ़ा सकते हैं।","Sells a lot + good profit. Never let quality drop, keep at the top/highlighted, can raise price up to ₹10."],
   horse:["🐎 मेहनती","🐎 Workhorse","mid","ख़ूब बिकती पर मुनाफ़ा कम। दाम ₹10-20 बढ़ाएँ या पोर्शन/महँगा सामान (बटर, क्रीम, काजू) थोड़ा कम करें।","Sells a lot but low profit. Raise price ₹10-20 or trim portion/costly items (butter, cream, cashew) slightly."],
   puzzle:["🧩 पहेली","🧩 Puzzle","low","मुनाफ़ा अच्छा पर कम बिकती। वेटर सुझाएँ, नाम/फ़ोटो बेहतर करें, कॉम्बो में डालें।","Good profit but sells little. Have waiters suggest it, better name/photo, put it in combos."],
   dog:["🐶 कमज़ोर","🐶 Weak","bad","कम बिकती + कम मुनाफ़ा। मेन्यू से हटाने पर सोचें (रसोई का काम और स्टॉक दोनों घटेगा) या बदलकर नई डिश।","Sells little + low profit. Consider removing (less kitchen work and stock) or replace with a new dish."]};
 function menuRows(){ const t0=localDate(new Date()); let F=0; for(let i=0;i<30;i++) F+=fcOf(shift(t0,i));
-  const rows=DATA.dishes.filter(d=>d.p>0&&d.q>0).map(d=>{const c=COST[d.n]||0, m=d.p-c, pl=F*d.q/1e5; return {n:d.n,c:d.c,p:d.p,cost:c,m,pl,profit:m*pl,fc:d.p?c/d.p:0}});
+  // POS ki asli bikri ho (pichhle 90 din) to wahi, warna package ka andaaz
+  const PD=posDays(90).filter(x=>x.dish), dm=(POSD&&POSD.dishMeta)||{}, pq={};
+  PD.forEach(x=>{ for(const k in x.dish){ const n=pn(k); pq[n]=(pq[n]||0)+x.dish[k] } });
+  const usePos=PD.length>=14; MENU_SRC=usePos?PD.length:0;
+  const rows=DATA.dishes.filter(d=>d.p>0&&(usePos?pq[d.n]>0:d.q>0)).map(d=>{const c=COST[d.n]||0, mk=Object.keys(dm).find(k=>pn(k)===d.n), mm=mk&&dm[mk], p=mm&&mm.qty?mm.amt/mm.qty:d.p, m=p-c, pl=usePos?pq[d.n]/PD.length*30:F*d.q/1e5; return {n:d.n,c:d.c,p,cost:c,m,pl,profit:m*pl,fc:p?c/p:0}});
   const by={}; rows.forEach(r=>(by[r.c] ||= []).push(r));
   Object.values(by).forEach(list=>{ const med=a=>{const s=[...a].sort((x,y)=>x-y); return s[Math.floor(s.length/2)]||0}; const popT=list.reduce((a,r)=>a+r.pl,0)/list.length*0.7, mM=med(list.map(r=>r.m));
     list.forEach(r=>{const hp=r.pl>=popT, hm=r.m>=mM; r.cls=hp&&hm?"star":hp?"horse":hm?"puzzle":"dog"}) });
   return {rows,F} }
 function renderMenu(){
-  if(!$("mRows")) return; const {rows}=menuRows();
+  if(!$("mRows")) return; loadPos(); const {rows}=menuRows();
   const tot=rows.reduce((a,r)=>a+r.profit,0), sales=rows.reduce((a,r)=>a+r.p*r.pl,0), cnt=c=>rows.filter(r=>r.cls===c).length;
   $("mTiles").innerHTML=[[T("खाने का मुनाफ़ा/महीना (कच्चे माल के बाद)","Food profit/month (after raw material)"),fmtR(tot),"ok"],[T("फ़ूड कॉस्ट %","Food cost %"),sales?Math.round((1-tot/sales)*100)+"%":"–","mid"],[T(MCLS.star[0],MCLS.star[1]),cnt("star"),"ok"],[T(MCLS.horse[0],MCLS.horse[1]),cnt("horse"),"mid"],[T(MCLS.puzzle[0],MCLS.puzzle[1]),cnt("puzzle"),"low"],[T(MCLS.dog[0],MCLS.dog[1]),cnt("dog"),"bad"]]
-    .map(([k,v,c])=>`<div class="tile"><span class="k">${esc(k)}</span><span class="v"><span class="st ${c}" style="font-size:20px;padding:2px 12px">${v}</span></span></div>`).join("");
+    .map(([k,v,c])=>`<div class="tile"><span class="k">${esc(k)}</span><span class="v"><span class="st ${c}" style="font-size:20px;padding:2px 12px">${v}</span></span></div>`).join("")
+    +`<div class="tile"><span class="k">${T("बिक्री का आधार","Sales basis")}</span><span class="v" style="font-size:14px">${MENU_SRC?T(`POS रिपोर्ट, पिछले ${MENU_SRC} दिन`,`POS reports, last ${MENU_SRC} days`):T("पैकेज का अंदाज़ (POS रिपोर्ट डालें)","Package estimate (upload POS reports)")}</span></div>`;
   const F=[["all",T("सभी","All")],["star",T(MCLS.star[0],MCLS.star[1])],["horse",T(MCLS.horse[0],MCLS.horse[1])],["puzzle",T(MCLS.puzzle[0],MCLS.puzzle[1])],["dog",T(MCLS.dog[0],MCLS.dog[1])]];
   $("mFilter").innerHTML=F.map(([v,l])=>`<button class="chip" type="button" data-f="${v}" aria-pressed="${v===menuF}">${esc(l)}</button>`).join("");
   $("mFilter").querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{menuF=b.dataset.f;renderMenu()});
@@ -1494,6 +1539,65 @@ function renderMenu(){
   const list=rows.filter(r=>(menuF==="all"||r.cls===menuF)&&(menuCat==="__all"||r.c===menuCat)).sort((a,b)=>b.profit-a.profit);
   $("mRows").innerHTML=list.map(r=>`<tr><td><b>${esc(L(r.n))}</b><br><span class="hi">${esc(r.c)}</span></td><td class="n">${Math.round(r.pl)}</td><td class="n">${fmtR(r.p)}</td><td class="n">${fmtR(r.cost)}<br><span class="hi">${Math.round(r.fc*100)}%</span></td><td class="n"><b>${fmtR(r.m)}</b></td><td class="n">${fmtR(r.profit)}</td><td><span class="st ${MCLS[r.cls][2]}">${esc(T(MCLS[r.cls][0],MCLS[r.cls][1]))}</span>${r.fc>0.45?`<br><span class="hi" style="color:#B91C1C">${T("लागत 45%+ - दाम/पोर्शन देखें","Cost 45%+ - check price/portion")}</span>`:""}</td></tr>`).join("")||`<tr><td colspan="7" class="empty">–</td></tr>`;
   $("mHow").innerHTML=Object.values(MCLS).map(c=>`<tr><td style="white-space:nowrap"><span class="st ${c[2]}">${esc(T(c[0],c[1]))}</span></td><td class="hi">${esc(T(c[3],c[4]))}</td></tr>`).join("");
+}
+
+// ---------- POS REPORT ----------
+let POSD=null, posRange=90;
+const pn=s=>String(s||"").replace(/·/g,".");
+function loadPos(force){ if(!db||!db.posSummary) return Promise.resolve(); if(POSD&&!force) return Promise.resolve();
+  return db.posSummary().then(j=>{ POSD=j; parcelFromPos(); if(["pos","menu","pack"].includes(tab)) renderTab() }).catch(()=>{ POSD={days:[],files:[],dishMeta:{}} }) }
+function posDays(n){ if(!POSD) return []; const all=POSD.days||[]; if(!n) return all; const last=all.length?all[all.length-1].d:localDate(new Date()); const from=shift(last,-(n-1)); return all.filter(x=>x.d>=from) }
+// Parcel ka hisaab POS se (pichhle 90 din)
+function parcelFromPos(){ const ds=posDays(90).filter(x=>x.stype&&x.pp); if(ds.length<14) return;
+  const to=ds.map(x=>Number(x.stype["Take Out"]||0)), sale=ds.reduce((a,x)=>a+(x.pp.sale||0),0), orders=to.reduce((a,b)=>a+b,0); if(!orders) return;
+  const wd=[0,0,0,0,0,0,0], wn=[0,0,0,0,0,0,0]; ds.forEach((x,i)=>{const w=parse(x.d).getDay(); wd[w]+=to[i]; wn[w]++});
+  const pk=ds.map((x,i)=>[x.d,to[i]]).sort((a,b)=>b[1]-a[1]).slice(0,2), l30=to.slice(-30);
+  // footfall / per-person report sirf baithkar khane (hall + AC) ki bikri deta hai; parcel ki rakam = orders × parcel ka aukat bill
+  const tm=((POSD.metaByType||{}).spacetype||{})["Take Out"], ticket=tm&&tm.qty?tm.amt/tm.qty:(PARCEL.amt/PARCEL.orders), total=sale+orders*ticket;
+  PARCEL={...PARCEL,days:ds.length,orders,perRs:Math.round(total/orders),avg:Math.round(orders/ds.length*10)/10,last30:Math.round(l30.reduce((a,b)=>a+b,0)/l30.length*10)/10,peak:pk,wd:wd.map((v,i)=>wn[i]?Math.round(v/wn[i]*10)/10:0),total,amt:orders*ticket,fromPos:true} }
+async function readPosFile(f){ if(/\.xlsx?$/i.test(f.name)){ await new Promise((ok,bad)=>{ if(window.XLSX) return ok(); const sc=document.createElement("script"); sc.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; sc.onload=ok; sc.onerror=()=>bad(new Error("Excel reader did not load - save as CSV")); document.head.appendChild(sc) });
+    const wb=window.XLSX.read(await f.arrayBuffer(),{type:"array"}); return window.XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]) }
+  return await f.text() }
+async function uploadPos(files){ const out=[]; $("posMsg").textContent=T("डाल रहे हैं…","Uploading…");
+  for(const f of files){ try{ const text=await readPosFile(f); const r=await db.posUpload({name:f.name,text}); out.push(`✓ ${f.name}: ${r.type} · ${r.from||""} → ${r.to||""} · ${r.days} ${T("दिन","days")}`) }catch(e){ out.push(`✕ ${f.name}: ${e.message}`) } }
+  $("posMsg").innerHTML=out.map(esc).join("<br>"); await loadPos(true); renderPos() }
+$("posFile").addEventListener("change",e=>{ const fs=[...e.target.files]; e.target.value=""; if(fs.length) uploadPos(fs) });
+["dragenter","dragover"].forEach(ev=>$("posDrop").addEventListener(ev,e=>{e.preventDefault();$("posDrop").classList.add("on")}));
+["dragleave","drop"].forEach(ev=>$("posDrop").addEventListener(ev,e=>{e.preventDefault();$("posDrop").classList.remove("on")}));
+$("posDrop").addEventListener("drop",e=>{ const fs=[...(e.dataTransfer&&e.dataTransfer.files||[])]; if(fs.length) uploadPos(fs) });
+$("posQ").addEventListener("input",()=>renderPos());
+function renderPos(){
+  if(!$("posTiles")) return; if(!POSD){ $("posTiles").innerHTML=`<div class="hi">${T("लोड हो रहा है…","Loading…")}</div>`; loadPos(); return }
+  const TN={dish:"Dish-wise",category:"Category-wise",space:"Space-wise",spacetype:"Space type-wise",footfall:"Footfall",perperson:"Per-person"};
+  $("posFileRows").innerHTML=(POSD.files||[]).map(f=>`<tr><td>${esc(f.name)}</td><td>${esc(TN[f.type]||f.type)}</td><td class="hi">${esc(f.from||"")} → ${esc(f.to||"")}</td><td class="hi">${esc(new Date(f.at).toLocaleString(lang==="hi"?"hi-IN":"en-IN"))} ${esc(f.by||"")}</td></tr>`).join("")||`<tr><td class="empty">–</td></tr>`;
+  $("posRange").innerHTML=[[30,T("30 दिन","30 days")],[90,T("90 दिन","90 days")],[0,T("सब","All")]].map(([v,l])=>`<button class="chip" type="button" data-r="${v}" aria-pressed="${v===posRange}">${l}</button>`).join("");
+  $("posRange").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{posRange=Number(b.dataset.r);renderPos()});
+  const D=posDays(posRange); if(!D.length){ $("posTiles").innerHTML=`<div class="hi">${T("अभी कोई रिपोर्ट नहीं - ऊपर फ़ाइल डालें","No reports yet - upload files above")}</div>`; ["posWdRows","posMonRows","posSpaceRows","posDishRows","posCatRows"].forEach(i=>$(i).innerHTML=""); return }
+  const sum=(f)=>D.reduce((a,x)=>a+(f(x)||0),0), PP=D.filter(x=>x.pp), FT=D.filter(x=>x.foot);
+  const sale=sum(x=>x.pp&&x.pp.sale), foot=sum(x=>x.pp?x.pp.foot:(x.foot&&x.foot.total)), ord=sum(x=>x.pp?x.pp.orders:(x.foot&&x.foot.orders)), w=sum(x=>x.pp&&x.pp.weight), tw=sum(x=>x.pp&&x.pp.targetW);
+  const kids=sum(x=>x.foot&&x.foot.kids), fem=sum(x=>x.foot&&x.foot.female), ftot=sum(x=>x.foot&&x.foot.total);
+  $("posTiles").innerHTML=[[T("दिन","Days"),`${D.length} (${dLabel(D[0].d).replace(/^\S+ /,"")} → ${dLabel(D[D.length-1].d).replace(/^\S+ /,"")})`],[T("बिक्री - हॉल + AC","Sale - hall + AC"),fmtR(sale)],[T("पार्सल (अंदाज़)","Parcel (est.)"),(()=>{const tm=((POSD.metaByType||{}).spacetype||{})["Take Out"], o=sum(x=>x.stype&&x.stype["Take Out"]); return tm&&tm.qty&&o?fmtR(o*tm.amt/tm.qty):"–"})()],[T("ग्राहक","Guests"),foot.toLocaleString("en-IN")],[T("ऑर्डर","Orders"),ord.toLocaleString("en-IN")],[T("₹ / ग्राहक","₹ / guest"),foot?fmtR(sale/foot):"–"],[T("ग्राहक / ऑर्डर","Guests / order"),ord?(foot/ord).toFixed(1):"–"],[T("खाना / ग्राहक","Food / guest"),foot?Math.round(w/foot)+" g":"–"],[T("परोसा / टारगेट","Served / target"),tw?Math.round(w/tw*100)+"%":"–"],[T("महिला / बच्चे","Women / kids"),ftot?`${Math.round(fem/ftot*100)}% / ${Math.round(kids/ftot*100)}%`:"–"]]
+    .map(([k,v])=>`<div class="tile"><span class="k">${esc(k)}</span><span class="v" style="font-size:18px">${v}</span></div>`).join("");
+  const wd=[0,1,2,3,4,5,6].map(()=>({n:0,f:0,o:0,s:0})); PP.forEach(x=>{const g=wd[parse(x.d).getDay()]; g.n++; g.f+=x.pp.foot; g.o+=x.pp.orders; g.s+=x.pp.sale});
+  $("posWdRows").innerHTML=[1,2,3,4,5,6,0].map(i=>{const g=wd[i]; return g.n?`<tr><td>${esc(dayN(i))}</td><td class="n">${Math.round(g.f/g.n)}</td><td class="n">${Math.round(g.o/g.n)}</td><td class="n">${fmtR(g.s/g.n)}</td></tr>`:""}).join("");
+  const mon={}; PP.forEach(x=>{const k=x.d.slice(0,7); const m=mon[k] ||= {f:0,s:0,w:0,n:0}; m.f+=x.pp.foot; m.s+=x.pp.sale; m.w+=x.pp.weight; m.n++});
+  $("posMonRows").innerHTML=Object.entries(mon).map(([k,m])=>`<tr><td>${esc(monN(Number(k.slice(5))-1))} ${k.slice(2,4)}<span class="hi"> (${m.n})</span></td><td class="n">${m.f.toLocaleString("en-IN")}</td><td class="n">${fmtR(m.s)}</td><td class="n">${m.f?fmtR(m.s/m.f):"–"}</td><td class="n">${m.f?Math.round(m.w/m.f)+" g":"–"}</td></tr>`).join("");
+  // jagah: din-wise orders range ke hisaab se; rakam/samay file ke meta se (poori file ki avadhi)
+  const so={}, sp={}; D.forEach(x=>{ for(const k in (x.stype||{})) so[k]=(so[k]||0)+x.stype[k]; for(const k in (x.space||{})) sp[k]=(sp[k]||0)+x.space[k] });
+  const fm=t=>{ const f=(POSD.files||[]).find(f=>f.type===t); return f?f:null };
+  const sMeta=(POSD.metaByType||{}).spacetype||{}, tMeta=(POSD.metaByType||{}).space||{};
+  const totO=Object.values(so).reduce((a,b)=>a+b,0);
+  const row=(k,o,m,bold)=>`<tr><td>${bold?"<b>":""}${esc(pn(k))}${bold?"</b>":""}</td><td class="n">${o}</td><td class="n">${totO?Math.round(o/totO*100)+"%":"–"}</td><td class="n">${m&&m.amt?fmtR(m.amt):"–"}</td><td class="n">${m&&m.qty?fmtR(m.amt/m.qty):"–"}</td><td class="n">${m&&m.tat?Math.round(m.tat/60)+" "+T("मि.","min"):"–"}</td></tr>`;
+  $("posSpaceRows").innerHTML=Object.entries(so).sort((a,b)=>b[1]-a[1]).map(([k,o])=>row(k,o,sMeta[k],1)).join("")+(Object.keys(sp).length?`<tr class="grp"><td colspan="6">${T("टेबल","Tables")}</td></tr>`+Object.entries(sp).sort((a,b)=>((tMeta[b[0]]||{}).amt||0)-((tMeta[a[0]]||{}).amt||0)).map(([k,o])=>row(k,o,tMeta[k])).join(""):"");
+  $("posSpaceNote").textContent=T("ऑर्डर = चुनी अवधि के; रकम, औसत बिल और टेबल पर समय = आख़िरी डाली गई फ़ाइल की पूरी अवधि के। पार्सल का हिसाब (🥡 टैब) अब यहीं से चलता है।","Orders = selected period; amount, avg bill and time at table = full period of the last uploaded file. Parcel numbers (🥡 tab) now come from here.");
+  // dish
+  const dq={}, dq30={}, dqOld={}; const last=D[D.length-1].d, cut=shift(last,-29);
+  D.forEach(x=>{ for(const k in (x.dish||{})){ dq[k]=(dq[k]||0)+x.dish[k]; if(x.d>=cut) dq30[k]=(dq30[k]||0)+x.dish[k]; else dqOld[k]=(dqOld[k]||0)+x.dish[k] } });
+  const nOld=D.filter(x=>x.d<cut).length, n30=D.length-nOld, dm=POSD.dishMeta||{}, q=($("posQ").value||"").toLowerCase();
+  $("posDishRows").innerHTML=Object.entries(dq).filter(([k])=>!q||pn(k).toLowerCase().includes(q)||L(pn(k)).toLowerCase().includes(q)).sort((a,b)=>b[1]-a[1]).map(([k,v],i)=>{ const m=dm[k], pr=m&&m.qty?m.amt/m.qty:0; const a=n30&&nOld?(dq30[k]||0)/n30:0, b=nOld?(dqOld[k]||0)/nOld:0, ch=b?(a/b-1)*100:null;
+    return `<tr><td class="hi">${i+1}</td><td><b>${esc(L(pn(k)))}</b></td><td class="n">${v.toLocaleString("en-IN")}</td><td class="n">${(v/D.length).toFixed(1)}</td><td class="n">${pr?fmtR(v*pr):"–"}</td><td class="n" style="color:${ch==null?"var(--muted)":ch>10?"var(--ok)":ch<-10?"#B91C1C":"var(--muted)"}">${ch==null?"–":(ch>=0?"+":"")+Math.round(ch)+"%"}</td></tr>`}).join("");
+  const cq={}; D.forEach(x=>{ for(const k in (x.cat||{})) cq[k]=(cq[k]||0)+x.cat[k] }); const cm=(POSD.metaByType||{}).category||{};
+  $("posCatRows").innerHTML=Object.entries(cq).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<tr><td>${esc(pn(k))}</td><td class="n">${v.toLocaleString("en-IN")}</td><td class="n">${cm[k]&&cm[k].qty?fmtR(v*cm[k].amt/cm[k].qty):"–"}</td></tr>`).join("");
 }
 
 // ---------- STAFF BHARTI ----------
@@ -1957,13 +2061,13 @@ function saveRates(){ratesAt=new Date().toISOString(); debounce("rates",()=>{
 function srcTag(k){ const x=ratesSrc[k]; if(!x) return ""; return `<br><span class="hi" title="${esc(x.vendor||"")} ${esc(x.billNo||"")}">🧾 ${esc(T("बिल","Bill"))}: ${esc(String(x.vendor||"").slice(0,18))}${x.date?" · "+esc(x.date.slice(0,5)):""}</span>` }
 
 // ---------- tabs ----------
-const TABS=["aaj","team","fc","sabzi","month","recipe","fam","lab","cmp","pack","buy","hire","qc","menu","rates"];
+const TABS=["aaj","team","fc","sabzi","month","recipe","fam","lab","cmp","pack","buy","hire","qc","menu","pos","rates"];
 function setTab(t){tab=t;try{localStorage.setItem("rasoi-tab",t)}catch(e){}
   document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===t)));
   TABS.forEach(k=>$("tab-"+k).hidden=k!==t); ["recipeDetail","labDetail"].forEach(id=>{const b=$(id); if(b&&!(t==="recipe"&&id==="recipeDetail")){b.hidden=true}}); renderTab(); try{window.scrollTo(0,0)}catch(e){}}
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 document.addEventListener("keydown",e=>{if(e.key==="Escape")["recipeDetail","labDetail"].forEach(id=>{const b=$(id); if(b&&!b.hidden){b.hidden=true;b.innerHTML=""}})});
-function renderTab(){({aaj:renderAaj,team:renderTeam,fc:renderFc,sabzi:renderSabzi,month:()=>{monthOptions();renderMonth()},recipe:renderRecipeList,fam:renderFam,lab:renderLab,cmp:renderCmp,pack:renderPack,buy:renderBuy,hire:renderHire,qc:renderQc,menu:renderMenu,rates:renderRates})[tab]()}
+function renderTab(){({aaj:renderAaj,team:renderTeam,fc:renderFc,sabzi:renderSabzi,month:()=>{monthOptions();renderMonth()},recipe:renderRecipeList,fam:renderFam,lab:renderLab,cmp:renderCmp,pack:renderPack,buy:renderBuy,hire:renderHire,qc:renderQc,menu:renderMenu,pos:renderPos,rates:renderRates})[tab]()}
 function renderAll(){renderHeader();renderTab()}
 
 // ---------- saving ----------
@@ -2019,6 +2123,8 @@ function makeDb(API){
     banquet:(f,t)=>req("GET","banquet?from="+f+"&to="+t),
     mandi:()=>req("GET","mandi"),
     spend:()=>req("GET","spend"),
+    posSummary:()=>req("GET","pos/summary"),
+    posUpload:(b)=>req("PUT","pos/upload",b),
     hiring:()=>req("GET","hiring"),
     hireSet:(id,b)=>req("PUT","hiring/"+id,b),
     hireAdd:(b)=>req("PUT","hiring/add",b),
