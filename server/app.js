@@ -59,6 +59,7 @@ import performance from "./controller/performance.js";
 import group from "./controller/group.js";
 import rasoi from "./controller/rasoi.js";
 import jobs from "./controller/jobs.js";
+import posSync from "./controller/posSync.js";
 import bizGraph from "./controller/bizGraph.js";
 import dashLock from "./controller/dashLock.js";
 
@@ -100,6 +101,7 @@ app.use("/api/v1/dash-lock", dashLock); // dashboard ka alag password (sirf Supe
 app.use("/api/v1/biz", bizGraph); // naye graphs + sales goals (daily read-only, goals alag collection)
 app.use("/api/v1/performance", performance); // read-only: saal vs saal performance (sirf owner/admin)
 app.use("/api/v1/group", group); // read-only: sab hotels ka ek dashboard (summary key se)
+app.use("/api/v1/pos-sync", posSync); // hotel PC ka POS sync (sync key se, sirf kitchen_pos_*)
 app.use("/api/v1/jobs", jobs); // staff bharti: khula apply form (sirf kitchen_candidates)
 app.use("/api/v1/rasoi", rasoi); // Rasoi Board (kitchen): apne naye kitchen_* collections; app ka sale sirf padhta hai
 

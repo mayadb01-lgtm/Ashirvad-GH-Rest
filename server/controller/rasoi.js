@@ -16,6 +16,7 @@
 import { Router } from "express";
 import mongoose from "mongoose";
 import fs from "fs";
+import crypto from "crypto";
 import path from "path";
 import { fileURLToPath } from "url";
 import { loadDaily } from "./forecast.js";
@@ -328,6 +329,18 @@ router.put("/pos/upload", async (req, res) => {
     res.status(400).json({ success: false, message: e.message });
   }
 });
+// Malik: hotel PC ke sync program ki key banao (ek baar dikhegi; server par sirf hash)
+router.put("/pos/key", async (req, res) => {
+  try {
+    const u = req.user;
+    if (!(u?.constructor?.modelName === "Admin" && u.viewOnly !== true)) return res.status(403).json({ success: false, message: "Only the owner can do this." });
+    const key = crypto.randomBytes(18).toString("base64url");
+    await KitchenDoc.updateOne({ _id: "secret/possync" }, { $set: { col: "secret", data: { hash: crypto.createHash("sha256").update(key).digest("hex"), last4: key.slice(-4), at: new Date() }, by: who(u), at: new Date() } }, { upsert: true });
+    res.json({ success: true, key });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
 router.get("/pos/summary", async (req, res) => {
   try {
     const to = /^\d{4}-\d{2}-\d{2}$/.test(req.query.to || "") ? req.query.to : "9999-12-31";
@@ -338,7 +351,9 @@ router.get("/pos/summary", async (req, res) => {
     ]);
     const metaByType = {};
     files.forEach((f) => { if (!metaByType[f.type] && f.meta && Object.keys(f.meta).length) metaByType[f.type] = f.meta; });
-    res.set("Cache-Control", "no-store").json({ success: true, days: days.map((d) => ({ d: d._id, ...d.data })), files: files.map((f) => ({ name: f.name, type: f.type, from: f.from, to: f.to, rows: f.rows, at: f.at, by: f.by })), dishMeta: metaByType.dish || {}, metaByType });
+    const sk = (await KitchenDoc.findById("secret/possync").lean())?.data;
+    const sync = sk ? { set: !!sk.hash, last4: sk.last4, keyAt: sk.at, last: sk.lastSync || null } : { set: false };
+    res.set("Cache-Control", "no-store").json({ success: true, sync, days: days.map((d) => ({ d: d._id, ...d.data })), files: files.map((f) => ({ name: f.name, type: f.type, from: f.from, to: f.to, rows: f.rows, at: f.at, by: f.by })), dishMeta: metaByType.dish || {}, metaByType });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
   }

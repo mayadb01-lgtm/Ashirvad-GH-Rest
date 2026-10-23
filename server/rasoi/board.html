@@ -539,6 +539,11 @@ body{font-size:15px}
       <p class="note" data-i="posNote"></p>
       <label class="drop" id="posDrop" for="posFile"><b data-i="posDrop"></b><br><span class="hi" data-i="posDrop2"></span><input type="file" id="posFile" multiple accept=".csv,.xlsx,.xls,text/csv" hidden></label>
       <div id="posMsg" class="hi"></div>
+      <div class="row" style="gap:10px;flex-wrap:wrap;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px">
+        <div style="flex:1 1 260px"><b data-i="posSyncT"></b><br><span class="hi" id="posSyncSt"></span></div>
+        <button class="btn" id="posKeyBtn" data-i="posKeyBtn"></button>
+        <div id="posKeyOut" class="hi" style="flex-basis:100%" hidden></div>
+      </div>
       <details><summary class="hi" style="cursor:pointer;font-weight:600" data-i="posFiles"></summary><div class="tablebox"><table><tbody id="posFileRows"></tbody></table></div></details>
     </section>
     <section class="panel">
@@ -673,6 +678,7 @@ const UI={
  posTitle:["POS की रिपोर्ट डालें (My Hotel Sense)","Upload POS reports (My Hotel Sense)"],
  posNote:["POS से Dish-wise, Category-wise, Space-wise, Space type-wise, Footfall और Per-person रिपोर्ट (CSV या Excel) निकालकर यहाँ डालें - एक साथ कई फ़ाइलें चलेंगी। हर फ़ाइल हमारे सर्वर पर बैकअप के रूप में भी रखी जाती है। वही तारीख़ें दोबारा आएँ तो पुराना हिस्सा बदल जाता है, दोहरा नहीं गिनता। मेन्यू मुनाफ़ा और पार्सल का हिसाब अपने आप इन्हीं से चलने लगता है।","Export Dish-wise, Category-wise, Space-wise, Space type-wise, Footfall and Per-person reports (CSV or Excel) from the POS and drop them here - many files at once. Each file is also kept on our server as a backup. Same dates again replace the old part, never counted twice. Menu profit and parcel numbers switch to these automatically."],
  posDrop:["फ़ाइलें यहाँ खींचें या दबाकर चुनें","Drag files here or tap to choose"], posDrop2:["CSV / Excel · कई फ़ाइलें एक साथ","CSV / Excel · many files together"], posFiles:["डाली हुई फ़ाइलें (बैकअप)","Uploaded files (backup)"],
+ posSyncT:["होटल PC से अपने आप (POS Sync)","Automatic from hotel PC (POS Sync)"], posKeyBtn:["Sync key बनाओ","Create sync key"],
  posSum:["बिक्री का सार","Sales summary"], posWd:["वार के हिसाब से (रोज़ औसत)","By weekday (daily avg)"], posMon:["महीने के हिसाब से","By month"],
  posFoot:["ग्राहक","Guests"], posOrd:["ऑर्डर","Orders"], posSale:["बिक्री (हॉल+AC)","Sale (hall+AC)"], posPP:["₹/ग्राहक","₹/guest"], posWt:["खाना/ग्राहक","Food/guest"],
  posSpace:["कहाँ से बिक्री - हॉल, AC, पार्सल और टेबल","Where sales come from - hall, AC, parcel and tables"], posShare:["हिस्सा","Share"], posAmt:["रकम","Amount"], posTicket:["औसत बिल","Avg bill"], posTat:["टेबल पर समय","Time at table"],
@@ -1553,7 +1559,7 @@ function parcelFromPos(){ const ds=posDays(90).filter(x=>x.stype&&x.pp); if(ds.l
   const wd=[0,0,0,0,0,0,0], wn=[0,0,0,0,0,0,0]; ds.forEach((x,i)=>{const w=parse(x.d).getDay(); wd[w]+=to[i]; wn[w]++});
   const pk=ds.map((x,i)=>[x.d,to[i]]).sort((a,b)=>b[1]-a[1]).slice(0,2), l30=to.slice(-30);
   // footfall / per-person report sirf baithkar khane (hall + AC) ki bikri deta hai; parcel ki rakam = orders × parcel ka aukat bill
-  const tm=((POSD.metaByType||{}).spacetype||{})["Take Out"], ticket=tm&&tm.qty?tm.amt/tm.qty:(PARCEL.amt/PARCEL.orders), total=sale+orders*ticket;
+  const toA=ds.reduce((a,x)=>a+((x.stypeAmt||{})["Take Out"]||0),0), tm=((POSD.metaByType||{}).spacetype||{})["Take Out"], ticket=toA&&ds.every(x=>x.stypeAmt)?toA/orders:tm&&tm.qty?tm.amt/tm.qty:(PARCEL.amt/PARCEL.orders), total=sale+orders*ticket;
   PARCEL={...PARCEL,days:ds.length,orders,perRs:Math.round(total/orders),avg:Math.round(orders/ds.length*10)/10,last30:Math.round(l30.reduce((a,b)=>a+b,0)/l30.length*10)/10,peak:pk,wd:wd.map((v,i)=>wn[i]?Math.round(v/wn[i]*10)/10:0),total,amt:orders*ticket,fromPos:true} }
 async function readPosFile(f){ if(/\.xlsx?$/i.test(f.name)){ await new Promise((ok,bad)=>{ if(window.XLSX) return ok(); const sc=document.createElement("script"); sc.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; sc.onload=ok; sc.onerror=()=>bad(new Error("Excel reader did not load - save as CSV")); document.head.appendChild(sc) });
     const wb=window.XLSX.read(await f.arrayBuffer(),{type:"array"}); return window.XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]) }
@@ -1566,10 +1572,17 @@ $("posFile").addEventListener("change",e=>{ const fs=[...e.target.files]; e.targ
 ["dragleave","drop"].forEach(ev=>$("posDrop").addEventListener(ev,e=>{e.preventDefault();$("posDrop").classList.remove("on")}));
 $("posDrop").addEventListener("drop",e=>{ const fs=[...(e.dataTransfer&&e.dataTransfer.files||[])]; if(fs.length) uploadPos(fs) });
 $("posQ").addEventListener("input",()=>renderPos());
+$("posKeyBtn").onclick=async()=>{ const b=$("posKeyBtn"); if(POSD&&POSD.sync&&POSD.sync.set&&b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent=T("पक्का? पुरानी key बंद होगी","Sure? Old key will stop");return} b.dataset.sure="";
+  try{ const r=await db.posKey(); $("posKeyOut").hidden=false; $("posKeyOut").innerHTML=`${T("ये key सिर्फ़ अभी दिखेगी - होटल PC पर setup में डालें:","This key shows only now - enter it in setup on the hotel PC:")} <code style="font-size:16px;font-weight:700;user-select:all;background:var(--warn-soft);padding:2px 8px;border-radius:6px">${esc(r.key)}</code>`; await loadPos(true); renderPos() }
+  catch(e){ $("posKeyOut").hidden=false; $("posKeyOut").textContent=e.code==="invalid_argument"?T("सिर्फ़ मालिक key बना सकते हैं","Only the owner can create the key"):e.message } };
 function renderPos(){
   if(!$("posTiles")) return; if(!POSD){ $("posTiles").innerHTML=`<div class="hi">${T("लोड हो रहा है…","Loading…")}</div>`; loadPos(); return }
   const TN={dish:"Dish-wise",category:"Category-wise",space:"Space-wise",spacetype:"Space type-wise",footfall:"Footfall",perperson:"Per-person"};
   $("posFileRows").innerHTML=(POSD.files||[]).map(f=>`<tr><td>${esc(f.name)}</td><td>${esc(TN[f.type]||f.type)}</td><td class="hi">${esc(f.from||"")} → ${esc(f.to||"")}</td><td class="hi">${esc(new Date(f.at).toLocaleString(lang==="hi"?"hi-IN":"en-IN"))} ${esc(f.by||"")}</td></tr>`).join("")||`<tr><td class="empty">–</td></tr>`;
+  const sy=POSD.sync||{};
+  $("posSyncSt").textContent=sy.last?T(`चालू ✓ आख़िरी बार: ${new Date(sy.last.at).toLocaleString("hi-IN")} (${sy.last.from} → ${sy.last.to}${sy.last.pc?", "+sy.last.pc:""})`,`On ✓ last: ${new Date(sy.last.at).toLocaleString("en-IN")} (${sy.last.from} → ${sy.last.to}${sy.last.pc?", "+sy.last.pc:""})`)
+    :sy.set?T(`Key बनी है (…${sy.last4}) - होटल PC पर POS Sync लगाना बाकी`,`Key created (…${sy.last4}) - install POS Sync on the hotel PC`):T("अभी बंद - key बनाकर होटल PC पर POS Sync लगाएँ","Off - create a key and install POS Sync on the hotel PC");
+  $("posKeyBtn").textContent=sy.set?T("नई key बनाओ (पुरानी बंद)","New key (old stops)"):U("posKeyBtn");
   $("posRange").innerHTML=[[30,T("30 दिन","30 days")],[90,T("90 दिन","90 days")],[0,T("सब","All")]].map(([v,l])=>`<button class="chip" type="button" data-r="${v}" aria-pressed="${v===posRange}">${l}</button>`).join("");
   $("posRange").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{posRange=Number(b.dataset.r);renderPos()});
   const D=posDays(posRange); if(!D.length){ $("posTiles").innerHTML=`<div class="hi">${T("अभी कोई रिपोर्ट नहीं - ऊपर फ़ाइल डालें","No reports yet - upload files above")}</div>`; ["posWdRows","posMonRows","posSpaceRows","posDishRows","posCatRows"].forEach(i=>$(i).innerHTML=""); return }
@@ -1583,19 +1596,22 @@ function renderPos(){
   const mon={}; PP.forEach(x=>{const k=x.d.slice(0,7); const m=mon[k] ||= {f:0,s:0,w:0,n:0}; m.f+=x.pp.foot; m.s+=x.pp.sale; m.w+=x.pp.weight; m.n++});
   $("posMonRows").innerHTML=Object.entries(mon).map(([k,m])=>`<tr><td>${esc(monN(Number(k.slice(5))-1))} ${k.slice(2,4)}<span class="hi"> (${m.n})</span></td><td class="n">${m.f.toLocaleString("en-IN")}</td><td class="n">${fmtR(m.s)}</td><td class="n">${m.f?fmtR(m.s/m.f):"–"}</td><td class="n">${m.f?Math.round(m.w/m.f)+" g":"–"}</td></tr>`).join("");
   // jagah: din-wise orders range ke hisaab se; rakam/samay file ke meta se (poori file ki avadhi)
-  const so={}, sp={}; D.forEach(x=>{ for(const k in (x.stype||{})) so[k]=(so[k]||0)+x.stype[k]; for(const k in (x.space||{})) sp[k]=(sp[k]||0)+x.space[k] });
+  const so={}, sp={}, soA={}, spA={}; let amtDays=0; D.forEach(x=>{ for(const k in (x.stype||{})) so[k]=(so[k]||0)+x.stype[k]; for(const k in (x.space||{})) sp[k]=(sp[k]||0)+x.space[k];
+    if(x.stypeAmt){ amtDays++; for(const k in x.stypeAmt) soA[k]=(soA[k]||0)+x.stypeAmt[k]; for(const k in (x.spaceAmt||{})) spA[k]=(spA[k]||0)+x.spaceAmt[k] } });
+  const fullAmt=amtDays===D.filter(x=>x.stype).length&&amtDays>0;
   const fm=t=>{ const f=(POSD.files||[]).find(f=>f.type===t); return f?f:null };
   const sMeta=(POSD.metaByType||{}).spacetype||{}, tMeta=(POSD.metaByType||{}).space||{};
   const totO=Object.values(so).reduce((a,b)=>a+b,0);
-  const row=(k,o,m,bold)=>`<tr><td>${bold?"<b>":""}${esc(pn(k))}${bold?"</b>":""}</td><td class="n">${o}</td><td class="n">${totO?Math.round(o/totO*100)+"%":"–"}</td><td class="n">${m&&m.amt?fmtR(m.amt):"–"}</td><td class="n">${m&&m.qty?fmtR(m.amt/m.qty):"–"}</td><td class="n">${m&&m.tat?Math.round(m.tat/60)+" "+T("मि.","min"):"–"}</td></tr>`;
-  $("posSpaceRows").innerHTML=Object.entries(so).sort((a,b)=>b[1]-a[1]).map(([k,o])=>row(k,o,sMeta[k],1)).join("")+(Object.keys(sp).length?`<tr class="grp"><td colspan="6">${T("टेबल","Tables")}</td></tr>`+Object.entries(sp).sort((a,b)=>((tMeta[b[0]]||{}).amt||0)-((tMeta[a[0]]||{}).amt||0)).map(([k,o])=>row(k,o,tMeta[k])).join(""):"");
-  $("posSpaceNote").textContent=T("ऑर्डर = चुनी अवधि के; रकम, औसत बिल और टेबल पर समय = आख़िरी डाली गई फ़ाइल की पूरी अवधि के। पार्सल का हिसाब (🥡 टैब) अब यहीं से चलता है।","Orders = selected period; amount, avg bill and time at table = full period of the last uploaded file. Parcel numbers (🥡 tab) now come from here.");
+  const row=(k,o,m,bold,A)=>{ const amt=fullAmt?(A[k]||0):(m&&m.qty?m.amt/m.qty*o:0); return `<tr><td>${bold?"<b>":""}${esc(pn(k))}${bold?"</b>":""}</td><td class="n">${o}</td><td class="n">${totO?Math.round(o/totO*100)+"%":"–"}</td><td class="n">${amt?fmtR(amt):"–"}</td><td class="n">${amt&&o?fmtR(amt/o):"–"}</td><td class="n">${m&&m.tat?Math.round(m.tat/60)+" "+T("मि.","min"):"–"}</td></tr>` };
+  $("posSpaceRows").innerHTML=Object.entries(so).sort((a,b)=>b[1]-a[1]).map(([k,o])=>row(k,o,sMeta[k],1,soA)).join("")+(Object.keys(sp).length?`<tr class="grp"><td colspan="6">${T("टेबल","Tables")}</td></tr>`+Object.entries(sp).sort((a,b)=>b[1]-a[1]).map(([k,o])=>row(k,o,tMeta[k],0,spA)).join(""):"");
+  $("posSpaceNote").textContent=(fullAmt?T("ऑर्डर और रकम = चुनी अवधि के; टेबल पर समय = आख़िरी डेटा का।","Orders and amount = selected period; time at table = latest data."):T("ऑर्डर = चुनी अवधि के; रकम = ऑर्डर × आख़िरी फ़ाइल का औसत बिल (अंदाज़); टेबल पर समय = आख़िरी फ़ाइल का।","Orders = selected period; amount = orders × avg bill of the last file (est.); time at table = last file."))+T(" पार्सल का हिसाब (🥡 टैब) अब यहीं से चलता है।"," Parcel numbers (🥡 tab) now come from here.");
   // dish
   const dq={}, dq30={}, dqOld={}; const last=D[D.length-1].d, cut=shift(last,-29);
-  D.forEach(x=>{ for(const k in (x.dish||{})){ dq[k]=(dq[k]||0)+x.dish[k]; if(x.d>=cut) dq30[k]=(dq30[k]||0)+x.dish[k]; else dqOld[k]=(dqOld[k]||0)+x.dish[k] } });
+  const da={}, noAmt=new Set(); D.forEach(x=>{ for(const k in (x.dish||{})){ dq[k]=(dq[k]||0)+x.dish[k]; if(x.d>=cut) dq30[k]=(dq30[k]||0)+x.dish[k]; else dqOld[k]=(dqOld[k]||0)+x.dish[k];
+    if(x.dishAmt&&x.dishAmt[k]!=null) da[k]=(da[k]||0)+x.dishAmt[k]; else noAmt.add(k) } });
   const nOld=D.filter(x=>x.d<cut).length, n30=D.length-nOld, dm=POSD.dishMeta||{}, q=($("posQ").value||"").toLowerCase();
   $("posDishRows").innerHTML=Object.entries(dq).filter(([k])=>!q||pn(k).toLowerCase().includes(q)||L(pn(k)).toLowerCase().includes(q)).sort((a,b)=>b[1]-a[1]).map(([k,v],i)=>{ const m=dm[k], pr=m&&m.qty?m.amt/m.qty:0; const a=n30&&nOld?(dq30[k]||0)/n30:0, b=nOld?(dqOld[k]||0)/nOld:0, ch=b?(a/b-1)*100:null;
-    return `<tr><td class="hi">${i+1}</td><td><b>${esc(L(pn(k)))}</b></td><td class="n">${v.toLocaleString("en-IN")}</td><td class="n">${(v/D.length).toFixed(1)}</td><td class="n">${pr?fmtR(v*pr):"–"}</td><td class="n" style="color:${ch==null?"var(--muted)":ch>10?"var(--ok)":ch<-10?"#B91C1C":"var(--muted)"}">${ch==null?"–":(ch>=0?"+":"")+Math.round(ch)+"%"}</td></tr>`}).join("");
+    return `<tr><td class="hi">${i+1}</td><td><b>${esc(L(pn(k)))}</b></td><td class="n">${v.toLocaleString("en-IN")}</td><td class="n">${(v/D.length).toFixed(1)}</td><td class="n">${!noAmt.has(k)&&da[k]?fmtR(da[k]):pr?fmtR(v*pr):"–"}</td><td class="n" style="color:${ch==null?"var(--muted)":ch>10?"var(--ok)":ch<-10?"#B91C1C":"var(--muted)"}">${ch==null?"–":(ch>=0?"+":"")+Math.round(ch)+"%"}</td></tr>`}).join("");
   const cq={}; D.forEach(x=>{ for(const k in (x.cat||{})) cq[k]=(cq[k]||0)+x.cat[k] }); const cm=(POSD.metaByType||{}).category||{};
   $("posCatRows").innerHTML=Object.entries(cq).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<tr><td>${esc(pn(k))}</td><td class="n">${v.toLocaleString("en-IN")}</td><td class="n">${cm[k]&&cm[k].qty?fmtR(v*cm[k].amt/cm[k].qty):"–"}</td></tr>`).join("");
 }
@@ -2125,6 +2141,7 @@ function makeDb(API){
     spend:()=>req("GET","spend"),
     posSummary:()=>req("GET","pos/summary"),
     posUpload:(b)=>req("PUT","pos/upload",b),
+    posKey:()=>req("PUT","pos/key",{}),
     hiring:()=>req("GET","hiring"),
     hireSet:(id,b)=>req("PUT","hiring/"+id,b),
     hireAdd:(b)=>req("PUT","hiring/add",b),

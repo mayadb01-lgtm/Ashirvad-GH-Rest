@@ -109,3 +109,51 @@ export async function importText(name, text, by) {
   );
   return { type, from: out.from, to: out.to, rows: out.rows, days: ops.length };
 }
+
+// POS ke apne JSON API (My Hotel Sense /api/reports/*) se aaya data → wahi din-wise hisse. Hotel PC ka sync program bhejta hai.
+export async function importSync(reports, by) {
+  const days = {}, metas = {};
+  const put = (d, part, k, v) => { if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return; ((days[d] ||= {})[part] ||= {}); if (k != null) days[d][part][k] = v; };
+  const n = (v) => Number(v) || 0;
+  const list = (x) => (x && typeof x === "object" ? Object.values(x) : []);
+  const named = { dish: ["dish", "dish_name"], category: ["cat", "category_name"], space: ["space", "space_name"], spacetype: ["stype", "space_type_name"] };
+  for (const [type, [part, nk]] of Object.entries(named)) {
+    const data = reports[type];
+    if (!data) continue;
+    // range ke har din ka hissa khaali se shuru (us din kuch na bika ho to purana na bache)
+    (reports.dates || []).forEach((d) => { put(d, part); put(d, part + "Amt"); });
+    const meta = {};
+    list(data).forEach((r) => {
+      const name = safeKey(r[nk]);
+      if (!name) return;
+      let q = 0, a = 0;
+      Object.entries(r.daily_data || {}).forEach(([d, v]) => {
+        const val = type === "dish" || type === "category" ? n(v.quantity) : n(v.orders);
+        if (val) put(d, part, name, val);
+        if (n(v.amount)) put(d, part + "Amt", name, n(v.amount));
+        q += val; a += n(v.amount);
+      });
+      meta[name] = { qty: q, amt: a, ...(r.avg_tat != null ? { tat: n(r.avg_tat) } : {}) };
+    });
+    metas[type] = meta;
+  }
+  for (const [d, v] of Object.entries(reports.footfall || {})) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
+    (days[d] ||= {}).foot = { total: n(v.total_footfall), orders: n(v.total_orders), male: n(v.adults_male), female: n(v.adults_female), seniors: n(v.adults_senior), kids: n(v.kids) };
+  }
+  for (const [d, v] of Object.entries(reports.perperson || {})) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
+    (days[d] ||= {}).pp = { orders: n(v.total_orders), foot: n(v.total_footfall), sale: n(v.total_amount), weight: n(v.total_weight), targetW: n(v.total_target_weight), cal: n(v.total_energy), targetC: n(v.total_target_energy) };
+  }
+  const ops = Object.entries(days).map(([d, parts]) => ({
+    updateOne: { filter: { _id: d }, update: { $set: { ...Object.fromEntries(Object.entries(parts).map(([k, v]) => [`data.${k}`, v])), at: new Date() } }, upsert: true },
+  }));
+  if (ops.length) await PosDaily.bulkWrite(ops, { ordered: false });
+  const ds = Object.keys(days).sort(), from = ds[0] || null, to = ds[ds.length - 1] || null;
+  // backup: har sync ki asli JSON + meta (type-wise, taaki daam / table ka samay naya rahe)
+  const raw = JSON.stringify(reports).slice(0, 3_000_000);
+  const stamp = new Date();
+  await PosFile.updateOne({ _id: "sync-" + crypto.createHash("sha1").update(raw).digest("hex").slice(0, 19) }, { $set: { name: `POS auto-sync ${from}..${to}`, type: "sync", from, to, rows: ops.length, text: raw, by, at: stamp } }, { upsert: true });
+  for (const [type, meta] of Object.entries(metas)) if (Object.keys(meta).length) await PosFile.updateOne({ _id: `syncmeta-${type}` }, { $set: { name: `POS auto-sync (${type})`, type, from, to, rows: Object.keys(meta).length, text: "", by, at: stamp, meta } }, { upsert: true });
+  return { from, to, days: ops.length };
+}
