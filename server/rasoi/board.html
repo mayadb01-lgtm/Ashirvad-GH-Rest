@@ -228,6 +228,10 @@ body{font-size:15px}
 @media (max-width:640px){.pd-kpis{grid-template-columns:1fr 1fr}.kpi.hero{grid-column:1/-1}.kpi{padding:10px 12px}.hb{grid-template-columns:minmax(90px,120px) 1fr 76px}.hb .c{display:none}.kpi .v{font-size:20px}.kpi.hero .v{font-size:24px}.wdrow{grid-template-columns:56px 1fr 80px}}
 </style>
 <style>
+.homebtn{font:inherit;font-size:14px;font-weight:700;border:1px solid var(--brand);background:var(--surface);color:var(--brand);border-radius:999px;padding:6px 12px;min-height:36px;cursor:pointer;display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
+.homebtn:hover{background:#E6F4F2}
+.sidefoot{flex-wrap:wrap;row-gap:8px}
+@media (min-width:1024px){.homebtn{flex-basis:100%;justify-content:center}}
 .lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
 .lang button{font:inherit;font-weight:600;border:0;background:var(--surface);color:var(--ink);padding:6px 12px;cursor:pointer;min-height:36px}
 .lang button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink)}
@@ -238,6 +242,7 @@ body{font-size:15px}
     <div class="brand">
       <div class="brandtxt"><h1 data-i="title">Ashirvad Manager</h1><p class="sub" data-i="subtitle"></p></div>
       <div class="sidefoot">
+        <button type="button" class="homebtn" id="goHome"><span aria-hidden="true">🏠</span> <span data-i="goHome"></span></button>
         <div class="lang" role="group" aria-label="Language / भाषा"><button type="button" data-lang="hi">हिंदी</button><button type="button" data-lang="en">English</button></div>
         <span id="saveState" class="pill save"></span>
       </div>
@@ -740,7 +745,7 @@ const UI={
  noPerm:["आपको बदलने की अनुमति नहीं - सिर्फ़ देख सकते हैं","You don't have permission to edit - view only"], saveFail:["सेव नहीं हुआ - इंटरनेट जाँचें","Not saved - check internet"], liveStop:["लाइव अपडेट रुक गया - पेज दोबारा खोलें","Live updates stopped - reload the page"],
  close:["बंद करें","Close"],
  backTitle:["पिछले 8 हफ़्ते: असली बिक्री बनाम पूर्वानुमान","Last 8 weeks: actual sales vs forecast"], smartPh:["ख़ाली = स्मार्ट (अपने आप)","blank = smart (automatic)"],
- tRates:["दरें (रेट)","Rates"], tCmp:["भाव तुलना","Rate check"], tPos:["बिक्री डैशबोर्ड (POS)","Sales dashboard (POS)"],
+ goHome:["मुख्य पेज","Main page"], tRates:["दरें (रेट)","Rates"], tCmp:["भाव तुलना","Rate check"], tPos:["बिक्री डैशबोर्ड (POS)","Sales dashboard (POS)"],
  posTitle:["POS की रिपोर्ट डालें (My Hotel Sense)","Upload POS reports (My Hotel Sense)"],
  posNote:["POS से Dish-wise, Category-wise, Space-wise, Space type-wise, Footfall और Per-person रिपोर्ट (CSV या Excel) निकालकर यहाँ डालें - एक साथ कई फ़ाइलें चलेंगी। हर फ़ाइल हमारे सर्वर पर बैकअप के रूप में भी रखी जाती है। वही तारीख़ें दोबारा आएँ तो पुराना हिस्सा बदल जाता है, दोहरा नहीं गिनता। मेन्यू मुनाफ़ा और पार्सल का हिसाब अपने आप इन्हीं से चलने लगता है।","Export Dish-wise, Category-wise, Space-wise, Space type-wise, Footfall and Per-person reports (CSV or Excel) from the POS and drop them here - many files at once. Each file is also kept on our server as a backup. Same dates again replace the old part, never counted twice. Menu profit and parcel numbers switch to these automatically."],
  posDrop:["फ़ाइलें यहाँ खींचें या दबाकर चुनें","Drag files here or tap to choose"], posDrop2:["CSV / Excel · कई फ़ाइलें एक साथ","CSV / Excel · many files together"], posFiles:["डाली हुई फ़ाइलें (बैकअप)","Uploaded files (backup)"],
@@ -1642,6 +1647,7 @@ $("posFile").addEventListener("change",e=>{ const fs=[...e.target.files]; e.targ
 ["dragleave","drop"].forEach(ev=>$("posDrop").addEventListener(ev,e=>{e.preventDefault();$("posDrop").classList.remove("on")}));
 $("posDrop").addEventListener("drop",e=>{ const fs=[...(e.dataTransfer&&e.dataTransfer.files||[])]; if(fs.length) uploadPos(fs) });
 $("posQ").addEventListener("input",()=>renderPos());
+$("goHome").onclick=()=>{ try{ window.parent.postMessage({type:"rasoi-home"},"*") }catch(e){} setTimeout(()=>{ try{ if(window.parent!==window&&window.parent.location.pathname.startsWith("/manager")) window.parent.location.href="/" }catch(e){} },800) };
 $("posKeyBtn").onclick=async()=>{ const b=$("posKeyBtn"); if(POSD&&POSD.sync&&POSD.sync.set&&b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent=T("पक्का? पुरानी key बंद होगी","Sure? Old key will stop");return} b.dataset.sure="";
   try{ const r=await db.posKey(); $("posKeyOut").hidden=false; $("posKeyOut").innerHTML=`${T("ये key सिर्फ़ अभी दिखेगी - होटल PC पर setup में डालें:","This key shows only now - enter it in setup on the hotel PC:")} <code style="font-size:16px;font-weight:700;user-select:all;background:var(--warn-soft);padding:2px 8px;border-radius:6px">${esc(r.key)}</code>`; await loadPos(true); renderPos() }
   catch(e){ $("posKeyOut").hidden=false; $("posKeyOut").textContent=e.code==="invalid_argument"?T("सिर्फ़ मालिक key बना सकते हैं","Only the owner can create the key"):e.message } };

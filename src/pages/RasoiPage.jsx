@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { Alert, Box, Button, Paper, Stack, Typography } from "@mui/material";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import HomeIcon from "@mui/icons-material/Home";
 import RasoiBoard from "../components/rasoi/RasoiBoard";
 
 const API = import.meta.env.VITE_REACT_APP_SERVER_URL;
@@ -29,15 +29,15 @@ const RasoiPage = () => {
     <Box sx={{ minHeight: "100vh", bgcolor: "#fff" }}>
       <Paper elevation={0} square sx={{ borderBottom: "1px solid #E5E7EB", pt: "env(safe-area-inset-top)" }}>
         <Stack direction="row" alignItems="center" spacing={1} sx={{ px: 1, height: 48 }}>
-          <Button component={RouterLink} to={back} startIcon={<ArrowBackIcon />} size="small" sx={{ textTransform: "none" }}>
-            Back
+          <Button component={RouterLink} to={back} startIcon={<HomeIcon />} variant="outlined" size="small" sx={{ textTransform: "none", fontWeight: 700, borderRadius: 999 }}>
+            मुख्य पेज · Home
           </Button>
           <Typography fontWeight={800} noWrap>
             Manager
           </Typography>
         </Stack>
       </Paper>
-      {me.rasoi ? <RasoiBoard height="calc(100vh - 49px - env(safe-area-inset-top))" /> : <Alert severity="warning" sx={{ m: 2 }}>Manager is not allowed for you. Ask the Super Admin.</Alert>}
+      {me.rasoi ? <RasoiBoard onHome={() => navigate(back)} height="calc(100vh - 49px - env(safe-area-inset-top))" /> : <Alert severity="warning" sx={{ m: 2 }}>Manager is not allowed for you. Ask the Super Admin.</Alert>}
     </Box>
   );
 };

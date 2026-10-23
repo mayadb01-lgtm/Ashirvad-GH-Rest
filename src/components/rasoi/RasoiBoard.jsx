@@ -7,7 +7,7 @@ import { Alert, Box, CircularProgress } from "@mui/material";
 
 const API = import.meta.env.VITE_REACT_APP_SERVER_URL;
 
-const RasoiBoard = ({ height = "calc(100vh - 64px)" }) => {
+const RasoiBoard = ({ height = "calc(100vh - 64px)", onHome }) => {
   const [html, setHtml] = useState(null);
   const [err, setErr] = useState("");
   const ref = useRef(null);
@@ -26,6 +26,15 @@ const RasoiBoard = ({ height = "calc(100vh - 64px)" }) => {
       alive = false;
     };
   }, []);
+
+  // Board ka "🏠 मुख्य पेज" button → app ka main page
+  useEffect(() => {
+    const h = (e) => {
+      if (e.source && e.source === ref.current?.contentWindow && e.data?.type === "rasoi-home" && onHome) onHome();
+    };
+    window.addEventListener("message", h);
+    return () => window.removeEventListener("message", h);
+  }, [onHome]);
 
   const onLoad = () => {
     try {
