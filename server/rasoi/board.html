@@ -174,6 +174,58 @@ body{font-size:15px}
   .lefts{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
 }
 @media (min-width:1500px){#tab-aaj{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}}
+/* POS dashboard */
+.pd-sync{font-size:13px;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
+.pd-sync .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block}
+.pd-sync .dot.off{background:#B91C1C}
+.pd-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;gap:4px;align-content:start;min-width:0}
+.kpi .k{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.03em}
+.kpi .v{font-size:24px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.15}
+.kpi .s{font-size:12px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.kpi.hero{background:linear-gradient(135deg,#0F766E,#115E59);border-color:#0F766E}
+.kpi.hero .k,.kpi.hero .s{color:#CCFBF1} .kpi.hero .v{color:#fff;font-size:28px}
+.kpi.hero .dlt.up{background:rgba(255,255,255,.18);color:#fff} .kpi.hero .dlt.down{background:#FEE2E2;color:#B91C1C}
+.kpi svg{display:block;width:100%;height:34px;margin-top:2px}
+.dlt{display:inline-flex;align-items:center;gap:2px;border-radius:999px;padding:1px 8px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.dlt.up{background:var(--ok-soft);color:var(--ok)} .dlt.down{background:#FDE8E8;color:#B91C1C} .dlt.flat{background:var(--line);color:var(--muted)}
+.pd-today{display:flex;gap:12px;flex-wrap:wrap;align-items:center;background:var(--info-soft);border-radius:12px;padding:10px 14px;font-size:14px}
+.pd-today .bar{flex:1 1 180px;height:8px;background:#fff;border-radius:99px;overflow:hidden;display:block;min-width:120px}
+.pd-today .bar>i{display:block;height:100%;background:var(--info);border-radius:99px}
+.pd-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--ink2)}
+.pd-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.pd-chart svg{width:100%;height:auto;display:block}
+.pd-chart .hov{fill:transparent;cursor:crosshair} .pd-chart .hov:hover,.pd-chart .hov.on{fill:rgba(15,23,42,.06)}
+.pd-info{font-size:13px;color:var(--ink2);min-height:20px;background:var(--bg);border-radius:10px;padding:8px 12px}
+.pd-ideas{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.idea{border:1px solid var(--line);border-left:4px solid var(--info);border-radius:12px;padding:12px 14px;display:grid;gap:6px;background:var(--surface)}
+.idea.warn{border-left-color:#B91C1C;background:#FFFBFB} .idea.ok{border-left-color:var(--ok)} .idea.gold{border-left-color:var(--haldi);background:#FFFDF7}
+.idea .t{font-weight:700;font-size:15px;display:flex;gap:8px;align-items:flex-start}
+.idea .d{font-size:14px;color:var(--ink2);line-height:1.45}
+.idea .imp{font-size:12px;font-weight:700;color:var(--ok);background:var(--ok-soft);border-radius:999px;padding:2px 10px;justify-self:start}
+.pd-two{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));align-items:start}
+.pd-wd{display:grid;gap:6px}
+.wdrow{display:grid;grid-template-columns:70px 1fr 92px;gap:10px;align-items:center;font-size:14px}
+.wdrow .tr{height:22px;background:var(--bg);border-radius:6px;overflow:hidden;display:flex}
+.wdrow .tr>i{display:block;height:100%}
+.wdrow .n{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.wdrow.best .lb{color:var(--ok);font-weight:700} .wdrow.worst .lb{color:#B91C1C;font-weight:700}
+.pd-stype{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.sc{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:4px;border-top:4px solid var(--brand)}
+.sc .nm{font-weight:700} .sc .big{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums} .sc .s{font-size:12px;color:var(--muted)}
+.pd-bars{display:grid;gap:6px}
+.hb{display:grid;grid-template-columns:minmax(110px,190px) 1fr 86px 104px;gap:10px;align-items:center;font-size:13px}
+.hb .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .tr{height:14px;background:var(--bg);border-radius:4px;overflow:hidden} .hb .tr>i{display:block;height:100%;background:var(--brand);border-radius:4px}
+.hb .n{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.hb .c{text-align:right;font-size:12px;white-space:nowrap}
+.pd-dish td{vertical-align:middle}
+.shb{display:inline-block;height:8px;border-radius:4px;background:var(--brand);vertical-align:middle;margin-right:6px}
+.abc{display:inline-block;font-size:11px;font-weight:800;border-radius:6px;padding:0 6px;margin-left:6px;vertical-align:1px}
+.abc.A{background:#E6F4F2;color:var(--brand)} .abc.B{background:var(--info-soft);color:var(--info)} .abc.C{background:var(--line);color:var(--muted)}
+.tg{font-size:11px;font-weight:700;border-radius:6px;padding:0 6px;margin-left:4px}
+.tg.new{background:#EDE9FE;color:#6D28D9} .tg.slow{background:var(--warn-soft);color:var(--warn)}
+@media (max-width:640px){.pd-kpis{grid-template-columns:1fr 1fr}.kpi.hero{grid-column:1/-1}.kpi{padding:10px 12px}.hb{grid-template-columns:minmax(90px,120px) 1fr 76px}.hb .c{display:none}.kpi .v{font-size:20px}.kpi.hero .v{font-size:24px}.wdrow{grid-template-columns:56px 1fr 80px}}
 </style>
 <style>
 .lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
@@ -533,38 +585,52 @@ body{font-size:15px}
   </section>
 
   <!-- POS REPORT -->
-  <section id="tab-pos" class="detail" hidden>
+  <section id="tab-pos" class="detail pdash" hidden>
+    <section class="panel pd-top">
+      <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center">
+        <div style="display:grid;gap:4px"><h2 data-i="posDash"></h2><span class="pd-sync" id="posSyncChip"></span></div>
+        <div class="row" style="gap:6px;flex-wrap:wrap" id="posRange" role="group"></div>
+      </div>
+      <div class="pd-kpis" id="posKpis"></div>
+      <div id="posToday"></div>
+    </section>
     <section class="panel">
-      <h2 data-i="posTitle"></h2>
-      <p class="note" data-i="posNote"></p>
-      <label class="drop" id="posDrop" for="posFile"><b data-i="posDrop"></b><br><span class="hi" data-i="posDrop2"></span><input type="file" id="posFile" multiple accept=".csv,.xlsx,.xls,text/csv" hidden></label>
-      <div id="posMsg" class="hi"></div>
+      <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center"><h2 data-i="posChartT"></h2><div class="pd-legend" id="posLegend"></div></div>
+      <div id="posChart" class="pd-chart"></div>
+      <div id="posChartInfo" class="pd-info"></div>
+    </section>
+    <section class="panel">
+      <h2 data-i="posIdeasT"></h2>
+      <div class="pd-ideas" id="posIdeas"></div>
+    </section>
+    <div class="pd-two">
+      <section class="panel"><div class="row" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><h2 data-i="posWdT"></h2><span class="hi" id="posWdNote"></span></div><div id="posWd" class="pd-wd"></div></section>
+      <section class="panel"><h2 data-i="posMonT"></h2><div class="tablebox"><table><thead><tr><th></th><th class="n" data-i="posMSale"></th><th class="n" data-i="posMDay"></th><th class="n" data-i="posMGrow"></th><th class="n" data-i="posPP"></th><th class="n" data-i="posMParcel"></th></tr></thead><tbody id="posMonRows"></tbody></table></div><p class="note" id="posMonNote"></p></section>
+    </div>
+    <div class="pd-two">
+      <section class="panel"><h2 data-i="posSpaceT"></h2><div id="posStype" class="pd-stype"></div><p class="note" id="posSpaceNote"></p></section>
+      <section class="panel"><h2 data-i="posTablesT"></h2><div id="posTables" class="pd-bars"></div></section>
+    </div>
+    <section class="panel">
+      <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center"><h2 data-i="posDish"></h2><input type="search" id="posQ" data-ph="rateSearch" style="min-width:200px"></div>
+      <div class="chips" id="posDishF" role="group"></div>
+      <div class="tablebox" style="max-height:560px"><table class="pd-dish"><thead><tr><th>#</th><th data-i="thDish"></th><th class="n" data-i="posQty"></th><th class="n" data-i="posPerDay"></th><th class="n" data-i="posAmt"></th><th data-i="posShare"></th><th class="n" data-i="posTrend"></th></tr></thead><tbody id="posDishRows"></tbody></table></div>
+      <p class="note" data-i="posDishNote"></p>
+    </section>
+    <section class="panel"><h2 data-i="posCatT"></h2><div id="posCats" class="pd-bars"></div></section>
+    <section class="panel">
+      <details id="posSetup"><summary style="cursor:pointer;font-weight:700" data-i="posSetupT"></summary>
+      <div style="display:grid;gap:12px;margin-top:12px">
       <div class="row" style="gap:10px;flex-wrap:wrap;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px">
         <div style="flex:1 1 260px"><b data-i="posSyncT"></b><br><span class="hi" id="posSyncSt"></span></div>
         <button class="btn" id="posKeyBtn" data-i="posKeyBtn"></button>
         <div id="posKeyOut" class="hi" style="flex-basis:100%" hidden></div>
       </div>
+      <p class="note" data-i="posNote"></p>
+      <label class="drop" id="posDrop" for="posFile"><b data-i="posDrop"></b><br><span class="hi" data-i="posDrop2"></span><input type="file" id="posFile" multiple accept=".csv,.xlsx,.xls,text/csv" hidden></label>
+      <div id="posMsg" class="hi"></div>
       <details><summary class="hi" style="cursor:pointer;font-weight:600" data-i="posFiles"></summary><div class="tablebox"><table><tbody id="posFileRows"></tbody></table></div></details>
-    </section>
-    <section class="panel">
-      <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><h2 data-i="posSum"></h2><div class="row" style="gap:6px" id="posRange" role="group"></div></div>
-      <div class="tiles" id="posTiles"></div>
-      <div class="row" style="gap:16px;flex-wrap:wrap;align-items:flex-start">
-        <div style="flex:1 1 320px;min-width:0"><h3 style="margin:4px 0" data-i="posWd"></h3><div class="tablebox"><table><thead><tr><th></th><th class="n" data-i="posFoot"></th><th class="n" data-i="posOrd"></th><th class="n" data-i="posSale"></th></tr></thead><tbody id="posWdRows"></tbody></table></div></div>
-        <div style="flex:1 1 320px;min-width:0"><h3 style="margin:4px 0" data-i="posMon"></h3><div class="tablebox"><table><thead><tr><th></th><th class="n" data-i="posFoot"></th><th class="n" data-i="posSale"></th><th class="n" data-i="posPP"></th><th class="n" data-i="posWt"></th></tr></thead><tbody id="posMonRows"></tbody></table></div></div>
-      </div>
-    </section>
-    <section class="panel">
-      <h2 data-i="posSpace"></h2>
-      <div class="tablebox"><table><thead><tr><th></th><th class="n" data-i="posOrd"></th><th class="n" data-i="posShare"></th><th class="n" data-i="posAmt"></th><th class="n" data-i="posTicket"></th><th class="n" data-i="posTat"></th></tr></thead><tbody id="posSpaceRows"></tbody></table></div>
-      <p class="note" id="posSpaceNote"></p>
-    </section>
-    <section class="panel">
-      <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><h2 data-i="posDish"></h2><input type="search" id="posQ" data-ph="rateSearch" style="min-width:200px"></div>
-      <div class="row" style="gap:16px;flex-wrap:wrap;align-items:flex-start">
-        <div style="flex:2 1 420px;min-width:0"><div class="tablebox" style="max-height:520px"><table><thead><tr><th>#</th><th data-i="thDish"></th><th class="n" data-i="posQty"></th><th class="n" data-i="posPerDay"></th><th class="n" data-i="posAmtEst"></th><th class="n" data-i="posTrend"></th></tr></thead><tbody id="posDishRows"></tbody></table></div></div>
-        <div style="flex:1 1 260px;min-width:0"><div class="tablebox"><table><thead><tr><th data-i="posCat"></th><th class="n" data-i="posQty"></th><th class="n" data-i="posAmt"></th></tr></thead><tbody id="posCatRows"></tbody></table></div></div>
-      </div>
+      </div></details>
     </section>
   </section>
 
@@ -674,15 +740,19 @@ const UI={
  noPerm:["आपको बदलने की अनुमति नहीं - सिर्फ़ देख सकते हैं","You don't have permission to edit - view only"], saveFail:["सेव नहीं हुआ - इंटरनेट जाँचें","Not saved - check internet"], liveStop:["लाइव अपडेट रुक गया - पेज दोबारा खोलें","Live updates stopped - reload the page"],
  close:["बंद करें","Close"],
  backTitle:["पिछले 8 हफ़्ते: असली बिक्री बनाम पूर्वानुमान","Last 8 weeks: actual sales vs forecast"], smartPh:["ख़ाली = स्मार्ट (अपने आप)","blank = smart (automatic)"],
- tRates:["दरें (रेट)","Rates"], tCmp:["भाव तुलना","Rate check"], tPos:["POS रिपोर्ट","POS reports"],
+ tRates:["दरें (रेट)","Rates"], tCmp:["भाव तुलना","Rate check"], tPos:["बिक्री डैशबोर्ड (POS)","Sales dashboard (POS)"],
  posTitle:["POS की रिपोर्ट डालें (My Hotel Sense)","Upload POS reports (My Hotel Sense)"],
  posNote:["POS से Dish-wise, Category-wise, Space-wise, Space type-wise, Footfall और Per-person रिपोर्ट (CSV या Excel) निकालकर यहाँ डालें - एक साथ कई फ़ाइलें चलेंगी। हर फ़ाइल हमारे सर्वर पर बैकअप के रूप में भी रखी जाती है। वही तारीख़ें दोबारा आएँ तो पुराना हिस्सा बदल जाता है, दोहरा नहीं गिनता। मेन्यू मुनाफ़ा और पार्सल का हिसाब अपने आप इन्हीं से चलने लगता है।","Export Dish-wise, Category-wise, Space-wise, Space type-wise, Footfall and Per-person reports (CSV or Excel) from the POS and drop them here - many files at once. Each file is also kept on our server as a backup. Same dates again replace the old part, never counted twice. Menu profit and parcel numbers switch to these automatically."],
  posDrop:["फ़ाइलें यहाँ खींचें या दबाकर चुनें","Drag files here or tap to choose"], posDrop2:["CSV / Excel · कई फ़ाइलें एक साथ","CSV / Excel · many files together"], posFiles:["डाली हुई फ़ाइलें (बैकअप)","Uploaded files (backup)"],
  posSyncT:["होटल PC से अपने आप (POS Sync)","Automatic from hotel PC (POS Sync)"], posKeyBtn:["Sync key बनाओ","Create sync key"],
+ posDash:["बिक्री डैशबोर्ड","Sales dashboard"], posChartT:["रोज़ की बिक्री - हॉल, AC, पार्सल","Daily sales - hall, AC, parcel"], posIdeasT:["💡 बिक्री बढ़ाने के सुझाव (आपके डेटा से)","💡 Growth ideas (from your data)"],
+ posWdT:["कौन-सा दिन कैसा","Which day is strong"], posMonT:["महीने की बढ़त","Monthly growth"], posMSale:["बिक्री","Sales"], posMDay:["रोज़ औसत","Per day"], posMGrow:["बढ़त","Growth"], posMParcel:["पार्सल","Parcel"],
+ posSpaceT:["कहाँ से कमाई","Where income comes from"], posTablesT:["टेबल के हिसाब से","By table"], posCatT:["ग्रुप के हिसाब से कमाई","Income by menu group"], posSetupT:["⚙️ सेटअप - POS Sync, फ़ाइल डालना, बैकअप","⚙️ Setup - POS Sync, file upload, backup"],
+ posDishNote:["A = कुल कमाई का 80% देने वाली डिश, B = अगली 15%, C = बाकी। ▲▼ = पिछली उतनी ही अवधि से रोज़ की बिक्री की तुलना। धीमी = हफ़्ते में 1 से कम।","A = dishes making 80% of income, B = next 15%, C = rest. ▲▼ = daily sales vs the previous period of the same length. Slow = under 1 a week."],
  posSum:["बिक्री का सार","Sales summary"], posWd:["वार के हिसाब से (रोज़ औसत)","By weekday (daily avg)"], posMon:["महीने के हिसाब से","By month"],
  posFoot:["ग्राहक","Guests"], posOrd:["ऑर्डर","Orders"], posSale:["बिक्री (हॉल+AC)","Sale (hall+AC)"], posPP:["₹/ग्राहक","₹/guest"], posWt:["खाना/ग्राहक","Food/guest"],
  posSpace:["कहाँ से बिक्री - हॉल, AC, पार्सल और टेबल","Where sales come from - hall, AC, parcel and tables"], posShare:["हिस्सा","Share"], posAmt:["रकम","Amount"], posTicket:["औसत बिल","Avg bill"], posTat:["टेबल पर समय","Time at table"],
- posDish:["डिश की बिक्री","Dish sales"], posQty:["मात्रा","Qty"], posPerDay:["रोज़","Per day"], posAmtEst:["रकम (अंदाज़)","Amount (est.)"], posTrend:["पिछले 30 दिन vs पहले","Last 30 days vs before"], posCat:["ग्रुप","Group"], tQc:["रोज़ की जाँच","Daily checks"], tMenu:["मेन्यू मुनाफ़ा","Menu profit"],
+ posDish:["डिश की बिक्री","Dish sales"], posQty:["मात्रा","Qty"], posPerDay:["रोज़","Per day"], posAmtEst:["रकम (अंदाज़)","Amount (est.)"], posTrend:["बढ़त","Trend"], posCat:["ग्रुप","Group"], tQc:["रोज़ की जाँच","Daily checks"], tMenu:["मेन्यू मुनाफ़ा","Menu profit"],
  qcTitle:["स्वाद जाँच - सर्विस से पहले हर ग्रेवी","Taste check - every gravy before service"],
  qcNote:["हेड कुक या मैनेजर हर ग्रेवी चखकर 'ठीक' या 'गड़बड़' दबाए; गड़बड़ हो तो क्या ग़लत है चुनें और सर्विस से पहले सुधारें। रोज़ एक ही कसौटी = रोज़ एक जैसा स्वाद।","Head cook or manager tastes each gravy and taps 'OK' or 'Problem'; if a problem, pick what is wrong and fix it before service. Same check every day = same taste every day."],
  qcBy:["किसने चखा","Checked by"],
@@ -1548,7 +1618,7 @@ function renderMenu(){
 }
 
 // ---------- POS REPORT ----------
-let POSD=null, posRange=90;
+let POSD=null, posRange=30;
 const pn=s=>String(s||"").replace(/·/g,".");
 function loadPos(force){ if(!db||!db.posSummary) return Promise.resolve(); if(POSD&&!force) return Promise.resolve();
   return db.posSummary().then(j=>{ POSD=j; parcelFromPos(); if(["pos","menu","pack"].includes(tab)) renderTab() }).catch(()=>{ POSD={days:[],files:[],dishMeta:{}} }) }
@@ -1575,45 +1645,141 @@ $("posQ").addEventListener("input",()=>renderPos());
 $("posKeyBtn").onclick=async()=>{ const b=$("posKeyBtn"); if(POSD&&POSD.sync&&POSD.sync.set&&b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent=T("पक्का? पुरानी key बंद होगी","Sure? Old key will stop");return} b.dataset.sure="";
   try{ const r=await db.posKey(); $("posKeyOut").hidden=false; $("posKeyOut").innerHTML=`${T("ये key सिर्फ़ अभी दिखेगी - होटल PC पर setup में डालें:","This key shows only now - enter it in setup on the hotel PC:")} <code style="font-size:16px;font-weight:700;user-select:all;background:var(--warn-soft);padding:2px 8px;border-radius:6px">${esc(r.key)}</code>`; await loadPos(true); renderPos() }
   catch(e){ $("posKeyOut").hidden=false; $("posKeyOut").textContent=e.code==="invalid_argument"?T("सिर्फ़ मालिक key बना सकते हैं","Only the owner can create the key"):e.message } };
+// ---------- POS DASHBOARD (bikri ka pro dashboard) ----------
+let posDishF="all", posHov=-1;
+const PCOL={"General":"#0F766E","AC":"#0369A1","Take Out":"#D97706"}, PEXTRA=["#7C3AED","#DB2777","#65A30D","#0891B2"];
+const isParcel=k=>/take ?out|parcel|delivery|zomato|swiggy/i.test(k);
+const pcol=(k,i)=>PCOL[k]||PEXTRA[(i||0)%PEXTRA.length];
+const stN=k=>({"General":T("हॉल (जनरल)","Hall (General)"),"AC":T("AC हॉल","AC hall"),"Take Out":T("पार्सल","Parcel")})[k]||pn(k);
+const ADDON=/bever|drink|lassi|chaas|butter ?milk|juice|shake|soda|ice ?cream|sweet|dessert|kulfi|papad|salad|raita|soup|starter/i;
+const pct=(a,b)=>b?(a/b-1)*100:null;
+function dlt(p,inv){ if(p==null||!isFinite(p)) return ""; const c=Math.abs(p)<2?"flat":((p>0)!==!!inv?"up":"down"); return `<span class="dlt ${c}">${p>=0?"▲":"▼"} ${Math.abs(p)<10?Math.abs(p).toFixed(1):Math.round(Math.abs(p))}%</span>` }
+const kR=n=>{ n=Math.round(n); return n>=1e7?"₹"+(n/1e7).toFixed(2)+" Cr":n>=1e5?"₹"+(n/1e5).toFixed(n>=1e6?1:2)+" L":fmtR(n) };
+const nf=n=>Math.round(n).toLocaleString("en-IN");
+// ek din ka hisaab: kul bikri = hall + AC + parcel (POS ki space type rakam se)
+function posDay(x){ const st=x.stype||{}, sa=x.stypeAmt||{}, hasA=Object.keys(sa).length>0; let sale=0, parcel=0, pOrd=0, ord=0, est=false;
+  for(const k in st){ ord+=st[k]; if(isParcel(k)) pOrd+=st[k] }
+  if(hasA){ for(const k in sa){ sale+=sa[k]; if(isParcel(k)) parcel+=sa[k] } }
+  else { const m=(POSD.metaByType||{}).spacetype||{}, tk=Object.keys(m).find(isParcel), tick=tk&&m[tk].qty?m[tk].amt/m[tk].qty:0; parcel=pOrd*tick; sale=(x.pp?x.pp.sale:0)+parcel; est=!!pOrd }
+  const dOrd=x.pp?x.pp.orders:Math.max(0,ord-pOrd); if(!ord) ord=dOrd+pOrd;
+  return {d:x.d,sale,parcel,dine:sale-parcel,ord,pOrd,dOrd,foot:x.pp?x.pp.foot:(x.foot?x.foot.total:0),w:x.pp?x.pp.weight:0,tw:x.pp?x.pp.targetW:0,kids:x.foot?x.foot.kids:0,ftot:x.foot?x.foot.total:0,est,x} }
+function posSum(R){ const a={n:R.length,sale:0,parcel:0,dine:0,ord:0,pOrd:0,dOrd:0,foot:0,w:0,tw:0,kids:0,ftot:0}; R.forEach(r=>{ for(const k in a) if(k!=="n") a[k]+=r[k]||0 }); return a }
+function posSpark(vals,col){ if(vals.length<2) return ""; const W=200,H=34, mx=Math.max(...vals)||1, mn=Math.min(...vals), sx=W/(vals.length-1), y=v=>H-3-(H-6)*((v-mn)/((mx-mn)||1));
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" points="${vals.map((v,i)=>(i*sx).toFixed(1)+","+y(v).toFixed(1)).join(" ")}"/></svg>` }
+const ma=(arr,k)=>arr.map((_,i)=>{ const s=arr.slice(Math.max(0,i-k+1),i+1); return s.reduce((a,b)=>a+b,0)/s.length });
+function niceStep(v){ const p=Math.pow(10,Math.floor(Math.log10(v||1))), f=v/p; return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p }
+function posChartSvg(R,keys){ const W=1000,H=260,pl=52,pr=8,pt=10,pb=26,n=R.length; const max=Math.max(...R.map(r=>r.sale),1)*1.08, step=niceStep(max/4), top=Math.ceil(max/step)*step;
+  const iw=W-pl-pr, bw=iw/n, y=v=>pt+(H-pt-pb)*(1-v/top), gap=Math.min(2,bw*.25);
+  let g=""; for(let v=0;v<=top+1;v+=step) g+=`<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="#E5E7EB"/><text x="${pl-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="#64748B">${v>=1000?Math.round(v/1000)+"k":v}</text>`;
+  let b=""; R.forEach((r,i)=>{ const x=pl+i*bw+gap/2, w=Math.max(1,bw-gap); let base=0; const sa=r.x.stypeAmt||{};
+    const parts=Object.keys(sa).length?keys.map(k=>[k,sa[k]||0]):[["__d",r.dine],["Take Out",r.parcel]];
+    parts.forEach(([k,v])=>{ if(!v) return; b+=`<rect x="${x.toFixed(1)}" y="${y(base+v).toFixed(1)}" width="${w.toFixed(1)}" height="${(y(base)-y(base+v)).toFixed(1)}" fill="${k==="__d"?"#0F766E":pcol(k,keys.indexOf(k))}"${r.x.d===localDate(new Date())?' opacity=".45"':""}/>`; base+=v }) });
+  const m7=ma(R.map(r=>r.sale),7), line=m7.map((v,i)=>(pl+i*bw+bw/2).toFixed(1)+","+y(v).toFixed(1)).join(" ");
+  let xl=""; const every=n<=14?1:n<=31?Math.ceil(n/10):0; R.forEach((r,i)=>{ const dt=parse(r.d); if(every?i%every===0:dt.getDate()===1||i===0) xl+=`<text x="${(pl+i*bw+bw/2).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="11" fill="#64748B">${every?dt.getDate()+" "+monN(dt.getMonth()):monN(dt.getMonth())}</text>` });
+  const hv=R.map((r,i)=>`<rect class="hov" data-i="${i}" x="${(pl+i*bw).toFixed(1)}" y="${pt}" width="${bw.toFixed(1)}" height="${H-pt-pb}"/>`).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(T("रोज़ की बिक्री का चार्ट","Daily sales chart"))}">${g}${b}<polyline fill="none" stroke="#0F172A" stroke-width="2" stroke-dasharray="5 4" points="${line}"/>${xl}${hv}</svg>` }
+function posInfo(r,keys){ if(!r) return ""; const sa=r.x.stypeAmt||{};
+  return `<b>${esc(dLabel(r.d))}</b>${r.d===localDate(new Date())?" ("+T("अभी तक","so far")+")":""} · ${T("कुल","Total")} <b>${fmtR(r.sale)}</b> · ${nf(r.ord)} ${T("ऑर्डर","orders")}${r.foot?` · ${nf(r.foot)} ${T("ग्राहक","guests")}`:""}`+(Object.keys(sa).length?" · "+keys.filter(k=>sa[k]).map(k=>`<span style="color:${pcol(k,keys.indexOf(k))};font-weight:700">${esc(stN(k))}</span> ${fmtR(sa[k])}`).join(" · "):"") }
 function renderPos(){
-  if(!$("posTiles")) return; if(!POSD){ $("posTiles").innerHTML=`<div class="hi">${T("लोड हो रहा है…","Loading…")}</div>`; loadPos(); return }
+  if(!$("posKpis")) return; if(!POSD){ $("posKpis").innerHTML=`<div class="hi">${T("लोड हो रहा है…","Loading…")}</div>`; loadPos(); return }
   const TN={dish:"Dish-wise",category:"Category-wise",space:"Space-wise",spacetype:"Space type-wise",footfall:"Footfall",perperson:"Per-person"};
   $("posFileRows").innerHTML=(POSD.files||[]).map(f=>`<tr><td>${esc(f.name)}</td><td>${esc(TN[f.type]||f.type)}</td><td class="hi">${esc(f.from||"")} → ${esc(f.to||"")}</td><td class="hi">${esc(new Date(f.at).toLocaleString(lang==="hi"?"hi-IN":"en-IN"))} ${esc(f.by||"")}</td></tr>`).join("")||`<tr><td class="empty">–</td></tr>`;
-  const sy=POSD.sync||{};
-  $("posSyncSt").textContent=sy.last?T(`चालू ✓ आख़िरी बार: ${new Date(sy.last.at).toLocaleString("hi-IN")} (${sy.last.from} → ${sy.last.to}${sy.last.pc?", "+sy.last.pc:""})`,`On ✓ last: ${new Date(sy.last.at).toLocaleString("en-IN")} (${sy.last.from} → ${sy.last.to}${sy.last.pc?", "+sy.last.pc:""})`)
+  const sy=POSD.sync||{}, loc=lang==="hi"?"hi-IN":"en-IN", lastAt=sy.last?new Date(sy.last.at):null, stale=lastAt&&Date.now()-lastAt>36*3600e3;
+  $("posSyncSt").textContent=sy.last?T(`चालू ✓ आख़िरी बार: ${lastAt.toLocaleString("hi-IN")} (${sy.last.from} → ${sy.last.to}${sy.last.pc?", "+sy.last.pc:""})`,`On ✓ last: ${lastAt.toLocaleString("en-IN")} (${sy.last.from} → ${sy.last.to}${sy.last.pc?", "+sy.last.pc:""})`)
     :sy.set?T(`Key बनी है (…${sy.last4}) - होटल PC पर POS Sync लगाना बाकी`,`Key created (…${sy.last4}) - install POS Sync on the hotel PC`):T("अभी बंद - key बनाकर होटल PC पर POS Sync लगाएँ","Off - create a key and install POS Sync on the hotel PC");
+  $("posSyncChip").innerHTML=lastAt?`<span class="dot${stale?" off":""}"></span>${esc(T("POS से अपने आप · आख़िरी बार ","Auto from POS · last "))}${esc(lastAt.toLocaleString(loc,{day:"numeric",month:"short",hour:"numeric",minute:"2-digit"}))}${stale?" · "+esc(T("1 दिन से ज़्यादा पुराना - होटल PC देखें","over a day old - check hotel PC")):""}`:`<span class="dot off"></span>${esc(T("POS Sync बंद - नीचे सेटअप देखें","POS Sync off - see setup below"))}`;
   $("posKeyBtn").textContent=sy.set?T("नई key बनाओ (पुरानी बंद)","New key (old stops)"):U("posKeyBtn");
-  $("posRange").innerHTML=[[30,T("30 दिन","30 days")],[90,T("90 दिन","90 days")],[0,T("सब","All")]].map(([v,l])=>`<button class="chip" type="button" data-r="${v}" aria-pressed="${v===posRange}">${l}</button>`).join("");
-  $("posRange").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{posRange=Number(b.dataset.r);renderPos()});
-  const D=posDays(posRange); if(!D.length){ $("posTiles").innerHTML=`<div class="hi">${T("अभी कोई रिपोर्ट नहीं - ऊपर फ़ाइल डालें","No reports yet - upload files above")}</div>`; ["posWdRows","posMonRows","posSpaceRows","posDishRows","posCatRows"].forEach(i=>$(i).innerHTML=""); return }
-  const sum=(f)=>D.reduce((a,x)=>a+(f(x)||0),0), PP=D.filter(x=>x.pp), FT=D.filter(x=>x.foot);
-  const sale=sum(x=>x.pp&&x.pp.sale), foot=sum(x=>x.pp?x.pp.foot:(x.foot&&x.foot.total)), ord=sum(x=>x.pp?x.pp.orders:(x.foot&&x.foot.orders)), w=sum(x=>x.pp&&x.pp.weight), tw=sum(x=>x.pp&&x.pp.targetW);
-  const kids=sum(x=>x.foot&&x.foot.kids), fem=sum(x=>x.foot&&x.foot.female), ftot=sum(x=>x.foot&&x.foot.total);
-  $("posTiles").innerHTML=[[T("दिन","Days"),`${D.length} (${dLabel(D[0].d).replace(/^\S+ /,"")} → ${dLabel(D[D.length-1].d).replace(/^\S+ /,"")})`],[T("बिक्री - हॉल + AC","Sale - hall + AC"),fmtR(sale)],[T("पार्सल (अंदाज़)","Parcel (est.)"),(()=>{const tm=((POSD.metaByType||{}).spacetype||{})["Take Out"], o=sum(x=>x.stype&&x.stype["Take Out"]); return tm&&tm.qty&&o?fmtR(o*tm.amt/tm.qty):"–"})()],[T("ग्राहक","Guests"),foot.toLocaleString("en-IN")],[T("ऑर्डर","Orders"),ord.toLocaleString("en-IN")],[T("₹ / ग्राहक","₹ / guest"),foot?fmtR(sale/foot):"–"],[T("ग्राहक / ऑर्डर","Guests / order"),ord?(foot/ord).toFixed(1):"–"],[T("खाना / ग्राहक","Food / guest"),foot?Math.round(w/foot)+" g":"–"],[T("परोसा / टारगेट","Served / target"),tw?Math.round(w/tw*100)+"%":"–"],[T("महिला / बच्चे","Women / kids"),ftot?`${Math.round(fem/ftot*100)}% / ${Math.round(kids/ftot*100)}%`:"–"]]
-    .map(([k,v])=>`<div class="tile"><span class="k">${esc(k)}</span><span class="v" style="font-size:18px">${v}</span></div>`).join("");
-  const wd=[0,1,2,3,4,5,6].map(()=>({n:0,f:0,o:0,s:0})); PP.forEach(x=>{const g=wd[parse(x.d).getDay()]; g.n++; g.f+=x.pp.foot; g.o+=x.pp.orders; g.s+=x.pp.sale});
-  $("posWdRows").innerHTML=[1,2,3,4,5,6,0].map(i=>{const g=wd[i]; return g.n?`<tr><td>${esc(dayN(i))}</td><td class="n">${Math.round(g.f/g.n)}</td><td class="n">${Math.round(g.o/g.n)}</td><td class="n">${fmtR(g.s/g.n)}</td></tr>`:""}).join("");
-  const mon={}; PP.forEach(x=>{const k=x.d.slice(0,7); const m=mon[k] ||= {f:0,s:0,w:0,n:0}; m.f+=x.pp.foot; m.s+=x.pp.sale; m.w+=x.pp.weight; m.n++});
-  $("posMonRows").innerHTML=Object.entries(mon).map(([k,m])=>`<tr><td>${esc(monN(Number(k.slice(5))-1))} ${k.slice(2,4)}<span class="hi"> (${m.n})</span></td><td class="n">${m.f.toLocaleString("en-IN")}</td><td class="n">${fmtR(m.s)}</td><td class="n">${m.f?fmtR(m.s/m.f):"–"}</td><td class="n">${m.f?Math.round(m.w/m.f)+" g":"–"}</td></tr>`).join("");
-  // jagah: din-wise orders range ke hisaab se; rakam/samay file ke meta se (poori file ki avadhi)
-  const so={}, sp={}, soA={}, spA={}; let amtDays=0; D.forEach(x=>{ for(const k in (x.stype||{})) so[k]=(so[k]||0)+x.stype[k]; for(const k in (x.space||{})) sp[k]=(sp[k]||0)+x.space[k];
-    if(x.stypeAmt){ amtDays++; for(const k in x.stypeAmt) soA[k]=(soA[k]||0)+x.stypeAmt[k]; for(const k in (x.spaceAmt||{})) spA[k]=(spA[k]||0)+x.spaceAmt[k] } });
-  const fullAmt=amtDays===D.filter(x=>x.stype).length&&amtDays>0;
-  const fm=t=>{ const f=(POSD.files||[]).find(f=>f.type===t); return f?f:null };
-  const sMeta=(POSD.metaByType||{}).spacetype||{}, tMeta=(POSD.metaByType||{}).space||{};
-  const totO=Object.values(so).reduce((a,b)=>a+b,0);
-  const row=(k,o,m,bold,A)=>{ const amt=fullAmt?(A[k]||0):(m&&m.qty?m.amt/m.qty*o:0); return `<tr><td>${bold?"<b>":""}${esc(pn(k))}${bold?"</b>":""}</td><td class="n">${o}</td><td class="n">${totO?Math.round(o/totO*100)+"%":"–"}</td><td class="n">${amt?fmtR(amt):"–"}</td><td class="n">${amt&&o?fmtR(amt/o):"–"}</td><td class="n">${m&&m.tat?Math.round(m.tat/60)+" "+T("मि.","min"):"–"}</td></tr>` };
-  $("posSpaceRows").innerHTML=Object.entries(so).sort((a,b)=>b[1]-a[1]).map(([k,o])=>row(k,o,sMeta[k],1,soA)).join("")+(Object.keys(sp).length?`<tr class="grp"><td colspan="6">${T("टेबल","Tables")}</td></tr>`+Object.entries(sp).sort((a,b)=>b[1]-a[1]).map(([k,o])=>row(k,o,tMeta[k],0,spA)).join(""):"");
-  $("posSpaceNote").textContent=(fullAmt?T("ऑर्डर और रकम = चुनी अवधि के; टेबल पर समय = आख़िरी डेटा का।","Orders and amount = selected period; time at table = latest data."):T("ऑर्डर = चुनी अवधि के; रकम = ऑर्डर × आख़िरी फ़ाइल का औसत बिल (अंदाज़); टेबल पर समय = आख़िरी फ़ाइल का।","Orders = selected period; amount = orders × avg bill of the last file (est.); time at table = last file."))+T(" पार्सल का हिसाब (🥡 टैब) अब यहीं से चलता है।"," Parcel numbers (🥡 tab) now come from here.");
-  // dish
-  const dq={}, dq30={}, dqOld={}; const last=D[D.length-1].d, cut=shift(last,-29);
-  const da={}, noAmt=new Set(); D.forEach(x=>{ for(const k in (x.dish||{})){ dq[k]=(dq[k]||0)+x.dish[k]; if(x.d>=cut) dq30[k]=(dq30[k]||0)+x.dish[k]; else dqOld[k]=(dqOld[k]||0)+x.dish[k];
-    if(x.dishAmt&&x.dishAmt[k]!=null) da[k]=(da[k]||0)+x.dishAmt[k]; else noAmt.add(k) } });
-  const nOld=D.filter(x=>x.d<cut).length, n30=D.length-nOld, dm=POSD.dishMeta||{}, q=($("posQ").value||"").toLowerCase();
-  $("posDishRows").innerHTML=Object.entries(dq).filter(([k])=>!q||pn(k).toLowerCase().includes(q)||L(pn(k)).toLowerCase().includes(q)).sort((a,b)=>b[1]-a[1]).map(([k,v],i)=>{ const m=dm[k], pr=m&&m.qty?m.amt/m.qty:0; const a=n30&&nOld?(dq30[k]||0)/n30:0, b=nOld?(dqOld[k]||0)/nOld:0, ch=b?(a/b-1)*100:null;
-    return `<tr><td class="hi">${i+1}</td><td><b>${esc(L(pn(k)))}</b></td><td class="n">${v.toLocaleString("en-IN")}</td><td class="n">${(v/D.length).toFixed(1)}</td><td class="n">${!noAmt.has(k)&&da[k]?fmtR(da[k]):pr?fmtR(v*pr):"–"}</td><td class="n" style="color:${ch==null?"var(--muted)":ch>10?"var(--ok)":ch<-10?"#B91C1C":"var(--muted)"}">${ch==null?"–":(ch>=0?"+":"")+Math.round(ch)+"%"}</td></tr>`}).join("");
-  const cq={}; D.forEach(x=>{ for(const k in (x.cat||{})) cq[k]=(cq[k]||0)+x.cat[k] }); const cm=(POSD.metaByType||{}).category||{};
-  $("posCatRows").innerHTML=Object.entries(cq).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<tr><td>${esc(pn(k))}</td><td class="n">${v.toLocaleString("en-IN")}</td><td class="n">${cm[k]&&cm[k].qty?fmtR(v*cm[k].amt/cm[k].qty):"–"}</td></tr>`).join("");
+  $("posRange").innerHTML=[[7,T("7 दिन","7 days")],[30,T("30 दिन","30 days")],[90,T("90 दिन","90 days")],[0,T("सब","All")]].map(([v,l])=>`<button class="chip" type="button" data-r="${v}" aria-pressed="${v===posRange}">${l}</button>`).join("");
+  $("posRange").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{posRange=Number(b.dataset.r);posHov=-1;renderPos()});
+  const today=localDate(new Date()), ALL=(POSD.days||[]).map(posDay).filter(r=>r.sale||r.ord), done=ALL.filter(r=>r.d<today), tdy=ALL.find(r=>r.d===today);
+  const ids=["posKpis","posToday","posChart","posChartInfo","posLegend","posIdeas","posWd","posMonRows","posStype","posTables","posDishRows","posCats","posDishF"];
+  if(!done.length){ ids.forEach(i=>$(i).innerHTML=""); $("posKpis").innerHTML=`<div class="hi">${T("अभी कोई डेटा नहीं - नीचे 'सेटअप' खोलकर POS Sync लगाएँ या फ़ाइल डालें","No data yet - open 'Setup' below to install POS Sync or upload files")}</div>`; $("posSetup").open=true; return }
+  const last=done[done.length-1].d, n=posRange||Math.round((parse(last)-parse(done[0].d))/864e5)+1, from=posRange?shift(last,-(n-1)):done[0].d, pfrom=shift(from,-n);
+  const CUR=done.filter(r=>r.d>=from), PRV=posRange?done.filter(r=>r.d>=pfrom&&r.d<from):[];
+  const c=posSum(CUR), p=posSum(PRV), cN=CUR.length, pN=PRV.length, hasP=pN>=Math.min(n*.6,n-1)&&pN>0;
+  const pd=(a,b)=>hasP?pct(a/cN,b/pN):null, pr=(a,b)=>hasP?pct(a,b):null;
+  const cmpTxt=hasP?T(`पिछले ${n} दिन से तुलना`,`vs previous ${n} days`):"";
+  // ---- KPI ----
+  const K=[
+    {hero:1,k:T("कुल बिक्री","Total sales"),v:kR(c.sale),d:pd(c.sale,p.sale),s:`${T("रोज़","per day")} ${fmtR(c.sale/cN)}`,sp:posSpark(ma(CUR.map(r=>r.sale),7),"#CCFBF1")},
+    {k:T("ऑर्डर (बिल)","Orders (bills)"),v:nf(c.ord),d:pd(c.ord,p.ord),s:`${T("रोज़","per day")} ${(c.ord/cN).toFixed(1)}`},
+    {k:T("औसत बिल","Avg bill"),v:c.ord?fmtR(c.sale/c.ord):"–",d:pr(c.ord&&c.sale/c.ord,p.ord&&p.sale/p.ord),s:T("हर ऑर्डर","per order")},
+    {k:T("ग्राहक (अंदर बैठकर)","Guests (dine-in)"),v:nf(c.foot),d:pd(c.foot,p.foot),s:`${T("रोज़","per day")} ${Math.round(c.foot/cN)} · ${c.dOrd?(c.foot/c.dOrd).toFixed(1):"–"} ${T("/टेबल","/table")}`},
+    {k:T("₹ / ग्राहक","₹ / guest"),v:c.foot?fmtR(c.dine/c.foot):"–",d:pr(c.foot&&c.dine/c.foot,p.foot&&p.dine/p.foot),s:T("हॉल + AC","hall + AC")},
+    {k:T("पार्सल","Parcel"),v:c.sale?Math.round(c.parcel/c.sale*100)+"%":"–",d:pd(c.parcel,p.parcel),s:`${kR(c.parcel)} · ${nf(c.pOrd)} ${T("ऑर्डर","orders")}`}];
+  $("posKpis").innerHTML=K.map(t=>`<div class="kpi${t.hero?" hero":""}"><span class="k">${esc(t.k)}</span><span class="v">${t.v}</span><span class="s">${dlt(t.d)}${t.s?`<span>${esc(t.s)}</span>`:""}</span>${t.sp||""}</div>`).join("")+(cmpTxt?`<div class="hi" style="grid-column:1/-1">${esc(T(`${dLabel(from)} → ${dLabel(last)} (${cN} दिन) · ▲▼ = ${cmpTxt}`,`${dLabel(from)} → ${dLabel(last)} (${cN} days) · ▲▼ = ${cmpTxt}`))}${c.ftot?"":""}</div>`:"");
+  // ---- aaj abhi tak ----
+  if(tdy){ const wd=parse(today).getDay(), same=done.filter(r=>parse(r.d).getDay()===wd).slice(-8), avg=same.length?same.reduce((a,r)=>a+r.sale,0)/same.length:0;
+    $("posToday").innerHTML=`<div class="pd-today"><span>⏱️ <b>${T("आज अभी तक","Today so far")}</b> (${esc(T("sync","sync"))} ${lastAt?esc(lastAt.toLocaleTimeString(loc,{hour:"numeric",minute:"2-digit"})):""}): <b>${fmtR(tdy.sale)}</b> · ${nf(tdy.ord)} ${T("ऑर्डर","orders")}</span>${avg?`<span class="bar" title="${Math.round(tdy.sale/avg*100)}%"><i style="width:${Math.min(100,tdy.sale/avg*100).toFixed(0)}%"></i></span><span class="hi">${T(`आम ${dayN(wd)} पूरा दिन ≈ ${fmtR(avg)}`,`a usual ${dayN(wd)} full day ≈ ${fmtR(avg)}`)}</span>`:""}</div>` }
+  else $("posToday").innerHTML="";
+  // ---- chart ----
+  const CH=tdy&&posRange&&posRange<=30?[...CUR,tdy]:CUR, keys=[...new Set(CH.flatMap(r=>Object.keys(r.x.stypeAmt||{})))].sort((a,b)=>(["General","AC","Take Out"].indexOf(a)+9)%9-(["General","AC","Take Out"].indexOf(b)+9)%9||a.localeCompare(b));
+  $("posLegend").innerHTML=(keys.length?keys:["General","Take Out"]).map((k,i)=>`<span><i style="background:${pcol(k,i)}"></i>${esc(keys.length?stN(k):i?T("पार्सल","Parcel"):T("हॉल + AC","Hall + AC"))}</span>`).join("")+`<span><i style="background:none;border-top:2px dashed #0F172A;height:0;width:14px;border-radius:0"></i>${T("7 दिन का औसत","7-day average")}</span>`;
+  $("posChart").innerHTML=posChartSvg(CH,keys);
+  const showI=i=>{ $("posChartInfo").innerHTML=posInfo(CH[i<0?CH.length-1:i],keys); $("posChart").querySelectorAll(".hov").forEach(h=>h.classList.toggle("on",Number(h.dataset.i)===i)) };
+  $("posChart").querySelectorAll(".hov").forEach(h=>{ const i=Number(h.dataset.i); h.addEventListener("mouseenter",()=>showI(i)); h.addEventListener("click",()=>{posHov=i;showI(i)}) });
+  $("posChart").onmouseleave=()=>showI(posHov<CH.length?posHov:-1); showI(posHov<CH.length?posHov:-1);
+  // ---- dish / category / jagah ka jod ----
+  const agg=(R,part)=>{ const q={}, a={}, miss=new Set(); R.forEach(r=>{ const X=r.x[part]||{}, XA=r.x[part+"Amt"]; for(const k in X){ q[k]=(q[k]||0)+X[k]; if(XA&&XA[k]!=null) a[k]=(a[k]||0)+XA[k]; else miss.add(k) } });
+    const meta=part==="dish"?(POSD.dishMeta||{}):((POSD.metaByType||{})[{cat:"category",space:"space",stype:"spacetype"}[part]]||{});
+    miss.forEach(k=>{ const m=meta[k]; if(m&&m.qty){ let qq=0; R.forEach(r=>{ const XA=r.x[part+"Amt"]; if(!(XA&&XA[k]!=null)) qq+=(r.x[part]||{})[k]||0 }); a[k]=(a[k]||0)+qq*m.amt/m.qty } }); return {q,a} };
+  const DC=agg(CUR,"dish"), DP=agg(PRV,"dish"), CC=agg(CUR,"cat"), CP=agg(PRV,"cat"), SC=agg(CUR,"stype"), SP=agg(PRV,"stype"), TC=agg(CUR,"space");
+  const dTot=Object.values(DC.a).reduce((x,y)=>x+y,0)||1; let cum=0;
+  const dishes=Object.keys(DC.q).map(k=>({k,q:DC.q[k],a:DC.a[k]||0,pq:DP.q[k]||0})).sort((x,y)=>y.a-x.a||y.q-x.q).map(r=>{ cum+=r.a; r.cls=cum/dTot<=.8||cum-r.a===0?"A":cum/dTot<=.95?"B":"C"; r.sh=r.a/dTot;
+    r.tr=hasP&&r.pq&&(r.q+r.pq*cN/pN)>=Math.max(10,cN/2)?pct(r.q/cN,r.pq/pN):null; r.isNew=hasP&&!r.pq&&r.q>0; r.slow=r.q<cN/7; return r });
+  // ---- growth ideas ----
+  const ideas=[], add=(icon,t,d,imp,tone)=>ideas.push({icon,t,d,imp:imp||0,tone:tone||"info"}), perMon=v=>v*30;
+  const WDsrc=CUR.length>=21?CUR:done.slice(-56), wd=[0,1,2,3,4,5,6].map(i=>{ const R=WDsrc.filter(r=>parse(r.d).getDay()===i); const s=posSum(R); return {i,n:R.length,avg:R.length?s.sale/R.length:0,ord:R.length?s.ord/R.length:0,par:R.length?s.parcel/R.length:0} });
+  const wv=wd.filter(w=>w.n>=2), wAvg=wv.length?wv.reduce((a,w)=>a+w.avg,0)/wv.length:0, best=wv.reduce((a,w)=>!a||w.avg>a.avg?w:a,null), worst=wv.reduce((a,w)=>!a||w.avg<a.avg?w:a,null);
+  if(hasP){ const g=pct(c.sale/cN,p.sale/pN); if(g<=-5) add("📉",T(`बिक्री ${Math.abs(Math.round(g))}% घटी है`,`Sales are down ${Math.abs(Math.round(g))}%`),T(`पिछले ${n} दिन के मुक़ाबले रोज़ की बिक्री ${fmtR(p.sale/pN)} से ${fmtR(c.sale/cN)} हुई। नीचे 📉 वाली डिश और कमज़ोर दिन देखें - वहीं से शुरू करें।`,`Daily sales went from ${fmtR(p.sale/pN)} to ${fmtR(c.sale/cN)} vs the previous ${n} days. Start with the 📉 dishes and the weak day below.`),perMon(p.sale/pN-c.sale/cN),"warn");
+    else if(g>=5) add("🚀",T(`बिक्री ${Math.round(g)}% बढ़ी है`,`Sales are up ${Math.round(g)}%`),T(`रोज़ ${fmtR(p.sale/pN)} → ${fmtR(c.sale/cN)}। जो चल रहा है वही जारी रखें - स्टाफ़ और माल बढ़ी बिक्री के हिसाब से रखें।`,`Daily ${fmtR(p.sale/pN)} → ${fmtR(c.sale/cN)}. Keep doing what works - plan staff and stock for the higher sales.`),0,"ok") }
+  if(worst&&best&&wAvg&&worst.avg<wAvg*.85){ const gap=wAvg-worst.avg; add("📅",T(`${dayN(worst.i)} सबसे धीमा दिन`,`${dayN(worst.i)} is the slowest day`),T(`${dayN(worst.i)} को औसत ${fmtR(worst.avg)}, जबकि आम दिन ${fmtR(wAvg)} और ${dayN(best.i)} ${fmtR(best.avg)}। उस दिन एक "${dayN(worst.i)} स्पेशल" थाली/कॉम्बो या छोटा ऑफ़र रखें और WhatsApp स्टेटस पर डालें।`,`${dayN(worst.i)} averages ${fmtR(worst.avg)} vs ${fmtR(wAvg)} on a usual day (${dayN(best.i)}: ${fmtR(best.avg)}). Run a "${dayN(worst.i)} special" thali/combo or a small offer and post it on WhatsApp status.`),gap/2*4.3,"gold") }
+  const pShare=c.sale?c.parcel/c.sale:0, ppShare=hasP&&p.sale?p.parcel/p.sale:null;
+  if(c.sale&&pShare<.35) add("🥡",T(`पार्सल सिर्फ़ ${Math.round(pShare*100)}% - यहाँ बढ़ने की जगह है`,`Parcel is only ${Math.round(pShare*100)}% - room to grow`),T(`Zomato/Swiggy पर लिस्टिंग, बिल और पार्सल बैग पर WhatsApp ऑर्डर नंबर, और गेस्ट हाउस के हर कमरे में छोटा मेन्यू कार्ड + रूम-सर्विस नंबर रखें।${ppShare!=null?T(` (पहले ${Math.round(ppShare*100)}% था)`,""):""} कुल बिक्री में पार्सल 5% भी बढ़ा तो:`,`List on Zomato/Swiggy, print a WhatsApp order number on bills and parcel bags, and keep a small menu card + room-service number in every guest-house room.${ppShare!=null?` (was ${Math.round(ppShare*100)}%)`:""} Even 5% more of sales as parcel means:`),c.sale/cN*30*.05);
+  const addQ=Object.keys(CC.q).filter(k=>ADDON.test(k)).reduce((a,k)=>a+CC.q[k],0);
+  if(c.ord) add("🧾",T(`औसत बिल ${fmtR(c.sale/c.ord)} - हर ऑर्डर पर ₹20 और`,`Avg bill ${fmtR(c.sale/c.ord)} - ₹20 more per order`),T(`अभी हर टेबल पर औसतन ${c.dOrd?(addQ/c.dOrd).toFixed(1):"–"} ऐड-ऑन (छाछ, पापड़, सलाद, आइसक्रीम, सूप) बिकते हैं। कैप्टन हर टेबल पर 1 चीज़ ज़रूर सुझाए ("छाछ / मसाला पापड़ लाऊँ?")। रोज़ ${Math.round(c.ord/cN)} ऑर्डर × ₹20 =`,`Each table buys ${c.dOrd?(addQ/c.dOrd).toFixed(1):"–"} add-ons on average (buttermilk, papad, salad, ice cream, soup). Have captains suggest one item at every table ("Shall I bring buttermilk / masala papad?"). ${Math.round(c.ord/cN)} orders/day × ₹20 =`),c.ord/cN*20*30,"gold");
+  const A=dishes.filter(r=>r.cls==="A");
+  if(A.length&&dishes.length>8) add("⭐",T(`सिर्फ़ ${A.length} डिश से 80% कमाई`,`Just ${A.length} dishes make 80% of income`),T(`कुल ${dishes.length} में से ये ${A.length} (जैसे ${A.slice(0,4).map(r=>L(pn(r.k))).join(", ")}) - इनका स्वाद, मात्रा और माल कभी कम न पड़े। रोज़ की स्वाद-जाँच में इन्हें पहले चखें। नीचे ⭐ फ़िल्टर देखें।`,`Out of ${dishes.length}, these ${A.length} (e.g. ${A.slice(0,4).map(r=>L(pn(r.k))).join(", ")}) - never let their taste, portion or stock slip. Taste them first in the daily check. See the ⭐ filter below.`),0,"info");
+  const fall=dishes.filter(r=>r.cls!=="C"&&r.tr!=null&&r.tr<=-15&&!r.slow).sort((x,y)=>(y.a*Math.abs(y.tr))-(x.a*Math.abs(x.tr))).slice(0,4);
+  if(fall.length){ const lost=fall.reduce((s,r)=>s+(r.pq/pN-r.q/cN)*(r.q?r.a/r.q:0),0); add("🔻",T("ये बड़ी डिश कम बिक रही हैं","These big dishes are selling less"),T(`${fall.map(r=>`${L(pn(r.k))} (${Math.round(r.tr)}%)`).join(", ")} - स्वाद, मात्रा या दाम में कुछ बदला? स्टाफ़ से पूछें और एक बार ख़ुद चखें।`,`${fall.map(r=>`${L(pn(r.k))} (${Math.round(r.tr)}%)`).join(", ")} - did taste, portion or price change? Ask the staff and taste it yourself once.`),perMon(lost),"warn") }
+  const rise=dishes.filter(r=>r.tr!=null&&r.tr>=25&&!r.slow).sort((x,y)=>y.a*y.tr-x.a*x.tr).slice(0,4);
+  if(rise.length) add("📈",T("इनकी मांग बढ़ रही है","Demand is rising for these"),T(`${rise.map(r=>`${L(pn(r.k))} (+${Math.round(r.tr)}%)`).join(", ")} - इनकी तैयारी/माल बढ़ाएँ, मेन्यू में ऊपर दिखाएँ और कैप्टन सुझाएँ।`,`${rise.map(r=>`${L(pn(r.k))} (+${Math.round(r.tr)}%)`).join(", ")} - prep and stock more, show them higher on the menu and have captains suggest them.`),0,"ok");
+  const slow=dishes.filter(r=>r.slow&&cN>=14);
+  if(slow.length>=5) add("🐢",T(`${slow.length} डिश हफ़्ते में 1 बार से भी कम बिकती हैं`,`${slow.length} dishes sell less than once a week`),T(`जैसे ${slow.slice(-5).map(r=>L(pn(r.k))).join(", ")}। मेन्यू छोटा करने पर सोचें - कम चीज़ें = कम माल ख़राब, तेज़ सर्विस, एक जैसा स्वाद।`,`e.g. ${slow.slice(-5).map(r=>L(pn(r.k))).join(", ")}. Consider a shorter menu - fewer items = less spoilage, faster service, consistent taste.`),0,"info");
+  const gA=SC.a["General"], aA=SC.a["AC"], gO=SC.q["General"], aO=SC.q["AC"];
+  if(gA&&aA&&gO&&aO&&aA/aO>gA/gO*1.15) add("❄️",T(`AC में बिल ${Math.round((aA/aO)/(gA/gO)*100-100)}% बड़ा`,`AC bills are ${Math.round((aA/aO)/(gA/gO)*100-100)}% bigger`),T(`AC: ${fmtR(aA/aO)} / ऑर्डर, हॉल: ${fmtR(gA/gO)}। परिवार और 4+ लोगों को पहले AC में बैठाएँ; AC भरा हो तो वहाँ का अनुभव (साफ़-सफ़ाई, म्यूज़िक, जल्दी सर्विस) अच्छा रखें।`,`AC: ${fmtR(aA/aO)} / order, hall: ${fmtR(gA/gO)}. Seat families and groups of 4+ in AC first; keep the AC experience (cleanliness, music, quick service) top.`),0,"info");
+  if(c.ftot&&c.kids/c.ftot>=.1) add("🧒",T(`ग्राहकों में ${Math.round(c.kids/c.ftot*100)}% बच्चे`,`${Math.round(c.kids/c.ftot*100)}% of guests are kids`),T("बच्चों के लिए छोटा कॉम्बो (मिनी पिज़्ज़ा/सैंडविच + आइसक्रीम) रखें - परिवार वापस आते हैं और बिल भी बढ़ता है।","Add a small kids combo (mini pizza/sandwich + ice cream) - families come back and the bill grows."),0,"info");
+  if(c.tw&&c.w/c.tw<.85) add("🍽️",T(`ग्राहक टारगेट से कम ऑर्डर कर रहे (${Math.round(c.w/c.tw*100)}%)`,`Guests order below target (${Math.round(c.w/c.tw*100)}%)`),T("POS के हिसाब से प्रति ग्राहक खाना टारगेट से कम है - स्टार्टर, सूप, रोटी/चावल ऐड-ऑन सुझाएँ।","Per the POS, food per guest is below target - suggest starters, soup, extra roti/rice."),(c.tw-c.w)/Math.max(1,c.w)*c.dine/cN*30*.3,"gold");
+  const tone={warn:0,gold:1,ok:2,info:3};
+  $("posIdeas").innerHTML=ideas.sort((x,y)=>tone[x.tone]-tone[y.tone]||y.imp-x.imp).slice(0,9).map(x=>`<div class="idea ${x.tone}"><div class="t"><span aria-hidden="true">${x.icon}</span><span>${esc(x.t)}</span></div><div class="d">${esc(x.d)}</div>${x.imp>=500?`<span class="imp">${x.tone==="warn"?T("दांव पर","At stake"):T("मौक़ा","Potential")} ≈ ${fmtR(Math.round(x.imp/100)*100)}${T(" / महीना"," / month")}</span>`:""}</div>`).join("")||`<div class="hi">${T("और डेटा आने पर सुझाव यहाँ दिखेंगे","Ideas will show here as more data comes in")}</div>`;
+  // ---- vaar ----
+  $("posWdNote").textContent=WDsrc===CUR?T("चुनी अवधि, रोज़ औसत","selected period, daily avg"):T("पिछले 8 हफ़्ते, रोज़ औसत","last 8 weeks, daily avg");
+  const wMax=Math.max(...wd.map(w=>w.avg),1);
+  $("posWd").innerHTML=[1,2,3,4,5,6,0].map(i=>{ const w=wd[i]; if(!w.n) return ""; const cls=w===best?"best":w===worst?"worst":""; return `<div class="wdrow ${cls}" title="${esc(`${nf(w.ord)} ${T("ऑर्डर","orders")} · ${T("पार्सल","parcel")} ${fmtR(w.par)}`)}"><span class="lb">${esc(dayN(i))}${w===best?" ⭐":""}</span><span class="tr"><i style="width:${((w.avg-w.par)/wMax*100).toFixed(1)}%;background:#0F766E"></i><i style="width:${(w.par/wMax*100).toFixed(1)}%;background:#D97706"></i></span><span class="n">${fmtR(w.avg)}</span></div>` }).join("");
+  // ---- mahina ----
+  const mon={}; done.forEach(r=>{ const k=r.d.slice(0,7); (mon[k] ||= []).push(r) }); const mk=Object.keys(mon).sort(); let prevPD=null;
+  const mrows=mk.map(k=>{ const s=posSum(mon[k]), dim=new Date(Number(k.slice(0,4)),Number(k.slice(5)),0).getDate(), pdv=s.sale/mon[k].length, g=prevPD?pct(pdv,prevPD):null; prevPD=pdv; return {k,s,n:mon[k].length,dim,pdv,g} });
+  $("posMonRows").innerHTML=mrows.slice().reverse().map(m=>{ const part=m.n<m.dim; return `<tr><td><b>${esc(monN(Number(m.k.slice(5))-1))} ${m.k.slice(2,4)}</b><br><span class="hi">${m.n}/${m.dim} ${T("दिन","days")}</span></td><td class="n"><b>${kR(m.s.sale)}</b>${part?`<br><span class="hi">${T("अंदाज़","proj.")} ${kR(m.pdv*m.dim)}</span>`:""}</td><td class="n">${fmtR(m.pdv)}</td><td class="n">${dlt(m.g)||"–"}</td><td class="n">${m.s.foot?fmtR(m.s.dine/m.s.foot):"–"}</td><td class="n">${m.s.sale?Math.round(m.s.parcel/m.s.sale*100)+"%":"–"}</td></tr>` }).join("");
+  $("posMonNote").textContent=T("बढ़त = रोज़ की औसत बिक्री पिछले महीने से (अधूरे महीने भी बराबर तुलना)। अंदाज़ = अभी की रफ़्तार से पूरा महीना।","Growth = daily average vs previous month (fair even for part months). Proj. = full month at the current pace.");
+  // ---- jagah ----
+  const sTot=Object.values(SC.a).reduce((x,y)=>x+y,0)||1;
+  $("posStype").innerHTML=Object.keys(SC.q).sort((x,y)=>(SC.a[y]||0)-(SC.a[x]||0)).map((k,i)=>{ const a=SC.a[k]||0,o=SC.q[k], g=hasP&&SP.a[k]?pct(a/cN,SP.a[k]/pN):null, m=((POSD.metaByType||{}).spacetype||{})[k];
+    return `<div class="sc" style="border-top-color:${pcol(k,keys.indexOf(k))}"><span class="nm">${esc(stN(k))}</span><span class="big">${kR(a)}</span><span class="s">${Math.round(a/sTot*100)}% ${T("हिस्सा","share")} ${dlt(g)}</span><span class="s">${nf(o)} ${T("ऑर्डर","orders")} · ${T("बिल","bill")} ${o?fmtR(a/o):"–"}${m&&m.tat?` · ${Math.round(m.tat/60)} ${T("मि.","min")}`:""}</span></div>` }).join("");
+  $("posSpaceNote").textContent=T("पार्सल का हिसाब (🥡 टैब) और मेन्यू मुनाफ़ा यहीं के डेटा से चलता है।","Parcel numbers (🥡 tab) and menu profit use this data.");
+  const tl=Object.keys(TC.q).map(k=>({k,q:TC.q[k],a:TC.a[k]||0})).sort((x,y)=>y.a-x.a), tMax=Math.max(...tl.map(t=>t.a),1);
+  $("posTables").innerHTML=tl.slice(0,16).map(t=>`<div class="hb"><span class="nm" title="${esc(pn(t.k))}">${esc(pn(t.k))}</span><span class="tr"><i style="width:${(t.a/tMax*100).toFixed(1)}%;background:${/ac/i.test(t.k)?"#0369A1":/take|parcel/i.test(t.k)?"#D97706":"#0F766E"}"></i></span><span class="n">${kR(t.a)}</span><span class="c hi">${nf(t.q)} · ${t.q?fmtR(t.a/t.q):""}</span></div>`).join("")||`<div class="hi">–</div>`;
+  // ---- dish ----
+  const F=[["all",T("सभी","All"),dishes.length],["A","⭐ "+T("कमाई वाली","Top earners"),A.length],["up","📈 "+T("बढ़ रही","Rising"),dishes.filter(r=>r.tr!=null&&r.tr>=15&&!r.slow).length],["down","📉 "+T("घट रही","Falling"),dishes.filter(r=>r.tr!=null&&r.tr<=-15&&!r.slow).length],["new","🆕 "+T("नई","New"),dishes.filter(r=>r.isNew).length],["slow","🐢 "+T("धीमी","Slow"),dishes.filter(r=>r.slow).length]];
+  if(!F.some(f=>f[0]===posDishF&&(f[2]||f[0]==="all"))) posDishF="all";
+  $("posDishF").innerHTML=F.filter(f=>f[2]||f[0]==="all").map(([v,l,cn])=>`<button class="chip" type="button" data-f="${v}" aria-pressed="${v===posDishF}">${esc(l)} <span class="cnt">${cn}</span></button>`).join("");
+  $("posDishF").querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{posDishF=b.dataset.f;renderPos()});
+  const q=($("posQ").value||"").toLowerCase(), shMax=Math.max(...dishes.map(r=>r.sh),.0001);
+  const DL=dishes.filter(r=>(!q||pn(r.k).toLowerCase().includes(q)||L(pn(r.k)).toLowerCase().includes(q))&&(posDishF==="all"||(posDishF==="A"&&r.cls==="A")||(posDishF==="up"&&r.tr!=null&&r.tr>=15&&!r.slow)||(posDishF==="down"&&r.tr!=null&&r.tr<=-15&&!r.slow)||(posDishF==="new"&&r.isNew)||(posDishF==="slow"&&r.slow)));
+  if(posDishF==="up") DL.sort((x,y)=>y.tr-x.tr); if(posDishF==="down") DL.sort((x,y)=>x.tr-y.tr);
+  $("posDishRows").innerHTML=DL.slice(0,300).map(r=>`<tr><td class="hi">${dishes.indexOf(r)+1}</td><td><b>${esc(L(pn(r.k)))}</b><span class="abc ${r.cls}">${r.cls}</span>${r.isNew?`<span class="tg new">${T("नई","new")}</span>`:""}${r.slow?`<span class="tg slow">${T("धीमी","slow")}</span>`:""}</td><td class="n">${nf(r.q)}</td><td class="n">${(r.q/cN).toFixed(1)}</td><td class="n">${r.a?fmtR(r.a):"–"}</td><td style="white-space:nowrap"><span class="shb" style="width:${Math.max(2,r.sh/shMax*90).toFixed(0)}px"></span><span class="hi">${(r.sh*100).toFixed(1)}%</span></td><td class="n">${dlt(r.tr)||(r.isNew?"🆕":"–")}</td></tr>`).join("")||`<tr><td colspan="7" class="empty">–</td></tr>`;
+  // ---- group ----
+  const cl=Object.keys(CC.q).map(k=>({k,q:CC.q[k],a:CC.a[k]||0,g:hasP&&CP.a[k]?pct((CC.a[k]||0)/cN,CP.a[k]/pN):null})).sort((x,y)=>y.a-x.a), cMax=Math.max(...cl.map(x=>x.a),1), cTot=cl.reduce((s,x)=>s+x.a,0)||1;
+  $("posCats").innerHTML=cl.map(x=>`<div class="hb"><span class="nm" title="${esc(pn(x.k))}">${esc(pn(x.k))}</span><span class="tr"><i style="width:${(x.a/cMax*100).toFixed(1)}%"></i></span><span class="n">${kR(x.a)}</span><span class="c">${dlt(x.g)||`<span class="hi">${Math.round(x.a/cTot*100)}%</span>`}</span></div>`).join("")||`<div class="hi">–</div>`;
 }
 
 // ---------- STAFF BHARTI ----------
