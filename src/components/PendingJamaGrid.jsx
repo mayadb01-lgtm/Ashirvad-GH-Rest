@@ -1,10 +1,12 @@
 import { DataGrid } from "@mui/x-data-grid";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { TextField } from "@mui/material";
 import { useAppSelector } from "../redux/hooks";
 
 const PendingJamaGrid = () => {
   const { unpaidEntries } = useAppSelector((state) => state.entry);
-  const [pendingJamaGridRows, setPendingJamaGridRows] = useState([]);
+  const [allRows, setAllRows] = useState([]);
+  const [q, setQ] = useState("");
 
   const setPeriod = {
     day: "Day",
@@ -13,9 +15,13 @@ const PendingJamaGrid = () => {
     extraNight: "Extra Night",
   };
 
+  // Naya din upar (DD-MM-YYYY ko sahi tarah sort), phir room no.
+  const dkey = (d) => String(d || "").split("-").reverse().join("");
   useEffect(() => {
-    if (unpaidEntries.length > 0) {
-      const rows = unpaidEntries.map((entry, index) => {
+    {
+      const rows = [...(unpaidEntries || [])]
+        .sort((a, b) => dkey(b.createDate || b.date).localeCompare(dkey(a.createDate || a.date)) || Number(a.roomNo) - Number(b.roomNo))
+        .map((entry, index) => {
         return {
           id: index + 1,
           createDate: entry.createDate,
@@ -29,9 +35,15 @@ const PendingJamaGrid = () => {
           discount: entry?.discount || 0,
         };
       });
-      setPendingJamaGridRows(rows);
+      setAllRows(rows);
     }
   }, [unpaidEntries]);
+  // Khojo: date / room / naam / mobile
+  const pendingJamaGridRows = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    if (!t) return allRows;
+    return allRows.filter((r) => `${r.createDate} ${r.roomNo} ${r.fullname} ${r.mobileNumber}`.toLowerCase().includes(t));
+  }, [allRows, q]);
 
   const totalRow = {
     id: "Total",
@@ -44,7 +56,7 @@ const PendingJamaGrid = () => {
     roomType: "",
   };
 
-  if (pendingJamaGridRows.length === 0) {
+  if (allRows.length === 0) {
     return (
       <div style={{ textAlign: "center", marginTop: "20px" }}>
         <p>No Pending Jama Entries</p>
@@ -53,7 +65,11 @@ const PendingJamaGrid = () => {
   } else {
     return (
       <div>
+        <TextField size="small" placeholder="Search: date (04-10-2026) / room / name / mobile" value={q} onChange={(e) => setQ(e.target.value)} sx={{ mb: 1, width: { xs: "100%", sm: 380 } }} />
         <DataGrid
+          autoHeight
+          initialState={{ pagination: { paginationModel: { pageSize: 100 } } }}
+          pageSizeOptions={[25, 50, 100]}
           rows={[...pendingJamaGridRows, totalRow]}
           columns={[
             { field: "id", headerName: "Index", width: 80 },
