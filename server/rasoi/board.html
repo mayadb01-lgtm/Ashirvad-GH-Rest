@@ -1115,7 +1115,11 @@ function renderMandi(){
   if(!$("mandiRows")) return;
   if(!MANDI){ $("mandiAsOf").textContent=T("भाव लोड हो रहे हैं…","Loading prices…"); $("mandiRows").innerHTML=""; return }
   const dates=MANDI.rows.filter(r=>r.market==="Surat APMC").map(r=>r.date).sort(); const last=dates[dates.length-1];
-  $("mandiAsOf").textContent=last?T("सूरत APMC: ","Surat APMC: ")+dLabel(last):T("आज का भाव अभी नहीं आया","No price reported yet");
+  const cnt={}; MANDI.rows.filter(r=>r.market==="Surat APMC").forEach(r=>cnt[r.date]=(cnt[r.date]||0)+1);
+  const main=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]||b.localeCompare(a))[0], today=localDate(new Date());
+  $("mandiAsOf").textContent=!last?T("आज का भाव अभी नहीं आया","No price reported yet"):
+    (last===today&&main!==today?T(`सूरत APMC: आज के भाव अभी ${cnt[today]} चीज़ों के आए, बाकी ${dLabel(main)} के (सरकारी साइट पर दिन में धीरे-धीरे आते हैं; हर घंटे अपने आप जाँच)`,`Surat APMC: today's prices in for ${cnt[today]} items so far, rest from ${dLabel(main)} (the government site fills in through the day; checked hourly)`):
+     last!==today?T(`सूरत APMC: ${dLabel(last)} (आज का भाव अभी नहीं आया - हर घंटे अपने आप जाँच)`,`Surat APMC: ${dLabel(last)} (today's not reported yet - checked hourly)`):T("सूरत APMC: ","Surat APMC: ")+dLabel(last));
   const keys=Object.keys(ING).filter(k=>ING[k].g==="Sabzi"&&mandiOf(k));
   $("mandiRows").innerHTML=keys.map(k=>{const m=mandiOf(k), su=m.su, so=m.so, r=ING[k].r, ref=su?su.modal:so.modal, d=ref?((r/ref-1)*100):0;
     const col=d>80?"var(--bad,#B91C1C)":d>40?"var(--warn)":"var(--ok)";

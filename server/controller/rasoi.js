@@ -245,16 +245,25 @@ async function pullKirana() {
   finally { if (ops.length) await Mandi.bulkWrite(ops, { ordered: false }); }
   return ops.length;
 }
+// Din mein (8 se 23 baje IST) sabzi bhaav har ghante, warna 3 ghante purana chalega; masala-anaaj har 6 ghante
+const istHour = () => (new Date().getUTCHours() + 5.5 + (new Date().getUTCMinutes() / 60)) % 24;
+const mandiMaxAge = () => (istHour() >= 8 && istHour() < 23 ? 1 : 3) * 3600 * 1000;
+function refreshMandi() {
+  if (Date.now() - kiranaAt > 6 * 3600 * 1000 && !kiranaBusy) {
+    kiranaAt = Date.now(); // background — jawab ke liye intezaar nahi
+    kiranaBusy = pullKirana().catch((e) => { kiranaAt = Date.now() - (e instanceof RateLimited ? 5 : 5.5) * 3600 * 1000; lastLimit = e instanceof RateLimited ? new Date() : lastLimit; }).finally(() => { kiranaBusy = null; });
+  }
+  if (Date.now() - mandiAt > mandiMaxAge()) {
+    mandiBusy ||= pullMandi().then(() => { mandiAt = Date.now(); }).catch((e) => { if (e instanceof RateLimited) { lastLimit = new Date(); mandiAt = Date.now() - mandiMaxAge() + 3600 * 1000; } }).finally(() => { mandiBusy = null; });
+  }
+  return mandiBusy;
+}
+// Koi Manager na khole tab bhi apne aap (server chalu hote hi, phir har 20 min jaanch)
+setTimeout(() => { refreshMandi(); setInterval(() => { try { refreshMandi(); } catch {} }, 20 * 60 * 1000).unref?.(); }, 60 * 1000).unref?.();
 router.get("/mandi", async (req, res) => {
   try {
-    if (Date.now() - kiranaAt > 6 * 3600 * 1000 && !kiranaBusy) {
-      kiranaAt = Date.now(); // background — jawab ke liye intezaar nahi
-      kiranaBusy = pullKirana().catch((e) => { kiranaAt = Date.now() - (e instanceof RateLimited ? 5 : 5.5) * 3600 * 1000; lastLimit = e instanceof RateLimited ? new Date() : lastLimit; }).finally(() => { kiranaBusy = null; });
-    }
-    if (Date.now() - mandiAt > 3 * 3600 * 1000) {
-      mandiBusy ||= pullMandi().then(() => { mandiAt = Date.now(); }).catch((e) => { if (e instanceof RateLimited) { lastLimit = new Date(); mandiAt = Date.now() - 2 * 3600 * 1000; } }).finally(() => { mandiBusy = null; });
-      await Promise.race([mandiBusy, new Promise((r) => setTimeout(r, 15000))]);
-    }
+    const busy = refreshMandi();
+    if (busy) await Promise.race([busy, new Promise((r) => setTimeout(r, 15000))]);
     const since = new Date(Date.now() - 10 * 864e5).toISOString().slice(0, 10);
     const rows = await Mandi.find({ date: { $gte: since } }, { _id: 0, at: 0 }).sort({ date: -1 }).lean();
     // har market + commodity ka sabse naya din
