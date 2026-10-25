@@ -9,6 +9,14 @@ const restCategorySchema = new Schema(
         expenseName: { type: String, required: true },
         expenseDescription: { type: String, required: true },
         isVendor: { type: Boolean, default: false },
+        // Vendor ki jaankari (sab optional; purane items mein khaali)
+        mobile: { type: String, default: "" },
+        gstin: { type: String, default: "" },
+        supplies: { type: [String], default: undefined }, // kya maal deta hai: Sabzi, Dairy, Kirana...
+        payTerms: { type: String, default: "" }, // "Cash" | "Payable" (udhaar)
+        note: { type: String, default: "" },
+        addedBy: { type: String, default: "" },
+        addedAt: { type: Date },
       },
     ],
   },

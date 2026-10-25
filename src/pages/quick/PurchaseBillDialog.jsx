@@ -7,6 +7,7 @@ import { Alert, Autocomplete, Box, Button, Chip, LinearProgress, Stack, TextFiel
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { API, ChipChoice, EditorDialog, PickField, Q, apiError, inr, num } from "./shared";
+import NewVendorDialog from "./NewVendorDialog";
 
 // Photo chhoti (OCR ke liye thodi badi rakho: 1800px)
 const shrink = (file, max = 1800, q = 0.8) =>
@@ -148,6 +149,8 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
   const [memory, setMemory] = useState([]); // pichhle bills ke items (naam, unit, rate)
   const [catalog, setCatalog] = useState([]); // Manager ki saamaan list
   const [lastBill, setLastBill] = useState(null); // chune vendor ka aakhri bill
+  const [newVendor, setNewVendor] = useState(null); // { name } → naya vendor dialog
+  const [added, setAdded] = useState([]); // isi khidki mein bane naye vendor
   useEffect(() => {
     if (!open) return;
     axios
@@ -250,7 +253,7 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
 
   // Picker: pehle vendors (Payable ke liye zaroori), phir baaki kharch items
   const options = [
-    ...vendors.map((v) => ({ ...v, group: `Vendors · ${v.categoryName || ""}`, label: v.fullname || v.expenseName })),
+    ...[...vendors, ...added.filter((a) => !vendors.some((v) => v._id === a._id))].map((v) => ({ ...v, group: `Vendors · ${v.categoryName || ""}`, label: v.fullname || v.expenseName })),
     ...expenses.filter((x) => !x.isVendor).map((x) => ({ ...x, fullname: x.expenseName, group: `Expense items · ${x.categoryName || ""}`, label: x.expenseName })),
   ];
 
@@ -422,6 +425,18 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
           onChange={(v) => set("vendor", v)}
           getLabel={(o) => o?.label || o?.fullname || o?.expenseName || ""}
           groupBy={(o) => o.group}
+          onAddNew={(name) => setNewVendor({ name })}
+        />
+        <NewVendorDialog
+          open={!!newVendor}
+          initialName={newVendor?.name || ""}
+          onClose={() => setNewVendor(null)}
+          color={color}
+          onCreated={(v) => {
+            const o = { _id: v._id, fullname: v.expenseName, expenseName: v.expenseName, isVendor: true, categoryName: v.categoryName, group: `Vendors · ${v.categoryName || ""}`, label: v.expenseName };
+            setAdded((a) => [...a.filter((x) => x._id !== o._id), o]);
+            setF((x) => ({ ...x, vendor: o, mode: v.payTerms && modes.includes(v.payTerms) ? v.payTerms : x.mode }));
+          }}
         />
         <Stack direction="row" spacing={1.5}>
           <TextField size="small" label="Bill no." value={f.billNo} onChange={(e) => set("billNo", e.target.value)} fullWidth />

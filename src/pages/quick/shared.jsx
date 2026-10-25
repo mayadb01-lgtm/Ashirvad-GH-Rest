@@ -310,20 +310,41 @@ export const EditorDialog = ({ open, onClose, title, subtitle, children, actions
 };
 
 /* Badi list wala picker (staff, vendor, expense) */
-export const PickField = ({ label, options, value, onChange, getLabel = (o) => o?.label || "", groupBy, disabled, placeholder }) => (
-  <Autocomplete
-    options={options}
-    value={value || null}
-    onChange={(_, v) => onChange(v)}
-    getOptionLabel={getLabel}
-    groupBy={groupBy}
-    isOptionEqualToValue={(a, b) => getLabel(a) === getLabel(b) && (a?._id || "") === (b?._id || "")}
-    disabled={disabled}
-    fullWidth
-    ListboxProps={{ sx: { "& .MuiAutocomplete-option": { minHeight: 44, fontSize: 15 } } }}
-    renderInput={(params) => <TextField {...params} label={label} placeholder={placeholder} />}
-  />
-);
+// onAddNew(typedText) diya ho to list mein na mile tab "+ New …" button (naya vendor wahin se)
+export const PickField = ({ label, options, value, onChange, getLabel = (o) => o?.label || "", groupBy, disabled, placeholder, onAddNew, addLabel = "New vendor" }) => {
+  const [typed, setTyped] = useState("");
+  return (
+    <Box>
+      <Autocomplete
+        options={options}
+        value={value || null}
+        onChange={(_, v) => onChange(v)}
+        onInputChange={(_, v, reason) => reason === "input" && setTyped(v)}
+        getOptionLabel={getLabel}
+        groupBy={groupBy}
+        isOptionEqualToValue={(a, b) => getLabel(a) === getLabel(b) && (a?._id || "") === (b?._id || "")}
+        disabled={disabled}
+        fullWidth
+        noOptionsText={
+          onAddNew ? (
+            <Button size="small" variant="contained" onMouseDown={(e) => e.preventDefault()} onClick={() => onAddNew(typed.trim())} sx={{ fontWeight: 700 }}>
+              + {addLabel} {typed.trim() ? `"${typed.trim()}"` : ""}
+            </Button>
+          ) : (
+            "No options"
+          )
+        }
+        ListboxProps={{ sx: { "& .MuiAutocomplete-option": { minHeight: 44, fontSize: 15 } } }}
+        renderInput={(params) => <TextField {...params} label={label} placeholder={placeholder} />}
+      />
+      {onAddNew && !disabled && (
+        <Button size="small" onClick={() => onAddNew(value ? "" : typed.trim())} sx={{ mt: 0.5, fontWeight: 700, px: 0.5 }}>
+          + {addLabel}
+        </Button>
+      )}
+    </Box>
+  );
+};
 
 /* Neeche chipka hua total + button (mobile), PC pe normal */
 export const SaveBar = ({ label, amount, sub, buttonText, onClick, disabled, color = Q.ink, busy, extra }) => (

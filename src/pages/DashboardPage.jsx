@@ -45,6 +45,7 @@ import OfficeCategoryDashboard from "../components/office/OfficeCategoryDashboar
 import OfficeMerged from "../components/office/OfficeMerged";
 import OfficeCreditDebit from "../components/office/OfficeCreditDebit";
 import VendorGraphDashboard from "../components/office/VendorGraphDashboard";
+import VendorsPage from "../components/office/VendorsPage";
 import CashflowDashboard from "../components/insights/CashflowDashboard";
 import ModeBalanceDashboard from "../components/insights/ModeBalanceDashboard";
 import OfficeTypesDashboard from "../components/insights/OfficeTypesDashboard";
@@ -182,6 +183,7 @@ const NAVIGATION = [
     ],
   },
   { segment: "manage-staff", title: "Rest - Manage Staff", icon: <BadgeIcon /> },
+  { segment: "vendors", title: "Vendors (list & add)", icon: <CategoryIcon /> },
   { segment: "categories-expenses", title: "Categories & Expenses", icon: <CategoryIcon /> },
   { segment: "pending-users", title: "Rest - Pending Users", icon: <BadgeIcon /> },
   { kind: "header", title: "Office Book" },
@@ -386,6 +388,7 @@ const DashboardPage = () => {
     { path: "attendance-import", element: <AttendanceImportDashboard /> },
     { path: "merged-graph", element: <TabbedPage title="Merged graph" accent="#0F172A" tabs={[{ key: "new", label: "New graph", element: <MergedGraph2 /> }, { key: "classic", label: "Classic", element: <OfficeMergedGraph /> }]} /> },
     { path: "merged-reports", element: <OfficeMerged /> },
+    { path: "vendors", element: <VendorsPage /> },
     { path: "merged-vendor-report", element: <OfficeCreditDebit /> },
     { path: "merged-vendor-graph", element: <VendorGraphDashboard /> },
     { path: "cashflow", element: <CashflowDashboard /> },

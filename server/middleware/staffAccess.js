@@ -43,6 +43,9 @@ const LISTS = {
   restStaff: R("GET", /^\/api\/v1\/restStaff\/get-staff-id-name-mobile$/),
   pendingUsers: R("GET", /^\/api\/v1\/restPending\/get-all-pending-users$/),
   restCats: R("GET", /^\/api\/v1\/restCategory\/get-categories$/),
+  vendors: R("GET", /^\/api\/v1\/restCategory\/vendors$/),
+  vendorCheck: R("GET", /^\/api\/v1\/restCategory\/vendor-check$/),
+  vendorAdd: R("POST", /^\/api\/v1\/restCategory\/vendor$/),
   officeCats: R("GET", /^\/api\/v1\/officeBook\/get-categories$/),
 };
 const dayStatus = R("GET", /^\/api\/v1\/quick\/day-status\/([^/]+)$/, { dateParam: 1 });
@@ -103,6 +106,9 @@ const RULES = {
     LISTS.restStaff,
     LISTS.pendingUsers,
     LISTS.restCats,
+    LISTS.vendors,
+    LISTS.vendorCheck,
+    LISTS.vendorAdd,
     R("GET", /^\/api\/v1\/restEntry\/get-entry\/([^/]+)$/, { dateParam: 1 }),
     R("POST", /^\/api\/v1\/restEntry\/create-entry$/, { dateBody: "createDate" }),
     R("PUT", /^\/api\/v1\/restEntry\/update-entry\/([^/]+)$/, { dateParam: 1, dateBody: "createDate", edit: true }),
@@ -136,6 +142,9 @@ const RULES = {
   office: [
     LISTS.officeCats,
     LISTS.restCats,
+    LISTS.vendors,
+    LISTS.vendorCheck,
+    LISTS.vendorAdd,
     LISTS.pendingUsers,
     LISTS.restStaff,
     R("GET", /^\/api\/v1\/officeBook\/get-entry\/([^/]+)$/, { dateParam: 1 }),

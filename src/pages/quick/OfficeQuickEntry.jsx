@@ -31,6 +31,7 @@ import {
   num,
   useDraft,
 } from "./shared";
+import NewVendorDialog from "./NewVendorDialog";
 
 const LOCK_MSG = "Already submitted. Only the owner can change it.";
 const MODES = ["Cash", "Card", "PP", "PPS", "PPC", "UnPaid"];
@@ -41,6 +42,7 @@ const sum = (rows) => rows.reduce((s, r) => s + num(r.amount), 0);
 
 const OfficeQuickEntry = ({ date, isAdmin, canEdit = true }) => {
   const [lists, setLists] = useState(null);
+  const [newVendor, setNewVendor] = useState(null); // { name } → naya vendor (Money out)
   const [server, setServer] = useState({ loaded: false, doc: null });
   const [status, setStatus] = useState(null);
   const [draft, setDraft, clearDraft] = useDraft(`qe-office-${date}`, EMPTY);
@@ -447,6 +449,7 @@ const OfficeQuickEntry = ({ date, isAdmin, canEdit = true }) => {
                     : { _id: "", expenseName: "", categoryName: "", isVendor: false }
                 )
               }
+              onAddNew={ed.side === "officeIn" ? undefined : (name) => setNewVendor({ name })}
               getLabel={(o) => o?.expenseName || ""}
               groupBy={(o) => (o.isVendor ? "Vendor" : o.categoryName || "")}
             />
@@ -465,6 +468,17 @@ const OfficeQuickEntry = ({ date, isAdmin, canEdit = true }) => {
           </Stack>
         )}
       </EditorDialog>
+      <NewVendorDialog
+        open={!!newVendor}
+        initialName={newVendor?.name || ""}
+        onClose={() => setNewVendor(null)}
+        color={Q.office}
+        onCreated={(v) => {
+          const o = { _id: v._id, expenseName: v.expenseName, categoryName: v.categoryName, isVendor: true };
+          setLists((l) => (l ? { ...l, out: [...l.out.filter((x) => x._id !== v._id), o], in: [...l.in.filter((x) => x._id !== v._id), o] } : l));
+          setRow({ ...o, fullname: v.expenseName, fullname_id: "" });
+        }}
+      />
 
       <ConfirmDialog
         open={confirm}

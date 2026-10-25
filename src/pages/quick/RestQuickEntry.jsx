@@ -27,6 +27,7 @@ import {
   num,
   useDraft,
 } from "./shared";
+import NewVendorDialog from "./NewVendorDialog";
 
 const LOCK_MSG = "Already submitted. Only the owner can change it.";
 const EMPTY = { cash: 0, card: 0, pp: 0, computer: 0, upad: [], pending: [], pendingUsers: [], expenses: [] };
@@ -62,6 +63,7 @@ const RowList = ({ rows, onEdit, empty, locked, render }) => (
 
 const RestQuickEntry = ({ date, canEdit = true }) => {
   const [lists, setLists] = useState(null);
+  const [newVendor, setNewVendor] = useState(null); // { name } → naya vendor (Payables / Kharch)
   const [server, setServer] = useState({ loaded: false, doc: null });
   const [status, setStatus] = useState(null);
   const [occupied, setOccupied] = useState({ guests: [], rooms: [] });
@@ -726,6 +728,7 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
               onChange={pickInto}
               getLabel={edLabel}
               groupBy={ed.section === "expenses" || ed.section === "pendingUsers" ? (o) => o.categoryName || "" : undefined}
+              onAddNew={ed.section === "expenses" || ed.section === "pendingUsers" ? (name) => setNewVendor({ name }) : undefined}
             />
             )}
             {edIsStaffExpense && (
@@ -740,6 +743,18 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
           </Stack>
         )}
       </EditorDialog>
+      <NewVendorDialog
+        open={!!newVendor}
+        initialName={newVendor?.name || ""}
+        onClose={() => setNewVendor(null)}
+        color={Q.rest}
+        onCreated={(v) => {
+          const vend = { _id: v._id, fullname: v.expenseName, mobileNumber: 0, category: "", expenseName: v.expenseName, isVendor: true, categoryName: v.categoryName, categoryDescription: "" };
+          const exp = { _id: v._id, expenseName: v.expenseName, categoryName: v.categoryName, isVendor: true };
+          setLists((l) => (l ? { ...l, vendors: [...l.vendors.filter((x) => x._id !== v._id), vend], expenses: [...l.expenses.filter((x) => x._id !== v._id), exp] } : l));
+          if (editor) pickInto(editor.section === "expenses" ? exp : vend);
+        }}
+      />
 
       <ConfirmDialog
         open={confirm}
