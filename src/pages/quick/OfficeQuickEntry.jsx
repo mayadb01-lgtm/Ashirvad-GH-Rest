@@ -32,6 +32,7 @@ import {
   useDraft,
 } from "./shared";
 import NewVendorDialog, { NO_ADD_HINT, useCanAddVendor } from "./NewVendorDialog";
+import NewPersonDialog from "./NewPersonDialog";
 
 const LOCK_MSG = "Already submitted. Only the owner can change it.";
 const MODES = ["Cash", "Card", "PP", "PPS", "PPC", "UnPaid"];
@@ -44,6 +45,7 @@ const OfficeQuickEntry = ({ date, isAdmin, canEdit = true }) => {
   const [lists, setLists] = useState(null);
   const [newVendor, setNewVendor] = useState(null); // { name } → naya vendor (Money out)
   const canAddVendor = useCanAddVendor();
+  const [newStaff, setNewStaff] = useState(null); // { name } → naya staff (salary / advance)
   const [server, setServer] = useState({ loaded: false, doc: null });
   const [status, setStatus] = useState(null);
   const [draft, setDraft, clearDraft] = useDraft(`qe-office-${date}`, EMPTY);
@@ -462,6 +464,9 @@ const OfficeQuickEntry = ({ date, isAdmin, canEdit = true }) => {
                 value={lists.staff.find((s) => s._id === ed.row.fullname_id) || (ed.row.fullname ? { _id: ed.row.fullname_id, fullname: ed.row.fullname } : null)}
                 onChange={(s) => setRow({ fullname: s?.fullname || "", fullname_id: s?._id || "" })}
                 getLabel={(o) => o?.fullname || ""}
+                onAddNew={canAddVendor ? (name) => setNewStaff({ name }) : undefined}
+                addLabel="New staff"
+                noOptionsHint="Not in the list. Ask the manager to add this staff member."
               />
             ) : (
               <TextField label="Name (received from / paid to)" value={ed.row.fullname || ""} onChange={(e) => setRow({ fullname: e.target.value })} fullWidth />
@@ -470,6 +475,18 @@ const OfficeQuickEntry = ({ date, isAdmin, canEdit = true }) => {
           </Stack>
         )}
       </EditorDialog>
+      <NewPersonDialog
+        open={!!newStaff}
+        kind="staff"
+        initialName={newStaff?.name || ""}
+        existing={lists?.staff || []}
+        onClose={() => setNewStaff(null)}
+        color={Q.office}
+        onCreated={(p) => {
+          setLists((l) => (l ? { ...l, staff: [...l.staff.filter((x) => x._id !== p._id), { _id: p._id, fullname: p.fullname }] } : l));
+          setRow({ fullname: p.fullname, fullname_id: p._id });
+        }}
+      />
       <NewVendorDialog
         open={!!newVendor}
         initialName={newVendor?.name || ""}

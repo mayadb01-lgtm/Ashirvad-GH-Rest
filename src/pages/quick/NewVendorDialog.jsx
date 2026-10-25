@@ -14,6 +14,7 @@ export const useCanAddVendor = () => {
   return !!me && (me.isAdmin || me.rasoi === true);
 };
 export const NO_ADD_HINT = "Not in the list. Ask the manager to add this vendor.";
+export const useIsManager = useCanAddVendor; // naya staff / levana-baaki wala bhi sirf Manager / malik
 
 let META = null; // categories + supplies (ek baar)
 export const loadVendorMeta = async (force) => {

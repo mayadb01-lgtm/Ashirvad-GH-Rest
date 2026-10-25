@@ -28,6 +28,7 @@ import {
   useDraft,
 } from "./shared";
 import NewVendorDialog, { NO_ADD_HINT, useCanAddVendor } from "./NewVendorDialog";
+import NewPersonDialog from "./NewPersonDialog";
 
 const LOCK_MSG = "Already submitted. Only the owner can change it.";
 const EMPTY = { cash: 0, card: 0, pp: 0, computer: 0, upad: [], pending: [], pendingUsers: [], expenses: [] };
@@ -65,6 +66,7 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
   const [lists, setLists] = useState(null);
   const [newVendor, setNewVendor] = useState(null); // { name } → naya vendor (Payables / Kharch)
   const canAddVendor = useCanAddVendor();
+  const [newPerson, setNewPerson] = useState(null); // { kind: "staff" | "pending", name, forSalary }
   const [server, setServer] = useState({ loaded: false, doc: null });
   const [status, setStatus] = useState(null);
   const [occupied, setOccupied] = useState({ guests: [], rooms: [] });
@@ -729,8 +731,19 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
               onChange={pickInto}
               getLabel={edLabel}
               groupBy={ed.section === "expenses" || ed.section === "pendingUsers" ? (o) => o.categoryName || "" : undefined}
-              onAddNew={canAddVendor && (ed.section === "expenses" || ed.section === "pendingUsers") ? (name) => setNewVendor({ name }) : undefined}
-              noOptionsHint={ed.section === "expenses" || ed.section === "pendingUsers" ? NO_ADD_HINT : undefined}
+              onAddNew={
+                !canAddVendor
+                  ? undefined
+                  : ed.section === "expenses" || ed.section === "pendingUsers"
+                    ? (name) => setNewVendor({ name })
+                    : ed.section === "upad"
+                      ? (name) => setNewPerson({ kind: "staff", name })
+                      : ed.section === "pending"
+                        ? (name) => setNewPerson({ kind: "pending", name })
+                        : undefined
+              }
+              addLabel={ed.section === "upad" ? "New staff" : ed.section === "pending" ? "New person" : "New vendor"}
+              noOptionsHint={ed.section === "expenses" || ed.section === "pendingUsers" ? NO_ADD_HINT : ed.section === "upad" || ed.section === "pending" ? "Not in the list. Ask the manager to add this name." : undefined}
             />
             )}
             {edIsStaffExpense && (
@@ -740,11 +753,29 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
                 value={lists.staff.find((s) => s._id === ed.row.fullname_id) || null}
                 onChange={(s) => setEditor((e) => ({ ...e, row: { ...e.row, fullname: s?.fullname || "", fullname_id: s?._id || "" } }))}
                 getLabel={(o) => o?.fullname || ""}
+                onAddNew={canAddVendor ? (name) => setNewPerson({ kind: "staff", name, forSalary: true }) : undefined}
+                addLabel="New staff"
               />
             )}
           </Stack>
         )}
       </EditorDialog>
+      <NewPersonDialog
+        open={!!newPerson}
+        kind={newPerson?.kind || "staff"}
+        initialName={newPerson?.name || ""}
+        existing={newPerson?.kind === "pending" ? lists?.pending || [] : lists?.staff || []}
+        onClose={() => setNewPerson(null)}
+        color={Q.rest}
+        onCreated={(p) => {
+          const o = { _id: p._id, fullname: p.fullname, mobileNumber: p.mobileNumber || 0, category: p.category || (newPerson?.kind === "pending" ? "Pending" : "Staff") };
+          const key = newPerson?.kind === "pending" ? "pending" : "staff";
+          setLists((l) => (l ? { ...l, [key]: [...l[key].filter((x) => x._id !== o._id), o] } : l));
+          if (!editor) return;
+          if (newPerson?.forSalary) setEditor((e) => ({ ...e, row: { ...e.row, fullname: o.fullname, fullname_id: o._id } }));
+          else pickInto(o);
+        }}
+      />
       <NewVendorDialog
         open={!!newVendor}
         initialName={newVendor?.name || ""}

@@ -46,6 +46,8 @@ const LISTS = {
   vendors: R("GET", /^\/api\/v1\/restCategory\/vendors$/),
   vendorCheck: R("GET", /^\/api\/v1\/restCategory\/vendor-check$/),
   vendorAdd: R("POST", /^\/api\/v1\/restCategory\/vendor$/),
+  staffAdd: R("POST", /^\/api\/v1\/restStaff\/quick-add$/),
+  pendingAdd: R("POST", /^\/api\/v1\/restPending\/quick-add$/),
   officeCats: R("GET", /^\/api\/v1\/officeBook\/get-categories$/),
 };
 const dayStatus = R("GET", /^\/api\/v1\/quick\/day-status\/([^/]+)$/, { dateParam: 1 });
@@ -109,6 +111,8 @@ const RULES = {
     LISTS.vendors,
     LISTS.vendorCheck,
     LISTS.vendorAdd,
+    LISTS.staffAdd,
+    LISTS.pendingAdd,
     R("GET", /^\/api\/v1\/restEntry\/get-entry\/([^/]+)$/, { dateParam: 1 }),
     R("POST", /^\/api\/v1\/restEntry\/create-entry$/, { dateBody: "createDate" }),
     R("PUT", /^\/api\/v1\/restEntry\/update-entry\/([^/]+)$/, { dateParam: 1, dateBody: "createDate", edit: true }),
@@ -145,6 +149,8 @@ const RULES = {
     LISTS.vendors,
     LISTS.vendorCheck,
     LISTS.vendorAdd,
+    LISTS.staffAdd,
+    LISTS.pendingAdd,
     LISTS.pendingUsers,
     LISTS.restStaff,
     R("GET", /^\/api\/v1\/officeBook\/get-entry\/([^/]+)$/, { dateParam: 1 }),
