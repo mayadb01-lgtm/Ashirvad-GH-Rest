@@ -11,6 +11,7 @@ import Stay from "../model/stay.js";
 import Booking from "../model/booking.js";
 import GuestRegister from "../model/guestRegister.js";
 import RestDueReceipt from "../model/restDueReceipt.js";
+import { normSplit } from "../utils/payParts.js";
 import { allowedStaffDates, isAdminLike, dateOk as staffDateOk } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
@@ -353,11 +354,19 @@ router.put("/paid/:id", async (req, res) => {
     const recent = dayjs(doc.date, F, true).isAfter(dayjs().subtract(61, "day"));
     if (!canTouch(req, doc) && !(isPaid && !doc.isPaid && recent)) return res.status(403).json({ success: false, message: "Staff can only edit today's entries." });
     if (!isPaid && doc.isPaid && !isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can undo a paid charge" });
+    let split = [];
+    if (isPaid && Array.isArray(req.body?.paidSplit) && req.body.paidSplit.length) {
+      const sp = normSplit(req.body.paidSplit, doc.amount, modesFor(doc));
+      if (sp.error) return bad(res, sp.error);
+      split = sp.split;
+      if (sp.mode) req.body.paidMode = sp.mode;
+    }
     if (isPaid && !modesFor(doc).includes(req.body?.paidMode)) return bad(res, "Select a payment mode");
     if (!isPaid && doc.isPaid && (await RestDueReceipt.exists({ source: "gh", chargeId: String(doc._id), cancelled: { $ne: true } })))
       return bad(res, "The restaurant cashier already took this cash. Remove it there first.");
     doc.isPaid = isPaid;
     doc.paidMode = isPaid ? req.body.paidMode : "";
+    doc.paidSplit = isPaid && split.length ? split : undefined;
     doc.paidDate = isPaid ? dayjs(new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10)).format(F) : "";
     doc.paidBy = isPaid ? who(req) : "";
     doc.paidAt = isPaid ? "gh" : "";

@@ -6,19 +6,22 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { Box, Button, IconButton, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/DeleteOutline";
-import { API, MoneyField, Q, apiError, inr, num } from "./shared";
+import { API, MoneyField, Q, SplitPay, apiError, inr, num } from "./shared";
+import { chargeModeText, fillSplit, splitProblem } from "../../utils/payParts";
 
 const EXTRA_LABELS = ["Extra bed", "Extra person", "Laundry", "Late checkout", "Early check-in", "Mineral water", "Room service", "Other"];
 const PAID_MODES = ["Cash", "Card", "PPS", "PPC"];
 
 const Row = ({ c, isAdmin, onChanged }) => {
   const [paying, setPaying] = useState(false);
+  const [split, setSplit] = useState(null);
   const [busy, setBusy] = useState(false);
   const call = async (fn) => {
     setBusy(true);
     try {
       await fn();
       setPaying(false);
+      setSplit(null);
       onChanged?.();
     } catch (e) {
       toast.error(apiError(e));
@@ -26,7 +29,8 @@ const Row = ({ c, isAdmin, onChanged }) => {
       setBusy(false);
     }
   };
-  const markPaid = (mode) => call(() => axios.put(`${API}/room-charges/paid/${c._id}`, { isPaid: true, paidMode: mode }));
+  const markPaid = (mode, paidSplit) => call(() => axios.put(`${API}/room-charges/paid/${c._id}`, { isPaid: true, paidMode: mode, ...(paidSplit ? { paidSplit } : {}) }));
+  const modes = c.kind === "food" ? [...PAID_MODES, "PP"] : PAID_MODES;
   const unPay = () => call(() => axios.put(`${API}/room-charges/paid/${c._id}`, { isPaid: false }));
   const remove = () => call(() => axios.delete(`${API}/room-charges/extra/${c._id}`));
 
@@ -53,7 +57,7 @@ const Row = ({ c, isAdmin, onChanged }) => {
             title={isAdmin ? "Mark as unpaid" : ""}
             sx={{ fontSize: 12, fontWeight: 700, px: 1.1, py: 0.3, borderRadius: 10, bgcolor: "#CCFBF1", color: "#115E59", border: 0, cursor: isAdmin ? "pointer" : "default" }}
           >
-            ✓ {c.paidMode}
+            ✓ {chargeModeText(c)}
             {c.paidAt === "rest" ? " · at restaurant" : c.paidAt === "office" ? " · at office" : ""}
           </Box>
         ) : (
@@ -72,11 +76,28 @@ const Row = ({ c, isAdmin, onChanged }) => {
           <Typography variant="caption" color={Q.muted}>
             Paid via:
           </Typography>
-          {(c.kind === "food" ? [...PAID_MODES, "PP"] : PAID_MODES).map((m) => (
+          {modes.map((m) => (
             <Button key={m} size="small" variant="contained" disabled={busy} onClick={() => markPaid(m)} sx={{ bgcolor: Q.gh, minWidth: 0, px: 1.25, "&:hover": { bgcolor: Q.gh } }}>
               {m === "PP" ? "PP (Restaurant UPI)" : m}
             </Button>
           ))}
+          <Button size="small" variant={split ? "contained" : "outlined"} disabled={busy} onClick={() => setSplit((s) => (s ? null : fillSplit([{ mode: "Cash", amount: 0 }, { mode: modes[2], amount: num(c.amount) }], num(c.amount))))} sx={{ minWidth: 0, px: 1.25 }}>
+            Split
+          </Button>
+        </Stack>
+      )}
+      {paying && split && (
+        <Stack spacing={1} sx={{ mt: 1, ml: 4 }}>
+          <SplitPay total={num(c.amount)} modes={modes} value={split} onChange={setSplit} color={Q.gh} disabled={busy} />
+          <Button
+            size="small"
+            variant="contained"
+            disabled={busy || !!splitProblem(fillSplit(split, num(c.amount)), num(c.amount))}
+            onClick={() => markPaid("", fillSplit(split, num(c.amount)).filter((p) => p.amount > 0))}
+            sx={{ bgcolor: Q.gh, alignSelf: "flex-start", fontWeight: 700 }}
+          >
+            Paid {inr(c.amount)} (split)
+          </Button>
         </Stack>
       )}
     </Box>

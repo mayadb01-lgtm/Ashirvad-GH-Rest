@@ -43,6 +43,7 @@ import {
   MoneyField,
   Q,
   SaveBar,
+  SplitPay,
   StatusPill,
   Stepper,
   apiError,
@@ -51,6 +52,7 @@ import {
   num,
   useDraft,
 } from "./shared";
+import { chargeModeText, chargeParts, fillSplit, mainMode, splitLabel, splitProblem } from "../../utils/payParts";
 
 const PERIODS = [
   { key: "day", label: "Day", idLabel: "Day" },
@@ -63,6 +65,10 @@ const TYPES = ["Single", "Couple", "Family", "Group", "Employee", "NRI", "Foreig
 const MODES = ["Cash", "Card", "PPS", "PPC", "UnPaid"];
 const PAID_MODES = ["Cash", "Card", "PPS", "PPC"];
 const EMPTY = { rooms: {}, jama: [] };
+// Row ka paisa mode-wise (split ho to hisse, warna poora rate ek mode mein)
+const rowParts = (r) =>
+  Array.isArray(r?.split) && r.split.length ? fillSplit(r.split, num(r.rate)).filter((p) => p.amount > 0) : [{ mode: r?.modeOfPayment || "UnPaid", amount: num(r?.rate) }];
+const modeText = (r) => (Array.isArray(r?.split) && r.split.length ? splitLabel(r.split) : r?.modeOfPayment === "UnPaid" ? "Unpaid" : r?.modeOfPayment || "—");
 
 const digits = (v) => cleanMobile(v);
 const keyOf = (period, roomNo) => `${period}|${roomNo}`;
@@ -95,6 +101,7 @@ const rowIssues = (r) => {
   if (!(num(r.noOfPeople) > 0)) out.push("guests");
   if (!r.type) out.push("guest type");
   if (!r.modeOfPayment) out.push("payment");
+  if (Array.isArray(r.split) && r.split.length && splitProblem(fillSplit(r.split, num(r.rate)), num(r.rate))) out.push("split payment");
   if (!String(r.fullname || "").trim()) out.push("name");
   const m = digits(r.mobileNumber);
   if (m && m !== "0" && m.length !== 10) out.push("10-digit mobile");
@@ -186,7 +193,7 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkou
                   color: row.modeOfPayment === "UnPaid" ? Q.bad : "#115E59",
                 }}
               >
-                {row.modeOfPayment === "UnPaid" ? "Unpaid" : row.modeOfPayment || "—"}
+                {modeText(row)}
               </Box>
               {/* Rate nahi, sirf guest se lena baaki (room + food + extra) */}
               <Typography fontWeight={800} fontSize={due > 0 && row.modeOfPayment ? 17 : 14} title="Due for room + food + extras" sx={{ color: !row.modeOfPayment ? Q.warn : due > 0 ? Q.bad : Q.good }}>
@@ -348,13 +355,29 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
         <ChipChoice label="Guest type" options={TYPES} value={f.type} onChange={(v) => set("type", v)} color={Q.gh} disabled={locked} />
         <ChipChoice
           label="Payment"
-          options={MODES}
-          value={f.modeOfPayment}
-          onChange={(v) => set("modeOfPayment", v)}
+          options={[...PAID_MODES, "Split", "UnPaid"]}
+          value={Array.isArray(f.split) && f.split.length ? "Split" : f.modeOfPayment}
+          onChange={(v) =>
+            setF((p) => {
+              if (v !== "Split") return { ...p, modeOfPayment: v, split: [] };
+              const rows = fillSplit([{ mode: "Cash", amount: 0 }, { mode: "PPS", amount: num(p.rate) }], num(p.rate));
+              return { ...p, split: rows, modeOfPayment: mainMode(rows) || "PPS" };
+            })
+          }
           color={Q.gh}
           danger={["UnPaid"]}
           disabled={locked}
         />
+        {Array.isArray(f.split) && f.split.length > 0 && (
+          <SplitPay
+            total={num(f.rate)}
+            modes={PAID_MODES}
+            value={f.split}
+            onChange={(rows) => setF((p) => ({ ...p, split: rows, modeOfPayment: mainMode(rows) || p.modeOfPayment }))}
+            color={Q.gh}
+            disabled={locked}
+          />
+        )}
         <Stack direction="row" spacing={1.5}>
           <TimeBox label="Check-in time" value={f.checkInTime || "10:00 AM"} onChange={(v) => set("checkInTime", v)} disabled={locked} />
           <TimeBox label="Check-out time" value={f.checkOutTime || "11:00 AM"} onChange={(v) => set("checkOutTime", v)} disabled={locked} />
@@ -500,6 +523,7 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [jamaPick, setJamaPick] = useState(null);
+  const [jamaSplit, setJamaSplit] = useState(null); // jama ka paisa do mode mein
   const [jamaQuery, setJamaQuery] = useState("");
   const [error, setError] = useState("");
   const seededFor = useRef("");
@@ -945,18 +969,20 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
       }
       per[p] = (per[p] || 0) + 1;
       total += num(r.rate);
-      const m = r.modeOfPayment || "UnPaid";
-      byMode[m] = byMode[m] || { amt: 0, rooms: 0, jama: 0 };
-      byMode[m].amt += num(r.rate);
-      byMode[m].rooms += 1;
+      rowParts(r).forEach((x, i) => {
+        byMode[x.mode] = byMode[x.mode] || { amt: 0, rooms: 0, jama: 0 };
+        byMode[x.mode].amt += x.amount;
+        if (i === 0) byMode[x.mode].rooms += 1;
+      });
     });
     const jamaTotal = draft.jama.reduce((s, j) => s + num(j.rate), 0);
     // purana baaki jo aaj mila: jis mode mein mila usi mein
     draft.jama.forEach((j) => {
-      const m = j.modeOfPayment || "Cash";
-      byMode[m] = byMode[m] || { amt: 0, rooms: 0, jama: 0 };
-      byMode[m].amt += num(j.rate);
-      byMode[m].jama += 1;
+      rowParts({ ...j, modeOfPayment: j.modeOfPayment || "Cash" }).forEach((x, i) => {
+        byMode[x.mode] = byMode[x.mode] || { amt: 0, rooms: 0, jama: 0 };
+        byMode[x.mode].amt += x.amount;
+        if (i === 0) byMode[x.mode].jama += 1;
+      });
     });
     return { per, total, jamaTotal, incomplete, byMode, filled: Object.values(per).reduce((a, b) => a + b, 0) };
   }, [draft]);
@@ -980,9 +1006,10 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
       }
     });
     const atGh = chargesPaidToday.filter((c) => c.paidAt !== "rest" && c.paidAt !== "office");
-    atGh.filter((c) => c.kind === "extra").forEach((c) => o[c.paidMode] && (o[c.paidMode].extra += num(c.amount)));
-    const foodCash = atGh.filter((c) => c.kind === "food" && c.paidMode === "Cash").reduce((t, c) => t + num(c.amount), 0);
-    const foodCashGiven = atGh.filter((c) => c.kind === "food" && c.paidMode === "Cash" && c.handedOver).reduce((t, c) => t + num(c.amount), 0);
+    atGh.filter((c) => c.kind === "extra").forEach((c) => chargeParts(c).forEach((p) => o[p.mode] && (o[p.mode].extra += num(p.amount))));
+    const cashOf = (c) => chargeParts(c).filter((p) => p.mode === "Cash").reduce((t, p) => t + num(p.amount), 0);
+    const foodCash = atGh.filter((c) => c.kind === "food").reduce((t, c) => t + cashOf(c), 0);
+    const foodCashGiven = atGh.filter((c) => c.kind === "food" && c.handedOver).reduce((t, c) => t + cashOf(c), 0);
     const rows = modes.map((m) => [m, o[m].rooms, o[m].adv, o[m].extra]);
     return { rows, advUsed, foodCash, foodCashGiven, any: rows.some((r) => r[1] || r[2] || r[3]) || foodCash > 0 };
   }, [summary, stayInfo, draft.rooms, chargesPaidToday]);
@@ -1008,6 +1035,7 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
           cost: rm.roomCost,
           roomType: rm.roomType,
           rate: num(r.rate),
+          split: Array.isArray(r.split) && r.split.length && r.modeOfPayment !== "UnPaid" ? fillSplit(r.split, num(r.rate)).filter((x) => x.amount > 0) : [],
           noOfPeople: num(r.noOfPeople),
           discount: num(r.discount),
           mobileNumber: Number(digits(r.mobileNumber)) || 0,
@@ -1073,9 +1101,12 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
   const pendingAll = unpaid.filter((u) => !isCollected(u));
   const pendingAllTotal = pendingAll.reduce((t, u) => t + num(u.rate), 0);
   const pendingShownTotal = pendingList.reduce((t, u) => t + num(u.rate), 0);
-  const jamaByMode = draft.jama.reduce((m, j) => ({ ...m, [j.modeOfPayment]: (m[j.modeOfPayment] || 0) + num(j.rate) }), {});
+  const jamaByMode = draft.jama.reduce((m, j) => {
+    rowParts(j).forEach((x) => (m[x.mode] = (m[x.mode] || 0) + x.amount));
+    return m;
+  }, {});
 
-  const addJama = (u, mode) => {
+  const addJama = (u, mode, split) => {
     setDraft((d) => ({
       ...d,
       jama: [
@@ -1089,6 +1120,7 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
           mobileNumber: u.mobileNumber,
           rate: u.rate,
           modeOfPayment: mode,
+          ...(split?.length ? { split: fillSplit(split, num(u.rate)).filter((p) => p.amount > 0) } : {}),
           period: "UnPaid",
           createDate: u.createDate,
           cost: u.cost,
@@ -1104,6 +1136,7 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
       ],
     }));
     setJamaPick(null);
+    setJamaSplit(null);
   };
   const removeJama = (i) => setDraft((d) => ({ ...d, jama: d.jama.filter((_, idx) => idx !== i) }));
 
@@ -1451,7 +1484,7 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
               </Typography>
               <Typography variant="caption" color={Q.muted} sx={{ display: "block", mb: 1 }}>
                 Food bills are restaurant sales (already counted in the restaurant entry), not GH room sales. Cash food bills go to the restaurant cashier; the restaurant cashier marks them received. PP = paid to the restaurant UPI (nothing to hand over).{" "}
-                {Object.entries(chargesPaidToday.reduce((o, c) => ({ ...o, [c.paidMode]: (o[c.paidMode] || 0) + num(c.amount) }), {}))
+                {Object.entries(chargesPaidToday.reduce((o, c) => (chargeParts(c).forEach((p) => (o[p.mode] = (o[p.mode] || 0) + num(p.amount))), o), {}))
                   .map(([m, v]) => `${m} ${inr(v)}`)
                   .join(" · ")}
               </Typography>
@@ -1463,7 +1496,7 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
                     </Typography>
                     <Typography variant="caption" color={Q.muted}>
                       Bill of {c.date}
-                      {c.guestName ? ` · ${c.guestName}` : ""} · {c.paidMode}
+                      {c.guestName ? ` · ${c.guestName}` : ""} · {chargeModeText(c)}
                       {c.paidBy ? ` · by ${c.paidBy}` : ""}
                     </Typography>
                     {(c.paidAt === "rest" || c.paidAt === "office") && (
@@ -1471,7 +1504,7 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
                         ✓ Received at the {c.paidAt === "rest" ? "restaurant counter" : "office"} (not in GH cash)
                       </Typography>
                     )}
-                    {c.kind === "food" && c.paidMode === "Cash" && c.paidAt !== "rest" && c.paidAt !== "office" && (
+                    {c.kind === "food" && chargeParts(c).some((p) => p.mode === "Cash") && c.paidAt !== "rest" && c.paidAt !== "office" && (
                       <Typography variant="caption" fontWeight={700} display="block" color={c.handedOver ? Q.good : "#B45309"}>
                         {c.handedOver ? `✓ Given to restaurant cashier (${c.handedOver.date})` : "⏳ Give this cash to the restaurant cashier"}
                       </Typography>
@@ -1494,7 +1527,7 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
                       {j.fullname}
                     </Typography>
                     <Typography variant="caption" color={Q.muted}>
-                      {j.createDate} · Room {j.roomNo} · {j.modeOfPayment}
+                      {j.createDate} · Room {j.roomNo} · {Array.isArray(j.split) && j.split.length ? j.split.map((x) => `${x.mode} ${inr(x.amount)}`).join(" + ") : j.modeOfPayment}
                     </Typography>
                   </Box>
                   <Typography fontWeight={800}>{inr(j.rate)}</Typography>
@@ -1541,13 +1574,35 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
                             </Typography>
                           </Box>
                           <Typography fontWeight={800}>{inr(u.rate)}</Typography>
-                          <Button size="small" variant={open ? "outlined" : "contained"} onClick={() => setJamaPick(open ? null : i)} sx={{ bgcolor: open ? undefined : Q.gh, fontWeight: 700 }}>
+                          <Button size="small" variant={open ? "outlined" : "contained"} onClick={() => {
+                            setJamaPick(open ? null : i);
+                            setJamaSplit(null);
+                          }} sx={{ bgcolor: open ? undefined : Q.gh, fontWeight: 700 }}>
                             {open ? "Cancel" : "Received"}
                           </Button>
                         </Stack>
                         <Collapse in={open}>
                           <Box sx={{ pt: 1.5 }}>
-                            <ChipChoice label="Payment mode" options={PAID_MODES} value="" onChange={(m) => addJama(u, m)} color={Q.gh} />
+                            <ChipChoice
+                              label="Payment mode"
+                              options={[...PAID_MODES, "Split"]}
+                              value={jamaSplit ? "Split" : ""}
+                              onChange={(m) => (m === "Split" ? setJamaSplit(fillSplit([{ mode: "Cash", amount: 0 }, { mode: "PPS", amount: num(u.rate) }], num(u.rate))) : addJama(u, m))}
+                              color={Q.gh}
+                            />
+                            {jamaSplit && (
+                              <Stack spacing={1} sx={{ mt: 1.5 }}>
+                                <SplitPay total={num(u.rate)} modes={PAID_MODES} value={jamaSplit} onChange={setJamaSplit} color={Q.gh} />
+                                <Button
+                                  variant="contained"
+                                  disabled={!!splitProblem(fillSplit(jamaSplit, num(u.rate)), num(u.rate))}
+                                  onClick={() => addJama(u, mainMode(fillSplit(jamaSplit, num(u.rate))), jamaSplit)}
+                                  sx={{ bgcolor: Q.gh, fontWeight: 700, alignSelf: "flex-start" }}
+                                >
+                                  Received {inr(u.rate)} (split)
+                                </Button>
+                              </Stack>
+                            )}
                           </Box>
                         </Collapse>
                       </Paper>

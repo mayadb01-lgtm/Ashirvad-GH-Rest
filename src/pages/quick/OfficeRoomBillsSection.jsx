@@ -6,6 +6,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { Box, Button, Collapse, Stack, Typography } from "@mui/material";
 import { API, Q, Section, StatusPill, apiError, inr, num } from "./shared";
+import { chargeModeText } from "../../utils/payParts";
 
 const MODES = ["Cash", "PP", "PPS", "PPC"];
 
@@ -99,7 +100,7 @@ const OfficeRoomBillsSection = ({ date, onChanged }) => {
               </Box>
               <Stack alignItems="flex-end">
                 <Typography fontWeight={800}>{inr(c.amount)}</Typography>
-                <StatusPill tone={c.paidMode === "Cash" ? "good" : "info"}>{c.paidMode}</StatusPill>
+                <StatusPill tone={c.paidMode === "Cash" ? "good" : "info"}>{chargeModeText(c)}</StatusPill>
               </Stack>
             </Stack>
           ))}

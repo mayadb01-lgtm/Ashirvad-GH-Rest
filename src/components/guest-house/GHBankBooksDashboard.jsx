@@ -20,6 +20,7 @@ import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
 import { GH_MODE_OF_PAYMENT_OPTIONS } from "../../utils/utils";
+import { payParts } from "../../utils/payParts";
 
 dayjs.locale("en-gb");
 
@@ -69,10 +70,10 @@ const GHBankBooksDashboard = () => {
 
       methodsToInclude.forEach((method) => {
         const totalByMethod = entry.entry
-          .filter(
-            (item) => item.modeOfPayment === method && item.period !== "UnPaid"
-          )
-          .reduce((sum, item) => sum + item.rate, 0);
+          .filter((item) => item.period !== "UnPaid")
+          .flatMap((item) => payParts(item))
+          .filter((p) => p.mode === method)
+          .reduce((sum, p) => sum + p.amount, 0);
 
         row[method] = totalByMethod;
         row.total += totalByMethod;

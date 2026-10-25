@@ -23,6 +23,8 @@ const roomChargeSchema = new mongoose.Schema(
     // vasooli (GH counter pe)
     isPaid: { type: Boolean, default: false },
     paidMode: { type: String, default: "" }, // Cash / Card / PPS / PPC
+    // Bill do mode mein (jaise Cash 500 + PPS 700). Khaali = poori rakam paidMode mein.
+    paidSplit: { type: [{ _id: false, mode: String, amount: Number }], default: undefined },
     paidDate: { type: String, default: "" },
     paidBy: { type: String, default: "" },
     paidAt: { type: String, default: "" }, // "" / "gh" = GH counter, "rest" = Restaurant counter par wasool

@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
+import { fillSplit, splitProblem } from "../../utils/payParts";
 
 export const API = import.meta.env.VITE_REACT_APP_SERVER_URL;
 export const DATE_FMT = "DD-MM-YYYY";
@@ -170,6 +171,58 @@ export const ChipChoice = ({ label, options, value, onChange, color = Q.ink, dan
     </Stack>
   </Box>
 );
+
+/* Split payment: ek bill do (ya teen) mode mein — aakhri line apne aap baaki rakam */
+export const SplitPay = ({ total, modes, value, onChange, color = Q.ink, disabled }) => {
+  const rows = fillSplit(value?.length ? value : [{ mode: modes[0], amount: 0 }, { mode: modes.find((m) => m !== modes[0]) || modes[0], amount: total }], total);
+  const set = (i, patch) => onChange(fillSplit(rows.map((r, k) => (k === i ? { ...r, ...patch } : r)), total));
+  const err = splitProblem(rows, total);
+  return (
+    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2.5, borderColor: err ? "#FCA5A5" : "#CBD5E1" }}>
+      <Typography variant="caption" sx={{ color: Q.muted, fontWeight: 700, display: "block", mb: 1 }}>
+        Split payment · bill {"\u20b9"}{Math.round(Number(total) || 0).toLocaleString("en-IN")}
+      </Typography>
+      <Stack spacing={1}>
+        {rows.map((r, i) => {
+          const last = i === rows.length - 1;
+          return (
+            <Stack key={i} direction="row" spacing={1} alignItems="center">
+              <TextField select SelectProps={{ native: true }} value={r.mode} onChange={(e) => set(i, { mode: e.target.value })} disabled={disabled} sx={{ width: 110 }} size="small" inputProps={{ "aria-label": `Mode ${i + 1}` }}>
+                {modes.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </TextField>
+              {last ? (
+                <Box sx={{ flex: 1, px: 1.5, py: 1, borderRadius: 1, bgcolor: "#F8FAFC", fontWeight: 800, fontSize: 17 }}>
+                  {"\u20b9"}{Math.round(r.amount).toLocaleString("en-IN")} <Typography component="span" variant="caption" color={Q.muted}>(rest)</Typography>
+                </Box>
+              ) : (
+                <MoneyField label={`Amount ${i + 1}`} value={r.amount} onChange={(v) => set(i, { amount: v })} disabled={disabled} />
+              )}
+              {rows.length > 2 && !disabled && (
+                <IconButton aria-label="remove" size="small" onClick={() => onChange(fillSplit(rows.filter((_, k) => k !== i), total))}>
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              )}
+            </Stack>
+          );
+        })}
+      </Stack>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 1 }}>
+        <Typography variant="caption" sx={{ color: err ? Q.bad : Q.good, fontWeight: 700 }}>
+          {err || "✓ Total matches"}
+        </Typography>
+        {rows.length < 3 && !disabled && (
+          <Button size="small" onClick={() => onChange(fillSplit([...rows, { mode: modes.find((m) => !rows.some((r) => r.mode === m)) || modes[0], amount: 0 }], total))} sx={{ color }}>
+            + 3rd mode
+          </Button>
+        )}
+      </Stack>
+    </Paper>
+  );
+};
 
 /* − 2 + stepper */
 export const Stepper = ({ label, value, onChange, min = 0, max = 50, outlined }) =>

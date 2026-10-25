@@ -6,7 +6,9 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { Box, Button, ButtonBase, Collapse, Stack, TextField, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import { API, ChipChoice, EditorDialog, MoneyField, PickField, Q, Section, StatusPill, apiError, inr, num } from "./shared";
+import { API, ChipChoice, EditorDialog, MoneyField, PickField, Q, Section, SplitPay, StatusPill, apiError, inr, num } from "./shared";
+import { chargeModeText, chargeParts, fillSplit, splitProblem } from "../../utils/payParts";
+const RAW_MODES = ["Cash", "Card", "PP"];
 
 const COLOR = "#0E7490";
 const MODES = [
@@ -57,7 +59,7 @@ export const useDueReceipts = (date) => {
   const byMode = useMemo(() => {
     const o = { Cash: 0, Card: 0, PP: 0 };
     live.forEach((r) => (o[r.mode] = (o[r.mode] || 0) + num(r.amount)));
-    roomBills.paidToday.forEach((c) => (o[c.paidMode] = (o[c.paidMode] || 0) + num(c.amount)));
+    roomBills.paidToday.forEach((c) => chargeParts(c).forEach((p) => (o[p.mode] = (o[p.mode] || 0) + num(p.amount))));
     return o;
   }, [live, roomBills]);
   return { receipts, live, due, byMode, fromGh, ghCash, roomBills, toOffice, ghCard, total: byMode.Cash + byMode.Card + byMode.PP, reload: load };
@@ -66,6 +68,7 @@ export const useDueReceipts = (date) => {
 const DueCollectionsSection = ({ date, dues }) => {
   const { receipts, due, total, reload, ghCash, fromGh, roomBills } = dues;
   const [roomPay, setRoomPay] = useState(null); // room bill _id jiska mode chun rahe hain
+  const [roomSplit, setRoomSplit] = useState(null); // room bill ka paisa do mode mein
   const [form, setForm] = useState(null); // { person, amount, mode, note }
   const [busy, setBusy] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -78,8 +81,9 @@ const DueCollectionsSection = ({ date, dues }) => {
     if (busy) return;
     setBusy(true);
     try {
-      await axios.post(`${API}/rest-dues`, { date, name: form.person.name, amount: num(form.amount), mode: form.mode, note: form.note });
-      toast.success(`${inr(form.amount)} received from ${form.person.name} by ${modeLabel(form.mode)}. Not added to sales.`);
+      const split = form.split ? fillSplit(form.split, num(form.amount)).filter((p) => p.amount > 0) : null;
+      await axios.post(`${API}/rest-dues`, { date, name: form.person.name, amount: num(form.amount), mode: form.mode, note: form.note, ...(split ? { split } : {}) });
+      toast.success(`${inr(form.amount)} received from ${form.person.name} by ${split ? split.map((p) => `${modeLabel(p.mode)} ${inr(p.amount)}`).join(" + ") : modeLabel(form.mode)}. Not added to sales.`);
       setForm(null);
       reload();
     } catch (e) {
@@ -102,13 +106,14 @@ const DueCollectionsSection = ({ date, dues }) => {
     }
   };
   const ghTotal = ghCash.reduce((t, c) => t + num(c.amount), 0);
-  const receiveRoom = async (c, mode) => {
+  const receiveRoom = async (c, mode, split) => {
     if (busy) return;
     setBusy(true);
     try {
-      await axios.post(`${API}/rest-dues/room-bills/${c._id}/receive`, { date, mode });
-      toast.success(`Room ${c.roomNo} food bill ${inr(c.amount)} received by ${modeLabel(mode)}. It shows as paid on the GH screen too.`);
+      await axios.post(`${API}/rest-dues/room-bills/${c._id}/receive`, { date, mode, ...(split ? { split } : {}) });
+      toast.success(`Room ${c.roomNo} food bill ${inr(c.amount)} received by ${split ? split.map((p) => `${modeLabel(p.mode)} ${inr(p.amount)}`).join(" + ") : modeLabel(mode)}. It shows as paid on the GH screen too.`);
       setRoomPay(null);
+      setRoomSplit(null);
       reload();
     } catch (e) {
       toast.error(apiError(e));
@@ -192,7 +197,10 @@ const DueCollectionsSection = ({ date, dues }) => {
                   <Typography fontWeight={800} sx={{ color: Q.bad }}>
                     {inr(c.amount)}
                   </Typography>
-                  <Button size="small" variant="outlined" disabled={busy} onClick={() => setRoomPay(roomPay === c._id ? null : c._id)} sx={{ fontWeight: 800, color: COLOR, borderColor: COLOR, minWidth: 0 }}>
+                  <Button size="small" variant="outlined" disabled={busy} onClick={() => {
+                      setRoomPay(roomPay === c._id ? null : c._id);
+                      setRoomSplit(null);
+                    }} sx={{ fontWeight: 800, color: COLOR, borderColor: COLOR, minWidth: 0 }}>
                     {roomPay === c._id ? "Cancel" : "Receive"}
                   </Button>
                 </Stack>
@@ -203,7 +211,24 @@ const DueCollectionsSection = ({ date, dues }) => {
                         {l}
                       </Button>
                     ))}
+                    <Button size="small" variant={roomSplit ? "contained" : "outlined"} disabled={busy} onClick={() => setRoomSplit((s) => (s ? null : fillSplit([{ mode: "Cash", amount: 0 }, { mode: "PP", amount: num(c.amount) }], num(c.amount))))} sx={{ fontWeight: 800, color: roomSplit ? "#fff" : COLOR, borderColor: COLOR, bgcolor: roomSplit ? COLOR : undefined }}>
+                      Split
+                    </Button>
                   </Stack>
+                  {roomSplit && roomPay === c._id && (
+                    <Stack spacing={1} sx={{ pt: 1 }}>
+                      <SplitPay total={num(c.amount)} modes={RAW_MODES} value={roomSplit} onChange={setRoomSplit} color={COLOR} disabled={busy} />
+                      <Button
+                        size="small"
+                        variant="contained"
+                        disabled={busy || !!splitProblem(fillSplit(roomSplit, num(c.amount)), num(c.amount))}
+                        onClick={() => receiveRoom(c, "", fillSplit(roomSplit, num(c.amount)).filter((p) => p.amount > 0))}
+                        sx={{ bgcolor: COLOR, fontWeight: 800, alignSelf: "flex-start", "&:hover": { bgcolor: COLOR } }}
+                      >
+                        Receive {inr(c.amount)} (split)
+                      </Button>
+                    </Stack>
+                  )}
                 </Collapse>
               </Box>
             ))}
@@ -263,7 +288,7 @@ const DueCollectionsSection = ({ date, dues }) => {
               </Box>
               <Stack alignItems="flex-end">
                 <Typography fontWeight={800}>{inr(c.amount)}</Typography>
-                <StatusPill tone={c.paidMode === "Cash" ? "good" : "info"}>{modeLabel(c.paidMode)}</StatusPill>
+                <StatusPill tone={c.paidMode === "Cash" ? "good" : "info"}>{chargeModeText(c, modeLabel)}</StatusPill>
               </Stack>
             </Stack>
           ))}
@@ -302,7 +327,7 @@ const DueCollectionsSection = ({ date, dues }) => {
           <Button
             fullWidth
             variant="contained"
-            disabled={busy || !form?.person || !(num(form?.amount) > 0)}
+            disabled={busy || !form?.person || !(num(form?.amount) > 0) || (!!form?.split && !!splitProblem(fillSplit(form.split, num(form.amount)), num(form.amount)))}
             onClick={save}
             sx={{ bgcolor: COLOR, py: 1.4, fontWeight: 800, fontSize: 16, "&:hover": { bgcolor: COLOR } }}
           >
@@ -329,11 +354,18 @@ const DueCollectionsSection = ({ date, dues }) => {
             />
             <ChipChoice
               label="Mode of payment"
-              options={MODES.map(([, l]) => l)}
-              value={modeLabel(form.mode)}
-              onChange={(l) => setForm((f) => ({ ...f, mode: MODES.find(([, x]) => x === l)[0] }))}
+              options={[...MODES.map(([, l]) => l), "Split"]}
+              value={form.split ? "Split" : modeLabel(form.mode)}
+              onChange={(l) =>
+                setForm((f) =>
+                  l === "Split"
+                    ? { ...f, split: fillSplit([{ mode: "Cash", amount: 0 }, { mode: "PP", amount: num(f.amount) }], num(f.amount)) }
+                    : { ...f, split: null, mode: MODES.find(([, x]) => x === l)[0] }
+                )
+              }
               color={COLOR}
             />
+            {form.split && <SplitPay total={num(form.amount)} modes={RAW_MODES} value={form.split} onChange={(rows) => setForm((f) => ({ ...f, split: rows }))} color={COLOR} />}
             <TextField label="Note (optional)" value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} fullWidth />
             <Typography variant="body2" color={Q.muted}>
               This money is <b>not</b> added to today's sales (the sale was already counted when credit was given). Cash received goes into the cash drawer — it is shown

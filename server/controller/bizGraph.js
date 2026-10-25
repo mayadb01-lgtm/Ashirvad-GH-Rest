@@ -14,6 +14,7 @@ import RestEntry from "../model/restEntry.js";
 import OfficeBook from "../model/officeBook.js";
 import { headKey, headLabel } from "../utils/expenseHeads.js";
 import { loadPast } from "../utils/pastData.js";
+import { payParts } from "../utils/payParts.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -82,7 +83,7 @@ const build = async (ranges) => {
       if (e.period === "day" || e.period === "extraDay") x.dayStays += 1; else x.nightStays += 1;
       x.people += n(e.noOfPeople);
       const m = e.modeOfPayment || "Other";
-      x.mode[m] = (x.mode[m] || 0) + r;
+      payParts(e).forEach((p) => (x.mode[p.mode || "Other"] = (x.mode[p.mode || "Other"] || 0) + p.amount));
       const t = e.type && e.type !== "Select" ? e.type : "Not set";
       x.type[t] = (x.type[t] || 0) + 1;
       const rk = String(e.roomNo);

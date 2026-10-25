@@ -11,6 +11,7 @@ import CashHandover from "../model/cashHandover.js";
 import RoomCharge from "../model/roomCharge.js";
 import Booking from "../model/booking.js";
 import { allowedStaffDates, isAdminLike, dateOk as staffDateOk } from "../middleware/staffAccess.js";
+import { payParts } from "../utils/payParts.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -142,11 +143,11 @@ router.get("/gh-card/:date", async (req, res) => {
     const [docs, bookings, charges] = await Promise.all([
       Entry.find({ date }, { entry: 1 }).lean(),
       Booking.find({ "advances.date": date }, { advances: 1 }).lean(),
-      RoomCharge.find({ isPaid: true, paidDate: date, paidMode: "Card", paidAt: { $nin: ["rest", "office"] } }, { amount: 1 }).lean(),
+      RoomCharge.find({ isPaid: true, paidDate: date, $or: [{ paidMode: "Card" }, { "paidSplit.mode": "Card" }], paidAt: { $nin: ["rest", "office"] } }, { amount: 1, paidMode: 1, paidSplit: 1 }).lean(),
     ]);
-    const rooms = docs.flatMap((d) => d.entry || []).filter((e) => e.modeOfPayment === "Card").reduce((t, e) => t + (Number(e.rate) || 0), 0);
+    const rooms = docs.flatMap((d) => d.entry || []).flatMap((e) => payParts(e)).filter((p) => p.mode === "Card").reduce((t, p) => t + (Number(p.amount) || 0), 0);
     const adv = bookings.flatMap((b) => b.advances || []).filter((a) => a.date === date && a.mode === "Card").reduce((t, a) => t + (Number(a.amount) || 0), 0);
-    const bills = charges.reduce((t, c) => t + (Number(c.amount) || 0), 0);
+    const bills = charges.flatMap((c) => payParts(c, "amount", "paidMode", "paidSplit")).filter((p) => p.mode === "Card").reduce((t, p) => t + (Number(p.amount) || 0), 0);
     res.json({ success: true, data: { rooms, advance: adv, bills, total: rooms + adv + bills } });
   } catch (e) {
     fail(res, e);

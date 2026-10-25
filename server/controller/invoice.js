@@ -125,7 +125,7 @@ router.get("/room-prefill/:date/:period/:roomNo", async (req, res) => {
             guests: Number(e?.noOfPeople) || 0,
           },
           items,
-          paymentMode: e?.modeOfPayment && e.modeOfPayment !== "UnPaid" ? e.modeOfPayment : "",
+          paymentMode: e?.split?.length ? e.split.map((p) => `${p.mode} ₹${p.amount}`).join(" + ") : e?.modeOfPayment && e.modeOfPayment !== "UnPaid" ? e.modeOfPayment : "",
           source: { type: "room", date, period, roomNo },
         },
         existing,

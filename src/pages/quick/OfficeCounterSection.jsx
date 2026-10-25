@@ -8,6 +8,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { Box, Button, Collapse, Stack, Tab, Tabs, TextField, Typography } from "@mui/material";
 import { API, ChipChoice, MoneyField, Q, Section, StatusPill, apiError, inr, num } from "./shared";
+import { chargeParts } from "../../utils/payParts";
 
 const MODES = ["Cash", "PP", "PPS", "PPC"];
 
@@ -31,7 +32,7 @@ export const useOfficeCounter = (date) => {
     const o = { Cash: 0, PP: 0, PPS: 0, PPC: 0 };
     gh.today.filter((x) => !x.cancelled).forEach((x) => (o[x.mode] = (o[x.mode] || 0) + num(x.amount)));
     restToday.filter((x) => !x.cancelled).forEach((x) => (o[x.mode] = (o[x.mode] || 0) + num(x.amount)));
-    roomPaid.forEach((x) => (o[x.paidMode] = (o[x.paidMode] || 0) + num(x.amount)));
+    roomPaid.forEach((x) => chargeParts(x).forEach((p) => (o[p.mode] = (o[p.mode] || 0) + num(p.amount))));
     return o;
   }, [gh, restToday, roomPaid]);
   const handIn = handover.filter((h) => !h.cancelled).reduce((t, h) => t + num(h.amount), 0);

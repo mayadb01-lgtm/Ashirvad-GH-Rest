@@ -23,6 +23,7 @@ import Grid from "@mui/material/Grid2";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { COLORS, renderActiveShape } from "../charts/chartUtils";
 import { GH_MODE_OF_PAYMENT_OPTIONS } from "../../utils/utils";
+import { payParts } from "../../utils/payParts";
 
 dayjs.locale("en-gb");
 
@@ -107,7 +108,7 @@ const GHHome = () => {
     entries.forEach((entry) => {
       entry.entry.forEach((e) => {
         if (paymentModes.includes(e.modeOfPayment) && e.period !== "UnPaid") {
-          totals[e.modeOfPayment] += e.rate ?? 0;
+          payParts(e).forEach((p) => paymentModes.includes(p.mode) && (totals[p.mode] += p.amount));
         }
       });
     });

@@ -13,6 +13,7 @@ import { loadOfficeClassifier, lineName } from "../utils/officeTypes.js";
 import { officeReceivedGhIds } from "../model/ghDueReceipt.js";
 import { BanquetBooking, banquetTotals } from "../model/banquet.js";
 import { loadPast, pastDaysIn, pastCategory } from "../utils/pastData.js";
+import { payParts } from "../utils/payParts.js";
 
 // Banquet ka bill (event ke din, GST ke bina) — revenue mein
 const banquetRevenue = async (s, e) =>
@@ -251,7 +252,7 @@ router.get("/monthly-summary/:month/:year", async (req, res) => {
     const byMode = {};
     const byType = {};
     ghRows.forEach((e) => {
-      inc(byMode, e.modeOfPayment || "Other", e.rate);
+      payParts(e).forEach((p) => inc(byMode, p.mode || "Other", p.amount));
       inc(byType, e.type || "Other", e.rate);
     });
     const roomPerf = rooms.map((r) => {

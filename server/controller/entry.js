@@ -3,6 +3,7 @@ import Entry from "../model/entry.js";
 import EntryLock from "../model/entryLock.js";
 import GhDueReceipt, { officeReceivedGhIds } from "../model/ghDueReceipt.js";
 import dayjs from "dayjs";
+import { fixEntrySplits } from "../utils/payParts.js";
 // import { isAuthenticated } from "../middleware/auth.js";
 const router = Router();
 const who = (req) => (req.user ? `${req.user.name || req.user.email || ""}${req.user.role === "Admin" ? " (Admin)" : ""}` : "");
@@ -115,6 +116,9 @@ router.post("/create-entry", async (req, res) => {
         }
       }
     }
+
+    const splitErr = fixEntrySplits(parsedEntries);
+    if (splitErr) return res.status(400).json({ success: false, message: splitErr });
 
     const unpaidEntries = parsedEntries.filter(
       (entry) => entry.period === "UnPaid"
@@ -266,6 +270,9 @@ router.put("/update-entry/:date", async (req, res) => {
         message: "Entry not found.",
       });
     }
+
+    const splitErr = fixEntrySplits(parsedEntries, entry.entry || []);
+    if (splitErr) return res.status(400).json({ success: false, message: splitErr });
 
     // Jama: is din pehle se jo the unhe dobara nahi; naye → asli row paid; hataye gaye → asli row wapas unpaid
     const oldJama = (entry.entry || []).filter((x) => x.period === "UnPaid").map((x) => x.toObject?.() || x);

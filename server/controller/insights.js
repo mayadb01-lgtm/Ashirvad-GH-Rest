@@ -30,6 +30,7 @@ const banquetMoney = async (from, to) => {
 };
 import { loadOfficeClassifier, lineName, nk } from "../utils/officeTypes.js";
 import { loadPast, pastDaysIn, pastCategory } from "../utils/pastData.js";
+import { payParts } from "../utils/payParts.js";
 
 // "Discount on total bill" (naya niyam) kis din se P&L mein ghatega: server pehli baar chalte hi aaj ki tareekh (IST) save karta hai.
 // Isse pehle ke din bilkul waise hi rehte hain (purane records mein Discount ka matlab alag tha).
@@ -232,7 +233,7 @@ router.get("/gh-growth/:start/:end", async (req, res) => {
     rows.forEach((e) => {
       inc(byType, e.type || "Other", e.rate);
       inc(byRoomType, e.roomType || "Other", e.rate);
-      inc(byMode, e.modeOfPayment || "Other", e.rate);
+      payParts(e).forEach((p) => inc(byMode, p.mode || "Other", p.amount));
     });
 
     // Room-wise
@@ -587,7 +588,7 @@ router.get("/pnl/:from/:to", async (req, res) => {
 // Gaya: Restaurant kharch + upad (galle se, Cash) · Office Out (mode se). UnPaid / udhaar ginti mein nahi.
 // GH counter par wasool hue food / extra bill (paidDate ke hisaab se)
 const paidRoomCharges = async (from, to) => {
-  const list = await RoomCharge.find({ isPaid: true, paidDate: { $ne: "" } }, { kind: 1, amount: 1, paidMode: 1, paidDate: 1 }).lean();
+  const list = await RoomCharge.find({ isPaid: true, paidDate: { $ne: "" } }, { kind: 1, amount: 1, paidMode: 1, paidSplit: 1, paidDate: 1 }).lean();
   return list
     .map((c) => ({ ...c, ym: dayjs(c.paidDate, F, true).format("YYYY-MM") }))
     .filter((c) => c.ym >= from.format("YYYY-MM") && c.ym <= to.format("YYYY-MM"));
@@ -628,7 +629,7 @@ router.get("/mode-balance/:from/:to", async (req, res) => {
     };
     gh.forEach((d) => {
       const m = byM[ymOf(d.entryCreateDate)];
-      (d.entry || []).forEach((e) => add(m, MODE_OF(e.modeOfPayment), "in", e.rate, "gh"));
+      (d.entry || []).forEach((e) => payParts(e).forEach((p) => add(m, MODE_OF(p.mode), "in", p.amount, "gh")));
     });
     rest.forEach((d) => {
       const m = byM[ymOf(d.entryCreateDate)];
@@ -640,7 +641,7 @@ router.get("/mode-balance/:from/:to", async (req, res) => {
     // Restaurant par purana udhaar wasool: Cash → Cash, Card / PP → PP
     dueReceipts.forEach((x) => add(byM[ymOf(x.entryCreateDate)], MODE_OF(x.mode), "in", x.amount, "rest"));
     // GH counter par food bill (restaurant ka udhaar) aur extra charges wasool: mode ke hisaab se
-    roomPaid.forEach((c) => add(byM[c.ym], MODE_OF(c.paidMode), "in", c.amount, c.kind === "food" ? "rest" : "gh"));
+    roomPaid.forEach((c) => payParts(c, "amount", "paidMode", "paidSplit").forEach((p) => add(byM[c.ym], MODE_OF(p.mode), "in", p.amount, c.kind === "food" ? "rest" : "gh")));
     // Banquet payments (Card → PP, kyunki ek hi machine)
     bq.pays.forEach((x) => add(byM[x.ym], MODE_OF(x.mode), "in", x.amount, "banquet"));
     // GH ka purana baaki jo Office mein wasool hua

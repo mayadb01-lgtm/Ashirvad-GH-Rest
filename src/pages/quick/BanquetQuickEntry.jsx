@@ -10,7 +10,8 @@ import Grid from "@mui/material/Grid2";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PrintIcon from "@mui/icons-material/Print";
-import { API, ChipChoice, EditorDialog, MoneyField, Q, Section, StatusPill, apiError, inr, num } from "./shared";
+import { API, ChipChoice, EditorDialog, MoneyField, Q, Section, SplitPay, StatusPill, apiError, inr, num } from "./shared";
+import { fillSplit, splitProblem } from "../../utils/payParts";
 import { BUSINESS } from "../../business";
 // Occasion ki list (dropdown); list mein na ho to khud bhi likh sakte hain
 const OCCASIONS = ["Wedding", "Engagement", "Reception", "Birthday", "Anniversary", "Baby shower", "Naming ceremony", "Religious / Puja", "Corporate meeting", "Conference / Seminar", "Kitty party", "Family get-together", "Farewell", "Other"];
@@ -646,13 +647,26 @@ const BanquetQuickEntry = ({ isAdmin }) => {
               {open.status !== "cancelled" && (
                 <Stack spacing={1} sx={{ mt: 1 }}>
                   <MoneyField label="Amount received today" value={pay.amount} onChange={(v) => setPay((p) => ({ ...p, amount: v }))} helperText={ot.balance > 0 ? `Balance ${inr(ot.balance)}` : ""} />
-                  <ChipChoice options={MODES.map((m) => MODE_LABEL[m])} value={MODE_LABEL[pay.mode]} onChange={(l) => setPay((p) => ({ ...p, mode: MODES.find((m) => MODE_LABEL[m] === l) }))} color={COLOR} />
+                  <ChipChoice
+                    options={[...MODES.map((m) => MODE_LABEL[m]), "Split"]}
+                    value={pay.split ? "Split" : MODE_LABEL[pay.mode]}
+                    onChange={(l) =>
+                      setPay((p) =>
+                        l === "Split"
+                          ? { ...p, split: fillSplit([{ mode: "Cash", amount: 0 }, { mode: "PPS", amount: num(p.amount) }], num(p.amount)) }
+                          : { ...p, split: null, mode: MODES.find((m) => MODE_LABEL[m] === l) }
+                      )
+                    }
+                    color={COLOR}
+                  />
+                  {pay.split && <SplitPay total={num(pay.amount)} modes={MODES} value={pay.split} onChange={(rows) => setPay((p) => ({ ...p, split: rows }))} color={COLOR} disabled={busy} />}
                   <TextField size="small" label="Note (optional)" value={pay.note} onChange={(e) => setPay((p) => ({ ...p, note: e.target.value }))} />
                   <Button
                     variant="contained"
-                    disabled={busy || !(num(pay.amount) > 0)}
+                    disabled={busy || !(num(pay.amount) > 0) || (!!pay.split && !!splitProblem(fillSplit(pay.split, num(pay.amount)), num(pay.amount)))}
                     onClick={async () => {
-                      await act(() => axios.post(`${API}/banquet/bookings/${open._id}/payment`, pay), `${inr(pay.amount)} received`);
+                      const body = pay.split ? { ...pay, split: fillSplit(pay.split, num(pay.amount)).filter((x) => x.amount > 0) } : { ...pay, split: undefined };
+                      await act(() => axios.post(`${API}/banquet/bookings/${open._id}/payment`, body), `${inr(pay.amount)} received`);
                       setPay({ amount: 0, mode: "Cash", note: "" });
                     }}
                     sx={{ bgcolor: COLOR, fontWeight: 800, "&:hover": { bgcolor: COLOR } }}

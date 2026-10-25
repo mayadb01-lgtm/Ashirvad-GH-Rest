@@ -9,6 +9,7 @@ import { BanquetItem, BanquetPackage, BanquetAddon, BanquetHall, BanquetBooking,
 import AppSetting from "../model/appSetting.js";
 import { allowedStaffDates, isAdminLike, dateOk as staffDateOk } from "../middleware/staffAccess.js";
 import { HALL_NAME } from "../business.js";
+import { normSplit } from "../utils/payParts.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -372,6 +373,19 @@ router.post("/bookings/:id([a-f0-9]{24})/payment", async (req, res) => {
     const date = admin(req) && valid(b.date) ? b.date : todayIst();
     if (!staffDateOk(req, date)) return bad(res, "Only today's payment can be added", 403);
     if (!(amount > 0)) return bad(res, "Enter the amount");
+    // Split: ek payment do mode mein (jaise Cash 20,000 + PPS 30,000) → do payment line
+    if (Array.isArray(b.split) && b.split.length) {
+      const sp = normSplit(b.split, amount, MODES);
+      if (sp.error) return bad(res, sp.error);
+      if (sp.split.length) {
+        const fresh = (pp) => doc.payments.some((p) => !p.cancelled && p.amount === Math.round(pp.amount) && p.mode === pp.mode && p.date === date && Date.now() - new Date(p.createdAt).getTime() < 15000);
+        if (!sp.split.every(fresh)) sp.split.forEach((pp) => doc.payments.push({ amount: Math.round(pp.amount), mode: pp.mode, date, note: clean(`${b.note ? b.note + " · " : ""}split payment`, 200), by: who(req) }));
+        doc.updatedBy = who(req);
+        await doc.save();
+        return res.json({ success: true, data: shape(doc.toObject()) });
+      }
+      if (sp.mode) b.mode = sp.mode;
+    }
     if (!MODES.includes(b.mode)) return bad(res, "Choose the payment mode");
     const recent = doc.payments.find((p) => !p.cancelled && p.amount === amount && p.mode === b.mode && p.date === date && Date.now() - new Date(p.createdAt).getTime() < 15000);
     if (!recent) doc.payments.push({ amount, mode: b.mode, date, note: clean(b.note, 200), by: who(req) });

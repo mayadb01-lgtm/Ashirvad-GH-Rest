@@ -31,6 +31,11 @@ const entrySchemaObj = new Schema(
       enum: ["Cash", "Card", "PPS", "PPC", "UnPaid"],
       required: true,
     },
+    // Ek bill do mode mein (jaise Cash 700 + PPS 800). Khaali = poori rakam modeOfPayment mein.
+    split: {
+      type: [{ _id: false, mode: { type: String, enum: ["Cash", "Card", "PPS", "PPC"] }, amount: Number }],
+      default: undefined,
+    },
     fullname: { type: String, default: "" },
     mobileNumber: { type: Number, default: 0 },
     checkInTime: { type: String },
