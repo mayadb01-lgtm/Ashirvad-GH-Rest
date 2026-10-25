@@ -1,6 +1,7 @@
 import { Router } from "express";
 import RestCategory from "../model/restCategory.js";
 import PurchaseBill from "../model/purchaseBill.js";
+import { effectiveAccess, rasoiAllowed } from "../middleware/staffAccess.js";
 const router = Router();
 
 // ───── Vendor: aasaan tarika (entry screen se hi naya vendor, duplicate se bachav) ─────
@@ -108,6 +109,11 @@ const vendorFields = (b) => {
 // POST /vendor { name, categoryName, mobile, gstin, supplies, payTerms, note, force } → naya vendor (staff bhi, entry screen se)
 router.post("/vendor", async (req, res) => {
   try {
+    // Naya vendor sirf Manager (jise Manager ka access hai) ya malik bana sakta hai
+    if (!isAdminLike(req.user)) {
+      const acc = await effectiveAccess(req.user).catch(() => null);
+      if (!rasoiAllowed(req.user, acc)) return res.status(403).json({ success: false, message: "Only the manager or owner can add a new vendor. Ask the manager." });
+    }
     const b = req.body || {};
     const name = clean(b.name, 60);
     if (name.length < 2) return res.status(400).json({ success: false, message: "Write the vendor name" });

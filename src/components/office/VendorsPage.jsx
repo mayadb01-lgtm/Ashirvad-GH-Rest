@@ -71,7 +71,7 @@ const VendorsPage = () => {
             Vendors
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {(meta.vendors || []).length} vendors · staff can also add a new vendor from the purchase bill, Payables and Money out screens
+            {(meta.vendors || []).length} vendors · the manager (and you) can also add a new vendor from the purchase bill, Payables and Money out screens; other staff cannot
           </Typography>
         </Box>
         <Button variant="contained" onClick={() => setDlg({ name: "" })} sx={{ bgcolor: C, fontWeight: 800, "&:hover": { bgcolor: C } }}>

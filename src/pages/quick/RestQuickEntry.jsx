@@ -27,7 +27,7 @@ import {
   num,
   useDraft,
 } from "./shared";
-import NewVendorDialog from "./NewVendorDialog";
+import NewVendorDialog, { NO_ADD_HINT, useCanAddVendor } from "./NewVendorDialog";
 
 const LOCK_MSG = "Already submitted. Only the owner can change it.";
 const EMPTY = { cash: 0, card: 0, pp: 0, computer: 0, upad: [], pending: [], pendingUsers: [], expenses: [] };
@@ -64,6 +64,7 @@ const RowList = ({ rows, onEdit, empty, locked, render }) => (
 const RestQuickEntry = ({ date, canEdit = true }) => {
   const [lists, setLists] = useState(null);
   const [newVendor, setNewVendor] = useState(null); // { name } → naya vendor (Payables / Kharch)
+  const canAddVendor = useCanAddVendor();
   const [server, setServer] = useState({ loaded: false, doc: null });
   const [status, setStatus] = useState(null);
   const [occupied, setOccupied] = useState({ guests: [], rooms: [] });
@@ -728,7 +729,8 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
               onChange={pickInto}
               getLabel={edLabel}
               groupBy={ed.section === "expenses" || ed.section === "pendingUsers" ? (o) => o.categoryName || "" : undefined}
-              onAddNew={ed.section === "expenses" || ed.section === "pendingUsers" ? (name) => setNewVendor({ name }) : undefined}
+              onAddNew={canAddVendor && (ed.section === "expenses" || ed.section === "pendingUsers") ? (name) => setNewVendor({ name }) : undefined}
+              noOptionsHint={ed.section === "expenses" || ed.section === "pendingUsers" ? NO_ADD_HINT : undefined}
             />
             )}
             {edIsStaffExpense && (

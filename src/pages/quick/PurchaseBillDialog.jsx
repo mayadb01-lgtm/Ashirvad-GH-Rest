@@ -7,7 +7,7 @@ import { Alert, Autocomplete, Box, Button, Chip, LinearProgress, Stack, TextFiel
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { API, ChipChoice, EditorDialog, PickField, Q, apiError, inr, num } from "./shared";
-import NewVendorDialog from "./NewVendorDialog";
+import NewVendorDialog, { NO_ADD_HINT, useCanAddVendor } from "./NewVendorDialog";
 
 // Photo chhoti (OCR ke liye thodi badi rakho: 1800px)
 const shrink = (file, max = 1800, q = 0.8) =>
@@ -151,6 +151,7 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
   const [lastBill, setLastBill] = useState(null); // chune vendor ka aakhri bill
   const [newVendor, setNewVendor] = useState(null); // { name } → naya vendor dialog
   const [added, setAdded] = useState([]); // isi khidki mein bane naye vendor
+  const canAddVendor = useCanAddVendor();
   useEffect(() => {
     if (!open) return;
     axios
@@ -425,7 +426,8 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
           onChange={(v) => set("vendor", v)}
           getLabel={(o) => o?.label || o?.fullname || o?.expenseName || ""}
           groupBy={(o) => o.group}
-          onAddNew={(name) => setNewVendor({ name })}
+          onAddNew={canAddVendor ? (name) => setNewVendor({ name }) : undefined}
+          noOptionsHint={NO_ADD_HINT}
         />
         <NewVendorDialog
           open={!!newVendor}

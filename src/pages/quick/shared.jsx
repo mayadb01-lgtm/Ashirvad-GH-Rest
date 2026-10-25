@@ -311,7 +311,7 @@ export const EditorDialog = ({ open, onClose, title, subtitle, children, actions
 
 /* Badi list wala picker (staff, vendor, expense) */
 // onAddNew(typedText) diya ho to list mein na mile tab "+ New …" button (naya vendor wahin se)
-export const PickField = ({ label, options, value, onChange, getLabel = (o) => o?.label || "", groupBy, disabled, placeholder, onAddNew, addLabel = "New vendor" }) => {
+export const PickField = ({ label, options, value, onChange, getLabel = (o) => o?.label || "", groupBy, disabled, placeholder, onAddNew, addLabel = "New vendor", noOptionsHint }) => {
   const [typed, setTyped] = useState("");
   return (
     <Box>
@@ -331,7 +331,7 @@ export const PickField = ({ label, options, value, onChange, getLabel = (o) => o
               + {addLabel} {typed.trim() ? `"${typed.trim()}"` : ""}
             </Button>
           ) : (
-            "No options"
+            noOptionsHint || "No options"
           )
         }
         ListboxProps={{ sx: { "& .MuiAutocomplete-option": { minHeight: 44, fontSize: 15 } } }}

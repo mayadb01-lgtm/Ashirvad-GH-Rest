@@ -6,6 +6,14 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { Alert, Box, Button, Chip, MenuItem, Stack, TextField, Typography } from "@mui/material";
 import { API, ChipChoice, EditorDialog, Q, apiError } from "./shared";
+import { useMe } from "../../utils/staffMe";
+
+// Naya vendor sirf Manager / malik bana sakta hai (server bhi yahi check karta hai)
+export const useCanAddVendor = () => {
+  const me = useMe();
+  return !!me && (me.isAdmin || me.rasoi === true);
+};
+export const NO_ADD_HINT = "Not in the list. Ask the manager to add this vendor.";
 
 let META = null; // categories + supplies (ek baar)
 export const loadVendorMeta = async (force) => {
