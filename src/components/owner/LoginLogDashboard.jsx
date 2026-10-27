@@ -14,6 +14,7 @@ const EVENTS = {
   otp_failed: { label: "Wrong code", color: "error" },
   disabled: { label: "Login while account off", color: "warning" },
   reset: { label: "Password changed", color: "warning" },
+  access: { label: "Admin changed", color: "secondary" },
   blocked: { label: "Blocked attempt", color: "error" },
 };
 

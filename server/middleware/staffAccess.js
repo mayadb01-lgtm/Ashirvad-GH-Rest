@@ -252,6 +252,19 @@ const loadAccess = async (userId) => {
 export const effectiveAccess = async (user) => {
   if (!user || isAdminLike(user)) return null;
   const doc = await loadAccess(user._id);
+  // ⭐ Staff Admin: poori entry power (reports wahi jo malik ne tick kiye)
+  if (user.isEntryAdmin === true) {
+    return {
+      custom: true,
+      entryAdmin: true,
+      modules: [...MODULES],
+      entryDays: null,
+      reports: (doc?.reports || []).filter((r) => REPORTS[r]),
+      reportDays: doc?.reportDays === null || doc?.reportDays === undefined ? (doc ? null : 0) : Math.max(0, Number(doc.reportDays) || 0),
+      classic: true,
+      canEdit: true,
+    };
+  }
   if (doc) {
     return {
       custom: true,

@@ -17,7 +17,7 @@ router.use((req, res, next) => {
 // GET /api/v1/staff-accounts
 router.get("/", async (req, res) => {
   try {
-    const users = await User.find({}, { name: 1, email: 1, department: 1, isActive: 1, isSuperUser: 1, createdAt: 1 }).sort({ createdAt: -1 }).lean();
+    const users = await User.find({}, { name: 1, email: 1, department: 1, isActive: 1, isSuperUser: 1, isEntryAdmin: 1, createdAt: 1 }).sort({ createdAt: -1 }).lean();
     const acc = Object.fromEntries((await UserAccess.find({}).lean()).map((a) => [a.userId, a]));
     res.json({
       success: true,
@@ -38,7 +38,12 @@ router.put("/:id", async (req, res) => {
       patch.department = req.body.department;
     }
     if (req.body.isActive !== undefined) patch.isActive = !!req.body.isActive;
-    const u = await User.findByIdAndUpdate(req.params.id, { $set: patch }, { new: true, projection: { name: 1, email: 1, department: 1, isActive: 1, isSuperUser: 1 } });
+    if (req.body.isEntryAdmin !== undefined) patch.isEntryAdmin = req.body.isEntryAdmin === true;
+    const u = await User.findByIdAndUpdate(req.params.id, { $set: patch }, { new: true, projection: { name: 1, email: 1, department: 1, isActive: 1, isSuperUser: 1, isEntryAdmin: 1 } });
+    if (u && patch.isEntryAdmin !== undefined) {
+      clearAccessCache(u._id);
+      logLogin(req, { kind: "staff", event: "access", user: u, note: `${patch.isEntryAdmin ? "Made Admin" : "Admin removed"} by ${req.user?.name || "owner"}` });
+    }
     if (!u) return res.status(404).json({ success: false, message: "Staff not found" });
     res.json({ success: true, data: u });
   } catch (error) {

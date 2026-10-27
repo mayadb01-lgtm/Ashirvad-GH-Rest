@@ -25,6 +25,7 @@ router.get("/me", async (req, res) => {
       viewOnly: u?.viewOnly === true, // sirf reports dekhne wala account
       department: admin ? "all" : u?.department || "none",
       isActive: u?.isActive !== false,
+      entryAdmin: !admin && u?.isEntryAdmin === true, // malik ne "Admin" banaya staff
       // Super Admin ne jo diya (ya purana department)
       modules: admin ? MODULES : acc?.modules || [],
       isManager: !admin && (acc?.modules?.length || 0) > 1,

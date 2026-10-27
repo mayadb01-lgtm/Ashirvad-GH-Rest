@@ -147,8 +147,10 @@ export const themeOptions = {
         },
       },
     },
+    // Sidebar ke section heading scroll par items ke upar na chadhein (sticky band)
     MuiListSubheader: {
-      styleOverrides: { root: { color: BRAND.ink2, fontWeight: 800, fontSize: 12, letterSpacing: ".04em", textTransform: "uppercase", backgroundColor: "transparent" } },
+      defaultProps: { disableSticky: true },
+      styleOverrides: { root: { color: BRAND.ink2, fontWeight: 800, fontSize: 12, letterSpacing: ".04em", textTransform: "uppercase", backgroundColor: "transparent", position: "static" } },
     },
     MuiDataGrid: {
       styleOverrides: {

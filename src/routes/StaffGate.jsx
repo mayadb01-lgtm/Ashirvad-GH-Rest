@@ -11,7 +11,7 @@ import { useMe, CLASSIC_MODULE } from "../utils/staffMe";
 const useIsPlainStaff = () => {
   const { isAuthenticated, user } = useAppSelector((s) => s.user);
   const { isAdminAuthenticated } = useAppSelector((s) => s.admin);
-  return isAuthenticated && !isAdminAuthenticated && !user?.isSuperUser;
+  return isAuthenticated && !isAdminAuthenticated && !user?.isSuperUser && !user?.isEntryAdmin;
 };
 
 // "/" (Home) pe lagao:

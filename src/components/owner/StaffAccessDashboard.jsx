@@ -105,6 +105,17 @@ const StaffAccessDashboard = () => {
     }
   };
   // Super Admin staff ka naya password set kare (staff khud reset nahi kar sakta)
+  // ⭐ Staff ko Admin banao / hatao (poori entry power; Dashboard aur staff access phir bhi sirf malik ke paas)
+  const setEntryAdmin = async (u, isEntryAdmin) => {
+    try {
+      await axios.put(`${API}/staff-accounts/${u._id}`, { isEntryAdmin });
+      setUsers((list) => list.map((x) => (x._id === u._id ? { ...x, isEntryAdmin } : x)));
+      toast.success(`${u.name}: ${isEntryAdmin ? "is now Admin" : "Admin removed"}`);
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Could not save");
+    }
+  };
+
   const setPassword = async (u) => {
     const pw = window.prompt(`New password for ${u.name} (min 6 characters):`);
     if (pw === null) return;
@@ -156,7 +167,8 @@ const StaffAccessDashboard = () => {
                       {u.name}
                     </Typography>
                     {u.isSuperUser && <Chip size="small" label="Super user · full access" color="secondary" variant="outlined" />}
-                    {!u.access && <Chip size="small" label="Old setting" variant="outlined" />}
+                    {u.isEntryAdmin && <Chip size="small" label="Admin" color="warning" />}
+                    {!u.access && !u.isEntryAdmin && <Chip size="small" label="Old setting" variant="outlined" />}
                     {!u.isActive && <Chip size="small" label="Off" />}
                   </Stack>
                   <Typography variant="caption" color="text.secondary">
@@ -171,6 +183,14 @@ const StaffAccessDashboard = () => {
                 <Button size="small" onClick={() => setPassword(u)}>
                   Set password
                 </Button>
+                {!u.isSuperUser && (
+                  <Stack direction="row" alignItems="center">
+                    <Switch color="warning" checked={u.isEntryAdmin === true} onChange={(e) => setEntryAdmin(u, e.target.checked)} />
+                    <Typography variant="body2" fontWeight={u.isEntryAdmin ? 800 : 400} sx={{ width: 50 }}>
+                      Admin
+                    </Typography>
+                  </Stack>
+                )}
                 <Stack direction="row" alignItems="center">
                   <Switch checked={u.isActive} onChange={(e) => setActive(u, e.target.checked)} />
                   <Typography variant="body2" sx={{ width: 44 }}>
@@ -179,6 +199,11 @@ const StaffAccessDashboard = () => {
                 </Stack>
               </Stack>
 
+              {u.isEntryAdmin && (
+                <Alert severity="warning" sx={{ mb: 1, py: 0 }}>
+                  <b>Admin:</b> all 4 businesses, any date, edit &amp; delete, Manager. The entry settings below are ignored while Admin is on. Reports = only the ones ticked below. No owner Dashboard, no staff access.
+                </Alert>
+              )}
               <Typography variant="caption" fontWeight={800} color="text.secondary">
                 ENTRY — which business
               </Typography>

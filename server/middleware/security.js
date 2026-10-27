@@ -86,7 +86,8 @@ export const apiGate = (req, res, next) => {
   }
 
   return isAuthenticated(req, res, () => {
-    if (req.method === "DELETE" && !isAdminLike(req.user)) {
+    // Staff Admin (malik ne banaya) bhi entry wali cheezein hata sake — kaun si, wo staffGuard tay karta hai
+    if (req.method === "DELETE" && !isAdminLike(req.user) && req.user?.isEntryAdmin !== true) {
       return res.status(403).json({ success: false, message: "Only admin can delete data." });
     }
     // Staff: sirf apna department + sirf aaj (staffAccess.js)

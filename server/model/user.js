@@ -66,6 +66,12 @@ const userSchema = new Schema({
     enum: ["none", "gh", "rest", "office", "manager"], // manager = chaaron business ki entry, koi bhi din (reports nahi)
     default: "none",
   },
+  // ⭐ Malik ne "Admin" banaya: charon business ki entry, koi bhi din, edit/delete, Manager.
+  //    Malik ka Dashboard / staff access / owner settings NAHI (wo sirf Admin login se).
+  isEntryAdmin: {
+    type: Boolean,
+    default: false,
+  },
   // false = account band (staff chhod gaya ho to)
   isActive: {
     type: Boolean,
