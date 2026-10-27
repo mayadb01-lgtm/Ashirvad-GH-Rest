@@ -7,6 +7,7 @@ import { dashboardTheme } from "../theme";
 import TabbedPage from "../components/TabbedPage";
 import TodayHome from "../components/owner/TodayHome";
 import TodayIcon from "@mui/icons-material/Today";
+import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import EditNoteIcon from "@mui/icons-material/EditNote";
 import BadgeIcon from "@mui/icons-material/Badge";
 // import RestaurantIcon from "@mui/icons-material/Restaurant";
@@ -132,7 +133,7 @@ const DashboardHeader = () => {
 
 // Saare purane menu items waise hi + naye items (Aaj ka hisaab, Guest Dues, Staff Access).
 // Naye tab-wale pages (Reports, Setup...) bhi "Naye combined pages" mein rakhe hain.
-const NAVIGATION = [
+const FLAT_NAV = [
   { segment: "home", title: "Today's summary", icon: <TodayIcon /> },
   { segment: "owner-report", title: "Owner Monthly Report", icon: <InsightsIcon /> },
   { segment: "forecast", title: "Forecast & key dates", icon: <TrendingUpIcon /> },
@@ -233,6 +234,38 @@ const NAVIGATION = [
   { segment: "home-classic", title: "Home (old)", icon: <DashboardIcon /> },
 ];
 
+// 📂 Sidebar: har section (header) ek dropdown ban jata hai — neeche tak scroll na karna pade.
+//    Group ka URL "g-<naam>/<page>"; purane seedhe URL ("/dashboard/cashflow") bhi chalte rahte hain.
+const slug = (t) => "g-" + String(t).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const NAVIGATION = (() => {
+  const out = [];
+  let grp = null;
+  FLAT_NAV.forEach((it) => {
+    if (it.kind === "header") {
+      grp = { segment: slug(it.title), title: it.title, icon: <FolderOpenIcon />, children: [] };
+      out.push(grp);
+    } else if (grp) {
+      grp.children.push(it);
+      if (!grp.iconSet && it.icon) { grp.icon = it.icon; grp.iconSet = true; }
+    } else out.push(it);
+  });
+  out.forEach((g) => delete g.iconSet);
+  return out;
+})();
+// Group ke andar wale page ke liye wahi page (route) "g-xxx/" ke saath bhi
+const withGroups = (list) => {
+  const extra = [];
+  NAVIGATION.filter((g) => g.children && String(g.segment).startsWith("g-")).forEach((g) => {
+    const segs = g.children.map((c) => c.segment);
+    list.forEach((r) => {
+      const first = String(r.path || "").split("/")[0];
+      if (r.path && r.path !== "*" && segs.includes(first)) extra.push({ ...r, path: `${g.segment}/${r.path}` });
+    });
+  });
+  return [...extra, ...list];
+};
+
+
 // View-only account: kone mein chhota sa nishaan (malik ko yaad rahe ki aankde kam dikh rahe hain)
 const ViewOnlyMark = () => {
   const me = useMe();
@@ -254,12 +287,12 @@ const DashboardPage = () => {
     searchParams: new URLSearchParams(window.location.search),
   };
 
-  const routes = useRoutes([
+  const routes = useRoutes(withGroups([
     // Redirect /dashboard to /dashboard/home
     { path: "", element: <Navigate to="home" replace /> },
     { path: "home", element: <TodayHome onNavigate={router.navigate} /> },
     // Purana links-wala home bhi rakha hai
-    { path: "home-classic", element: <HomeDashboard navigation={NAVIGATION} onNavigate={router.navigate} /> },
+    { path: "home-classic", element: <HomeDashboard navigation={FLAT_NAV} onNavigate={router.navigate} /> },
     {
       path: "gh-all-reports",
       element: (
@@ -431,7 +464,7 @@ const DashboardPage = () => {
     { path: "my-password", element: <MyPasswordPage /> },
     { path: "login-log", element: <LoginLogDashboard /> },
     { path: "*", element: <Typography>404: Page Not Found</Typography> },
-  ]);
+  ]));
 
   return (
     <AppProvider navigation={NAVIGATION} router={router} theme={dashboardTheme}>
