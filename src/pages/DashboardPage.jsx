@@ -8,6 +8,7 @@ import TabbedPage from "../components/TabbedPage";
 import TodayHome from "../components/owner/TodayHome";
 import TodayIcon from "@mui/icons-material/Today";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+import HomeIcon from "@mui/icons-material/Home";
 import EditNoteIcon from "@mui/icons-material/EditNote";
 import BadgeIcon from "@mui/icons-material/Badge";
 // import RestaurantIcon from "@mui/icons-material/Restaurant";
@@ -123,6 +124,10 @@ const DashboardHeader = () => {
         </Box>
       </Stack>
       <Stack direction="row" spacing={1} alignItems="center">
+        {/* 🏠 Landing (main) page par wapas — Manager jaisa */}
+        <Button variant="outlined" size="small" startIcon={<HomeIcon />} onClick={() => navigate("/")} title="Go to the main page" sx={{ fontWeight: 700, bgcolor: "#fff" }}>
+          Home
+        </Button>
         <Button variant="contained" size="small" startIcon={<EditNoteIcon />} onClick={() => navigate("/entry")}>
           New entry
         </Button>
@@ -265,6 +270,18 @@ const withGroups = (list) => {
   return [...extra, ...list];
 };
 
+
+// Sidebar ke neeche bhi "Home" (landing page) — sidebar band ho (mini) to sirf icon
+const SidebarHome = ({ mini }) => {
+  const navigate = useNavigate();
+  return (
+    <Box sx={{ p: 1, borderTop: "1px solid #E2E8F0" }}>
+      <Button fullWidth variant="outlined" size="small" startIcon={mini ? null : <HomeIcon />} onClick={() => navigate("/")} title="Go to the main page" sx={{ fontWeight: 700, minWidth: 0 }}>
+        {mini ? <HomeIcon fontSize="small" /> : "Home"}
+      </Button>
+    </Box>
+  );
+};
 
 // View-only account: kone mein chhota sa nishaan (malik ko yaad rahe ki aankde kam dikh rahe hain)
 const ViewOnlyMark = () => {
@@ -471,6 +488,7 @@ const DashboardPage = () => {
       <DashboardLayout
         slots={{
           appTitle: () => <DashboardHeader onNavigate={router.navigate} />,
+          sidebarFooter: SidebarHome,
         }}
         sidebarExpandedWidth={260}
         navigation={NAVIGATION}
