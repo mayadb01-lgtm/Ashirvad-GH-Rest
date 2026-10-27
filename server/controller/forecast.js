@@ -18,6 +18,7 @@ const router = Router();
 
 router.use(isAuthenticated, (req, res, next) => {
   if (req.user?.role === "Admin" || req.user?.isSuperUser) return next();
+  if (req.reportOk && req.method === "GET") return next(); // malik ne yeh report di hai (staffGuard)
   return res.status(403).json({ success: false, message: "Owner/Admin only" });
 });
 

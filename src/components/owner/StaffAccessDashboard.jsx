@@ -236,6 +236,9 @@ const StaffAccessDashboard = () => {
               <Typography variant="caption" fontWeight={800} color="text.secondary">
                 REPORTS — which ones
               </Typography>
+              <Button size="small" sx={{ ml: 1, py: 0 }} onClick={() => setF(u._id, { reports: f.reports.length === reports.length ? [] : reports.map((r) => r.key) })}>
+                {f.reports.length === reports.length ? "Untick all" : "Tick all reports"}
+              </Button>
               <Stack direction="row" flexWrap="wrap" useFlexGap>
                 {reports.map((r) => (
                   <FormControlLabel key={r.key} control={<Checkbox size="small" checked={f.reports.includes(r.key)} onChange={() => toggle(u._id, "reports", r.key)} />} label={r.label} />

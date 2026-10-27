@@ -223,6 +223,45 @@ export const REPORTS = {
   "guest-dues": { label: "Guest dues & reminders", rules: [R("GET", /^\/api\/v1\/owner\/dues$/)] },
   "banquet-report": { label: "Banquet report & kitchen planning", rules: [R("GET", /^\/api\/v1\/banquet\/report$/, { clamp: "qdmy" }), R("GET", /^\/api\/v1\/banquet\/kitchen$/, { clamp: "qdmy" })] },
   "data-check": { label: "Data check (error alerts)", rules: [R("GET", /^\/api\/v1\/insights\/data-alerts$/)] },
+  // ── Naye reports (malik tick kare) ──
+  "rest-expenses": { label: "Restaurant expenses (category-wise)", rules: [R("GET", /^\/api\/v1\/restEntry\/get-expenses-entries\/([^/]+)\/([^/]+)$/, { clamp: "dmy2" }), R("GET", /^\/api\/v1\/restCategory\/get-categories$/)] },
+  "rest-sales": { label: "Restaurant sales report", rules: [R("GET", /^\/api\/v1\/restEntry\/get-entries\/([^/]+)\/([^/]+)$/, { clamp: "dmy2" })] },
+  "rest-bank": { label: "Restaurant bank books (Cash / PP / PPS / Card)", rules: [R("GET", /^\/api\/v1\/restEntry\/get-entries-by-payment-method\/([^/]+)\/([^/]+)$/, { clamp: "dmy2" })] },
+  "rest-upaad": { label: "Restaurant staff advance (upaad)", rules: [R("GET", /^\/api\/v1\/restEntry\/get-upad-entries\/([^/]+)\/([^/]+)$/, { clamp: "dmy2" })] },
+  "rest-dues": {
+    label: "Restaurant receivables / payables / pending balance",
+    rules: [
+      R("GET", /^\/api\/v1\/restEntry\/get-levana-entries\/([^/]+)\/([^/]+)$/, { clamp: "dmy2" }),
+      R("GET", /^\/api\/v1\/restEntry\/get-aapvana-entries\/([^/]+)\/([^/]+)$/, { clamp: "dmy2" }),
+      R("GET", /^\/api\/v1\/officeBook\/get-entries\/([^/]+)\/([^/]+)$/, { clamp: "dmy2" }),
+      R("GET", /^\/api\/v1\/restPending\/get-all-pending-users$/),
+    ],
+  },
+  "gh-reports": { label: "Guest House reports (sales, date range, bank books, unpaid)", rules: [R("GET", /^\/api\/v1\/entry\/get-entries\/([^/]+)\/([^/]+)$/, { clamp: "dmy2" })] },
+  "office-book": { label: "Office Book report", rules: [R("GET", /^\/api\/v1\/officeBook\/get-entries\/([^/]+)\/([^/]+)$/, { clamp: "dmy2" }), R("GET", /^\/api\/v1\/officeBook\/get-categories$/)] },
+  "merged-report": {
+    label: "Merged report (GH + Restaurant + Office)",
+    rules: [
+      R("GET", /^\/api\/v1\/entry\/get-entries\/([^/]+)\/([^/]+)$/, { clamp: "dmy2" }),
+      R("GET", /^\/api\/v1\/restEntry\/get-entries\/([^/]+)\/([^/]+)$/, { clamp: "dmy2" }),
+      R("GET", /^\/api\/v1\/officeBook\/get-entries\/([^/]+)\/([^/]+)$/, { clamp: "dmy2" }),
+    ],
+  },
+  vendors: { label: "Vendor report & vendor graph", rules: [R("GET", /^\/api\/v1\/vendor\/get-vendor-entries\/([^/]+)\/([^/]+)$/, { clamp: "dmy2" }), R("GET", /^\/api\/v1\/restCategory\/get-categories$/)] },
+  "purchase-analytics": { label: "Purchase analytics (vendor / item rates)", rules: [R("GET", /^\/api\/v1\/purchase\/analytics\/([^/]+)\/([^/]+)$/, { clamp: "dmy2" })] },
+  "staff-salary": {
+    label: "Staff salary & advance report",
+    rules: [
+      R("GET", /^\/api\/v1\/staffSalary\/get-salary-sheets-by-month-range\/([^/]+)\/([^/]+)$/, { clamp: "dmy2" }),
+      R("GET", /^\/api\/v1\/staffSalary\/get-salary-and-overtime-by-month-range\/([^/]+)\/([^/]+)$/, { clamp: "dmy2" }),
+      R("GET", /^\/api\/v1\/restEntry\/get-staff-total-upaad-by-month-range\/([^/]+)\/([^/]+)$/, { clamp: "dmy2" }),
+      R("GET", /^\/api\/v1\/officeBook\/get-category-upaad-by-month-range\/([^/]+)\/([^/]+)$/, { clamp: "dmy2" }),
+      R("GET", /^\/api\/v1\/restStaff\/get-staff-id-name-mobile$/),
+    ],
+  },
+  graphs: { label: "Business graphs (GH / Restaurant / Merged) & sales goals", rules: [R("GET", /^\/api\/v1\/biz\/daily$/, { clamp: "qymd" }), R("GET", /^\/api\/v1\/biz\/goals$/)] },
+  forecast: { label: "Forecast & key dates (needs report data: No limit)", rules: [R("GET", /^\/api\/v1\/forecast$/, { fullOnly: true })] },
+  performance: { label: "Performance: year vs year (needs report data: No limit)", rules: [R("GET", /^\/api\/v1\/performance$/, { fullOnly: true }), R("GET", /^\/api\/v1\/performance\/past-status$/, { fullOnly: true })] },
   // Rasoi Board: Manager ko apne aap; baaki staff (head cook, store …) ko Super Admin tick kare
   rasoi: { label: "Manager (kitchen plan, team tasks, orders, recipes)", rules: [R("GET", RASOI_RE), R("PUT", RASOI_RE), R("DELETE", RASOI_RE)] },
 };
@@ -295,6 +334,7 @@ const deny = (res, message, code = 403) => res.status(code).json({ success: fals
 /* Report ki date ko user ki seema mein laao. Return: null (theek) | "message" (mana) — req.url badal sakta hai */
 const ymd = (d) => d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
 const clampReport = (req, rule, path, days) => {
+  if (rule.fullOnly && days !== null) return "This report needs 'Report data: No limit'. Ask the owner.";
   if (!rule.clamp || days === null) return null;
   const earliest = new Date(Date.now() + IST_OFFSET_MS - days * 24 * 3600 * 1000);
   const eYm = `${earliest.getUTCFullYear()}-${pad(earliest.getUTCMonth() + 1)}`;
@@ -323,6 +363,17 @@ const clampReport = (req, rule, path, days) => {
   } else if (rule.clamp === "months") {
     const allowed = Math.max(2, Math.ceil(days / 30) + 1);
     if (Number(m[1]) > allowed) setPath(path.replace(/\/\d+$/, `/${allowed}`));
+  } else if (rule.clamp === "qymd") {
+    const iso = `${earliest.getUTCFullYear()}-${pad(earliest.getUTCMonth() + 1)}-${pad(earliest.getUTCDate())}`;
+    const to = String(req.query?.to || "");
+    if (to && to < iso) return tooOld;
+    const from = String(req.query?.from || "");
+    if (!from || from < iso) {
+      req.query.from = iso;
+      const u = new URL(req.url, "http://x");
+      u.searchParams.set("from", iso);
+      req.url = u.pathname + u.search;
+    }
   } else if (rule.clamp === "qdmy") {
     const from = String(req.query?.from || "");
     if (!from || dmyNum(from) < ymd(earliest)) req.query.from = eDmy;
@@ -356,19 +407,20 @@ export const staffGuard = async (req, res, next) => {
     return rasoiAllowed(user, acc) ? next() : deny(res, "Manager is not allowed for you. Ask the Super Admin.");
   }
 
-  // Report?
+  // Report? (jo report malik ne di hai uska raasta khula; nahi di to neeche business ke niyam dekhe jaate hain)
+  let reportHit = false;
   for (const key of Object.keys(REPORTS)) {
     const rule = REPORTS[key].rules.find((r) => r.method === method && r.re.test(path));
     if (!rule) continue;
-    if (!acc.reports.includes(key)) {
-      // Banquet kitchen/report ke raaste booking module se takraate nahi; baaki: mana
-      return deny(res, "This report is not allowed for you. Ask the Super Admin.");
-    }
+    reportHit = true;
+    if (!acc.reports.includes(key)) continue;
     const msg = clampReport(req, rule, path, acc.reportDays);
     if (msg) return deny(res, msg);
     req.reportOk = key;
     return next();
   }
+  const moduleRuleHit = acc.modules.flatMap((m) => RULES[m] || []).some((r) => r.method === method && r.re.test(path));
+  if (reportHit && !moduleRuleHit) return deny(res, "This report is not allowed for you. Ask the Super Admin.");
 
   if (!acc.modules.length) {
     return deny(res, "You do not have access to any business yet. Ask the owner to set your access.");

@@ -199,7 +199,7 @@ router.get("/range/:from/:to", async (req, res) => {
 // GET /analytics/:from/:to (DD-MM-YYYY) → owner: kharid ka hisaab — mahina, vendor, item, mode
 router.get("/analytics/:from/:to", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return bad(res, "Only the owner can see purchase analytics", 403);
+    if (!isAdminLike(req.user) && req.reportOk !== "purchase-analytics") return bad(res, "Only the owner can see purchase analytics", 403);
     const { from, to } = req.params;
     if (!ok(from) || !ok(to)) return bad(res, "Invalid date");
     const q = { entryCreateDate: { $gte: dayjs(from, F).startOf("day").toDate(), $lte: dayjs(to, F).endOf("day").toDate() } };

@@ -13,6 +13,29 @@ import DataAlerts from "../../components/insights/DataAlerts";
 import ProfitLossDashboard from "../../components/insights/ProfitLossDashboard";
 import OwnerMonthlyDashboard from "../../components/owner/OwnerMonthlyDashboard";
 import GuestDuesReminders from "../../components/owner/GuestDuesReminders";
+import TabbedPage from "../../components/TabbedPage";
+import RestExpensesDashboard from "../../components/restaurant/RestExpensesDashboard";
+import RestSalesDashboard from "../../components/restaurant/RestSalesDashboard";
+import BankBooksDashboard from "../../components/restaurant/RestBankBookEntry";
+import RestUpaadEntriesDashboard from "../../components/restaurant/RestUpaadEntriesDashboard";
+import RestLevanaDashboard from "../../components/restaurant/RestLevanaDashboard";
+import RestAapvanaDashboard from "../../components/restaurant/RestAapvanaDashboard";
+import AapvanaLevanaBalance from "../../components/restaurant/RestAapvanaLevana";
+import GHSalesDashboard from "../../components/guest-house/GHSalesDashboard";
+import GHBankBooksDashboard from "../../components/guest-house/GHBankBooksDashboard";
+import GHUpaidEntriesDashboard from "../../components/guest-house/GHUpaidEntriesDashboard";
+import OfficeBookDashboard from "../../components/office/OfficeBookDashboard";
+import OfficeMerged from "../../components/office/OfficeMerged";
+import OfficeCreditDebit from "../../components/office/OfficeCreditDebit";
+import VendorGraphDashboard from "../../components/office/VendorGraphDashboard";
+import PurchaseAnalyticsDashboard from "../../components/insights/PurchaseAnalyticsDashboard";
+import StaffSalaryDashboard from "../../components/restaurant/StaffSalaryDashboard";
+import GHGraph2 from "../../components/biz/GHGraph2";
+import RestGraph2 from "../../components/biz/RestGraph2";
+import MergedGraph2 from "../../components/biz/MergedGraph2";
+import SalesGoals2 from "../../components/biz/SalesGoals2";
+import ForecastDashboard from "../../components/insights/ForecastDashboard";
+import PerformanceDashboard from "../../components/insights/PerformanceDashboard";
 
 const API = import.meta.env.VITE_REACT_APP_SERVER_URL;
 const VIEWS = {
@@ -26,6 +49,70 @@ const VIEWS = {
   "guest-dues": ["Guest dues & reminders", () => <GuestDuesReminders />],
   "banquet-report": ["Banquet report & kitchen planning", () => <BanquetReportDashboard />],
   "data-check": ["Data check", () => <DataAlerts onNavigate={() => {}} />],
+  "rest-expenses": ["Restaurant expenses (category-wise)", () => <RestExpensesDashboard />],
+  "rest-sales": ["Restaurant sales report", () => <RestSalesDashboard />],
+  "rest-bank": ["Restaurant bank books", () => <BankBooksDashboard />],
+  "rest-upaad": ["Restaurant staff advance (upaad)", () => <RestUpaadEntriesDashboard />],
+  "rest-dues": [
+    "Restaurant receivables / payables",
+    () => (
+      <TabbedPage
+        title="Restaurant receivables / payables"
+        accent="#B45309"
+        tabs={[
+          { key: "levana", label: "Receivables", element: <RestLevanaDashboard /> },
+          { key: "aapvana", label: "Payables", element: <RestAapvanaDashboard /> },
+          { key: "balance", label: "Pending balance", element: <AapvanaLevanaBalance /> },
+        ]}
+      />
+    ),
+  ],
+  "gh-reports": [
+    "Guest House reports",
+    () => (
+      <TabbedPage
+        title="Guest House reports"
+        accent="#0F766E"
+        tabs={[
+          { key: "sales", label: "Sales", element: <GHSalesDashboard /> },
+          { key: "bank", label: "Bank books", element: <GHBankBooksDashboard /> },
+          { key: "unpaid", label: "Unpaid", element: <GHUpaidEntriesDashboard /> },
+        ]}
+      />
+    ),
+  ],
+  "office-book": ["Office Book report", () => <OfficeBookDashboard />],
+  "merged-report": ["Merged report (GH + Restaurant + Office)", () => <OfficeMerged />],
+  vendors: [
+    "Vendor report & graph",
+    () => (
+      <TabbedPage
+        title="Vendors"
+        tabs={[
+          { key: "report", label: "Vendor report", element: <OfficeCreditDebit /> },
+          { key: "graph", label: "Vendor graph", element: <VendorGraphDashboard /> },
+        ]}
+      />
+    ),
+  ],
+  "purchase-analytics": ["Purchase analytics", () => <PurchaseAnalyticsDashboard />],
+  "staff-salary": ["Staff salary & advance", () => <StaffSalaryDashboard />],
+  graphs: [
+    "Business graphs & sales goals",
+    () => (
+      <TabbedPage
+        title="Business graphs"
+        tabs={[
+          { key: "gh", label: "Guest House", element: <GHGraph2 /> },
+          { key: "rest", label: "Restaurant", element: <RestGraph2 /> },
+          { key: "merged", label: "Merged", element: <MergedGraph2 /> },
+          { key: "goals", label: "Sales goals", element: <SalesGoals2 /> },
+        ]}
+      />
+    ),
+  ],
+  forecast: ["Forecast & key dates", () => <ForecastDashboard />],
+  performance: ["Performance: year vs year", () => <PerformanceDashboard />],
 };
 
 const MyReportsPage = () => {
