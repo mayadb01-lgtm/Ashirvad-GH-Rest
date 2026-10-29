@@ -61,6 +61,7 @@ import rasoi from "./controller/rasoi.js";
 import jobs from "./controller/jobs.js";
 import posSync from "./controller/posSync.js";
 import bizGraph from "./controller/bizGraph.js";
+import staffInsights from "./controller/staffInsights.js";
 import dashLock from "./controller/dashLock.js";
 
 // Use routes
@@ -98,6 +99,7 @@ app.use("/api/v1/quick", quickEntry); // mobile/PC quick entry helpers (read-onl
 app.use("/api/v1/staff-accounts", staffAccounts); // owner: staff ka department / band-chalu
 app.use("/api/v1/forecast", forecast); // read-only: aage ka andaza + important dates (sirf owner/admin)
 app.use("/api/v1/dash-lock", dashLock); // dashboard ka alag password (sirf Super Admin)
+app.use("/api/v1/staff-insights", staffInsights); // staff ranking: din-wise hazri (kitchen_staff_days) + advance + salary (padhta)
 app.use("/api/v1/biz", bizGraph); // naye graphs + sales goals (daily read-only, goals alag collection)
 app.use("/api/v1/performance", performance); // read-only: saal vs saal performance (sirf owner/admin)
 app.use("/api/v1/group", group); // read-only: sab hotels ka ek dashboard (summary key se)

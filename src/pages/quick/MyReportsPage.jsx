@@ -36,6 +36,7 @@ import MergedGraph2 from "../../components/biz/MergedGraph2";
 import SalesGoals2 from "../../components/biz/SalesGoals2";
 import ForecastDashboard from "../../components/insights/ForecastDashboard";
 import PerformanceDashboard from "../../components/insights/PerformanceDashboard";
+import StaffInsightsDashboard from "../../components/owner/StaffInsightsDashboard";
 
 const API = import.meta.env.VITE_REACT_APP_SERVER_URL;
 const VIEWS = {
@@ -113,6 +114,7 @@ const VIEWS = {
   ],
   forecast: ["Forecast & key dates", () => <ForecastDashboard />],
   performance: ["Performance: year vs year", () => <PerformanceDashboard />],
+  "staff-insights": ["Staff performance & ranking", () => <StaffInsightsDashboard />],
 };
 
 const MyReportsPage = () => {

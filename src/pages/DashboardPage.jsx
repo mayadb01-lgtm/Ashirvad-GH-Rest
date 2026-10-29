@@ -90,6 +90,7 @@ import OfficeMotiBaadaSalesGoalDashboard from "../components/office/OfficeMotiBa
 // Staff Salary
 import StaffSalaryDashboard from "../components/restaurant/StaffSalaryDashboard";
 import AttendanceImportDashboard from "../components/restaurant/AttendanceImportDashboard";
+import StaffInsightsDashboard from "../components/owner/StaffInsightsDashboard";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import DataImportDashboard from "../components/import/DataImportDashboard";
 import OwnerMonthlyDashboard from "../components/owner/OwnerMonthlyDashboard";
@@ -197,6 +198,7 @@ const FLAT_NAV = [
   { segment: "office-book", title: "Office Book", icon: <LooksOneIcon /> },
   { segment: "office-category", title: "Office Category", icon: <CategoryIcon /> },
   { kind: "header", title: "Staff Salary" },
+  { segment: "staff-performance", title: "Staff performance & ranking", icon: <InsightsIcon /> },
   { segment: "staff-salary", title: "Staff Salary", icon: <BadgeIcon /> },
   { segment: "attendance-import", title: "Attendance machine import", icon: <FingerprintIcon /> },
   { kind: "header", title: "Merged Reports" },
@@ -435,6 +437,7 @@ const DashboardPage = () => {
     { path: "office-book", element: <OfficeBookDashboard /> },
     { path: "office-category", element: <OfficeCategoryDashboard /> },
     { path: "staff-salary", element: <StaffSalaryDashboard /> },
+    { path: "staff-performance", element: <StaffInsightsDashboard /> },
     { path: "attendance-import", element: <AttendanceImportDashboard /> },
     { path: "merged-graph", element: <TabbedPage title="Merged graph" accent="#0F172A" tabs={[{ key: "new", label: "New graph", element: <MergedGraph2 /> }, { key: "classic", label: "Classic", element: <OfficeMergedGraph /> }]} /> },
     { path: "merged-reports", element: <OfficeMerged /> },

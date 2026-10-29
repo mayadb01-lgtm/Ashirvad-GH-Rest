@@ -260,6 +260,7 @@ export const REPORTS = {
     ],
   },
   graphs: { label: "Business graphs (GH / Restaurant / Merged) & sales goals", rules: [R("GET", /^\/api\/v1\/biz\/daily$/, { clamp: "qymd" }), R("GET", /^\/api\/v1\/biz\/goals$/)] },
+  "staff-insights": { label: "Staff performance & attendance ranking (needs report data: No limit)", rules: [R("GET", /^\/api\/v1\/staff-insights$/, { fullOnly: true })] },
   forecast: { label: "Forecast & key dates (needs report data: No limit)", rules: [R("GET", /^\/api\/v1\/forecast$/, { fullOnly: true })] },
   performance: { label: "Performance: year vs year (needs report data: No limit)", rules: [R("GET", /^\/api\/v1\/performance$/, { fullOnly: true }), R("GET", /^\/api\/v1\/performance\/past-status$/, { fullOnly: true })] },
   // Rasoi Board: Manager ko apne aap; baaki staff (head cook, store …) ko Super Admin tick kare
