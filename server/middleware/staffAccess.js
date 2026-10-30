@@ -93,6 +93,7 @@ const RULES = {
     R("GET", /^\/api\/v1\/stay\/dues\/\d+\/[^/]+\/[^/]+$/),
     // Room shift / swap (wajah zaroori) aur bill merge
     R("POST", /^\/api\/v1\/stay\/move$/, { dateBody: "date" }),
+    R("POST", /^\/api\/v1\/stay\/fix-shift$/, { dateBody: "date" }),
     R("POST", /^\/api\/v1\/stay\/group$/, { dateBody: "date" }),
     R("PUT", /^\/api\/v1\/stay\/group\/[a-f0-9]{24}\/close$/),
     // Advance booking (advance hamesha aaj ki date se; cancel sirf owner)

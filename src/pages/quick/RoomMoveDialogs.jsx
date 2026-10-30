@@ -8,16 +8,16 @@ import { API, EditorDialog, Q, apiError } from "./shared";
 const REASONS = ["Guest request", "AC / maintenance issue", "Upgrade", "Noise / cleanliness complaint", "Family wants rooms together"];
 
 /* ---------- Shift / Swap ---------- */
-export const RoomMoveDialog = ({ open, onClose, date, period, fromRoom, guest, rooms = [], occupant, onDone }) => {
+export const RoomMoveDialog = ({ open, onClose, date, period, fromRoom, guest, rooms = [], occupant, onDone, presetTo = "", presetReason = "" }) => {
   const [toRoom, setToRoom] = useState("");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     if (open) {
-      setToRoom("");
-      setReason("");
+      setToRoom(presetTo ? Number(presetTo) : "");
+      setReason(presetReason || "");
     }
-  }, [open]);
+  }, [open, presetTo, presetReason]);
   const target = toRoom ? occupant(Number(toRoom)) : null;
   const swap = !!target;
 
@@ -74,7 +74,7 @@ export const RoomMoveDialog = ({ open, onClose, date, period, fromRoom, guest, r
             {swap
               ? `Swap: ${guest?.fullname || "this guest"} goes to Room ${toRoom}, and ${target.fullname || "that guest"} comes to Room ${fromRoom}.`
               : `Shift: ${guest?.fullname || "this guest"} moves to Room ${toRoom}. Room ${fromRoom} becomes vacant (dirty).`}{" "}
-            Today&apos;s rent, food/extra charges and registration move with the guest. Earlier days stay in the old room.
+            Today&apos;s rent, food/extra charges and registration move with the guest. Earlier days&apos; rent stays in the old room, and its unpaid food/extra bills show in the new room and are included at check-out.
           </Alert>
         )}
         <Box>

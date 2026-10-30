@@ -44,6 +44,7 @@ const Row = ({ c, isAdmin, onChanged }) => {
           </Typography>
           <Typography variant="caption" color={Q.muted} noWrap component="div">
             {c.kind === "food" ? `Restaurant · ${c.restDate || c.date}` : `GH · ${c.enteredBy || ""}`}
+            {c.fromRoom ? ` · from Room ${c.fromRoom}` : ""}
             {c.guestName ? ` · ${c.guestName}` : ""}
           </Typography>
         </Box>

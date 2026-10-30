@@ -13,6 +13,7 @@ import RoomCharge from "../model/roomCharge.js";
 import GuestRegister from "../model/guestRegister.js";
 import { RoomMove, RoomGroup } from "../model/roomMove.js";
 import GhLog from "../model/ghLog.js";
+import { chainCharges } from "../utils/stayChain.js";
 import { allowedStaffDates, isAdminLike, dateOk as staffDateOk } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
@@ -101,9 +102,9 @@ stayRouter.get("/day/:date", async (req, res) => {
     stays.forEach((s) => {
       const diff = d.diff(D(s.startDate), "day");
       if (s.checkoutDate === date) checkouts.push({ _id: s._id, roomNo: s.roomNo, period: s.checkoutPeriod || s.period, time: s.checkoutTime, guest: s.guest.fullname, startDate: s.startDate, billed: diff === 0 || afterCutoff(s.checkoutTime) });
-      if (diff === 0) started.push({ _id: s._id, roomNo: s.roomNo, period: s.period, nights: s.nights, status: s.status, bookingId: s.bookingId, checkoutDate: s.checkoutDate, checkoutTime: s.checkoutTime, guest: s.guest });
+      if (diff === 0) started.push({ _id: s._id, roomNo: s.roomNo, period: s.period, nights: s.nights, status: s.status, bookingId: s.bookingId, checkoutDate: s.checkoutDate, checkoutTime: s.checkoutTime, guest: s.guest, shiftedFrom: s.shiftedFrom?.roomNo ? s.shiftedFrom : undefined });
       if (diff < 1) return;
-      const item = { _id: s._id, roomNo: s.roomNo, dayNo: diff + 1, startDate: s.startDate, guest: s.guest, bookingId: s.bookingId, dueTime: "11:00 AM" };
+      const item = { _id: s._id, roomNo: s.roomNo, dayNo: diff + 1, startDate: s.startDate, guest: s.guest, bookingId: s.bookingId, dueTime: "11:00 AM", shiftedFrom: s.shiftedFrom?.roomNo ? s.shiftedFrom : undefined };
       if (s.status === "active") {
         if (d.isBefore(D(today), "day") || (date === today && pastCutoffNow)) continuing.push(item);
         else if (date === today) dueOut.push(item);
@@ -234,7 +235,9 @@ stayRouter.post("/checkout", async (req, res) => {
       const dates = [];
       for (let x = D(doc.startDate); !x.isAfter(d, "day"); x = x.add(1, "day")) dates.push(x.format(F));
       const unpaidCh = await RoomCharge.find({ roomNo, date: { $in: dates }, isPaid: false }, { amount: 1 }).lean();
-      const amt = unpaidCh.reduce((t, c) => t + (Number(c.amount) || 0), 0);
+      // room badla tha to pichhle room(s) ke baaki bill bhi isi guest ke
+      const chain = doc._id ? await chainCharges(doc.toObject ? doc.toObject() : doc) : { rows: [] };
+      const amt = [...unpaidCh, ...chain.rows].reduce((t, c) => t + (Number(c.amount) || 0), 0);
       if (amt > 0) return bad(res, `Payment pending: food/extra charges ₹${Math.round(amt)}. Mark them paid before check-out.`);
     }
     doc.status = "out";
@@ -640,7 +643,11 @@ stayRouter.get("/dues/:roomNo/:from/:to", async (req, res) => {
       Booking.find({ status: "checkedin", "checkedIn.roomNo": roomNo, "checkedIn.date": { $in: dates } }, { advances: 1 }).lean(),
     ]);
     const advance = bookings.reduce((t, b) => t + (b.advances || []).reduce((u, a) => u + (Number(a.amount) || 0), 0), 0);
-    res.json({ success: true, data: { charges: charges.map((c) => ({ _id: c._id, date: c.date, label: c.label, kind: c.kind, amount: c.amount })), advance } });
+    // Room badla (shift) tha → pichhle room(s) ke baaki food/extra bill bhi isi checkout mein; kiraya ke liye unke din (prev)
+    const cur = await Stay.findOne({ roomNo, startDate: req.params.from }).sort({ createdAt: -1 }).lean();
+    const chain = cur ? await chainCharges(cur) : { segs: [], rows: [] };
+    const all = [...charges.map((c) => ({ ...c, fromRoom: undefined })), ...chain.rows];
+    res.json({ success: true, data: { charges: all.map((c) => ({ _id: c._id, date: c.date, label: c.label, kind: c.kind, amount: c.amount, ...(c.fromRoom ? { fromRoom: c.fromRoom } : {}) })), advance, prev: chain.segs } });
   } catch (e) {
     fail(res, e);
   }
@@ -741,6 +748,52 @@ stayRouter.post("/move", async (req, res) => {
 
     const log = await RoomMove.create({ date, period, type: swap ? "swap" : "shift", fromRoom: A, toRoom: B, guestFrom: b.guestFrom?.fullname || sa?.guest?.fullname || "", guestTo: swap ? b.guestTo?.fullname || sb?.guest?.fullname || "" : "", reason, by });
     res.json({ success: true, data: { ...log.toObject(), periodInB, periodInA } });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// POST /stay/fix-shift  { date, fromStayId, toStayId, reason }
+// Galti sudhaar: guest shift hua tha lekin naye room mein NAYA check-in ban gaya (purana room bhi chalu gin raha tha).
+// Purana stay aaj "SHIFT" se band, naye stay ko purane se jodo (bill guest ke saath chalega), aaj ke charges naye room mein.
+stayRouter.post("/fix-shift", async (req, res) => {
+  try {
+    const b = req.body || {};
+    const date = b.date;
+    if (!ok(date)) return bad(res, "Invalid date");
+    if (!staffDateOk(req, date)) return res.status(403).json({ success: false, message: "Only today's rooms can be fixed. Ask the owner." });
+    const ids = [b.fromStayId, b.toStayId].map(String);
+    if (!ids.every((x) => /^[a-f0-9]{24}$/.test(x)) || ids[0] === ids[1]) return bad(res, "Choose the two stays");
+    const [from, to] = await Promise.all([Stay.findById(ids[0]), Stay.findById(ids[1])]);
+    if (!from || !to) return bad(res, "Stay not found");
+    if (from.roomNo === to.roomNo) return bad(res, "Both entries are in the same room");
+    if (to.startDate !== date) return bad(res, "The new room must be checked in today");
+    if (!D(from.startDate).isBefore(D(date), "day")) return bad(res, "The old room must be from an earlier day");
+    if (from.status !== "active" && from.checkoutDate !== date) return bad(res, "The old room is already checked out");
+    if (to.shiftedFrom?.stayId) return bad(res, "This room is already linked to an earlier room");
+    const reason = clean(b.reason, 200) || "Shift entered as a new check-in (fixed)";
+    const by = who(req);
+    const A = from.roomNo;
+    const B = to.roomNo;
+    const d = D(date);
+    Object.assign(from, { status: "out", checkoutDate: date, checkoutPeriod: "day", checkoutTime: "SHIFT", nights: Math.max(1, d.diff(D(from.startDate), "day")), updatedBy: by });
+    await from.save();
+    to.shiftedFrom = { roomNo: A, stayId: String(from._id), reason };
+    if (!to.bookingId && from.bookingId) to.bookingId = from.bookingId;
+    to.updatedBy = by;
+    await to.save();
+    // aaj ke food / extra bill jo is guest ke the (purane room par) → naye room
+    const mob = String(from.guest?.mobileNumber || "");
+    const name = String(from.guest?.fullname || "").trim();
+    const or = [mob.length === 10 ? { mobile: mob } : null, name ? { guestName: name } : null].filter(Boolean);
+    const moved = or.length ? await RoomCharge.updateMany({ date, roomNo: A, $or: or }, { $set: { roomNo: B, updatedBy: by } }) : { modifiedCount: 0 };
+    await RoomStatus.findOneAndUpdate({ roomNo: A }, { $set: { dirty: true, since: new Date(), by } }, { upsert: true });
+    await RoomMove.create({ date, period: to.period, type: "shift", fromRoom: A, toRoom: B, guestFrom: name, reason: `Fix: ${reason}`, by });
+    logGh(req, { date, period: "day", roomNo: A, action: "checkout", guest: { ...(from.guest?.toObject?.() || {}), checkOutTime: "SHIFT" }, reason: `Shifted to Room ${B} (fixed)`, stayStatus: "shift" });
+    // aaj ki submit hui GH entry mein purane room ki row pehle se ho to bata do (wo row hatani padegi, warna kiraya do baar)
+    const day = await Entry.findOne({ date }, { entry: 1 }).lean();
+    const oldRow = (day?.entry || []).some((r) => Number(r.roomNo) === A && ["day", "night"].includes(r.period) && String(r.fullname || "").trim().toLowerCase() === name.toLowerCase());
+    res.json({ success: true, data: { fromRoom: A, toRoom: B, chargesMoved: moved.modifiedCount || 0, oldRowSaved: oldRow } });
   } catch (e) {
     fail(res, e);
   }

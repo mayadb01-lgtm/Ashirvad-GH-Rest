@@ -56,9 +56,26 @@ export const computeDues = async ({ roomNo, from, to, unpaid = [], todayRows = n
     const { data } = await axios.get(`${API}/stay/dues/${roomNo}/${from}/${to}`);
     (data.data?.charges || []).forEach((c) => {
       charges += num(c.amount);
-      lines.push(`${c.label} (${c.date}): ₹${Math.round(num(c.amount))}`);
+      lines.push(`${c.label} (${c.date}${c.fromRoom ? `, Room ${c.fromRoom}` : ""}): ₹${Math.round(num(c.amount))}`);
     });
     advance = num(data.data?.advance);
+    // 🔁 Shift se pehle wale room(s) ka baaki kiraya bhi isi guest ka
+    (data.data?.prev || []).forEach((sg) => {
+      const ps = dayjs(sg.from, F, true);
+      const pe = dayjs(sg.to, F, true);
+      unpaid
+        .filter((u) => Number(u.roomNo) === Number(sg.roomNo))
+        .filter((u) => {
+          const x = dayjs(u.createDate || u.date, F, true);
+          return x.isValid() && !x.isBefore(ps, "day") && !x.isAfter(pe, "day");
+        })
+        .filter((u) => !jamaKeys.has(`${u.createDate}|${u.roomNo}|${u.mobileNumber}`))
+        .forEach((u) => {
+          const amt = num(u.rate);
+          rent += amt;
+          lines.push(`Room ${sg.roomNo} rent ${u.createDate}: ₹${Math.round(amt)}`);
+        });
+    });
   } catch {
     /* charges check server pe bhi hota hai */
   }

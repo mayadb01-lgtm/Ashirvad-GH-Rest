@@ -12,6 +12,7 @@ import Booking from "../model/booking.js";
 import GuestRegister from "../model/guestRegister.js";
 import RestDueReceipt from "../model/restDueReceipt.js";
 import { normSplit } from "../utils/payParts.js";
+import { chainCharges } from "../utils/stayChain.js";
 import { allowedStaffDates, isAdminLike, dateOk as staffDateOk } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
@@ -248,13 +249,15 @@ router.get("/day/:date", async (req, res) => {
     const date = req.params.date;
     if (!validDate(date)) return bad(res, "Invalid date");
     const d = dayjs(date, F, true);
-    const [list, stays] = await Promise.all([
+    const [list, stays, shiftedIn] = await Promise.all([
       RoomCharge.find({ date }).sort({ roomNo: 1, createdAt: 1 }).lean(),
       // Room mein abhi ruka guest (ya aaj check-out hua): uske pichhle dinon ke food / extra bill bhi isi room screen par dikhen
       Stay.find(
         { startCreateDate: { $gte: d.subtract(60, "day").startOf("day").toDate(), $lt: d.startOf("day").toDate() }, $or: [{ status: "active" }, { checkoutDate: date }] },
-        { roomNo: 1, startDate: 1 }
+        { roomNo: 1, startDate: 1, checkoutTime: 1, shiftedFrom: 1 }
       ).lean(),
+      // aaj shift hokar aaye guest (naya stay aaj se, purane room se juda)
+      Stay.find({ startDate: date, "shiftedFrom.stayId": { $nin: ["", null] } }, { roomNo: 1, startDate: 1, shiftedFrom: 1 }).lean(),
     ]);
     const earlier = [];
     const seenIds = new Set();
@@ -269,7 +272,17 @@ router.get("/day/:date", async (req, res) => {
         earlier.push({ ...c, period: "", earlier: true });
       });
     }
+    // 🔁 Shift hua guest: pichhle room(s) ke baaki bill naye room ki screen par (bill guest ke saath chalta hai)
+    for (const st of [...shiftedIn, ...stays.filter((x) => x.shiftedFrom?.stayId)]) {
+      const { rows } = await chainCharges(st, { paidOn: date });
+      rows.forEach((c) => {
+        if (seenIds.has(String(c._id))) return;
+        seenIds.add(String(c._id));
+        earlier.push({ ...c, roomNo: st.roomNo, period: "", earlier: true });
+      });
+    }
     for (const st of stays) {
+      if (st.checkoutTime === "SHIFT") continue; // shift ho chuka: iske bill naye room par dikhte hain
       const dates = [];
       for (let x = dayjs(st.startDate, F, true); x.isBefore(d, "day"); x = x.add(1, "day")) dates.push(x.format(F));
       if (!dates.length) continue;

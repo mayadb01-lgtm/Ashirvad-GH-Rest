@@ -11,6 +11,7 @@ import RestEntry from "../model/restEntry.js";
 import OfficeBook from "../model/officeBook.js";
 import StaffSalary from "../model/staffSalary.js";
 import RoomCharge from "../model/roomCharge.js";
+import Stay from "../model/stay.js";
 import AppSetting from "../model/appSetting.js";
 import { computeRestReceivables } from "../utils/restReceivables.js";
 import RestDueReceipt from "../model/restDueReceipt.js";
@@ -449,6 +450,29 @@ router.get("/data-alerts", async (req, res) => {
     }
     if (restNoPos.length) {
       alerts.push({ level: "info", title: `Restaurant: computer amount missing for ${restNoPos.length} days (last 60 days)`, text: restNoPos.map((d) => d.createDate).slice(0, 20).join(", "), hint: "If the computer (POS) total is not filled in, the difference is calculated wrongly." });
+    }
+    // 🔁 Ek guest do room mein (shift ki jagah naya check-in bana?) — pichhle 14 din
+    const sFrom = today.subtract(14, "day");
+    const stays = await Stay.find({ startCreateDate: { $gte: sFrom.subtract(60, "day").startOf("day").toDate(), $lte: today.endOf("day").toDate() } }, { roomNo: 1, startDate: 1, status: 1, checkoutDate: 1, checkoutTime: 1, guest: 1, shiftedFrom: 1 }).lean();
+    const D = (s) => dayjs(s, F, true);
+    const dup = [];
+    stays
+      .filter((b) => !b.shiftedFrom?.stayId && String(b.guest?.mobileNumber || "").length === 10 && !D(b.startDate).isBefore(sFrom, "day"))
+      .forEach((b) => {
+        const day = D(b.startDate);
+        const a = stays.find(
+          (x) =>
+            x._id !== b._id &&
+            x.roomNo !== b.roomNo &&
+            x.guest?.mobileNumber === b.guest.mobileNumber &&
+            D(x.startDate).isBefore(day, "day") &&
+            x.checkoutTime !== "SHIFT" &&
+            (x.status === "active" || (x.checkoutDate && D(x.checkoutDate).isAfter(day, "day")))
+        );
+        if (a) dup.push(`${b.startDate}: ${b.guest.fullname || b.guest.mobileNumber} — Room ${a.roomNo} (since ${a.startDate}) and Room ${b.roomNo}`);
+      });
+    if (dup.length) {
+      alerts.push({ level: "warning", title: `Same guest in two rooms (${dup.length}) — missed shift?`, text: dup.slice(0, 10).join(" · "), hint: "If the guest was shifted, open Guest House entry for that day and press \"It was a shift — fix\". If the guest really took two rooms, ignore this.", link: "gh-dashboard" });
     }
     res.json({ success: true, data: { today: today.format(F), alerts } });
   } catch (e) {

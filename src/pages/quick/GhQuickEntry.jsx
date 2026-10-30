@@ -231,7 +231,7 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkou
 };
 
 /* ---------------- Room editor ---------------- */
-const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClear, locked, isAdmin, charges, onChargesChanged, stay, onCheckout, onUndoCheckout, onNewGuest, advance = 0, checkedIn = false, onMove, onMerge, onUnmerge, group }) => {
+const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClear, locked, isAdmin, charges, onChargesChanged, stay, onCheckout, onUndoCheckout, onNewGuest, advance = 0, checkedIn = false, onMove, onMerge, onUnmerge, group, sameGuest, onShiftHere }) => {
   const [f, setF] = useState(initial);
   const [guest, setGuest] = useState(null);
   const lastLookup = useRef("");
@@ -317,6 +317,29 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
           helperText={mobile && mobile.length !== 10 ? `${mobile.length}/10 digits` : " "}
           error={!!mobile && mobile.length !== 10}
         />
+        {/* 🔁 Wahi guest kisi aur room mein ruka hai → naya check-in nahi, shift karo (bill saath chalega) */}
+        {(() => {
+          const other = !checkedIn && !locked && mobile.length === 10 && sameGuest ? sameGuest(mobile, room.roomNumber) : null;
+          if (!other) return null;
+          return (
+            <Alert severity="warning" sx={{ mt: -1.5 }}>
+              <b>
+                {other.row.fullname || "This guest"} is already in Room {other.roomNo}
+                {other.row._stayDay ? ` (Day ${other.row._stayDay}, since ${other.row._stayStart})` : ""}.
+              </b>
+              <br />
+              Is the guest moving to Room {room.roomNumber}? Then don&apos;t make a new check-in — shift, so the old room closes and the full bill comes along.
+              <Stack direction="row" spacing={1} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
+                <Button size="small" variant="contained" color="warning" onClick={() => onShiftHere?.(other)} sx={{ fontWeight: 800 }}>
+                  ⇄ Yes, shift from Room {other.roomNo}
+                </Button>
+                <Typography variant="caption" color={Q.muted} sx={{ alignSelf: "center" }}>
+                  Taking an extra room too? Just continue below.
+                </Typography>
+              </Stack>
+            </Alert>
+          );
+        })()}
         {guest?.found && (
           <Alert severity={guest.pendingAmount > 0 ? "warning" : "success"} sx={{ mt: -1.5 }}>
             <b>Returning guest: {guest.fullname}</b>
@@ -753,6 +776,52 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
   const [moveDlg, setMoveDlg] = useState(null); // { fromRoom, period, guest }
   const [mergeDlg, setMergeDlg] = useState(null); // { mainRoom }
   const groupOf = (roomNo) => (stayInfo?.groups || []).find((g) => g.mainRoom === roomNo || (g.rooms || []).includes(roomNo));
+  // 🔁 Wahi mobile kisi aur room mein aaj (draft mein) — naye check-in par chetavni
+  const sameGuestElsewhere = (mobile, roomNo) => {
+    for (const [k, r] of Object.entries(draft.rooms || {})) {
+      const [pk, rn] = k.split("|");
+      if (Number(rn) === Number(roomNo) || !r || !isTouched(r) || digits(r.mobileNumber) !== mobile) continue;
+      if (checkoutOf(pk, Number(rn))) continue;
+      return { roomNo: Number(rn), period: pk, row: r };
+    }
+    return null;
+  };
+  // 🔁 Galti: shift ki jagah naya check-in (guest do room mein). Purana stay (pichhle din se) + naya stay (aaj) — same mobile
+  const dupPairs = useMemo(() => {
+    if (!stayInfo?._ok) return [];
+    const okd = new Set(draft._dupOk || []);
+    const olds = [...(stayInfo.continuing || []).filter((c) => !c.checkedOut), ...(stayInfo.dueOut || [])];
+    const out = [];
+    (stayInfo.started || [])
+      .filter((s) => s.status === "active" && !s.shiftedFrom && digits(s.guest?.mobileNumber).length === 10)
+      .forEach((s) => {
+        const o = olds.find((x) => x.roomNo !== s.roomNo && digits(x.guest?.mobileNumber) === digits(s.guest.mobileNumber));
+        if (o && !okd.has(`${o._id}|${s._id}`)) out.push({ old: o, neu: s });
+      });
+    return out;
+  }, [stayInfo, draft._dupOk]);
+  const [fixing, setFixing] = useState("");
+  const fixShift = async ({ old, neu }) => {
+    setFixing(String(neu._id));
+    try {
+      const { data } = await axios.post(`${API}/stay/fix-shift`, { date, fromStayId: old._id, toStayId: neu._id, reason: "Shift was entered as a new check-in" });
+      setDraft((d) => {
+        const next = { ...d.rooms };
+        Object.entries(next).forEach(([k, r]) => {
+          if (r && String(r._stayId || "") === String(old._id)) delete next[k];
+        });
+        return { ...d, rooms: next, _dismissed: [...(d._dismissed || []), old._id] };
+      });
+      toast.success(`Fixed: ${old.guest?.fullname || "Guest"} shifted Room ${data.data.fromRoom} → ${data.data.toRoom}. Old bills now show in Room ${data.data.toRoom}.`, { duration: 6000 });
+      if (data.data.oldRowSaved) toast(`Room ${data.data.fromRoom} already has a saved row for today — open Room ${data.data.fromRoom} and press Remove, so rent is not counted twice.`, { icon: "⚠️", duration: 9000 });
+      loadStay();
+      loadCharges();
+    } catch (e) {
+      toast.error(apiError(e));
+    } finally {
+      setFixing("");
+    }
+  };
   const rowOfRoom = (roomNo) => {
     for (const pk of ["day", "extraDay", "night", "extraNight"]) {
       const r = draft.rooms[keyOf(pk, roomNo)];
@@ -1285,6 +1354,23 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
               {settleBanner.text}
             </Alert>
           )}
+          {dupPairs.map((p) => (
+            <Alert key={`${p.old._id}|${p.neu._id}`} severity="error" sx={{ mb: 1.5 }}>
+              <b>
+                Same guest in two rooms: {p.neu.guest?.fullname || p.neu.guest?.mobileNumber} — Room {p.old.roomNo} (since {p.old.startDate}) and Room {p.neu.roomNo} (new today)
+              </b>
+              <br />
+              Was the guest shifted from Room {p.old.roomNo} to Room {p.neu.roomNo}? Fixing closes Room {p.old.roomNo} today and moves its unpaid food / extra bills to Room {p.neu.roomNo}.
+              <Stack direction="row" spacing={1} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
+                <Button size="small" variant="contained" color="error" disabled={!!fixing || locked} onClick={() => fixShift(p)} sx={{ fontWeight: 800 }}>
+                  {fixing === String(p.neu._id) ? "Fixing…" : `⇄ It was a shift ${p.old.roomNo} → ${p.neu.roomNo} — fix`}
+                </Button>
+                <Button size="small" onClick={() => setDraft((d) => ({ ...d, _dupOk: [...(d._dupOk || []), `${p.old._id}|${p.neu._id}`] }))}>
+                  No, guest has both rooms
+                </Button>
+              </Stack>
+            </Alert>
+          ))}
           {unsettled.length > 0 && (
             <Paper variant="outlined" sx={{ p: 1.5, mb: 1.5, borderRadius: 3, borderColor: "#FCD34D", bgcolor: "#FFFBEB" }}>
               <Typography fontWeight={800}>⏰ Checkout due today · {unsettled.length} room{unsettled.length > 1 ? "s" : ""}</Typography>
@@ -1670,6 +1756,12 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
         }}
         onUnmerge={unmerge}
         group={room ? groupOf(room.roomNumber) : null}
+        sameGuest={sameGuestElsewhere}
+        onShiftHere={(other) => {
+          const to = room.roomNumber;
+          setEditing(null);
+          setMoveDlg({ fromRoom: other.roomNo, period: other.period, guest: guestSnap(other.row), presetTo: to, presetReason: "Guest request" });
+        }}
         onNewGuest={() => {
           const rn = room?.roomNumber;
           setEditing(null);
@@ -1696,6 +1788,8 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
         rooms={rooms || []}
         occupant={(rn) => guestSnap(draft.rooms[keyOf(moveDlg?.period || period, rn)] && isTouched(draft.rooms[keyOf(moveDlg?.period || period, rn)]) ? draft.rooms[keyOf(moveDlg?.period || period, rn)] : null)}
         onDone={afterMove}
+        presetTo={moveDlg?.presetTo || ""}
+        presetReason={moveDlg?.presetReason || ""}
       />
       <MergeBillDialog
         open={!!mergeDlg}
