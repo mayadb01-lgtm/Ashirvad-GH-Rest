@@ -7,7 +7,7 @@ import crypto from "crypto";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import GuestRegister from "../model/guestRegister.js";
-import { isAdminLike } from "../middleware/staffAccess.js";
+import { isAdminLike, isRoomAdmin } from "../middleware/staffAccess.js";
 import Stay from "../model/stay.js";
 
 dayjs.extend(customParseFormat);
@@ -119,7 +119,7 @@ router.post("/one/:date/:period/:roomNo/photo", async (req, res) => {
 
 // Photo dekhna: sirf owner/admin (staff sirf upload kar sakta hai)
 router.get("/photo/:name", (req, res) => {
-  if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can view photos" });
+  if (!isRoomAdmin(req.user)) return res.status(403).json({ success: false, message: "Only the owner or Admin can view photos" });
   const name = path.basename(req.params.name);
   const file = path.join(PHOTO_DIR, name);
   if (!fs.existsSync(file)) return res.status(404).json({ success: false, message: "Photo not found" });
@@ -129,7 +129,7 @@ router.get("/photo/:name", (req, res) => {
 // Photo hatana: sirf owner/admin
 router.delete("/one/:date/:period/:roomNo/photo/:name", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can do this" });
+    if (!isRoomAdmin(req.user)) return res.status(403).json({ success: false, message: "Only the owner or Admin can do this" });
     const k = keyOf(req, res);
     if (!k) return;
     const name = path.basename(req.params.name);
@@ -164,7 +164,7 @@ const rangeQuery = (req, res) => {
 
 router.get("/range/:start/:end", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can do this" });
+    if (!isRoomAdmin(req.user)) return res.status(403).json({ success: false, message: "Only the owner or Admin can do this" });
     const q = rangeQuery(req, res);
     if (!q) return;
     const list = await GuestRegister.find(q).sort({ entryCreateDate: 1, roomNo: 1 }).lean();
@@ -176,7 +176,7 @@ router.get("/range/:start/:end", async (req, res) => {
 
 router.get("/csv/:start/:end", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can do this" });
+    if (!isRoomAdmin(req.user)) return res.status(403).json({ success: false, message: "Only the owner or Admin can do this" });
     const q = rangeQuery(req, res);
     if (!q) return;
     const list = await GuestRegister.find(q).sort({ entryCreateDate: 1, roomNo: 1 }).lean();

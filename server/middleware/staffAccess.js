@@ -31,6 +31,8 @@ export const twoDayWindow = () => {
 
 export const isAdminLike = (user) =>
   !!user && (user.constructor?.modelName === "Admin" || user.role === "Admin" || user.isSuperUser === true);
+// ⭐ Rooms ke kaam (entry hatana / badalna, booking cancel, room block, registration, invoice cancel): malik + malik ka banaya "Admin" staff
+export const isRoomAdmin = (user) => isAdminLike(user) || (!!user && user.isEntryAdmin === true);
 
 // [method, path regex, options]
 //   dateParam: regex group number jisme date hai
@@ -51,6 +53,21 @@ const LISTS = {
   officeCats: R("GET", /^\/api\/v1\/officeBook\/get-categories$/),
 };
 const dayStatus = R("GET", /^\/api\/v1\/quick\/day-status\/([^/]+)$/, { dateParam: 1 });
+// ⭐ Sirf "Admin" staff (malik ne banaya) ke liye rooms ke extra raaste (controller bhi isRoomAdmin se check karta hai)
+const ROOM_ADMIN = [
+  R("PUT", /^\/api\/v1\/booking\/[a-f0-9]{24}\/cancel$/),
+  R("GET", /^\/api\/v1\/booking\/range\/[^/]+\/[^/]+$/),
+  R("POST", /^\/api\/v1\/stay\/block$/),
+  R("DELETE", /^\/api\/v1\/stay\/block\/[a-f0-9]{24}$/),
+  R("PUT", /^\/api\/v1\/stay\/block\/[a-f0-9]{24}$/),
+  R("GET", /^\/api\/v1\/room-charges\/range\/[^/]+\/[^/]+$/),
+  R("GET", /^\/api\/v1\/guest-register\/photo\/[A-Za-z0-9._-]+$/),
+  R("DELETE", /^\/api\/v1\/guest-register\/one\/[^/]+\/[A-Za-z]+\/\d+\/photo\/[A-Za-z0-9._-]+$/),
+  R("GET", /^\/api\/v1\/guest-register\/range\/[^/]+\/[^/]+$/),
+  R("GET", /^\/api\/v1\/guest-register\/csv\/[^/]+\/[^/]+$/),
+  R("PUT", /^\/api\/v1\/invoice\/cancel\/[a-f0-9]{24}$/),
+  R("GET", /^\/api\/v1\/invoice\/list\/[^/]+\/[^/]+$/),
+];
 
 const RULES = {
   common: [R("GET", /^\/api\/v1\/user\/getuser$/), R("GET", /^\/api\/v1\/quick\/me$/)],
@@ -424,6 +441,7 @@ export const staffGuard = async (req, res, next) => {
   const moduleRuleHit = acc.modules.flatMap((m) => RULES[m] || []).some((r) => r.method === method && r.re.test(path));
   if (reportHit && !moduleRuleHit) return deny(res, "This report is not allowed for you. Ask the Super Admin.");
 
+  if (acc.entryAdmin && ROOM_ADMIN.some((r) => r.method === method && r.re.test(path))) return next();
   if (!acc.modules.length) {
     return deny(res, "You do not have access to any business yet. Ask the owner to set your access.");
   }

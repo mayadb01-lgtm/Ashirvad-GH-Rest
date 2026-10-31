@@ -281,7 +281,7 @@ const QuickEntryPage = () => {
 
       {/* Body */}
       <Box sx={{ maxWidth: 1280, mx: "auto", px: { xs: 1.5, md: 3 }, py: 2 }}>
-        {mod.key === "gh" && <GhQuickEntry key={`gh-${date}`} date={date} isAdmin={auth.isAdmin} canEdit={auth.isAdmin || !!auth.canEdit} />}
+        {mod.key === "gh" && <GhQuickEntry key={`gh-${date}`} date={date} isAdmin={auth.isAdmin || !!auth.entryAdmin} canEdit={auth.isAdmin || !!auth.entryAdmin || !!auth.canEdit} />}
         {mod.key === "rest" && <RestQuickEntry key={`rest-${date}`} date={date} isAdmin={auth.isAdmin} canEdit={auth.isAdmin || !!auth.canEdit} />}
         {mod.key === "office" && <OfficeQuickEntry key={`office-${date}`} date={date} isAdmin={auth.isAdmin} canEdit={auth.isAdmin || !!auth.canEdit} />}
         {mod.key === "banquet" && <BanquetQuickEntry isAdmin={auth.isAdmin} />}

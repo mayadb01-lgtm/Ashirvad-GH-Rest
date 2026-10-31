@@ -13,7 +13,7 @@ import GuestRegister from "../model/guestRegister.js";
 import RestDueReceipt from "../model/restDueReceipt.js";
 import { normSplit } from "../utils/payParts.js";
 import { chainCharges } from "../utils/stayChain.js";
-import { allowedStaffDates, isAdminLike, dateOk as staffDateOk } from "../middleware/staffAccess.js";
+import { allowedStaffDates, isAdminLike, isRoomAdmin, dateOk as staffDateOk } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -349,7 +349,7 @@ router.delete("/extra/:id", async (req, res) => {
     if (!doc) return res.status(404).json({ success: false, message: "Not found" });
     if (doc.source !== "gh") return bad(res, "Remove the food bill from the restaurant entry");
     if (!canTouch(req, doc)) return res.status(403).json({ success: false, message: "Staff can only edit today's entries." });
-    if (doc.isPaid && !isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can remove a paid charge" });
+    if (doc.isPaid && !isRoomAdmin(req.user)) return res.status(403).json({ success: false, message: "Only the owner or Admin can remove a paid charge" });
     await doc.deleteOne();
     res.json({ success: true });
   } catch (e) {
@@ -366,7 +366,7 @@ router.put("/paid/:id", async (req, res) => {
     // Wasooli (paid mark karna) pichhle dinon ke bill ki bhi ho sakti hai — guest agle din check-out karta hai. Wapas unpaid sirf owner.
     const recent = dayjs(doc.date, F, true).isAfter(dayjs().subtract(61, "day"));
     if (!canTouch(req, doc) && !(isPaid && !doc.isPaid && recent)) return res.status(403).json({ success: false, message: "Staff can only edit today's entries." });
-    if (!isPaid && doc.isPaid && !isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can undo a paid charge" });
+    if (!isPaid && doc.isPaid && !isRoomAdmin(req.user)) return res.status(403).json({ success: false, message: "Only the owner or Admin can undo a paid charge" });
     let split = [];
     if (isPaid && Array.isArray(req.body?.paidSplit) && req.body.paidSplit.length) {
       const sp = normSplit(req.body.paidSplit, doc.amount, modesFor(doc));
@@ -394,7 +394,7 @@ router.put("/paid/:id", async (req, res) => {
 // GET /range/:start/:end → owner list (baaki food bills, extra charges)
 router.get("/range/:start/:end", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can do this" });
+    if (!isRoomAdmin(req.user)) return res.status(403).json({ success: false, message: "Only the owner or Admin can do this" });
     const s = dayjs(req.params.start, F, true);
     const e = dayjs(req.params.end, F, true);
     if (!s.isValid() || !e.isValid() || e.isBefore(s)) return bad(res, "Invalid date range");

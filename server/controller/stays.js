@@ -14,7 +14,7 @@ import GuestRegister from "../model/guestRegister.js";
 import { RoomMove, RoomGroup } from "../model/roomMove.js";
 import GhLog from "../model/ghLog.js";
 import { chainCharges } from "../utils/stayChain.js";
-import { allowedStaffDates, isAdminLike, dateOk as staffDateOk } from "../middleware/staffAccess.js";
+import { allowedStaffDates, isAdminLike, isRoomAdmin, dateOk as staffDateOk } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
 export const stayRouter = Router();
@@ -163,7 +163,7 @@ stayRouter.post("/remove", async (req, res) => {
     const row = b.row || {};
     const stay = b.stayId && /^[a-f0-9]{24}$/.test(String(b.stayId)) ? await Stay.findOne({ _id: b.stayId, roomNo }) : await Stay.findOne({ startDate: b.date, period: b.period, roomNo });
     // purane din se ruka guest (continue) sirf owner hata sakta hai
-    if (stay && stay.startDate !== b.date && !isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can remove a continuing stay" });
+    if (stay && stay.startDate !== b.date && !isRoomAdmin(req.user)) return res.status(403).json({ success: false, message: "Only the owner or Admin can remove a continuing stay" });
     const guest = { ...(stay?.guest?.toObject?.() || stay?.guest || {}), ...cleanGuest({ ...(stay?.guest || {}), ...row }), modeOfPayment: clean(row.modeOfPayment, 10) };
     await logGh(req, { date: b.date, period: b.period, roomNo, action: "remove", guest, reason, stayStatus: stay ? stay.status : "no-record" });
     if (stay && stay.startDate !== b.date && stay.status === "active") {
@@ -246,7 +246,7 @@ stayRouter.post("/checkout", async (req, res) => {
     // Staff ke liye time server ka (India time); owner galti sudhaarne ke liye time de sakta hai
     // Aaj ka check-out: abhi ka time. Pichhle din ka (raat 12 ke baad settle window / owner ka sudhaar): guest us din poora ruka → 11:59 PM
     const pastDay = D(b.date).isBefore(D(todayIst()), "day");
-    doc.checkoutTime = (isAdminLike(req.user) && clean(b.time, 10)) || (pastDay ? "11:59 PM" : nowIst().format("hh:mm A"));
+    doc.checkoutTime = (isRoomAdmin(req.user) && clean(b.time, 10)) || (pastDay ? "11:59 PM" : nowIst().format("hh:mm A"));
     const billed = diff === 0 || afterCutoff(doc.checkoutTime);
     doc.nights = Math.max(1, diff + (diff >= 1 && billed ? 1 : 0)); // kitne din gine gaye
     doc.updatedBy = who(req);
@@ -279,7 +279,7 @@ stayRouter.put("/undo-checkout/:id", async (req, res) => {
 // PUT /stay/extend/:id  { nights } → aur din rukenge
 stayRouter.put("/extend/:id", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can change the stay count" });
+    if (!isRoomAdmin(req.user)) return res.status(403).json({ success: false, message: "Only the owner or Admin can change the stay count" });
     const doc = await Stay.findById(req.params.id);
     if (!doc) return res.status(404).json({ success: false, message: "Not found" });
     const nights = Math.min(60, Math.max(1, Math.round(Number(req.body?.nights) || 0)));
@@ -412,7 +412,7 @@ bookingRouter.get("/for-room/:date/:roomNo", async (req, res) => {
 // PUT /booking/:id/cancel  { reason } → sirf owner
 bookingRouter.put("/:id([a-f0-9]{24})/cancel", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can cancel a booking" });
+    if (!isRoomAdmin(req.user)) return res.status(403).json({ success: false, message: "Only the owner or Admin can cancel a booking" });
     const reason = clean(req.body?.reason, 200);
     if (!reason) return bad(res, "Enter a reason (also note whether the advance was refunded)");
     const doc = await Booking.findById(req.params.id);
@@ -428,7 +428,7 @@ bookingRouter.put("/:id([a-f0-9]{24})/cancel", async (req, res) => {
 // GET /booking/range/:start/:end → owner (check-in date ke hisaab se)
 bookingRouter.get("/range/:start/:end", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can do this" });
+    if (!isRoomAdmin(req.user)) return res.status(403).json({ success: false, message: "Only the owner or Admin can do this" });
     const s = D(req.params.start);
     const e = D(req.params.end);
     if (!s.isValid() || !e.isValid()) return bad(res, "Invalid date");
@@ -451,7 +451,7 @@ stayRouter.get("/calendar/:start/:days", async (req, res) => {
     const days = Math.min(31, Math.max(1, Number(req.params.days) || 14));
     const E = S.add(days - 1, "day");
     const today = D(todayIst());
-    const admin = isAdminLike(req.user);
+    const admin = isRoomAdmin(req.user);
     // Staff: kal se aage hi (purane guest ki jaankari nahi)
     if (!admin && S.isBefore(today.subtract(1, "day"), "day")) return res.status(403).json({ success: false, message: "Staff can view the calendar from yesterday onwards only" });
 
@@ -560,7 +560,7 @@ stayRouter.get("/calendar/:start/:days", async (req, res) => {
 // POST /stay/block  { roomNo, from, to, reason } → sirf owner
 stayRouter.post("/block", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can block rooms" });
+    if (!isRoomAdmin(req.user)) return res.status(403).json({ success: false, message: "Only the owner or Admin can block rooms" });
     const b = req.body || {};
     const roomNo = Number(b.roomNo) || 0;
     if (!roomNo || !ok(b.from) || !ok(b.to) || D(b.to).isBefore(D(b.from))) return bad(res, "Room and a valid date range are required");
@@ -574,7 +574,7 @@ stayRouter.post("/block", async (req, res) => {
 // DELETE /stay/block/:id → sirf owner
 stayRouter.delete("/block/:id", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can unblock rooms" });
+    if (!isRoomAdmin(req.user)) return res.status(403).json({ success: false, message: "Only the owner or Admin can unblock rooms" });
     await RoomBlock.deleteOne({ _id: req.params.id });
     res.json({ success: true });
   } catch (e) {
@@ -615,7 +615,7 @@ stayRouter.put("/expected/:id", async (req, res) => {
 // PUT /stay/block/:id  { to } → block badhao / ghatao (sirf owner)
 stayRouter.put("/block/:id", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can change room blocks" });
+    if (!isRoomAdmin(req.user)) return res.status(403).json({ success: false, message: "Only the owner or Admin can change room blocks" });
     const doc = await RoomBlock.findById(req.params.id);
     if (!doc) return res.status(404).json({ success: false, message: "Not found" });
     const to = String(req.body?.to || "");

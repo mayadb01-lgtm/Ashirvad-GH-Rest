@@ -10,7 +10,7 @@ import Room from "../model/room.js";
 import RoomCharge from "../model/roomCharge.js";
 import GuestRegister from "../model/guestRegister.js";
 import { RoomGroup } from "../model/roomMove.js";
-import { allowedStaffDates, isAdminLike, dateOk as staffDateOk } from "../middleware/staffAccess.js";
+import { allowedStaffDates, isAdminLike, isRoomAdmin, dateOk as staffDateOk } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -228,7 +228,7 @@ router.get("/by-room/:date/:roomNo", async (req, res) => {
 // PUT /cancel/:id (sirf owner)
 router.put("/cancel/:id", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can cancel an invoice" });
+    if (!isRoomAdmin(req.user)) return res.status(403).json({ success: false, message: "Only the owner or Admin can cancel an invoice" });
     const reason = clean(req.body?.reason, 200);
     if (!reason) return bad(res, "Enter a reason for cancelling");
     const inv = await Invoice.findById(req.params.id);
@@ -245,7 +245,7 @@ router.put("/cancel/:id", async (req, res) => {
 // GET /list/:start/:end → owner register (dono series)
 router.get("/list/:start/:end", async (req, res) => {
   try {
-    if (!isAdminLike(req.user)) return res.status(403).json({ success: false, message: "Only the owner can do this" });
+    if (!isRoomAdmin(req.user)) return res.status(403).json({ success: false, message: "Only the owner or Admin can do this" });
     const s = dayjs(req.params.start, F, true);
     const e = dayjs(req.params.end, F, true);
     if (!s.isValid() || !e.isValid() || e.isBefore(s)) return bad(res, "Invalid date range");
