@@ -1404,7 +1404,7 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
                 </Button>
               }
             >
-              Guest registration required now: Room {regBlock.map((u) => u.roomNo).join(", ")}
+              Guest registration pending: Room {regBlock.map((u) => u.roomNo).join(", ")} — please fill it now. (You can still submit the day; the owner sees pending registrations.)
             </Alert>
           )}
           <Box sx={{ mb: 1.5 }}>
@@ -1711,13 +1711,13 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
               : unsettled.length
               ? { text: `Settle rooms: ${unsettled.map((u) => u.roomNo).slice(0, 4).join(", ")}${unsettled.length > 4 ? "…" : ""}`, color: Q.bad }
               : regBlock.length
-              ? { text: `Guest registration pending: ${regBlock.map((u) => u.roomNo).slice(0, 4).join(", ")}`, color: Q.bad }
+              ? { text: `Guest registration pending: ${regBlock.map((u) => u.roomNo).slice(0, 4).join(", ")} — please fill (submit allowed)`, color: Q.warn || "#B45309" }
               : null
           }
           buttonText={submitted ? "Update" : "Submit day"}
           color={Q.gh}
           busy={busy}
-          disabled={summary.incomplete.length > 0 || unsettled.length > 0 || regBlock.length > 0 || (summary.filled === 0 && draft.jama.length === 0 && others.length === 0)}
+          disabled={summary.incomplete.length > 0 || unsettled.length > 0 || (summary.filled === 0 && draft.jama.length === 0 && others.length === 0)}
           onClick={() => setConfirm(true)}
         />
       )}

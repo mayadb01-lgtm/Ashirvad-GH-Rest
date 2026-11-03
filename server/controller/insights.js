@@ -12,6 +12,8 @@ import OfficeBook from "../model/officeBook.js";
 import StaffSalary from "../model/staffSalary.js";
 import RoomCharge from "../model/roomCharge.js";
 import Stay from "../model/stay.js";
+import GuestRegister from "../model/guestRegister.js";
+import { REQUIRED as REG_REQUIRED } from "./guestRegister.js";
 import AppSetting from "../model/appSetting.js";
 import { computeRestReceivables } from "../utils/restReceivables.js";
 import RestDueReceipt from "../model/restDueReceipt.js";
@@ -471,6 +473,18 @@ router.get("/data-alerts", async (req, res) => {
         );
         if (a) dup.push(`${b.startDate}: ${b.guest.fullname || b.guest.mobileNumber} — Room ${a.roomNo} (since ${a.startDate}) and Room ${b.roomNo}`);
       });
+    // 📄 Guest registration (Govt / Police) baaki — pichhle 7 din (aaj chhod ke). Submit ab nahi rukta, isliye yahan yaad dilana.
+    const rDates = [];
+    for (let x = today.subtract(7, "day"); x.isBefore(today, "day"); x = x.add(1, "day")) rDates.push(x.format(F));
+    const [rStays, regs] = await Promise.all([Stay.find({ startDate: { $in: rDates } }, { startDate: 1, period: 1, roomNo: 1, guest: 1, shiftedFrom: 1 }).lean(), GuestRegister.find({ date: { $in: rDates } }).lean()]);
+    const regMiss = rStays.filter((s) => {
+      if (s.shiftedFrom?.roomNo) return false;
+      const r = regs.find((x) => x.date === s.startDate && x.period === s.period && x.roomNo === s.roomNo);
+      return REG_REQUIRED.some(([k]) => !String(r?.[k] || "").trim());
+    });
+    if (regMiss.length) {
+      alerts.push({ level: "warning", title: `Guest registration pending (${regMiss.length}) — last 7 days`, text: regMiss.slice(0, 15).map((s) => `${s.startDate} Room ${s.roomNo}${s.guest?.fullname ? ` (${s.guest.fullname})` : ""}`).join(" · "), hint: "Govt / Police guest register is incomplete for these check-ins. Ask the GH staff to fill it (Guest House entry → Guest registration).", link: "guest-register" });
+    }
     if (dup.length) {
       alerts.push({ level: "warning", title: `Same guest in two rooms (${dup.length}) — missed shift?`, text: dup.slice(0, 10).join(" · "), hint: "If the guest was shifted, open Guest House entry for that day and press \"It was a shift — fix\". If the guest really took two rooms, ignore this.", link: "gh-dashboard" });
     }
