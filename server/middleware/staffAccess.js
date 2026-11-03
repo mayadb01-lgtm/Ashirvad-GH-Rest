@@ -67,6 +67,7 @@ const ROOM_ADMIN = [
   R("GET", /^\/api\/v1\/guest-register\/csv\/[^/]+\/[^/]+$/),
   R("PUT", /^\/api\/v1\/invoice\/cancel\/[a-f0-9]{24}$/),
   R("GET", /^\/api\/v1\/invoice\/list\/[^/]+\/[^/]+$/),
+  R("GET", /^\/api\/v1\/quick\/gh-missing$/),
 ];
 
 const RULES = {

@@ -13,6 +13,7 @@ import {
   Box,
   Button,
   ButtonBase,
+  Chip,
   Collapse,
   InputAdornment,
   MenuItem,
@@ -497,7 +498,7 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
 };
 
 /* ---------------- Main ---------------- */
-const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
+const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
   const editor = isAdmin || canEdit; // submit ke baad badal sakta hai? (owner ya jise Super Admin ne "Edit" diya)
   const [rooms, setRooms] = useState(null);
   const [server, setServer] = useState({ loaded: false, entries: [] });
@@ -517,6 +518,15 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
         .catch(() => setRegPending({ yesterday: [], today: [] })),
     [date]
   );
+  // 📅 Owner / Admin: pichhle din jo Submit nahi hue (room bhare the) — click karke kholo
+  const [missingDays, setMissingDays] = useState([]);
+  useEffect(() => {
+    if (!isAdmin) return;
+    axios
+      .get(`${API}/quick/gh-missing`)
+      .then(({ data }) => setMissingDays(data.data || []))
+      .catch(() => setMissingDays([]));
+  }, [isAdmin, date]);
   const loadStay = useCallback(
     () =>
       axios
@@ -1352,6 +1362,21 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false }) => {
           {settleBanner && (
             <Alert severity={settleBanner.tone} sx={{ mb: 1.5 }}>
               {settleBanner.text}
+            </Alert>
+          )}
+          {missingDays.filter((m) => m.date !== date).length > 0 && (
+            <Alert severity="warning" sx={{ mb: 1.5 }}>
+              <b>Guest House not submitted for {missingDays.filter((m) => m.date !== date).length} day(s)</b> — rooms were occupied, but these days are not saved. Their Unpaid rooms will not show in Pending jama until submitted.
+              <Typography variant="caption" component="div" sx={{ mt: 0.5 }}>
+                Tip: open these days on the GH counter PC / phone where they were entered — the filled payments are saved there. Click a date, check payments, then press Submit day.
+              </Typography>
+              <Stack direction="row" spacing={0.75} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
+                {missingDays
+                  .filter((m) => m.date !== date)
+                  .map((m) => (
+                    <Chip key={m.date} size="small" color="warning" variant="outlined" clickable onClick={() => onPickDate?.(m.date)} label={`${dayjs(m.date, DATE_FMT).format("ddd D MMM")} · ${m.rooms} room${m.rooms > 1 ? "s" : ""}`} sx={{ fontWeight: 700 }} />
+                  ))}
+              </Stack>
             </Alert>
           )}
           {dupPairs.map((p) => (
