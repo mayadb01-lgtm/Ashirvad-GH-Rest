@@ -4,6 +4,7 @@ import EntryLock from "../model/entryLock.js";
 import GhDueReceipt, { officeReceivedGhIds } from "../model/ghDueReceipt.js";
 import dayjs from "dayjs";
 import { fixEntrySplits } from "../utils/payParts.js";
+import { clearGhMissing } from "../utils/ghMissing.js";
 // import { isAuthenticated } from "../middleware/auth.js";
 const router = Router();
 const who = (req) => (req.user ? `${req.user.name || req.user.email || ""}${req.user.role === "Admin" ? " (Admin)" : ""}` : "");
@@ -46,6 +47,7 @@ const collectedMsg = (j, office) => `Room ${j.roomNo} (${j.createDate}${j.fullna
 
 // Create a new Entry
 router.post("/create-entry", async (req, res) => {
+  clearGhMissing(); // naya din submit → "chhoote din" ki list dobara bane
   const lockId = `gh:${req.body?.date || ""}`;
   let locked = false;
   try {

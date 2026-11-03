@@ -518,15 +518,14 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
         .catch(() => setRegPending({ yesterday: [], today: [] })),
     [date]
   );
-  // 📅 Owner / Admin: pichhle din jo Submit nahi hue (room bhare the) — click karke kholo
+  // 📅 Pichhle din jo Submit nahi hue (room bhare the) — click karke kholo (staff bhi, sirf yahi din)
   const [missingDays, setMissingDays] = useState([]);
   useEffect(() => {
-    if (!isAdmin) return;
     axios
       .get(`${API}/quick/gh-missing`)
       .then(({ data }) => setMissingDays(data.data || []))
       .catch(() => setMissingDays([]));
-  }, [isAdmin, date]);
+  }, [date]);
   const loadStay = useCallback(
     () =>
       axios

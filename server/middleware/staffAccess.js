@@ -1,4 +1,5 @@
 import UserAccess from "../model/userAccess.js";
+import { ghMissingDays } from "../utils/ghMissing.js";
 // 🔒 Staff privacy rules (server pe lagu, isliye link se seedha kholne pe bhi kaam karta hai)
 //
 // - Admin / Super User: sab kuch (koi badlaav nahi)
@@ -67,7 +68,6 @@ const ROOM_ADMIN = [
   R("GET", /^\/api\/v1\/guest-register\/csv\/[^/]+\/[^/]+$/),
   R("PUT", /^\/api\/v1\/invoice\/cancel\/[a-f0-9]{24}$/),
   R("GET", /^\/api\/v1\/invoice\/list\/[^/]+\/[^/]+$/),
-  R("GET", /^\/api\/v1\/quick\/gh-missing$/),
 ];
 
 const RULES = {
@@ -78,6 +78,7 @@ const RULES = {
     R("POST", /^\/api\/v1\/entry\/create-entry$/, { dateBody: "date" }),
     R("PUT", /^\/api\/v1\/entry\/update-entry\/([^/]+)$/, { dateParam: 1, edit: true }), // submit ke baad badlav (quick + classic)
     R("GET", /^\/api\/v1\/entry\/get-unpaid-entries$/), // Pending jama ke liye
+    R("GET", /^\/api\/v1\/quick\/gh-missing$/), // chhoote hue (submit nahi hue) din
     R("GET", /^\/api\/v1\/quick\/guest\/\d{10}$/), // purana guest
     // Govt guest register (sirf aaj ka; photo dekhna sirf admin)
     R("GET", /^\/api\/v1\/guest-register\/day\/([^/]+)$/, { dateParam: 1 }),
@@ -345,7 +346,8 @@ export const dateOk = (req, d) => {
   const acc = req.access;
   if (!acc) return allowedStaffDates().includes(d);
   if (acc.entryDays === null) return true;
-  return datesBack(acc.entryDays).includes(d);
+  // GH ke chhoote hue din (room bhare the, Submit nahi hua) — staffGuard ne req.extraDates diya
+  return datesBack(acc.entryDays).includes(d) || (req.extraDates || []).includes(d);
 };
 export const anyDateOk = (user) => isAdminLike(user); // purana naam (sirf admin)
 
@@ -452,7 +454,20 @@ export const staffGuard = async (req, res, next) => {
   if (rule.edit && !acc.canEdit) return deny(res, "Already submitted. Only the owner can change it (ask the Super Admin for edit access).");
 
   // Dates: Super Admin ki di hui seema (entryDays). window2: check-in ka din + agla din (guest registration)
-  const base = acc.entryDays === null ? null : datesBack(acc.entryDays);
+  let base = acc.entryDays === null ? null : datesBack(acc.entryDays);
+  // 📅 GH ke chhoote hue din: staff bhi khol ke Submit kar sake (sirf jab tak Submit nahi hota; baaki purane din band)
+  const ghRule = acc.modules.includes("gh") && (RULES.gh.includes(rule) || rule === dayStatus);
+  if (base && ghRule) {
+    try {
+      const extra = (await ghMissingDays()).map((m) => m.date);
+      if (extra.length) {
+        req.extraDates = extra;
+        base = [...new Set([...base, ...extra])];
+      }
+    } catch {
+      /* jaanch na ho paye to purana niyam */
+    }
+  }
   const allowed = base === null ? null : rule.window2 ? [...new Set([...base, ...twoDayWindow()])] : base;
   const tooOld = acc.entryDays ? `You can only view/edit the last ${acc.entryDays} days.` : "Staff can only view/edit today's entries.";
   if (allowed && rule.dateParam) {
