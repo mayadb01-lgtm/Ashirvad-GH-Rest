@@ -499,7 +499,9 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
 
 /* ---------------- Main ---------------- */
 const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
-  const editor = isAdmin || canEdit; // submit ke baad badal sakta hai? (owner ya jise Super Admin ne "Edit" diya)
+  // 🕒 Pichhle 24 ghante mein submit hua din: staff bhi Update kar sake (galti sudhaar)
+  const [recentSubmitted, setRecentSubmitted] = useState([]);
+  const editor = isAdmin || canEdit || recentSubmitted.includes(date); // submit ke baad badal sakta hai? (owner / "Edit" wala / abhi-abhi submit hua din)
   const [rooms, setRooms] = useState(null);
   const [server, setServer] = useState({ loaded: false, entries: [] });
   const [status, setStatus] = useState(null);
@@ -523,7 +525,10 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
   useEffect(() => {
     axios
       .get(`${API}/quick/gh-missing`)
-      .then(({ data }) => setMissingDays(data.data || []))
+      .then(({ data }) => {
+        setMissingDays(data.data || []);
+        setRecentSubmitted(data.recent || []);
+      })
       .catch(() => setMissingDays([]));
   }, [date]);
   const loadStay = useCallback(
@@ -579,7 +584,8 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
       loadRegPending();
     } catch (err) {
       setError(apiError(err));
-      setServer({ loaded: true, entries: [] });
+      // din padha hi nahi gaya (jaise access nahi) → Submit band, warna "already exists" aata
+      setServer({ loaded: true, entries: [], denied: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
@@ -1155,7 +1161,14 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
       seededFor.current = "";
       await load();
     } catch (err) {
-      toast.error(apiError(err));
+      const msg = apiError(err);
+      if (/already exists/i.test(msg)) {
+        // kisi aur ne / pehle hi submit kar diya: wahi din dobara kholo (Update dikhega, draft pe bhara hua data rehta hai)
+        toast("This day is already submitted — opening it. Check and press Update if something needs changing.", { icon: "ℹ️", duration: 7000 });
+        seededFor.current = "";
+        axios.get(`${API}/quick/gh-missing`).then(({ data }) => setRecentSubmitted(data.recent || [])).catch(() => {});
+        await load();
+      } else toast.error(msg);
     } finally {
       submitting.current = false;
       setBusy(false);
@@ -1741,7 +1754,7 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
           buttonText={submitted ? "Update" : "Submit day"}
           color={Q.gh}
           busy={busy}
-          disabled={summary.incomplete.length > 0 || unsettled.length > 0 || (summary.filled === 0 && draft.jama.length === 0 && others.length === 0)}
+          disabled={server.denied || summary.incomplete.length > 0 || unsettled.length > 0 || (summary.filled === 0 && draft.jama.length === 0 && others.length === 0)}
           onClick={() => setConfirm(true)}
         />
       )}

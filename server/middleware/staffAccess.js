@@ -1,5 +1,5 @@
 import UserAccess from "../model/userAccess.js";
-import { ghMissingDays } from "../utils/ghMissing.js";
+import { ghMissingDays, ghRecentlySubmitted } from "../utils/ghMissing.js";
 // 🔒 Staff privacy rules (server pe lagu, isliye link se seedha kholne pe bhi kaam karta hai)
 //
 // - Admin / Super User: sab kuch (koi badlaav nahi)
@@ -451,22 +451,29 @@ export const staffGuard = async (req, res, next) => {
   const rule = acc.modules.flatMap((m) => RULES[m] || []).find((r) => r.method === method && r.re.test(path));
   if (!rule) return deny(res, "This page/report is not available to you.");
   if (rule.classic && !acc.classic) return deny(res, "Classic view is not allowed for you. Ask the Super Admin.");
-  if (rule.edit && !acc.canEdit) return deny(res, "Already submitted. Only the owner can change it (ask the Super Admin for edit access).");
 
   // Dates: Super Admin ki di hui seema (entryDays). window2: check-in ka din + agla din (guest registration)
   let base = acc.entryDays === null ? null : datesBack(acc.entryDays);
-  // 📅 GH ke chhoote hue din: staff bhi khol ke Submit kar sake (sirf jab tak Submit nahi hota; baaki purane din band)
+  // 📅 GH: chhoote hue din (Submit nahi hue) + pichhle 24 ghante mein submit hue din — staff khol ke Submit / Update kar sake
   const ghRule = acc.modules.includes("gh") && (RULES.gh.includes(rule) || rule === dayStatus);
-  if (base && ghRule) {
+  let recent = [];
+  if (ghRule) {
     try {
-      const extra = (await ghMissingDays()).map((m) => m.date);
+      const [miss, rec] = await Promise.all([ghMissingDays(), ghRecentlySubmitted()]);
+      recent = rec;
+      const extra = [...new Set([...miss.map((m) => m.date), ...rec])];
       if (extra.length) {
         req.extraDates = extra;
-        base = [...new Set([...base, ...extra])];
+        if (base) base = [...new Set([...base, ...extra])];
       }
     } catch {
       /* jaanch na ho paye to purana niyam */
     }
+  }
+  if (rule.edit && !acc.canEdit) {
+    // abhi-abhi (24 ghante mein) submit hua GH din: galti sudhaarne ke liye Update chalega
+    const d = rule.dateParam ? decodeURIComponent(path.match(rule.re)[rule.dateParam] || "") : "";
+    if (!(ghRule && d && recent.includes(d))) return deny(res, "Already submitted. Only the owner can change it (ask the Super Admin for edit access).");
   }
   const allowed = base === null ? null : rule.window2 ? [...new Set([...base, ...twoDayWindow()])] : base;
   const tooOld = acc.entryDays ? `You can only view/edit the last ${acc.entryDays} days.` : "Staff can only view/edit today's entries.";

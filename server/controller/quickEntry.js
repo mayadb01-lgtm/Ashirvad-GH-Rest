@@ -6,7 +6,7 @@ import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import Entry from "../model/entry.js";
 import RestEntry from "../model/restEntry.js";
 import OfficeBook from "../model/officeBook.js";
-import { ghMissingDays } from "../utils/ghMissing.js";
+import { ghMissingDays, ghRecentlySubmitted } from "../utils/ghMissing.js";
 import { isAdminLike, effectiveAccess, datesBack, MODULES, REPORTS, rasoiAllowed } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
@@ -97,7 +97,8 @@ router.get("/guest/:mobile", async (req, res) => {
 // GET /quick/gh-missing → pichhle 30 din (aaj chhod ke) jin dino room bhare the lekin GH ka din Submit nahi hua
 router.get("/gh-missing", async (req, res) => {
   try {
-    res.json({ success: true, data: await ghMissingDays({ fresh: true }) });
+    const [data, recent] = await Promise.all([ghMissingDays({ fresh: true }), ghRecentlySubmitted()]);
+    res.json({ success: true, data, recent });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

@@ -8,7 +8,10 @@ import Entry from "../model/entry.js";
 dayjs.extend(customParseFormat);
 const F = "DD-MM-YYYY";
 let cache = { at: 0, data: [] };
-export const clearGhMissing = () => (cache = { at: 0, data: [] });
+export const clearGhMissing = () => {
+  cache = { at: 0, data: [] };
+  recentCache = { at: 0, data: [] };
+};
 
 export const ghMissingDays = async ({ fresh = false } = {}) => {
   if (!fresh && Date.now() - cache.at < 60 * 1000) return cache.data;
@@ -34,4 +37,17 @@ export const ghMissingDays = async ({ fresh = false } = {}) => {
   const data = dates.filter((d) => rooms[d] && !done.has(d)).map((d) => ({ date: d, rooms: rooms[d].size }));
   cache = { at: Date.now(), data };
   return data;
+};
+
+// 🕒 Pichhle 24 ghante mein submit hue GH din (30 din ke andar) — staff unhe khol ke Update kar sake (galti sudhaar)
+let recentCache = { at: 0, data: [] };
+export const ghRecentlySubmitted = async () => {
+  if (Date.now() - recentCache.at < 60 * 1000) return recentCache.data;
+  const today = dayjs(new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10));
+  const since = new Date(Date.now() - 24 * 3600 * 1000);
+  const dates = [];
+  for (let x = today.subtract(31, "day"); !x.isAfter(today, "day"); x = x.add(1, "day")) dates.push(x.format(F));
+  const docs = await Entry.find({ date: { $in: dates }, $or: [{ enteredAt: { $gte: since } }, { createdAt: { $gte: since } }] }, { date: 1 }).lean();
+  recentCache = { at: Date.now(), data: [...new Set(docs.map((d) => d.date))] };
+  return recentCache.data;
 };
