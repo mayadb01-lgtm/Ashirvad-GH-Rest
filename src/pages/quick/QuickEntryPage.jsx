@@ -220,7 +220,22 @@ const QuickEntryPage = () => {
           </Stack>
 
           {/* Date bar: staff ko sirf aaj (privacy), admin ko koi bhi din. Banquet ki apni dates hain — wahan nahi */}
-          {mod.key === "banquet" ? null : staffDates ? (
+          {mod.key === "banquet" ? null : staffDates && !staffDates.some((d) => d.isSame(day, "day")) ? (
+            // 📅 Chhoota hua (submit nahi hua) din khula hai
+            <Stack direction="row" alignItems="center" justifyContent="center" spacing={1.5} sx={{ mt: 1 }}>
+              <Box sx={{ textAlign: "center" }}>
+                <Typography variant="caption" color="#B45309" fontWeight={800} display="block" lineHeight={1.2}>
+                  Missed day — submit it
+                </Typography>
+                <Typography fontWeight={800} fontSize={18} lineHeight={1.3}>
+                  {day.format("ddd D MMM YYYY")}
+                </Typography>
+              </Box>
+              <Button size="small" variant="outlined" onClick={() => setDay(staffDates[0])} sx={{ fontWeight: 700, color: mod.color, borderColor: mod.color }}>
+                Back to today
+              </Button>
+            </Stack>
+          ) : staffDates ? (
             <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mt: 1 }}>
               {staffDates.length > 1 ? (
                 staffDates.map((d) => (
@@ -281,7 +296,7 @@ const QuickEntryPage = () => {
 
       {/* Body */}
       <Box sx={{ maxWidth: 1280, mx: "auto", px: { xs: 1.5, md: 3 }, py: 2 }}>
-        {mod.key === "gh" && <GhQuickEntry key={`gh-${date}`} date={date} isAdmin={auth.isAdmin || !!auth.entryAdmin} canEdit={auth.isAdmin || !!auth.entryAdmin || !!auth.canEdit} onPickDate={(d) => pickDate(dayjs(d, DATE_FMT).format("YYYY-MM-DD"))} />}
+        {mod.key === "gh" && <GhQuickEntry key={`gh-${date}`} date={date} isAdmin={auth.isAdmin || !!auth.entryAdmin} canEdit={auth.isAdmin || !!auth.entryAdmin || !!auth.canEdit} onPickDate={(d) => { const x = dayjs(d, DATE_FMT); if (x.isValid()) setDay(x.startOf("day")); }} />}
         {mod.key === "rest" && <RestQuickEntry key={`rest-${date}`} date={date} isAdmin={auth.isAdmin} canEdit={auth.isAdmin || !!auth.canEdit} />}
         {mod.key === "office" && <OfficeQuickEntry key={`office-${date}`} date={date} isAdmin={auth.isAdmin} canEdit={auth.isAdmin || !!auth.canEdit} />}
         {mod.key === "banquet" && <BanquetQuickEntry isAdmin={auth.isAdmin} />}
