@@ -51,7 +51,7 @@ import {
   cleanMobile,
   inr,
   num,
-  useDraft,
+  useSharedDraft,
 } from "./shared";
 import { chargeModeText, chargeParts, fillSplit, mainMode, splitLabel, splitProblem } from "../../utils/payParts";
 
@@ -556,7 +556,8 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
   const [period, setPeriod] = useState("day");
   const [tab, setTab] = useState("rooms"); // rooms | jama
   const [editing, setEditing] = useState(null); // roomNo
-  const [draft, setDraft, clearDraft] = useDraft(`qe-gh-${date}`, EMPTY);
+  // 🔄 Adhoora din server par bhi save → Jiten / Nirav / owner kisi bhi device par wahi data
+  const [draft, setDraft, clearDraft] = useSharedDraft("gh", date, EMPTY, server.loaded && !server.denied && server.entries.length === 0);
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [jamaPick, setJamaPick] = useState(null);
@@ -1375,6 +1376,12 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
             <Alert severity={settleBanner.tone} sx={{ mb: 1.5 }}>
               {settleBanner.text}
             </Alert>
+          )}
+          {!submitted && draft._by && (
+            <Typography variant="caption" color={Q.muted} component="div" sx={{ mb: 1 }}>
+              🔄 Shared draft (not submitted yet) · last change by {draft._by}
+              {draft._at ? ` at ${dayjs(draft._at).format("D MMM, hh:mm A")}` : ""} — the same data shows on every phone / PC.
+            </Typography>
           )}
           {missingDays.filter((m) => m.date !== date).length > 0 && (
             <Alert severity="warning" sx={{ mb: 1.5 }}>

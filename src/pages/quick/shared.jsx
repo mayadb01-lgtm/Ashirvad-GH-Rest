@@ -1,5 +1,6 @@
 // Quick Entry: chhote shared hisse (PC + mobile dono ke liye)
 import { useCallback, useEffect, useRef, useState } from "react";
+import axios from "axios";
 import {
   Autocomplete,
   Box,
@@ -19,6 +20,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
 import { fillSplit, splitProblem } from "../../utils/payParts";
+import { mergeDraft } from "../../utils/draftMerge";
 
 export const API = import.meta.env.VITE_REACT_APP_SERVER_URL;
 export const DATE_FMT = "DD-MM-YYYY";
@@ -96,6 +98,102 @@ export const useDraft = (key, initial) => {
     }
   }, [key]);
   return [current.value, setValue, clear];
+};
+
+/* 🔄 Shared draft: adhoora (bina Submit) data server par bhi — har phone / PC par wahi dikhe.
+   kind: gh | rest | office. enabled = din abhi Submit nahi hua (submit hua din server ki entry se hi dikhta hai).
+   Jiska badlaav naya (time), wahi rehta hai. Dusre device ka badlaav har 20 sec mein aata hai (agar yahan kuch nahi badla). */
+export const useSharedDraft = (kind, date, initial, enabled) => {
+  const key = `qe-${kind}-${date}`;
+  const [value, setLocal, clearLocal] = useDraft(key, initial);
+  const lastLocal = useRef(0); // is device par aakhri badlaav (ms)
+  const lastSynced = useRef(0); // server se mila / bheja (ms)
+  const timer = useRef(null);
+  const pushRef = useRef(null);
+  const valRef = useRef(value);
+  valRef.current = value;
+  const url = `${API}/quick/draft/${kind}/${date}`;
+
+  // naya din → time reset (local draft ka apna time _at mein)
+  useEffect(() => {
+    lastLocal.current = Number(readStore(key)?._at) || 0;
+    lastSynced.current = 0;
+  }, [key]);
+
+  const pull = useCallback(async () => {
+    try {
+      const { data } = await axios.get(url);
+      const d = data?.data;
+      const local = valRef.current || {};
+      const hasLocal = Object.keys(local.rooms || {}).length > 0 || (local.jama || []).length > 0;
+      if (!d?.draft || !(d.at > 0)) {
+        // server par kuch nahi, is device par bhara hua hai (purana draft) → bhej do taaki baaki devices par dikhe
+        if (hasLocal) pushRef.current?.(local, lastLocal.current || Date.now());
+        return;
+      }
+      if (d.at === lastSynced.current) return; // kuch naya nahi
+      // server ka (doosre device) + is device ka — jodo; bhara hua room kabhi nahi mitta
+      // eslint-disable-next-line no-unused-vars
+      const { _at, _by, ...mine } = local;
+      const merged = hasLocal ? mergeDraft(d.draft, mine, lastLocal.current > d.at) : d.draft;
+      lastSynced.current = d.at;
+      setLocal({ ...merged, _at: Math.max(d.at, lastLocal.current), _by: d.by || "" });
+      if (hasLocal && JSON.stringify(merged) !== JSON.stringify(d.draft)) pushRef.current?.(merged, Math.max(d.at, lastLocal.current) + 1);
+    } catch {
+      /* net nahi / access nahi: local draft chalta rahe */
+    }
+  }, [url, setLocal]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    pull();
+    const t = setInterval(() => {
+      if (Date.now() - lastLocal.current > 15000) pull(); // abhi koi type kar raha ho to beech mein mat badlo
+    }, 20000);
+    return () => clearInterval(t);
+  }, [enabled, pull]);
+
+  const push = useCallback(
+    (v, at) => {
+      clearTimeout(timer.current);
+      timer.current = setTimeout(() => {
+        // eslint-disable-next-line no-unused-vars
+        const { _at, _by, ...draft } = v || {};
+        axios
+          .put(url, { draft, at })
+          .then(({ data }) => {
+            const m = data?.data;
+            lastSynced.current = m?.at || at;
+            // server ne doosre device ka bhara hua bhi joda ho to yahan bhi dikhao (agar beech mein kuch nahi badla)
+            if (m?.draft && Date.now() - lastLocal.current > 1500 && JSON.stringify(m.draft) !== JSON.stringify(draft)) setLocal({ ...m.draft, _at: m.at, _by: m.by || "" });
+          })
+          .catch(() => {});
+      }, 1200);
+    },
+    [url]
+  );
+  pushRef.current = push;
+  useEffect(() => () => clearTimeout(timer.current), [url]);
+
+  const setValue = useCallback(
+    (upd) =>
+      setLocal((s) => {
+        const next = typeof upd === "function" ? upd(s) : upd;
+        if (next === s) return s;
+        const at = Date.now();
+        lastLocal.current = at;
+        const v = { ...next, _at: at };
+        if (enabled) push(v, at);
+        return v;
+      }),
+    [setLocal, push, enabled]
+  );
+  const clear = useCallback(() => {
+    clearLocal();
+    clearTimeout(timer.current);
+    axios.put(url, { clear: true }).catch(() => {});
+  }, [clearLocal, url]);
+  return [value, setValue, clear];
 };
 
 /* Bada number input (mobile pe number keypad khulta hai) */

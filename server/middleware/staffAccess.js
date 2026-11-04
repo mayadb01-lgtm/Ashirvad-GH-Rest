@@ -79,6 +79,8 @@ const RULES = {
     R("PUT", /^\/api\/v1\/entry\/update-entry\/([^/]+)$/, { dateParam: 1, edit: true }), // submit ke baad badlav (quick + classic)
     R("GET", /^\/api\/v1\/entry\/get-unpaid-entries$/), // Pending jama ke liye
     R("GET", /^\/api\/v1\/quick\/gh-missing$/), // chhoote hue (submit nahi hue) din
+    R("GET", /^\/api\/v1\/quick\/draft\/gh\/([^/]+)$/, { dateParam: 1 }), // shared draft (har device par wahi)
+    R("PUT", /^\/api\/v1\/quick\/draft\/gh\/([^/]+)$/, { dateParam: 1 }),
     R("GET", /^\/api\/v1\/quick\/guest\/\d{10}$/), // purana guest
     // Govt guest register (sirf aaj ka; photo dekhna sirf admin)
     R("GET", /^\/api\/v1\/guest-register\/day\/([^/]+)$/, { dateParam: 1 }),

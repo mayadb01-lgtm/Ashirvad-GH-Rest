@@ -1,12 +1,14 @@
 // Quick Entry helpers (READ-ONLY). Login zaroori (security.js gate).
 import { officeReceivedGhIds } from "../model/ghDueReceipt.js";
 import { Router } from "express";
+import mongoose from "mongoose";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import Entry from "../model/entry.js";
 import RestEntry from "../model/restEntry.js";
 import OfficeBook from "../model/officeBook.js";
 import { ghMissingDays, ghRecentlySubmitted } from "../utils/ghMissing.js";
+import { mergeDraft } from "../utils/draftMerge.js";
 import { isAdminLike, effectiveAccess, datesBack, MODULES, REPORTS, rasoiAllowed } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
@@ -94,6 +96,43 @@ router.get("/guest/:mobile", async (req, res) => {
 });
 
 // GET /api/v1/quick/day-status/:date → teeno business: entry hui? kisne, kab?
+// 🔄 Adhoora (Submit se pehle) draft — server par, taaki har device par wahi dikhe. Naya collection "kitchen_drafts".
+const KINDS = ["gh", "rest", "office"];
+const drafts = () => mongoose.connection.db.collection("kitchen_drafts");
+const okDraft = (req) => KINDS.includes(req.params.kind) && dayjs(req.params.date, "DD-MM-YYYY", true).isValid();
+router.get("/draft/:kind/:date", async (req, res) => {
+  try {
+    if (!okDraft(req)) return res.status(400).json({ success: false, message: "Invalid" });
+    const d = await drafts().findOne({ _id: `${req.params.kind}|${req.params.date}` });
+    res.json({ success: true, data: d ? { draft: d.draft, at: d.at, by: d.by } : null });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+router.put("/draft/:kind/:date", async (req, res) => {
+  try {
+    if (!okDraft(req)) return res.status(400).json({ success: false, message: "Invalid" });
+    const _id = `${req.params.kind}|${req.params.date}`;
+    if (req.body?.clear) {
+      await drafts().deleteOne({ _id });
+      return res.json({ success: true });
+    }
+    const at = Number(req.body?.at) || 0;
+    const draft = req.body?.draft;
+    if (!draft || typeof draft !== "object" || !(at > 0)) return res.status(400).json({ success: false, message: "Invalid draft" });
+    if (JSON.stringify(draft).length > 300000) return res.status(400).json({ success: false, message: "Draft too large" });
+    const by = String(req.user?.name || req.user?.email || "").slice(0, 60);
+    // dono device ka data jodo: bhara hua room kabhi nahi mitta, dono bhare hon to naya wala
+    const cur = await drafts().findOne({ _id });
+    const merged = cur?.draft ? mergeDraft(cur.draft, draft, at >= (cur.at || 0)) : draft;
+    const newAt = Math.max(at, cur?.at || 0);
+    await drafts().updateOne({ _id }, { $set: { draft: merged, at: newAt, by, savedAt: new Date() } }, { upsert: true });
+    res.json({ success: true, data: { draft: merged, at: newAt, by } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // GET /quick/gh-missing → pichhle 30 din (aaj chhod ke) jin dino room bhare the lekin GH ka din Submit nahi hua
 router.get("/gh-missing", async (req, res) => {
   try {
