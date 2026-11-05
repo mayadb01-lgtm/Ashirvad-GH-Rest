@@ -35,7 +35,7 @@ import {
 } from "../utils/utils";
 import PendingJamaTable from "../components/PendingJamaTable";
 import ModernLoader, { AccordionSection, PaymentSummary } from "../utils/util";
-import { useMe, staffMinDate } from "../utils/staffMe";
+import { useMe, staffMinDate, useRecentSubmitted } from "../utils/staffMe";
 const PendingJamaGrid = React.lazy(
   () => import("../components/PendingJamaGrid")
 );
@@ -75,6 +75,10 @@ const EntryPage = () => {
   // Staff: Super Admin ki di hui din-seema (server bhi yahi check karta hai)
   const me = useMe();
   const userMinDate = staffMinDate(me, oldMinDate);
+  // 🕒 Pichhle 24 ghante mein submit hue din (staff bhi Update kar sake) — server bhi yahi niyam maanta hai
+  const recentSubmitted = useRecentSubmitted(`${selectedDate}|${entries?.length || 0}`).gh || [];
+  // Submit ho chuka din badalne ka haq: owner / Admin staff / "Edit entries" wala / aaj ka din / 24 ghante ke andar submit hua din
+  const canEditDay = isAdminAuthenticated || !!me?.isAdmin || !!me?.entryAdmin || !!me?.canEdit || selectedDate === today || recentSubmitted.includes(selectedDate);
 
   const userMaxDate = todayFun;
 
@@ -513,8 +517,8 @@ const EntryPage = () => {
       };
 
       // Submit ke baad badlav: owner ya jise Super Admin ne "Edit" diya (server bhi check karta hai)
-      if (!isAdminAuthenticated && !me?.canEdit) {
-        toast.error("Already submitted. Only the owner can change it.");
+      if (!canEditDay) {
+        toast.error("Already submitted. Only the owner / Admin can change it.");
         return;
       }
       {
@@ -731,10 +735,11 @@ const EntryPage = () => {
                 Submit Entries
               </Typography>
               <Stack direction="row" spacing={1}>
-                {(entries?.length > 0 && isAdminAuthenticated) ||
-                (entries?.length > 0 &&
-                  selectedDate === today &&
-                  isAuthenticated) ? (
+                {entries?.length > 0 && !canEditDay ? (
+                  <Button variant="contained" disabled sx={{ px: 3 }}>
+                    Already submitted
+                  </Button>
+                ) : entries?.length > 0 ? (
                   <Button
                     onClick={handleEntryEdit}
                     variant="contained"

@@ -33,6 +33,7 @@ import {
 } from "./shared";
 import NewVendorDialog, { NO_ADD_HINT, useCanAddVendor } from "./NewVendorDialog";
 import NewPersonDialog from "./NewPersonDialog";
+import { useRecentSubmitted } from "../../utils/staffMe";
 
 const LOCK_MSG = "Already submitted. Only the owner can change it.";
 const MODES = ["Cash", "Card", "PP", "PPS", "PPC", "UnPaid"];
@@ -96,7 +97,8 @@ const OfficeQuickEntry = ({ date, isAdmin, canEdit = true }) => {
   }, [load]);
 
   const submitted = !!server.doc;
-  const editLocked = submitted && !canEdit;
+  const recentSub = useRecentSubmitted(`${date}|${submitted}`);
+  const editLocked = submitted && !canEdit && !(recentSub.office || []).includes(date); // 24 ghante ke andar submit hua din: Update chalega
 
   useEffect(() => {
     if (!server.loaded || !server.doc || seededFor.current === date) return;

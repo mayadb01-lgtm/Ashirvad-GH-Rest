@@ -7,7 +7,7 @@ import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import Entry from "../model/entry.js";
 import RestEntry from "../model/restEntry.js";
 import OfficeBook from "../model/officeBook.js";
-import { ghMissingDays, ghRecentlySubmitted } from "../utils/ghMissing.js";
+import { ghMissingDays, ghRecentlySubmitted, recentlySubmitted } from "../utils/ghMissing.js";
 import { mergeDraft } from "../utils/draftMerge.js";
 import { isAdminLike, effectiveAccess, datesBack, MODULES, REPORTS, rasoiAllowed } from "../middleware/staffAccess.js";
 
@@ -128,6 +128,16 @@ router.put("/draft/:kind/:date", async (req, res) => {
     const newAt = Math.max(at, cur?.at || 0);
     await drafts().updateOne({ _id }, { $set: { draft: merged, at: newAt, by, savedAt: new Date() } }, { upsert: true });
     res.json({ success: true, data: { draft: merged, at: newAt, by } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /quick/recent-submitted → { gh, rest, office }: pichhle 24 ghante mein submit hue din (staff bhi Update kar sake)
+router.get("/recent-submitted", async (req, res) => {
+  try {
+    const [gh, rest, office] = await Promise.all([recentlySubmitted("gh"), recentlySubmitted("rest"), recentlySubmitted("office")]);
+    res.json({ success: true, data: { gh, rest, office } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

@@ -43,3 +43,19 @@ export const staffMinDate = (me, fallback) => {
 
 // Classic page ka raasta → business
 export const CLASSIC_MODULE = { "/hotel": "gh", "/restaurant": "rest", "/office": "office" };
+
+// 🕒 Pichhle 24 ghante mein submit hue din { gh, rest, office } — staff bhi Update kar sake (server yahi niyam maanta hai)
+export const useRecentSubmitted = (dep) => {
+  const [r, setR] = useState({ gh: [], rest: [], office: [] });
+  useEffect(() => {
+    let alive = true;
+    axios
+      .get(`${import.meta.env.VITE_REACT_APP_SERVER_URL}/quick/recent-submitted`)
+      .then(({ data }) => alive && setR({ gh: [], rest: [], office: [], ...(data.data || {}) }))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [dep]);
+  return r;
+};

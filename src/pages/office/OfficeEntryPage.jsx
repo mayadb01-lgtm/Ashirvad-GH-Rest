@@ -19,7 +19,7 @@ import toast from "react-hot-toast";
 import { getRestCategory } from "../../redux/actions/restCategoryAction";
 import { getRestStaff } from "../../redux/actions/restStaffAction";
 import { getPendingUser } from "../../redux/actions/restPendingAction";
-import { useMe, staffMinDate } from "../../utils/staffMe";
+import { useMe, staffMinDate, useRecentSubmitted } from "../../utils/staffMe";
 dayjs.locale("en-gb");
 const OfficeEntryPage = () => {
   const dispatch = useAppDispatch();
@@ -36,6 +36,8 @@ const OfficeEntryPage = () => {
   );
   // Staff: Super Admin ki di hui din-seema (server bhi yahi check karta hai)
   const me = useMe();
+  const recentSub = useRecentSubmitted(`${selectedDate}|${officeBook?._id || ""}`);
+  const canEditDay = isAdminAuthenticated || me === undefined || !!me?.canEdit || !!me?.entryAdmin || (recentSub.office || []).includes(selectedDate);
   const userMinDate = staffMinDate(me, oldMinDate);
   const userMaxDate = todayFun;
 
@@ -362,7 +364,7 @@ const OfficeEntryPage = () => {
                           variant="contained"
                           color="secondary"
                           onClick={handleUpdateOfficeSubmit}
-                          disabled={isEditDisabled || (!isAdminAuthenticated && me !== undefined && !me?.canEdit)}
+                          disabled={isEditDisabled || !canEditDay}
                           sx={{
                             "&:hover": { backgroundColor: "#ab47bc" }, // Better hover color
                             "&:disabled": { backgroundColor: "#b39ddb" },

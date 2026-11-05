@@ -25,7 +25,7 @@ import {
 import ModernLoader from "../../utils/util";
 import { getPendingUser } from "../../redux/actions/restPendingAction";
 import RestPendingUsersTable from "../../components/restaurant/RestPendingUsersTable";
-import { useMe, staffMinDate } from "../../utils/staffMe";
+import { useMe, staffMinDate, useRecentSubmitted } from "../../utils/staffMe";
 dayjs.locale("en-gb");
 
 const RestEntryPage = () => {
@@ -46,6 +46,9 @@ const RestEntryPage = () => {
   );
   // Staff: Super Admin ki di hui din-seema (server bhi yahi check karta hai)
   const me = useMe();
+  const recentSub = useRecentSubmitted(`${selectedDate}|${restEntries?.grandTotal || 0}`);
+  // Submit ho chuka din badalne ka haq: owner / Admin staff / "Edit entries" / 24 ghante ke andar submit hua din
+  const canEditDay = isAdminAuthenticated || me === undefined || !!me?.canEdit || !!me?.entryAdmin || (recentSub.rest || []).includes(selectedDate);
   const userMinDate = staffMinDate(me, oldMinDate);
   const userMaxDate = todayFun;
 
@@ -602,8 +605,8 @@ const RestEntryPage = () => {
                           "&:hover": { backgroundColor: "secondary" },
                         }}
                         onClick={handleEditRestEntry}
-                        disabled={!isAdminAuthenticated && me !== undefined && !me?.canEdit}
-                        title={!isAdminAuthenticated && me && !me.canEdit ? "Already submitted. Only the owner can change it." : undefined}
+                        disabled={!canEditDay}
+                        title={!canEditDay ? "Already submitted (more than 24 hours ago). Only the owner / Admin can change it." : undefined}
                       >
                         Edit
                       </Button>

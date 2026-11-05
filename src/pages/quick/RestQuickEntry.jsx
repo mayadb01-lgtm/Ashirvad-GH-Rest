@@ -29,6 +29,7 @@ import {
 } from "./shared";
 import NewVendorDialog, { NO_ADD_HINT, useCanAddVendor } from "./NewVendorDialog";
 import NewPersonDialog from "./NewPersonDialog";
+import { useRecentSubmitted } from "../../utils/staffMe";
 
 const LOCK_MSG = "Already submitted. Only the owner can change it.";
 const EMPTY = { cash: 0, card: 0, pp: 0, computer: 0, upad: [], pending: [], pendingUsers: [], expenses: [] };
@@ -148,7 +149,8 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
   }, [load]);
 
   const submitted = !!server.doc;
-  const editLocked = submitted && !canEdit;
+  const recentSub = useRecentSubmitted(`${date}|${submitted}`);
+  const editLocked = submitted && !canEdit && !(recentSub.rest || []).includes(date); // 24 ghante ke andar submit hua din: Update chalega
 
   useEffect(() => {
     if (!server.loaded || !server.doc || seededFor.current === date) return;

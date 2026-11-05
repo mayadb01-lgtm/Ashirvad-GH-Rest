@@ -3,11 +3,13 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat.js";
 dayjs.extend(customParseFormat);
 import OfficeBook, { OfficeCategory } from "../model/officeBook.js";
+import { clearGhMissing } from "../utils/ghMissing.js";
 const router = Router();
 const who = (req) => (req.user ? `${req.user.name || req.user.email || ""}${req.user.role === "Admin" ? " (Admin)" : ""}` : "");
 
 // Create a new Entry
 router.post("/create-entry", async (req, res) => {
+  clearGhMissing(); // naya din submit → "24 ghante" wali list dobara bane
   try {
     const reqBody = req.body;
 

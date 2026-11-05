@@ -1,5 +1,5 @@
 import UserAccess from "../model/userAccess.js";
-import { ghMissingDays, ghRecentlySubmitted } from "../utils/ghMissing.js";
+import { ghMissingDays, recentlySubmitted } from "../utils/ghMissing.js";
 // 🔒 Staff privacy rules (server pe lagu, isliye link se seedha kholne pe bhi kaam karta hai)
 //
 // - Admin / Super User: sab kuch (koi badlaav nahi)
@@ -71,7 +71,7 @@ const ROOM_ADMIN = [
 ];
 
 const RULES = {
-  common: [R("GET", /^\/api\/v1\/user\/getuser$/), R("GET", /^\/api\/v1\/quick\/me$/)],
+  common: [R("GET", /^\/api\/v1\/user\/getuser$/), R("GET", /^\/api\/v1\/quick\/me$/), R("GET", /^\/api\/v1\/quick\/recent-submitted$/)],
   gh: [
     LISTS.rooms,
     R("GET", /^\/api\/v1\/entry\/get-entry\/([^/]+)$/, { dateParam: 1 }),
@@ -456,12 +456,13 @@ export const staffGuard = async (req, res, next) => {
 
   // Dates: Super Admin ki di hui seema (entryDays). window2: check-in ka din + agla din (guest registration)
   let base = acc.entryDays === null ? null : datesBack(acc.entryDays);
-  // 📅 GH: chhoote hue din (Submit nahi hue) + pichhle 24 ghante mein submit hue din — staff khol ke Submit / Update kar sake
+  // 📅 GH: chhoote hue din (Submit nahi hue). GH / Restaurant / Office: pichhle 24 ghante mein submit hue din — staff khol ke Update kar sake
   const ghRule = acc.modules.includes("gh") && (RULES.gh.includes(rule) || rule === dayStatus);
+  const kind = ghRule ? "gh" : ["rest", "office"].find((k) => acc.modules.includes(k) && (RULES[k] || []).includes(rule)) || null;
   let recent = [];
-  if (ghRule) {
+  if (kind) {
     try {
-      const [miss, rec] = await Promise.all([ghMissingDays(), ghRecentlySubmitted()]);
+      const [miss, rec] = await Promise.all([ghRule ? ghMissingDays() : Promise.resolve([]), recentlySubmitted(kind)]);
       recent = rec;
       const extra = [...new Set([...miss.map((m) => m.date), ...rec])];
       if (extra.length) {
@@ -475,7 +476,7 @@ export const staffGuard = async (req, res, next) => {
   if (rule.edit && !acc.canEdit) {
     // abhi-abhi (24 ghante mein) submit hua GH din: galti sudhaarne ke liye Update chalega
     const d = rule.dateParam ? decodeURIComponent(path.match(rule.re)[rule.dateParam] || "") : "";
-    if (!(ghRule && d && recent.includes(d))) return deny(res, "Already submitted. Only the owner can change it (ask the Super Admin for edit access).");
+    if (!(kind && d && recent.includes(d))) return deny(res, "Already submitted. Only the owner can change it (ask the Super Admin for edit access).");
   }
   const allowed = base === null ? null : rule.window2 ? [...new Set([...base, ...twoDayWindow()])] : base;
   const tooOld = acc.entryDays ? `You can only view/edit the last ${acc.entryDays} days.` : "Staff can only view/edit today's entries.";

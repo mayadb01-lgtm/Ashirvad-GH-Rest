@@ -4,13 +4,15 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import Stay from "../model/stay.js";
 import Entry from "../model/entry.js";
+import RestEntry from "../model/restEntry.js";
+import OfficeBook from "../model/officeBook.js";
 
 dayjs.extend(customParseFormat);
 const F = "DD-MM-YYYY";
 let cache = { at: 0, data: [] };
 export const clearGhMissing = () => {
   cache = { at: 0, data: [] };
-  recentCache = { at: 0, data: [] };
+  Object.keys(recentCaches).forEach((k) => delete recentCaches[k]);
 };
 
 export const ghMissingDays = async ({ fresh = false } = {}) => {
@@ -39,15 +41,20 @@ export const ghMissingDays = async ({ fresh = false } = {}) => {
   return data;
 };
 
-// 🕒 Pichhle 24 ghante mein submit hue GH din (30 din ke andar) — staff unhe khol ke Update kar sake (galti sudhaar)
-let recentCache = { at: 0, data: [] };
-export const ghRecentlySubmitted = async () => {
-  if (Date.now() - recentCache.at < 60 * 1000) return recentCache.data;
+// 🕒 Pichhle 24 ghante mein submit hue din (30 din ke andar) — staff unhe khol ke Update kar sake (galti sudhaar)
+// kind: gh (Entry.date) | rest (RestEntry.createDate) | office (OfficeBook.createDate)
+const recentCaches = {};
+export const recentlySubmitted = async (kind = "gh") => {
+  const c = recentCaches[kind];
+  if (c && Date.now() - c.at < 60 * 1000) return c.data;
   const today = dayjs(new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10));
   const since = new Date(Date.now() - 24 * 3600 * 1000);
   const dates = [];
   for (let x = today.subtract(31, "day"); !x.isAfter(today, "day"); x = x.add(1, "day")) dates.push(x.format(F));
-  const docs = await Entry.find({ date: { $in: dates }, $or: [{ enteredAt: { $gte: since } }, { createdAt: { $gte: since } }] }, { date: 1 }).lean();
-  recentCache = { at: Date.now(), data: [...new Set(docs.map((d) => d.date))] };
-  return recentCache.data;
+  const [Model, field] = kind === "rest" ? [RestEntry, "createDate"] : kind === "office" ? [OfficeBook, "createDate"] : [Entry, "date"];
+  const docs = await Model.find({ [field]: { $in: dates }, $or: [{ enteredAt: { $gte: since } }, { createdAt: { $gte: since } }] }, { [field]: 1 }).lean();
+  const data = [...new Set(docs.map((d) => d[field]))];
+  recentCaches[kind] = { at: Date.now(), data };
+  return data;
 };
+export const ghRecentlySubmitted = () => recentlySubmitted("gh");
