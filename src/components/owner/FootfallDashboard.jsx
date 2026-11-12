@@ -63,7 +63,7 @@ const FootfallDashboard = () => {
               )}
               {k === "banquet" && (
                 <Typography variant="caption" color="text.secondary">
-                  {nf(t.banquetEvents)} events
+                  {nf(t.banquetEvents)} event{t.banquetEvents === 1 ? "" : "s"}
                 </Typography>
               )}
             </Box>
