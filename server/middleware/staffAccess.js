@@ -295,7 +295,7 @@ export const rasoiAllowed = (user, acc) => !!acc && (acc.reports?.includes("raso
 // Purana tarika (department) — jab tak Super Admin naya access set na kare
 const LEGACY = {
   gh: { modules: ["gh"], entryDays: 0 },
-  rest: { modules: ["rest"], entryDays: 0 },
+  rest: { modules: ["rest", "banquet"], entryDays: 0 }, // restaurant cashier also takes banquet bookings / payments
   office: { modules: ["office", "banquet"], entryDays: 0 },
   manager: { modules: MODULES, entryDays: null },
 };

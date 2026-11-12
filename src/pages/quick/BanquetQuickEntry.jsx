@@ -204,7 +204,7 @@ const BanquetQuickEntry = ({ isAdmin }) => {
           New booking
         </Button>
       </Stack>
-      {upcomingDue > 0 && (
+      {isAdmin && upcomingDue > 0 && (
         <Alert severity="warning" sx={{ mb: 2 }}>
           Balance to collect on banquet bookings: <b>{inr(upcomingDue)}</b>
         </Alert>
