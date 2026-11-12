@@ -139,6 +139,9 @@ const syncRoomBills = async (date, list, complete, out) => {
 const syncExtras = async (date, d, roomOrderIds, pc, out) => {
   const pl = d.pay_later && typeof d.pay_later === "object" ? d.pay_later : {};
   const op = d.old_paid && typeof d.old_paid === "object" ? d.old_paid : {};
+  // POS room bills already saved here (any day) are counted through the room bill, never again as old dues
+  const opIds = (Array.isArray(op.rows) ? op.rows : []).map((r) => clean(r?.id, 40)).filter(Boolean);
+  if (opIds.length) (await RoomCharge.find({ source: "pos", posOrderId: { $in: opIds } }, { posOrderId: 1 }).lean()).forEach((c) => roomOrderIds.add(c.posOrderId));
   const plRows = (Array.isArray(pl.rows) ? pl.rows : []).slice(0, 500).map((r) => ({ id: clean(r.id, 40), billNo: clean(r.billNo, 40), name: clean(r.name, 80) || "Walk-in", amount: amt(r.amount) }));
   // an old POS room bill paid today is already counted through the room bill itself - never twice
   const opRows = (Array.isArray(op.rows) ? op.rows : [])
