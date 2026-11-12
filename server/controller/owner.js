@@ -1,6 +1,8 @@
 // Owner Monthly Dashboard API
 // ⚠️ READ-ONLY: is file mein sirf find/aggregate hai. Koi save/update/delete nahi.
 import { Router } from "express";
+import mongoose from "mongoose";
+import Stay from "../model/stay.js";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import { isAuthenticated } from "../middleware/auth.js";
@@ -415,6 +417,91 @@ router.get("/dues", async (req, res) => {
       .map((g) => ({ ...g, stays: g.stays.sort((a, b) => b.age - a.age) }))
       .sort((a, b) => b.oldestDays - a.oldestDays || b.total - a.total);
     res.json({ success: true, total: guests.reduce((s, g) => s + g.total, 0), guests });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /api/v1/owner/footfall/:from/:to (DD-MM-YYYY) → people per day: restaurant (POS footfall, dine-in + take-out),
+// guest house arrivals (a guest staying several days counts once, on the day they came), people in the rooms, banquet
+// guests, and the grand total = restaurant + GH arrivals + banquet. Owner only (staff have no rule for it). Read only.
+const FOOT_SOLD = ["day", "night", "extraDay", "extraNight"];
+const footName = (v) => String(v || "").toLowerCase().replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
+const footWho = (e) => {
+  const m = String(e.mobileNumber || "").replace(/\D/g, "");
+  return m.length >= 10 ? m.slice(-10) : footName(e.fullname);
+};
+const footSameName = (a, b) => !!a && !!b && (a === b || a.includes(b) || b.includes(a));
+router.get("/footfall/:from/:to", async (req, res) => {
+  try {
+    const from = dayjs(req.params.from, "DD-MM-YYYY", true);
+    const to = dayjs(req.params.to, "DD-MM-YYYY", true);
+    if (!from.isValid() || !to.isValid() || to.isBefore(from)) return res.status(400).json({ success: false, message: "Invalid dates" });
+    if (to.diff(from, "day") > 400) return res.status(400).json({ success: false, message: "Choose at most 400 days" });
+    const days = [];
+    for (let d = from; !d.isAfter(to, "day"); d = d.add(1, "day")) days.push(d);
+    const keys = days.map((d) => d.format("DD-MM-YYYY"));
+    const prevKey = from.subtract(1, "day").format("DD-MM-YYYY");
+    const db = mongoose.connection.db;
+    const [entries, stays, banquets, pos] = await Promise.all([
+      Entry.find({ date: { $in: [prevKey, ...keys] } }, { date: 1, entry: 1 }).lean(),
+      Stay.find({ startDate: { $in: keys } }, { startDate: 1, checkoutTime: 1, guest: 1 }).lean(),
+      BanquetBooking.find({ eventDate: { $in: keys }, status: { $ne: "cancelled" } }, { eventDate: 1, guests: 1, menus: 1 }).lean(),
+      db.collection("kitchen_pos_daily").find({ _id: { $in: days.map((d) => d.format("YYYY-MM-DD")) } }, { projection: { "data.foot": 1, "data.pp": 1 } }).toArray(),
+    ]);
+    const rowsOf = (k) => {
+      const docs = entries.filter((e) => e.date === k);
+      if (!docs.length) return null;
+      return docs.flatMap((e) => e.entry || []).filter((e) => FOOT_SOLD.includes(e.period) && Number(e.roomNo) > 0);
+    };
+    const posBy = new Map(pos.map((p) => [p._id, Number(p.data?.foot?.total ?? p.data?.pp?.foot) || 0]));
+    const today = dayjs();
+    let prevRows = rowsOf(prevKey);
+    const out = days.map((d) => {
+      const k = d.format("DD-MM-YYYY");
+      const x = { date: k, restaurant: posBy.get(d.format("YYYY-MM-DD")) || 0, ghArrivals: 0, ghRooms: 0, ghInHouse: 0, banquet: 0, banquetEvents: 0, ghFrom: "entry" };
+      const rows = rowsOf(k);
+      if (rows) {
+        const seen = new Set();
+        rows.forEach((e) => {
+          const key = `${Number(e.roomNo)}|${footWho(e)}`;
+          if (seen.has(key)) return; // same guest in the day and night slot of the same room
+          seen.add(key);
+          const people = Math.max(Number(e.noOfPeople) || 0, 1);
+          x.ghInHouse += people;
+          const before = (prevRows || []).some(
+            (p) => Number(p.roomNo) === Number(e.roomNo) && ((footWho(e) && footWho(p) === footWho(e)) || footSameName(footName(p.fullname), footName(e.fullname)))
+          );
+          if (before) return; // continuing stay: counted on the day they came
+          x.ghArrivals += people;
+          x.ghRooms += 1;
+        });
+      } else {
+        // day not submitted yet: check-ins recorded on the GH screen
+        x.ghFrom = "check-ins";
+        stays
+          .filter((s) => s.startDate === k && s.checkoutTime !== "REMOVED")
+          .forEach((s) => {
+            x.ghArrivals += Math.max(Number(s.guest?.noOfPeople) || 0, 1);
+            x.ghRooms += 1;
+          });
+      }
+      if (!d.isAfter(today, "day")) {
+        banquets
+          .filter((b) => b.eventDate === k)
+          .forEach((b) => {
+            const plates = (b.menus || []).reduce((t, m) => t + (Number(m.plates) || 0), 0);
+            x.banquet += Math.max(Math.round(Number(b.guests) || 0), Math.round(plates), 1);
+            x.banquetEvents += 1;
+          });
+      }
+      x.grandTotal = x.restaurant + x.ghArrivals + x.banquet;
+      prevRows = rows;
+      return x;
+    });
+    const sum = (f) => out.reduce((t, r) => t + r[f], 0);
+    const totals = Object.fromEntries(["restaurant", "ghArrivals", "ghRooms", "ghInHouse", "banquet", "banquetEvents", "grandTotal"].map((f) => [f, sum(f)]));
+    res.json({ success: true, data: { days: out, totals, posDays: pos.length } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

@@ -70,6 +70,7 @@ import ProfitLossDashboard from "../components/insights/ProfitLossDashboard";
 import RoomRatesDashboard from "../components/owner/RoomRatesDashboard";
 import GuestRegisterDashboard from "../components/owner/GuestRegisterDashboard";
 import RoomActivityDashboard from "../components/owner/RoomActivityDashboard";
+import FootfallDashboard from "../components/owner/FootfallDashboard";
 import InvoicesDashboard from "../components/owner/InvoicesDashboard";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
@@ -144,6 +145,7 @@ const FLAT_NAV = [
   { segment: "owner-report", title: "Owner Monthly Report", icon: <InsightsIcon /> },
   { segment: "forecast", title: "Forecast & key dates", icon: <TrendingUpIcon /> },
   { segment: "performance", title: "Performance: year vs year", icon: <AssessmentIcon /> },
+  { segment: "footfall", title: "Footfall (restaurant, GH, banquet)", icon: <InsightsIcon /> },
   { segment: "group", title: "Group: all hotels", icon: <InsightsIcon /> },
   { segment: "guest-dues", title: "Guest Dues & Reminders", icon: <WhatsAppIcon /> },
   { kind: "header", title: "Business Growth" },
@@ -455,6 +457,7 @@ const DashboardPage = () => {
     { path: "room-rates", element: <RoomRatesDashboard /> },
     { path: "guest-register", element: <GuestRegisterDashboard /> },
     { path: "room-activity", element: <RoomActivityDashboard /> },
+    { path: "footfall", element: <FootfallDashboard /> },
     { path: "invoices", element: <InvoicesDashboard /> },
     { path: "gh-growth", element: <GhGrowthDashboard /> },
     { path: "forecast", element: <ForecastDashboard /> },
