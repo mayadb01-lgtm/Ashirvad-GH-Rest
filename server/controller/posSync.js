@@ -9,6 +9,16 @@ const router = Router();
 const sha = (s) => crypto.createHash("sha256").update(String(s)).digest();
 export let lastSync = null;
 
+// Same sync key for every hotel PC push (POS numbers here, POS room bills / dues in hotelSenseSync.js).
+// Returns the kitchen_docs "secret/possync" doc when the key is right, otherwise null.
+export const checkSyncKey = async (req) => {
+  const key = String(req.get("x-sync-key") || req.body?.key || "");
+  const doc = await mongoose.connection.db.collection("kitchen_docs").findOne({ _id: "secret/possync" });
+  const hash = doc?.data?.hash;
+  if (!key || !hash || !/^[a-f0-9]{64}$/.test(hash)) return null;
+  return crypto.timingSafeEqual(sha(key), Buffer.from(hash, "hex")) ? doc : null;
+};
+
 // Browser se bhi bheja ja sake (POS ke page se, text/plain + body mein key) — CORS ki zaroorat nahi
 router.post("/", express.text({ type: "text/plain", limit: "15mb" }), async (req, res) => {
   try {
@@ -19,10 +29,8 @@ router.post("/", express.text({ type: "text/plain", limit: "15mb" }), async (req
         return res.status(400).json({ success: false, message: "Bad data" });
       }
     }
-    const key = String(req.get("x-sync-key") || req.body?.key || "");
-    const doc = await mongoose.connection.db.collection("kitchen_docs").findOne({ _id: "secret/possync" });
-    const hash = doc?.data?.hash;
-    if (!key || !hash || !crypto.timingSafeEqual(sha(key), Buffer.from(hash, "hex"))) return res.status(401).json({ success: false, message: "Wrong sync key" });
+    const doc = await checkSyncKey(req);
+    if (!doc) return res.status(401).json({ success: false, message: "Wrong sync key" });
     const reports = req.body?.reports || {};
     // 🛡 Khaali data se purani bikri na mite (POS band / galat POS / login nahi hua)
     const vals = (x) => (x && typeof x === "object" ? Object.values(x) : []);

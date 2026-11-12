@@ -138,6 +138,7 @@ const RULES = {
     R("GET", /^\/api\/v1\/restEntry\/get-entry\/([^/]+)$/, { dateParam: 1 }),
     R("POST", /^\/api\/v1\/restEntry\/create-entry$/, { dateBody: "createDate" }),
     R("PUT", /^\/api\/v1\/restEntry\/update-entry\/([^/]+)$/, { dateParam: 1, dateBody: "createDate", edit: true }),
+    R("GET", /^\/api\/v1\/restEntry\/pos-day\/([^/]+)$/, { dateParam: 1 }), // POS room bills / pay later / old dues (hotel PC sync)
     R("GET", /^\/api\/v1\/restCategory\/get-category-name$/, { classic: true }), // classic restaurant page ki category list
     // Levana baaki → room (kaun sa room, kaun guest)
     R("GET", /^\/api\/v1\/room-charges\/occupied\/([^/]+)$/, { dateParam: 1 }),

@@ -90,6 +90,9 @@ const restEntrySchema = new Schema(
     totalCash: { type: Number, default: 0 },
     grandTotal: { type: Number, default: 0 },
     computerAmount: { type: Number, default: 0 },
+    // POS (hotel PC) part of the day, saved by the server when the day is submitted (no default: old days stay as they were)
+    posRoomBills: { type: Number },
+    posPayLater: { type: Number },
     enteredBy: { type: String, default: "" },
     enteredAt: { type: Date },
     updatedBy: { type: String, default: "" },

@@ -13,6 +13,7 @@ import RestDueReceipt from "../model/restDueReceipt.js";
 import RoomCharge from "../model/roomCharge.js";
 import RestDueAdjust from "../model/restDueAdjust.js";
 import { loadOfficeClassifier, lineName, nk } from "./officeTypes.js";
+import { posExtrasList } from "./posDay.js";
 
 dayjs.extend(customParseFormat);
 const F = "DD-MM-YYYY";
@@ -26,14 +27,16 @@ export const isRoomBill = (k) => /room\s*bill/.test(nk(k));
 
 export const computeRestReceivables = async ({ upto } = {}) => {
   const q = upto ? { entryCreateDate: { $lte: upto.endOf("day").toDate() } } : {};
-  const [rest, office, people, receipts, classify, food, adjusts] = await Promise.all([
+  const [rest, office, people, receipts, classify, food, adjusts, posDays] = await Promise.all([
     RestEntry.find(q, { pending: 1, createDate: 1, entryCreateDate: 1 }).lean(),
     OfficeBook.find(q, { officeIn: 1, createDate: 1, entryCreateDate: 1 }).lean(),
     RestPending.find({}, { fullname: 1, mobileNumber: 1, category: 1 }).lean(),
     RestDueReceipt.find({ ...q, cancelled: { $ne: true }, source: { $ne: "gh" } }).lean(),
     loadOfficeClassifier(),
-    RoomCharge.find({ ...q, kind: "food", source: "rest" }, { date: 1, roomNo: 1, guestName: 1, amount: 1, isPaid: 1, paidDate: 1, paidMode: 1 }).lean(),
+    // room food bills: typed on the restaurant screen ("rest") or sent to the room from the POS ("pos", hotel PC sync)
+    RoomCharge.find({ ...q, kind: "food", source: { $in: ["rest", "pos"] } }, { date: 1, roomNo: 1, guestName: 1, amount: 1, isPaid: 1, paidDate: 1, paidMode: 1, source: 1 }).lean(),
     RestDueAdjust.find({ cancelled: { $ne: true } }).lean(),
+    posExtrasList().catch(() => []),
   ]);
   const map = new Map();
   const get = (name) => {
@@ -76,6 +79,23 @@ export const computeRestReceivables = async ({ upto } = {}) => {
     r.received += n(x.amount);
     r.ledger.push({ date: x.date, kind: "received", amount: n(x.amount), note: `${x.at === "office" ? "Office" : "Restaurant"} · ${x.mode === "PP" ? "PP (UPI)" : x.mode}${x.note ? ` · ${x.note}` : ""}` });
   });
+  // POS (hotel PC sync): "Pay later" bills = credit given; old POS bills paid at the counter = received
+  posDays
+    .filter((p) => !upto || dv(p._id) <= upto.format("YYYYMMDD"))
+    .forEach((p) => {
+      (p.pay_later?.rows || []).forEach((x) => {
+        if (!(n(x.amount) > 0)) return;
+        const r = get(x.name);
+        r.given += n(x.amount);
+        r.ledger.push({ date: p._id, kind: "given", amount: n(x.amount), note: `POS Pay later bill ${x.billNo || `#${x.id}`}` });
+      });
+      (p.old_paid?.rows || []).forEach((x) => {
+        if (!(n(x.amount) > 0)) return;
+        const r = get(x.name);
+        r.received += n(x.amount);
+        r.ledger.push({ date: p._id, kind: "received", amount: n(x.amount), note: `POS · ${{ CASH: "Cash", UPI: "PP (UPI)", CARD: "Card" }[x.method] || x.method} · bill ${x.billNo || `#${x.id}`}${x.bill_date ? ` of ${x.bill_date}` : ""}` });
+      });
+    });
   const otherRecv = new Map(); // office mein wasooli, par restaurant udhaar nahi (GH pending, staff upad jama…)
   office.forEach((d) =>
     (d.officeIn || []).forEach((x) => {
@@ -133,7 +153,9 @@ export const computeRestReceivables = async ({ upto } = {}) => {
       const open = food.filter((c) => !c.isPaid).sort((a, b) => dv(a.date).localeCompare(dv(b.date)));
       const collected = round(sum(paid, (c) => c.amount));
       const due = round(sum(open, (c) => c.amount));
-      return { given: round(roomBills), collected, due, notLinked: Math.max(0, round(roomBills - collected - due)), dueList: open.map((c) => ({ date: c.date, roomNo: c.roomNo, guestName: c.guestName, amount: round(c.amount) })) };
+      // POS room bills are never typed as Receivables, so they count as given too
+      const posGiven = sum(food.filter((c) => c.source === "pos"), (c) => c.amount);
+      return { given: round(roomBills + posGiven), collected, due, notLinked: Math.max(0, round(roomBills + posGiven - collected - due)), dueList: open.map((c) => ({ date: c.date, roomNo: c.roomNo, guestName: c.guestName, amount: round(c.amount) })) };
     })(),
     otherReceived: [...otherRecv.values()].map((o) => ({ ...o, amount: round(o.amount) })).sort((a, b) => b.amount - a.amount),
   };

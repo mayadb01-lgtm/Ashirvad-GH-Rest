@@ -27,6 +27,7 @@ const PUBLIC_ROUTES = new Set([
   "GET /api/v1/jobs/open",
   "POST /api/v1/jobs/apply",
   "POST /api/v1/pos-sync",
+  "POST /api/v1/hotel-sense-sync",
 ]);
 
 const RATE_LIMITED = new Set([
@@ -42,6 +43,7 @@ const RATE_LIMITED = new Set([
   "GET /api/v1/group/summary",
   "POST /api/v1/jobs/apply",
   "POST /api/v1/pos-sync",
+  "POST /api/v1/hotel-sense-sync",
 ]);
 
 const routeKey = (req) => `${req.method} ${req.originalUrl.split("?")[0].replace(/\/+$/, "")}`;

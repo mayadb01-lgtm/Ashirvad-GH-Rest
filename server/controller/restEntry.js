@@ -2,7 +2,28 @@ import { Router } from "express";
 import RestEntry from "../model/restEntry.js";
 import dayjs from "dayjs";
 import { clearGhMissing } from "../utils/ghMissing.js";
+import { posDayFor, posTotalsFor } from "../utils/posDay.js";
 const router = Router();
+
+// POS room bills + POS "Pay later" bills of the day (from the hotel PC sync) are part of the day's sale, added
+// automatically. When the day has any, the grand total / difference are worked out here from the typed parts + POS.
+// Days without POS data keep exactly what the screen sent (old behaviour).
+const withPos = async (date, b) => {
+  const pos = await posTotalsFor(date);
+  if (!(pos.posRoomBills + pos.posPayLater > 0)) return {};
+  const v = (k) => Number(b[k]) || 0;
+  const grandTotal = Math.round(v("totalUpad") + v("totalPending") + v("totalExpenses") + v("totalCard") + v("totalPP") + v("totalCash") + pos.posRoomBills + pos.posPayLater);
+  return { ...pos, grandTotal, extraAmount: grandTotal - Math.round(v("computerAmount")) };
+};
+
+// GET /pos-day/:date → the POS side of the restaurant day (room bills, pay later, old bills paid today)
+router.get("/pos-day/:date", async (req, res) => {
+  try {
+    res.json({ success: true, data: await posDayFor(req.params.date) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 const who = (req) => (req.user ? `${req.user.name || req.user.email || ""}${req.user.role === "Admin" ? " (Admin)" : ""}` : "");
 
 // Create a new Entry
@@ -45,6 +66,7 @@ router.post("/create-entry", async (req, res) => {
       createDate: reqBody.createDate,
       updatedDateTime: reqBody.updatedDateTime,
       entryCreateDate: reqBody.entryCreateDate,
+      ...(await withPos(reqBody.createDate, reqBody)),
     });
 
     res.status(200).json({
@@ -118,6 +140,7 @@ router.put("/update-entry/:date", async (req, res) => {
         createDate: reqBody.createDate,
         updatedDateTime: reqBody.updatedDateTime,
         entryCreateDate: reqBody.entryCreateDate,
+        ...(await withPos(createDate, reqBody)),
       },
       { new: true }
     );

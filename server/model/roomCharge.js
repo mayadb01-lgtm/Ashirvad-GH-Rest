@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 // ⚠️ Alag collection ("roomcharges"). Purani GH entries / restaurant entries mein koi badlaav nahi.
 //   kind   : "food"  = restaurant "Levana baaki" se apne aap aaya
 //            "extra" = GH pe staff ne joda (GH kamai mein judta hai)
-//   source : "rest" | "gh"
+//   source : "rest" | "gh" | "pos" ("pos" = hotel PC POS bill sent to the room, written only by /hotel-sense-sync)
 const roomChargeSchema = new mongoose.Schema(
   {
     date: { type: String, required: true }, // DD-MM-YYYY (kis din ka bill)
@@ -16,7 +16,12 @@ const roomChargeSchema = new mongoose.Schema(
     kind: { type: String, enum: ["food", "extra"], required: true },
     label: { type: String, default: "" },
     amount: { type: Number, default: 0 },
-    source: { type: String, enum: ["rest", "gh"], required: true },
+    source: { type: String, enum: ["rest", "gh", "pos"], required: true },
+    // POS link (source "pos" only): POS order id, printed bill no., the room the POS chose, paid in the POS itself
+    posOrderId: { type: String },
+    posBillNo: { type: String },
+    posRoom: { type: Number },
+    posPaid: { type: Boolean },
     // restaurant wale rows ka link (Levana baaki ki row)
     restDate: { type: String, default: "" },
     restRowId: { type: Number },
@@ -37,5 +42,6 @@ const roomChargeSchema = new mongoose.Schema(
 roomChargeSchema.index({ date: 1, roomNo: 1 });
 roomChargeSchema.index({ source: 1, restDate: 1 });
 roomChargeSchema.index({ entryCreateDate: 1 });
+roomChargeSchema.index({ source: 1, posOrderId: 1 });
 
 export default mongoose.model("RoomCharge", roomChargeSchema);

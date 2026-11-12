@@ -136,7 +136,7 @@ router.get("/gh-cash/:date", async (req, res) => {
     const days = [];
     for (let i = 0; i <= 30; i++) days.push(d.subtract(i, "day").format(F));
     const [paid, handed] = await Promise.all([
-      RoomCharge.find({ kind: "food", source: "rest", isPaid: true, ...HAS_CASH, paidAt: { $nin: ["rest", "office"] }, paidDate: { $in: days } }).lean(),
+      RoomCharge.find({ kind: "food", source: { $in: ["rest", "pos"] }, isPaid: true, ...HAS_CASH, paidAt: { $nin: ["rest", "office"] }, paidDate: { $in: days } }).lean(),
       RestDueReceipt.find({ source: "gh", cancelled: { $ne: true } }, { chargeId: 1 }).lean(),
     ]);
     const done = new Set(handed.map((h) => h.chargeId));
@@ -194,12 +194,12 @@ router.get("/room-bills/:date", async (req, res) => {
     const days = [];
     for (let i = 0; i <= 60; i++) days.push(d.subtract(i, "day").format(F));
     const [due, paidToday] = await Promise.all([
-      RoomCharge.find({ kind: "food", source: "rest", isPaid: false, date: { $in: days } }).lean(),
+      RoomCharge.find({ kind: "food", source: { $in: ["rest", "pos"] }, isPaid: false, date: { $in: days } }).lean(),
       RoomCharge.find({ kind: "food", isPaid: true, paidAt: req.query.at === "office" ? "office" : "rest", paidDate: req.params.date }).lean(),
     ]);
     const pick = (c) => ({ _id: c._id, roomNo: c.roomNo, guestName: c.guestName, date: c.date, amount: c.amount, paidMode: c.paidMode, paidSplit: c.paidSplit, paidBy: c.paidBy });
     const dv = (s) => String(s).split("-").reverse().join("");
-    res.json({ success: true, data: { due: due.sort((a, b) => dv(a.date).localeCompare(dv(b.date))).map(pick), paidToday: paidToday.map(pick) } });
+    res.json({ success: true, data: { due: due.sort((a, b) => dv(a.date).localeCompare(dv(b.date))).map(pick), paidToday: paidToday.filter((c) => !(c.posPaid && c.paidDate === c.date)).map(pick) } }); // POS bill paid the same day: in the counter cash already
   } catch (e) {
     fail(res, e);
   }
