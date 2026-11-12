@@ -143,7 +143,7 @@ const RoomChargesPanel = ({ date, period, roomNo, guestName, mobile, charges = [
         🧾 Food bill + Extra charges
       </Typography>
       <Typography variant="caption" color={Q.muted} component="div" sx={{ mb: 0.5 }}>
-        Food bills entered for this room under Restaurant "Receivables" appear here automatically.
+        Restaurant food bills for this room appear here automatically (POS "Pay at guest house" bills, and room bills typed under Restaurant "Receivables").
       </Typography>
 
       {charges.length === 0 && (

@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { chargeParts } from "../../utils/payParts";
+import { BUSINESS } from "../../business";
 
 dayjs.extend(customParseFormat);
 
@@ -113,6 +114,7 @@ const RestPrintSlip = ({ open, onDone, date, doc, posDay, dues, roomLinks, showT
   return createPortal(
     <div className="rest-slip">
       <style>{CSS}</style>
+      <div className="title">{BUSINESS.shortName || BUSINESS.name}</div>
       <div className="title">RESTAURANT DAILY REPORT</div>
       <div className="center">
         <b>Date: {dayLabel}</b>

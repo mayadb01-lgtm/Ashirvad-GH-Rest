@@ -595,6 +595,7 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
   const [editing, setEditing] = useState(null); // roomNo
   // quick search: room number, guest name or mobile (no scrolling on a phone)
   const [roomQuery, setRoomQuery] = useState("");
+  const hasFloors = (rooms || []).length > 0 && rooms.every((rm) => Number(rm.roomNumber) >= 100);
   // 🔄 Adhoora din server par bhi save → Jiten / Nirav / owner kisi bhi device par wahi data
   const [draft, setDraft, clearDraft] = useSharedDraft("gh", date, EMPTY, server.loaded && !server.denied && server.entries.length === 0);
   const [confirm, setConfirm] = useState(false);
@@ -1572,9 +1573,13 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
           {/* Floor plan: per floor two rows facing each other, numbered as a U -
               top row left to right (101 at the left ... 104), bottom row coming back (108 ... 105), so 101 faces 108 */}
           <Stack spacing={2}>
-            {floorsOf(rooms.filter((rm) => roomMatches(rm, draft.rooms[keyOf(period, rm.roomNumber)], roomQuery))).map(({ floor, top, bottom, first, last }) => {
+            {(() => {
+              const shown = rooms.filter((rm) => roomMatches(rm, draft.rooms[keyOf(period, rm.roomNumber)], roomQuery));
+              // floor plan only when the rooms carry a floor number (101, 102 … 201 …); otherwise the plain grid as before
+              return hasFloors ? floorsOf(shown) : [{ floor: null, top: shown, bottom: [] }];
+            })().map(({ floor, top, bottom, first, last }) => {
               const card = (rm) => (
-                <Grid key={rm.roomNumber} size={{ xs: 6, md: 3 }} sx={{ display: "flex" }}>
+                <Grid key={rm.roomNumber} size={hasFloors ? { xs: 6, md: 3 } : { xs: 12, sm: 6, md: 4, lg: 3 }} sx={{ display: "flex" }}>
                   <RoomCard
                     room={rm}
                     row={draft.rooms[keyOf(period, rm.roomNumber)]}
@@ -1592,10 +1597,12 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
                 </Grid>
               );
               return (
-                <Box key={floor}>
-                  <Typography variant="caption" fontWeight={800} color={Q.muted} sx={{ display: "block", mb: 0.75, letterSpacing: 0.3 }}>
-                    FLOOR {floor} · {first}–{last}
-                  </Typography>
+                <Box key={floor ?? "all"}>
+                  {floor !== null && (
+                    <Typography variant="caption" fontWeight={800} color={Q.muted} sx={{ display: "block", mb: 0.75, letterSpacing: 0.3 }}>
+                      FLOOR {floor} · {first}–{last}
+                    </Typography>
+                  )}
                   <Grid container spacing={1.5}>{top.map(card)}</Grid>
                   {bottom.length > 0 && (
                     <Grid container spacing={1.5} sx={{ mt: 1.5 }}>

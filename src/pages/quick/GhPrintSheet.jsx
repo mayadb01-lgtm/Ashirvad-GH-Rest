@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import { BUSINESS } from "../../business";
 
 dayjs.extend(customParseFormat);
 // day keys are DD-MM-YYYY (some old rows YYYY-MM-DD)
@@ -68,7 +69,7 @@ const GhPrintSheet = ({ open, onDone, date, draft, periods, summary, showTotals,
       <style>{CSS}</style>
       <div className="head">
         <div>
-          <h1>Hotel Ashirvad · Guest House</h1>
+          <h1>{BUSINESS.shortName || BUSINESS.name} · Guest House</h1>
           <div>Daily report</div>
         </div>
         <div style={{ textAlign: "right" }}>
