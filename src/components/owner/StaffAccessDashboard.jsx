@@ -31,7 +31,7 @@ const REPORT_DAYS = [
   [365, "Last 1 year"],
   ["any", "No limit"],
 ];
-const LEGACY = { gh: ["gh"], rest: ["rest", "banquet"], office: ["office", "banquet"], manager: ["gh", "rest", "office", "banquet"] };
+const LEGACY = { gh: ["gh"], rest: ["rest"], office: ["office", "banquet"], manager: ["gh", "rest", "office", "banquet"] };
 const PRESETS = {
   staff: { label: "Staff (today only)", v: (a) => ({ ...a, entryDays: 0, reports: [], reportDays: 30, canEdit: false }) },
   manager: { label: "Manager (all business)", v: (a) => ({ ...a, modules: MODULES.map((m) => m.value), entryDays: 30, canEdit: true }) },
