@@ -34,6 +34,7 @@ import RoomCalendar from "./RoomCalendar";
 import { computeDues } from "./checkoutGuard";
 import { MergeBillDialog, RemoveEntryDialog, RoomMoveDialog } from "./RoomMoveDialogs";
 import SearchIcon from "@mui/icons-material/Search";
+import { useMe } from "../../utils/staffMe";
 import LockIcon from "@mui/icons-material/Lock";
 import {
   API,
@@ -54,6 +55,7 @@ import {
   useSharedDraft,
 } from "./shared";
 import { chargeModeText, chargeParts, fillSplit, mainMode, splitLabel, splitProblem } from "../../utils/payParts";
+import GhPrintSheet from "./GhPrintSheet";
 
 const PERIODS = [
   { key: "day", label: "Day", idLabel: "Day" },
@@ -117,6 +119,33 @@ const chargesFor = (list, period, roomNo) => (list || []).filter((c) => c.roomNo
 const isTouched = (r) => r && (num(r.rate) > 0 || String(r.fullname || "").trim() || r.modeOfPayment || r.type);
 
 /* ---------------- Room card ---------------- */
+// Quick room search: room number from the start ("2" -> 201...208, "205"), guest name, or 4+ digits of the mobile
+const roomMatches = (rm, row, query) => {
+  const q = String(query || "").trim().toLowerCase();
+  if (!q) return true;
+  const r = row || {};
+  return (
+    String(rm.roomNumber).startsWith(q) ||
+    String(r.fullname || "").toLowerCase().includes(q) ||
+    (q.length >= 4 && String(r.mobileNumber || "").includes(q))
+  );
+};
+
+// Rooms by floor (101-108 -> floor 1) in the hotel's U order: first half left to right on the top row, the rest
+// coming back right to left on the opposite side (101 faces 108). Works for any number of rooms on a floor.
+const floorsOf = (list) => {
+const byFloor = new Map();
+[...list].sort((a, b) => a.roomNumber - b.roomNumber).forEach((rm) => {
+  const f = Math.floor(rm.roomNumber / 100) || 0;
+  if (!byFloor.has(f)) byFloor.set(f, []);
+  byFloor.get(f).push(rm);
+});
+return [...byFloor.entries()].map(([floor, list2]) => {
+  const half = Math.ceil(list2.length / 2);
+  return { floor, first: list2[0].roomNumber, last: list2.at(-1).roomNumber, top: list2.slice(0, half), bottom: list2.slice(half).reverse() };
+});
+};
+
 const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkout, booking, advance = 0, period, dueOut, group }) => {
   // Room pe "baaki" dikhao: room rent (agar UnPaid) + food/extra jo abhi paid nahi − booking advance
   const rentDue = row?.modeOfPayment === "UnPaid" ? Math.max(0, num(row?.rate)) : 0; // Rate = final
@@ -404,7 +433,8 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
         )}
         <Stack direction="row" spacing={1.5}>
           <TimeBox label="Check-in time" value={f.checkInTime || "10:00 AM"} onChange={(v) => set("checkInTime", v)} disabled={locked} />
-          <TimeBox label="Check-out time" value={f.checkOutTime || "11:00 AM"} onChange={(v) => set("checkOutTime", v)} disabled={locked} />
+          {/* locked: the real time is recorded by the Checkout button below (standard checkout 11:00 AM until then) */}
+          <TimeBox label={stay?.checkout ? "Checked out at" : "Check-out (standard)"} value={stay?.checkout?.time || "11:00 AM"} onChange={() => {}} disabled />
         </Stack>
         <MoneyField label="Discount on total bill (if any)" value={f.discount} onChange={(v) => set("discount", v)} disabled={locked} />
 
@@ -499,12 +529,19 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
 
 /* ---------------- Main ---------------- */
 const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
+  // the day's total / totals by payment mode.
+  const me = useMe();
+  // Rad Shiva keeps showing these to staff (as before); the hotel PC back office shows them to the owner only.
+  // Use !!me?.isOwnerAdmin here to do the same.
+  const showTotals = true;
   // 🕒 Pichhle 24 ghante mein submit hua din: staff bhi Update kar sake (galti sudhaar)
   const [recentSubmitted, setRecentSubmitted] = useState([]);
   const editor = isAdmin || canEdit || recentSubmitted.includes(date); // submit ke baad badal sakta hai? (owner / "Edit" wala / abhi-abhi submit hua din)
   const [rooms, setRooms] = useState(null);
   const [server, setServer] = useState({ loaded: false, entries: [] });
   const [status, setStatus] = useState(null);
+  const [printA4, setPrintA4] = useState(false); // GH day report on A4
+  const closeA4 = useCallback(() => setPrintA4(false), []);
   const [unpaid, setUnpaid] = useState([]);
   const [charges, setCharges] = useState([]);
   const [chargesPaidToday, setChargesPaidToday] = useState([]); // food / extra bill jo aaj wasool hue (kisi bhi din ke)
@@ -556,6 +593,8 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
   const [period, setPeriod] = useState("day");
   const [tab, setTab] = useState("rooms"); // rooms | jama
   const [editing, setEditing] = useState(null); // roomNo
+  // quick search: room number, guest name or mobile (no scrolling on a phone)
+  const [roomQuery, setRoomQuery] = useState("");
   // 🔄 Adhoora din server par bhi save → Jiten / Nirav / owner kisi bhi device par wahi data
   const [draft, setDraft, clearDraft] = useSharedDraft("gh", date, EMPTY, server.loaded && !server.denied && server.entries.length === 0);
   const [confirm, setConfirm] = useState(false);
@@ -1043,6 +1082,8 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
   const summary = useMemo(() => {
     const per = {};
     const byMode = {};
+    const roomModes = {}; // today's rooms by payment mode
+    const jamaModes = {}; // old dues collected today by payment mode (not today's sale)
     let total = 0;
     let incomplete = [];
     Object.entries(draft.rooms).forEach(([k, r]) => {
@@ -1058,6 +1099,9 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
         byMode[x.mode] = byMode[x.mode] || { amt: 0, rooms: 0, jama: 0 };
         byMode[x.mode].amt += x.amount;
         if (i === 0) byMode[x.mode].rooms += 1;
+        roomModes[x.mode] = roomModes[x.mode] || { amt: 0, n: 0 };
+        roomModes[x.mode].amt += x.amount;
+        if (i === 0) roomModes[x.mode].n += 1;
       });
     });
     const jamaTotal = draft.jama.reduce((s, j) => s + num(j.rate), 0);
@@ -1067,9 +1111,12 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
         byMode[x.mode] = byMode[x.mode] || { amt: 0, rooms: 0, jama: 0 };
         byMode[x.mode].amt += x.amount;
         if (i === 0) byMode[x.mode].jama += 1;
+        jamaModes[x.mode] = jamaModes[x.mode] || { amt: 0, n: 0 };
+        jamaModes[x.mode].amt += x.amount;
+        if (i === 0) jamaModes[x.mode].n += 1;
       });
     });
-    return { per, total, jamaTotal, incomplete, byMode, filled: Object.values(per).reduce((a, b) => a + b, 0) };
+    return { per, total, jamaTotal, incomplete, byMode, roomModes, jamaModes, filled: Object.values(per).reduce((a, b) => a + b, 0) };
   }, [draft]);
 
   // 💵 GH galla: har mode mein aaj sach mein kitna aaya
@@ -1253,6 +1300,17 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
 
   return (
     <Box sx={{ pb: { xs: 16, md: 0 } }}>
+      <GhPrintSheet
+        open={printA4}
+        onDone={closeA4}
+        date={date}
+        draft={draft}
+        periods={PERIODS}
+        summary={summary}
+        showTotals={showTotals}
+        status={status}
+        printedBy={me?.name}
+      />
       {/* status */}
       <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ mb: 1.5 }} useFlexGap>
         {submitted ? (
@@ -1266,6 +1324,9 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
           <StatusPill tone="warn">Today's GH entry not done yet</StatusPill>
         )}
         {status?.updatedBy && <StatusPill tone="lock">Edit: {status.updatedBy}</StatusPill>}
+        <Button size="small" variant="outlined" onClick={() => setPrintA4(true)} sx={{ fontWeight: 800, color: Q.gh, borderColor: Q.gh }}>
+          🖨 Print A4
+        </Button>
         <Box sx={{ flex: 1 }} />
         <Button
           size="small"
@@ -1469,26 +1530,82 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
               <Box sx={{ height: "100%", width: `${(periodFilled(period) / rooms.length) * 100}%`, bgcolor: Q.gh, borderRadius: 3, transition: "width .3s" }} />
             </Box>
           </Box>
-          <Grid container spacing={1.5}>
-            {rooms.map((rm) => (
-              <Grid key={rm.roomNumber} size={{ xs: 12, sm: 6, md: 4, lg: 3 }} sx={{ display: "flex" }}>
-                <RoomCard
-                  room={rm}
-                  row={draft.rooms[keyOf(period, rm.roomNumber)]}
-                  locked={locked}
-                  fromServer={submitted && !!draft.rooms[keyOf(period, rm.roomNumber)]?._orig}
-                  onOpen={() => setEditing(rm.roomNumber)}
-                  charges={chargesFor(charges, period, rm.roomNumber)}
-                  checkout={checkoutOf(period, rm.roomNumber)}
-                  dueOut={period === "day" ? dueOutFor(rm.roomNumber) : null}
-                  group={groupOf(rm.roomNumber)}
-                  booking={!draft.rooms[keyOf(period, rm.roomNumber)] ? bookingFor(rm.roomNumber) : null}
-                  advance={advanceFor(period, rm.roomNumber)}
-                  period={period}
-                />
-              </Grid>
-            ))}
-          </Grid>
+          {/* Quick room search: only the matching rooms; Enter opens the room when one is left */}
+          {(() => {
+            const hits = roomQuery.trim() ? rooms.filter((rm) => roomMatches(rm, draft.rooms[keyOf(period, rm.roomNumber)], roomQuery)) : null;
+            return (
+              <TextField
+                size="small"
+                fullWidth
+                value={roomQuery}
+                onChange={(e) => setRoomQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && hits?.length === 1) {
+                    setEditing(hits[0].roomNumber);
+                    setRoomQuery("");
+                  }
+                  if (e.key === "Escape") setRoomQuery("");
+                }}
+                placeholder="Search room no., guest name or mobile"
+                helperText={hits ? (hits.length ? `${hits.length} room${hits.length === 1 ? " - press Enter to open" : "s"}` : "No room found") : " "}
+                sx={{ mb: 0.5, "& .MuiInputBase-root": { bgcolor: "#fff", borderRadius: 2 } }}
+                slotProps={{
+                  htmlInput: { inputMode: "search", "aria-label": "Search room" },
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                    endAdornment: roomQuery ? (
+                      <InputAdornment position="end">
+                        <Button size="small" onClick={() => setRoomQuery("")} sx={{ minWidth: 0, fontWeight: 700 }}>
+                          Clear
+                        </Button>
+                      </InputAdornment>
+                    ) : null,
+                  },
+                }}
+              />
+            );
+          })()}
+          {/* Floor plan: per floor two rows facing each other, numbered as a U -
+              top row left to right (101 at the left ... 104), bottom row coming back (108 ... 105), so 101 faces 108 */}
+          <Stack spacing={2}>
+            {floorsOf(rooms.filter((rm) => roomMatches(rm, draft.rooms[keyOf(period, rm.roomNumber)], roomQuery))).map(({ floor, top, bottom, first, last }) => {
+              const card = (rm) => (
+                <Grid key={rm.roomNumber} size={{ xs: 6, md: 3 }} sx={{ display: "flex" }}>
+                  <RoomCard
+                    room={rm}
+                    row={draft.rooms[keyOf(period, rm.roomNumber)]}
+                    locked={locked}
+                    fromServer={submitted && !!draft.rooms[keyOf(period, rm.roomNumber)]?._orig}
+                    onOpen={() => setEditing(rm.roomNumber)}
+                    charges={chargesFor(charges, period, rm.roomNumber)}
+                    checkout={checkoutOf(period, rm.roomNumber)}
+                    dueOut={period === "day" ? dueOutFor(rm.roomNumber) : null}
+                    group={groupOf(rm.roomNumber)}
+                    booking={!draft.rooms[keyOf(period, rm.roomNumber)] ? bookingFor(rm.roomNumber) : null}
+                    advance={advanceFor(period, rm.roomNumber)}
+                    period={period}
+                  />
+                </Grid>
+              );
+              return (
+                <Box key={floor}>
+                  <Typography variant="caption" fontWeight={800} color={Q.muted} sx={{ display: "block", mb: 0.75, letterSpacing: 0.3 }}>
+                    FLOOR {floor} · {first}–{last}
+                  </Typography>
+                  <Grid container spacing={1.5}>{top.map(card)}</Grid>
+                  {bottom.length > 0 && (
+                    <Grid container spacing={1.5} sx={{ mt: 1.5 }}>
+                      {bottom.map(card)}
+                    </Grid>
+                  )}
+                </Box>
+              );
+            })}
+          </Stack>
           {(regBlock.length > 0 || (settleDay && regPending.today?.length > 0)) && (
             <Paper id="gh-reg-panel" variant="outlined" sx={{ p: 1.5, mt: 2, mb: 1.5, borderRadius: 3, borderColor: regBlock.length ? "#FCA5A5" : Q.line, bgcolor: regBlock.length ? "#FEF2F2" : "#fff" }}>
               <Typography fontWeight={800}>📄 Guest registration</Typography>
@@ -1547,7 +1664,7 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
               </Paper>
             </Grid>
           </Grid>
-          {cashBox.any && (
+          {showTotals && cashBox.any && (
             <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 3, borderColor: "#A5F3FC", bgcolor: "#ECFEFF" }}>
               <Typography fontWeight={800}>💵 Total by payment mode (GH)</Typography>
               <Typography variant="caption" color={Q.muted} sx={{ display: "block", mb: 1 }}>
@@ -1747,8 +1864,12 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
 
       {!locked && (
         <SaveBar
-          label={`Total · ${summary.filled} rooms${summary.jamaTotal ? ` + collections ${inr(summary.jamaTotal)}` : ""}`}
-          amount={summary.total + summary.jamaTotal}
+          label={
+            showTotals
+              ? `Total · ${summary.filled} rooms${summary.jamaTotal ? ` + collections ${inr(summary.jamaTotal)}` : ""}`
+              : `Guest House day entry · ${summary.filled} rooms filled`
+          }
+          amount={showTotals ? summary.total + summary.jamaTotal : null}
           sub={
             summary.incomplete.length
               ? { text: `Incomplete: ${summary.incomplete.slice(0, 3).join(", ")}${summary.incomplete.length > 3 ? "…" : ""}`, color: Q.bad }
@@ -1900,15 +2021,18 @@ const GhQuickEntry = ({ date, isAdmin, canEdit = false, onPickDate }) => {
         confirmText={submitted ? "Yes, update" : "Yes, submit"}
         lines={[
           ...PERIODS.filter((p) => summary.per[p.key]).map((p) => ({ label: p.label, value: `${summary.per[p.key]} rooms` })),
-          ...(draft.jama.length ? [{ label: "Pending collections", value: `${draft.jama.length} · ${inr(summary.jamaTotal)}` }] : []),
-          ...MODES.filter((m) => summary.byMode[m]).map((m) => {
-            const x = summary.byMode[m];
-            const parts = [x.rooms ? `${x.rooms} room${x.rooms > 1 ? "s" : ""}` : "", x.jama ? `${x.jama} collection${x.jama > 1 ? "s" : ""}` : ""].filter(Boolean).join(" + ");
-            return { label: `${m === "UnPaid" ? "Unpaid" : m} (${parts})`, value: inr(x.amt), color: m === "UnPaid" ? Q.bad : undefined };
+          ...MODES.filter((m) => summary.roomModes[m]).map((m) => {
+            const x = summary.roomModes[m];
+            return { label: `Rooms · ${m === "UnPaid" ? "Unpaid" : m} (${x.n} room${x.n > 1 ? "s" : ""})`, value: inr(x.amt), color: m === "UnPaid" ? Q.bad : undefined };
           }),
-          ...(summary.byMode.UnPaid ? [{ label: "Received today", value: inr(summary.total + summary.jamaTotal - summary.byMode.UnPaid.amt), color: Q.good || Q.ink }] : []),
-          ...(cashBox.advUsed > 0 ? [{ label: "Less: booking advance taken earlier (not in today's drawer)", value: `− ${inr(cashBox.advUsed)}`, color: Q.warn }] : []),
-          { label: "Total", value: inr(summary.total + summary.jamaTotal), color: Q.ink },
+          // old dues received today: money in hand, but not today's sale - shown apart so it is not counted as rooms
+          ...MODES.filter((m) => summary.jamaModes[m]).map((m) => {
+            const x = summary.jamaModes[m];
+            return { label: `Old dues collected · ${m} (${x.n})`, value: inr(x.amt), color: Q.good || undefined };
+          }),
+          ...(showTotals && summary.byMode.UnPaid ? [{ label: "Received today", value: inr(summary.total + summary.jamaTotal - summary.byMode.UnPaid.amt), color: Q.good || Q.ink }] : []),
+          ...(showTotals && cashBox.advUsed > 0 ? [{ label: "Less: booking advance taken earlier (not in today's drawer)", value: `− ${inr(cashBox.advUsed)}`, color: Q.warn }] : []),
+          ...(showTotals ? [{ label: "Total", value: inr(summary.total + summary.jamaTotal), color: Q.ink }] : []),
           ...(!submitted && !editor ? [{ label: "Note", value: "After submitting, only an admin can make changes", color: Q.warn }] : []),
         ]}
         onCancel={() => setConfirm(false)}
