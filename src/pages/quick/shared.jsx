@@ -468,9 +468,11 @@ export const SaveBar = ({ label, amount, sub, buttonText, onClick, disabled, col
         <Typography variant="caption" color={Q.muted} display="block">
           {label}
         </Typography>
-        <Typography fontWeight={800} fontSize={20} sx={{ fontVariantNumeric: "tabular-nums" }}>
-          {inr(amount)}
-        </Typography>
+        {amount !== null && amount !== undefined && (
+          <Typography fontWeight={800} fontSize={20} sx={{ fontVariantNumeric: "tabular-nums" }}>
+            {inr(amount)}
+          </Typography>
+        )}
         {sub && (
           <Typography variant="caption" sx={{ color: sub.color || Q.muted, fontWeight: 700 }}>
             {sub.text}

@@ -29,7 +29,8 @@ import {
 } from "./shared";
 import NewVendorDialog, { NO_ADD_HINT, useCanAddVendor } from "./NewVendorDialog";
 import NewPersonDialog from "./NewPersonDialog";
-import { useRecentSubmitted } from "../../utils/staffMe";
+import { useMe, useRecentSubmitted } from "../../utils/staffMe";
+import RestPrintSlip from "./RestPrintSlip";
 
 const LOCK_MSG = "Already submitted. Only the owner can change it.";
 const EMPTY = { cash: 0, card: 0, pp: 0, computer: 0, upad: [], pending: [], pendingUsers: [], expenses: [] };
@@ -40,7 +41,7 @@ const stripRoom = (rows) => rows.map(({ room, roomMode, ...r }) => r); // eslint
 
 const SECTIONS = {
   upad: { title: "Staff advance", subtitle: "Advance given to staff", pickLabel: "Staff", color: "#7C3AED" },
-  pending: { title: "Receivables", subtitle: "Money to be collected (given on credit)", pickLabel: "Collect from", color: "#0891B2" },
+  pending: { title: "Receivables", subtitle: "Credit given today that is NOT a POS bill (POS Pay later / room bills are added automatically)", pickLabel: "Collect from", color: "#0891B2" },
   pendingUsers: { title: "Payables", subtitle: "Amount owed to vendors (not added to total)", pickLabel: "Vendor", color: "#64748B" },
   expenses: { title: "Expenses", subtitle: "Today's expenses", pickLabel: "Expense item", color: "#DB2777" },
 };
@@ -64,6 +65,13 @@ const RowList = ({ rows, onEdit, empty, locked, render }) => (
 );
 
 const RestQuickEntry = ({ date, canEdit = true }) => {
+  const me = useMe();
+  // Rad Shiva: staff keep seeing the day's totals and still type the computer amount (as before). The hotel PC POS
+  // hides them from staff only because its own server fills the POS total; use !!me?.isOwnerAdmin here to do the same.
+  const showTotals = true;
+  // the POS side of the day (hotel PC sync): room bills + pay-later bills (sale on credit, counted automatically) and
+  // old bills paid today (old dues, NOT today's sale). Nobody types these here.
+  const [posDay, setPosDay] = useState({ room_bills: { count: 0 }, pay_later: { count: 0 }, old_paid: { count: 0, total: 0 } });
   const [lists, setLists] = useState(null);
   const [newVendor, setNewVendor] = useState(null); // { name } → naya vendor (Payables / Kharch)
   const canAddVendor = useCanAddVendor();
@@ -98,7 +106,7 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
     setError("");
     setServer({ loaded: false, doc: null });
     try {
-      const [staff, pend, cats, e, s, occ, links] = await Promise.all([
+      const [staff, pend, cats, e, s, occ, links, pos] = await Promise.all([
         axios.get(`${API}/restStaff/get-staff-id-name-mobile`),
         axios.get(`${API}/restPending/get-all-pending-users`),
         axios.get(`${API}/restCategory/get-categories`),
@@ -106,7 +114,9 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
         axios.get(`${API}/quick/day-status/${date}`).catch(() => ({ data: {} })),
         axios.get(`${API}/room-charges/occupied/${date}`).catch(() => ({ data: { data: { guests: [], rooms: [] } } })),
         axios.get(`${API}/room-charges/rest/${date}`).catch(() => ({ data: { data: [] } })),
+        axios.get(`${API}/restEntry/pos-day/${date}`).catch(() => ({ data: { data: null } })),
       ]);
+      if (pos.data?.data) setPosDay(pos.data.data);
       const categories = cats.data.data || [];
       setLists({
         staff: (staff.data.data || []).map((x) => ({ _id: x._id, fullname: x.fullname, mobileNumber: x.mobileNumber || 0, category: x.category || "" })),
@@ -172,9 +182,11 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
     const upad = sum(draft.upad);
     const pending = sum(draft.pending);
     const expenses = sum(draft.expenses);
-    const grand = upad + pending + expenses + num(draft.card) + num(draft.pp) + num(draft.cash);
-    return { upad, pending, aapvana: sum(draft.pendingUsers), expenses, grand, extra: grand - num(draft.computer) };
-  }, [draft]);
+    const roomPos = num(posDay.room_bills?.amount);
+    const payLater = num(posDay.pay_later?.amount);
+    const grand = upad + pending + expenses + roomPos + payLater + num(draft.card) + num(draft.pp) + num(draft.cash);
+    return { upad, pending, aapvana: sum(draft.pendingUsers), expenses, roomPos, payLater, grand, extra: grand - num(draft.computer) };
+  }, [draft, posDay]);
 
   const set = (k, v) => setDraft((d) => ({ ...d, [k]: v }));
 
@@ -182,8 +194,21 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
   // Submit ke baad badalna: sirf owner ya jise Super Admin ne "Edit" diya
   const openNew = (section) => (editLocked ? toast.error(LOCK_MSG) : setEditor({ section, index: -1, row: { amount: 0 } }));
   const openEdit = (section, index) => (editLocked ? toast.error(LOCK_MSG) : setEditor({ section, index, row: { ...draft[section][index] } }));
+  // POS bills already sent to a room today (room-wise; they reach the room bill and the day's total automatically)
+  // the hotel PC sent POS data for this day → room food bills only from the POS. Days without it (PC off, before the
+  // sync started) keep the old way: staff may give a Receivable to a room.
+  const posOnlyRooms = !!posDay.synced;
+  const posRoomFor = (roomNo) => (posDay.room_bills?.rows || []).filter((r) => Number(r.roomNo) === Number(roomNo));
   const saveRow = (row) => {
     const { section, index } = editor;
+    const same = section === "pending" && row.room?.roomNo && posRoomFor(row.room.roomNo).find((r) => num(r.amount) === num(row.amount));
+    if (
+      same &&
+      !window.confirm(
+        `Room ${row.room.roomNo} already has a POS food bill of ${inr(same.amount)} today (added to the room automatically).\n\nIs this a DIFFERENT bill that was not made in the POS? OK = add it, Cancel = do not add.`,
+      )
+    )
+      return;
     setDraft((d) => {
       const rows = [...d[section]];
       if (index === -1) rows.push(row);
@@ -294,6 +319,10 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
     };
   };
 
+  // submitted day → printed from the browser in the counter slip layout (80 mm receipt printer or any printer)
+  const [printing, setPrinting] = useState(false);
+  const closePrint = useCallback(() => setPrinting(false), []);
+
   const submit = async () => {
     setConfirm(false);
     setBusy(true);
@@ -331,7 +360,7 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
     );
 
   const blockReason =
-    t.grand <= 0 ? "Nothing entered yet" : t.extra < 0 ? `Cash collection is ${inr(-t.extra)} less than computer amount, please check` : "";
+    t.grand <= 0 ? "Nothing entered yet" : showTotals && t.extra < 0 ? `Cash collection is ${inr(-t.extra)} less than computer amount, please check` : "";
 
   const sectionBlock = (key, rowsRender) => {
     const cfg = SECTIONS[key];
@@ -356,7 +385,13 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
   const ed = editor;
   const edCfg = ed ? SECTIONS[ed.section] : null;
   const edOptions = ed
-    ? { upad: lists.staff, pending: lists.pending, pendingUsers: lists.vendors, expenses: lists.expenses }[ed.section]
+    ? {
+        upad: lists.staff,
+        // days with POS data: room food bills come only from the POS (no new "Room bill" receivable typed here)
+        pending: posOnlyRooms ? (lists.pending || []).filter((x) => !/room\s*bill/i.test(x.fullname || "")) : lists.pending,
+        pendingUsers: lists.vendors,
+        expenses: lists.expenses,
+      }[ed.section]
     : [];
   const edLabel = (o) => (ed?.section === "expenses" ? o?.expenseName || "" : o?.fullname || "");
   const edValue = ed ? edOptions.find((o) => o._id === ed.row._id && edLabel(o) === edLabel(ed.row)) || (ed.row._id ? ed.row : null) : null;
@@ -421,7 +456,32 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
         )}
         {status?.updatedBy && <StatusPill tone="lock">Edit: {status.updatedBy}</StatusPill>}
         {editLocked && <StatusPill tone="lock">🔒 Submitted — only the owner can change it</StatusPill>}
+        {submitted && (
+          <Button size="small" variant="outlined" disabled={printing} onClick={() => setPrinting(true)} sx={{ fontWeight: 800, borderRadius: 99, py: 0.25 }}>
+            🖨 {printing ? "Printing…" : "Print report"}
+          </Button>
+        )}
       </Stack>
+      <RestPrintSlip
+        open={printing}
+        onDone={closePrint}
+        date={date}
+        doc={server.doc}
+        posDay={posDay}
+        dues={dues}
+        roomLinks={server.links}
+        showTotals={showTotals}
+        printedBy={me?.name}
+      />
+      {/* POS figures changed after the day was submitted (hotel PC was off, the POS data came later) */}
+      {submitted &&
+        posDay.synced &&
+        (num(server.doc?.posRoomBills) !== num(posDay.room_bills?.amount) || num(server.doc?.posPayLater) !== num(posDay.pay_later?.amount)) && (
+          <Alert severity="warning" sx={{ mb: 1.5 }}>
+            The POS figures for this day changed after it was submitted (room food bills {inr(posDay.room_bills?.amount)}, pay later {inr(posDay.pay_later?.amount)}). Open the day and press{" "}
+            <b>Update</b> so the grand total includes them.
+          </Alert>
+        )}
 
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 7 }}>
@@ -468,6 +528,38 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
                 )}
               </>
             ))}
+            {/* room food bills: ONLY from the POS ("Pay at guest house") - one place, read-only, nobody types them */}
+            <Section
+              title="🛏 Room food bills (POS)"
+              subtitle='Automatic from POS "Pay at guest house" · added to the room bill · not typed here'
+              total={showTotals ? (posDay.room_bills?.rows || []).reduce((t, r) => t + num(r.amount), 0) : undefined}
+              color="#0F766E"
+            >
+              {(posDay.room_bills?.rows || []).length === 0 ? (
+                <Typography variant="body2" color={Q.muted} sx={{ py: 1 }}>
+                  {posDay.synced ? "No POS bill sent to a room today." : "No POS data for this day yet (the hotel PC sends it every 15 minutes while it is on)."}
+                </Typography>
+              ) : (
+                (posDay.room_bills.rows || []).map((r, i) => (
+                  <Stack key={i} direction="row" alignItems="center" sx={{ py: 1, px: 0.5, borderTop: i ? `1px solid ${Q.line}` : "none" }}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography fontWeight={700} noWrap>
+                        Room {r.roomNo}
+                        {r.guestName ? ` · ${r.guestName}` : ""}
+                      </Typography>
+                      {r.isPaid && (
+                        <Typography variant="caption" sx={{ color: "#0F766E", fontWeight: 700 }}>
+                          Paid at the Guest House
+                        </Typography>
+                      )}
+                    </Box>
+                    <Typography fontWeight={800} sx={{ fontVariantNumeric: "tabular-nums" }}>
+                      {inr(r.amount)}
+                    </Typography>
+                  </Stack>
+                ))
+              )}
+            </Section>
             <DueCollectionsSection date={date} dues={dues} />
             {sectionBlock("pendingUsers", (r) => (
               <>
@@ -483,28 +575,54 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
         </Grid>
         <Grid size={{ xs: 12, md: 5 }}>
           <Stack spacing={2} sx={{ position: { md: "sticky" }, top: { md: 16 } }}>
-            <Section title="Cash collection / Sales" subtitle="Today's collection" color={Q.rest}>
+            <Section title="Cash collection / Sales" subtitle="Money for TODAY's bills only" color={Q.rest}>
               <Stack spacing={1.5}>
-                <MoneyField label="Counter cash" value={draft.cash} onChange={(v) => set("cash", v)} big />
+                {num(posDay.old_paid?.total) > 0 && (
+                  <Alert severity="warning" sx={{ "& .MuiAlert-message": { width: "100%" } }}>
+                    <b>Old bills paid in the POS today ({posDay.old_paid.count})</b>: Cash {inr(posDay.old_paid.cash)} · UPI{" "}
+                    {inr(posDay.old_paid.upi)} · Card {inr(posDay.old_paid.card)}
+                    <br />
+                    This money is in the drawer but it is <b>old dues, not today's sale</b>. Keep it OUT of Counter cash / Card / PP.
+                    It is already recorded - do not add it in "Collect old dues" either.
+                  </Alert>
+                )}
+                {(posDay.banquet_cash || []).length > 0 && (
+                  <Alert severity="info">
+                    <b>Banquet money taken at the POS counter today</b>:{" "}
+                    {posDay.banquet_cash.map((b) => `${b.party || b.bookingNo || "Banquet"} ${inr(b.amount)} ${b.mode}`).join(" · ")}
+                    <br />
+                    It is banquet money, not restaurant sale: keep it OUT of Counter cash / Card / PP and record it on the Banquet booking.
+                  </Alert>
+                )}
+                <MoneyField label="Counter cash (today's bills only)" value={draft.cash} onChange={(v) => set("cash", v)} big />
+                <Typography variant="caption" color={Q.muted} sx={{ mt: -1 }}>
+                  Cash for old dues received by hand goes in "Collect old dues" below, not here.
+                </Typography>
                 <Stack direction="row" spacing={1.5}>
                   <MoneyField label="Card" value={draft.card} onChange={(v) => set("card", v)} />
                   <MoneyField label="PP (UPI)" value={draft.pp} onChange={(v) => set("pp", v)} />
                 </Stack>
-                <MoneyField
-                  label="Computer amount (billing software total)"
-                  value={draft.computer}
-                  onChange={(v) => set("computer", v)}
-                  error={t.extra < 0}
-                />
+                {showTotals && (
+                  <MoneyField
+                    label="Computer amount (billing software total)"
+                    value={draft.computer}
+                    onChange={(v) => set("computer", v)}
+                    error={t.extra < 0}
+                  />
+                )}
               </Stack>
             </Section>
 
+            {/* totals and the day's sale: owner only (staff only enter the figures) */}
+            {showTotals && (
             <Box sx={{ border: `1.5px solid ${t.extra < 0 ? Q.bad : Q.line}`, borderRadius: 3, p: 2, bgcolor: t.extra < 0 ? "#FEF2F2" : "#fff" }}>
               {[
                 ["Counter cash + Card + PP", num(draft.cash) + num(draft.card) + num(draft.pp)],
                 ["Staff advance", t.upad],
                 ["Receivables", t.pending],
                 ["Expenses", t.expenses],
+                ...(t.roomPos ? [[`Room food bills (POS, ${posDay.room_bills.count} - automatic)`, t.roomPos]] : []),
+                ...(t.payLater ? [[`Pay later bills (POS, ${posDay.pay_later.count} - automatic)`, t.payLater]] : []),
               ].map(([l, v]) => (
                 <Stack key={l} direction="row" justifyContent="space-between" sx={{ py: 0.4 }}>
                   <Typography color={Q.muted}>{l}</Typography>
@@ -515,6 +633,7 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
                 <Typography fontWeight={800}>Grand total</Typography>
                 <Typography fontWeight={800}>{inr(t.grand)}</Typography>
               </Stack>
+              {showTotals && (<>
               <Stack direction="row" justifyContent="space-between">
                 <Typography color={Q.muted}>Computer amount</Typography>
                 <Typography fontWeight={600}>− {inr(draft.computer)}</Typography>
@@ -532,9 +651,35 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
                   Cash collection is less than computer amount. Did you miss an expense or staff advance?
                 </Typography>
               )}
+              {/* owner check: what the POS says the counter took for TODAY's bills vs what was typed */}
+              {posDay.today_paid && (
+                <Box sx={{ mt: 1, pt: 1, borderTop: `1px dashed ${Q.line}` }}>
+                  <Typography variant="caption" color={Q.muted} display="block">
+                    POS, today's bills paid at the counter: Cash {inr(posDay.today_paid.cash || 0)} · UPI {inr(posDay.today_paid.upi || 0)} · Card{" "}
+                    {inr(posDay.today_paid.card || 0)}
+                    {num(posDay.old_paid?.total) > 0 ? ` · old bills paid today ${inr(posDay.old_paid.total)} (old dues)` : ""}
+                  </Typography>
+                  {(() => {
+                    const typedCash = num(draft.cash);
+                    const posCash = num(posDay.today_paid.cash);
+                    const oldCash = num(posDay.old_paid?.cash);
+                    const over = typedCash - posCash;
+                    if (oldCash > 0 && over > 0 && Math.abs(over - oldCash) <= Math.max(10, oldCash * 0.05))
+                      return (
+                        <Typography variant="caption" color={Q.bad} fontWeight={700} display="block">
+                          Counter cash is {inr(over)} more than today's POS cash - about the same as old dues cash ({inr(oldCash)}). Old dues may be
+                          counted as today's sale.
+                        </Typography>
+                      );
+                    return null;
+                  })()}
+                </Box>
+              )}
+              </>)}
             </Box>
+            )}
             {/* 💵 Total by payment mode: counter (aaj ki sale) + collections (purana udhaar + GH se room food bill cash) */}
-            {(() => {
+            {showTotals && (() => {
               const rows = [
                 ["Cash", num(draft.cash), dues.byMode.Cash + dues.fromGh],
                 // Card aur PP dono ek hi account (PP) mein aate hain — isliye ek line
@@ -651,9 +796,9 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
       </Grid>
 
       <SaveBar
-        label="Grand total"
-        amount={t.grand}
-        sub={editLocked ? { text: LOCK_MSG, color: Q.bad } : blockReason ? { text: blockReason, color: Q.bad } : { text: `Difference ${inr(t.extra)}`, color: Q.good }}
+        label={showTotals ? "Grand total" : "Daily report"}
+        amount={showTotals ? t.grand : null}
+        sub={editLocked ? { text: LOCK_MSG, color: Q.bad } : blockReason ? { text: blockReason, color: Q.bad } : showTotals ? { text: `Difference ${inr(t.extra)}`, color: Q.good } : null}
         buttonText={submitted ? "Update" : "Submit"}
         color={Q.rest}
         busy={busy}
@@ -688,7 +833,7 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
         {ed && (
           <Stack spacing={2}>
             <MoneyField label="Amount" value={ed.row.amount} onChange={(v) => setEditor((e) => ({ ...e, row: { ...e.row, amount: v } }))} big autoFocus />
-            {ed.section === "pending" && (
+            {ed.section === "pending" && (!posOnlyRooms || (ed.index !== -1 && !!editor.row?.room)) && (
               <Stack direction="row" spacing={1}>
                 {[
                   [false, "👤 Person / company"],
@@ -721,8 +866,16 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
                     No guest is staying in any room today. Room bill can be given only to a room with a guest.
                   </Typography>
                 )}
+                {ed.row.room?.roomNo && posRoomFor(ed.row.room.roomNo).length > 0 && (
+                  <Alert severity="warning" sx={{ py: 0 }}>
+                    Room {ed.row.room.roomNo} already has POS food bill{posRoomFor(ed.row.room.roomNo).length > 1 ? "s" : ""} today:{" "}
+                    <b>{posRoomFor(ed.row.room.roomNo).map((r) => inr(r.amount)).join(", ")}</b> — sent from the POS (Pay at guest house) and added to the room bill
+                    automatically. Enter here only food that was <b>not</b> billed in the POS.
+                  </Alert>
+                )}
                 <Typography variant="caption" color={Q.muted}>
-                  This amount will be added to that room's Guest House bill automatically (after Submit / Update). In restaurant accounts it stays as a receivable under "{roomBillPerson().fullname.trim()}".
+                  Only for food NOT billed in the POS (POS "Pay at guest house" bills go to the room automatically). This amount will be added to that room's Guest
+                  House bill after Submit / Update. In restaurant accounts it stays as a receivable under "{roomBillPerson().fullname.trim()}".
                 </Typography>
               </>
             ) : (
@@ -801,9 +954,15 @@ const RestQuickEntry = ({ date, canEdit = true }) => {
           { label: "Staff advance", value: inr(t.upad) },
           { label: "Receivables", value: inr(t.pending) },
           { label: "Expenses", value: inr(t.expenses) },
-          { label: "Grand total", value: inr(t.grand), color: Q.ink },
-          { label: "Computer amount", value: inr(draft.computer), color: num(draft.computer) === 0 ? Q.warn : undefined },
-          { label: "Difference", value: inr(t.extra), color: Q.good },
+          ...(showTotals && t.roomPos ? [{ label: "Room food bills (POS)", value: inr(t.roomPos) }] : []),
+          ...(showTotals && t.payLater ? [{ label: "Pay later bills (POS)", value: inr(t.payLater) }] : []),
+          ...(showTotals ? [{ label: "Grand total", value: inr(t.grand), color: Q.ink }] : []),
+          ...(showTotals
+            ? [
+                { label: "Computer amount", value: inr(draft.computer), color: num(draft.computer) === 0 ? Q.warn : undefined },
+                { label: "Difference", value: inr(t.extra), color: Q.good },
+              ]
+            : []),
         ]}
         onCancel={() => setConfirm(false)}
         onConfirm={submit}

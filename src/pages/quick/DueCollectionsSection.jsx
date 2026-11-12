@@ -36,7 +36,11 @@ export const useDueReceipts = (date) => {
       .catch(() => setToOffice(0));
     axios
       .get(`${API}/rest-dues/room-bills/${date}`)
-      .then(({ data }) => setRoomBills(data.data || { due: [], paidToday: [] }))
+      // only EARLIER days' room bills are old dues here; today's POS room bills have their own section ("Room food bills (POS)")
+      .then(({ data }) => {
+        const d = data.data || { due: [], paidToday: [] };
+        setRoomBills({ ...d, due: (d.due || []).filter((c) => c.date !== date) });
+      })
       .catch(() => setRoomBills({ due: [], paidToday: [] }));
     axios
       .get(`${API}/rest-dues/gh-cash/${date}`)
