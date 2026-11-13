@@ -57,6 +57,9 @@ const todayIst = () => dayjs(new Date(Date.now() + IST_MS).toISOString().slice(0
 const s = (v) => String(v ?? "").trim();
 
 // hotel PC collection name -> [model, natural key (or null: by _id only)]
+// Set up only in Rad Shiva (the hotel PC copies are its built-in setup): rooms and banquet halls / packages / menu
+// items / add-ons are never taken from the cashier PC
+const RAD_SHIVA_MASTER = new Set(["rooms", "roomgroups", "banquethalls", "banquetpackages", "banquetitems", "banquetaddons"]);
 const COLLS = {
   restentries: [RestEntry, (d) => s(d.createDate)],
   entries: [Entry, (d) => s(d.date)],
@@ -324,8 +327,8 @@ export const runPull = async ({ from, to, replace = new Set(), by, auto = false,
     // 1) records (before the POS days: room bills look up the guest of the room)
     const docs = got.docs && typeof got.docs === "object" ? got.docs : {};
     for (const coll of Object.keys(docs)) {
-      if (!COLLS[coll]) {
-        out.ignored.push(coll); // anything not on the list (logins, settings, ...) is never written
+      if (!COLLS[coll] || RAD_SHIVA_MASTER.has(coll)) {
+        out.ignored.push(coll); // anything not on the list (logins, settings, ...) or set up only here is never written
         continue;
       }
       await applyColl(coll, docs[coll], replace, by, out);
