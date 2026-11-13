@@ -1,25 +1,23 @@
-// Hotel PC (hotel-sense POS) → Rad Shiva: the POS side of each restaurant day.
-// POST /api/v1/hotel-sense-sync   (no login; same sync key as /pos-sync, header "x-sync-key" or body.key)
+// Hotel PC (hotel-sense POS) → Rad Shiva: the POS side of each restaurant day ("pos_days").
+// No route any more: the hotel PC never sends anything to Rad Shiva. The super admin's "Import from cashier PC"
+// (controller/hotelPcPull.js) fetches the days from the hotel PC and calls applyPosDays() here.
 //
 // Safety rules (old Rad Shiva data must never be damaged):
 //   • writes ONLY records that came from the POS: roomcharges with source "pos" (matched by posOrderId) and
 //     the pos_day_extras doc of that day. Staff-typed rows (source "rest" / "gh", restentries, ...) are never touched.
 //   • a POS room bill that was collected in Rad Shiva (GH / restaurant / office counter) is never changed again.
-//   • only days from the start date onward (HOTEL_SENSE_SYNC_FROM=DD-MM-YYYY in .env, otherwise the first day this
-//     endpoint received data); no future days.
+//   • only days from the start date onward (HOTEL_SENSE_SYNC_FROM=DD-MM-YYYY in .env, otherwise the first day the
+//     super admin imported); no future days.
 //   • before anything is changed or removed, a copy goes to "hotel_sense_sync_backups".
 // The exact payload is in HOTEL_SENSE_SYNC.md.
-import express, { Router } from "express";
 import mongoose from "mongoose";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import RoomCharge from "../model/roomCharge.js";
-import { checkSyncKey } from "./posSync.js";
 import { occupiedGuests } from "./roomCharges.js";
 import { BACKUPS, EXTRAS } from "../utils/posDay.js";
 
 dayjs.extend(customParseFormat);
-const router = Router();
 const F = "DD-MM-YYYY";
 const IST_MS = 330 * 60 * 1000;
 const MAX_DAYS = 62;
@@ -33,16 +31,17 @@ const amt = (v) => Math.max(0, Math.round(Number(v) || 0));
 const clean = (v, max = 120) => String(v ?? "").replace(/[\r\n\t]+/g, " ").trim().slice(0, max);
 const POS_BY = "POS (hotel PC)";
 
-export let lastExtrasSync = null;
+export const PULL_STATE = "hotel_pc_pulls"; // _id "state": { extrasFrom }; other docs: one log per import
 
-// start date: .env, else stored, else today (first time) - so no earlier day is ever written by accident
-const startDate = async (keyDoc) => {
+// start date: .env, else stored, else the first day the super admin imported - so no earlier day is written later
+const startDate = async (firstFrom) => {
   const env = day(process.env.HOTEL_SENSE_SYNC_FROM);
   if (env.isValid()) return env;
-  const stored = day(keyDoc?.data?.extrasFrom);
+  const state = await db().collection(PULL_STATE).findOne({ _id: "state" });
+  const stored = day(state?.extrasFrom);
   if (stored.isValid()) return stored;
-  const t = todayIst();
-  await db().collection("kitchen_docs").updateOne({ _id: "secret/possync" }, { $set: { "data.extrasFrom": t.format(F) } });
+  const t = day(firstFrom).isValid() ? day(firstFrom) : todayIst();
+  await db().collection(PULL_STATE).updateOne({ _id: "state" }, { $set: { extrasFrom: t.format(F) } }, { upsert: true });
   return t;
 };
 
@@ -176,49 +175,33 @@ const syncExtras = async (date, d, roomOrderIds, pc, out) => {
   out.daysChanged += 1;
 };
 
-router.post("/", express.text({ type: "text/plain", limit: "5mb" }), async (req, res) => {
-  try {
-    if (typeof req.body === "string") {
-      try {
-        req.body = JSON.parse(req.body || "{}");
-      } catch {
-        return res.status(400).json({ success: false, message: "Bad data" });
-      }
+// pos_days of the hotel PC (shape in HOTEL_SENSE_SYNC.md). firstFrom = the first day asked, used as the start date
+// only the very first time. Returns a summary; never throws for one bad day (it is listed in skipped).
+export const applyPosDays = async (days, pc, firstFrom) => {
+  if (!Array.isArray(days)) return { daysChanged: 0, created: 0, updated: 0, same: 0, kept: 0, removed: 0, skipped: ["No days in this data"] };
+  const from = await startDate(firstFrom);
+  const today = todayIst();
+  pc = clean(pc, 40);
+  const out = { daysChanged: 0, created: 0, updated: 0, same: 0, kept: 0, removed: 0, skipped: [], from: from.format(F) };
+  for (const d of days.slice(0, MAX_DAYS)) {
+    const date = String(d?.date || "");
+    const dd = day(date);
+    if (!dd.isValid()) {
+      out.skipped.push(`${date || "(no date)"}: date must be DD-MM-YYYY`);
+      continue;
     }
-    const keyDoc = await checkSyncKey(req);
-    if (!keyDoc) return res.status(401).json({ success: false, message: "Wrong sync key" });
-    const days = Array.isArray(req.body?.days) ? req.body.days : null;
-    if (!days) return res.status(400).json({ success: false, message: "No days in this data" });
-    if (days.length > MAX_DAYS) return res.status(400).json({ success: false, message: `Send at most ${MAX_DAYS} days at a time` });
-    const from = await startDate(keyDoc);
-    const today = todayIst();
-    const pc = clean(req.body?.pc, 40);
-    const out = { daysChanged: 0, created: 0, updated: 0, same: 0, kept: 0, removed: 0, skipped: [], from: from.format(F) };
-    for (const d of days) {
-      const date = String(d?.date || "");
-      const dd = day(date);
-      if (!dd.isValid()) {
-        out.skipped.push(`${date || "(no date)"}: date must be DD-MM-YYYY`);
-        continue;
-      }
-      if (dd.isBefore(from, "day")) {
-        out.skipped.push(`${date}: before the start date ${from.format(F)}`);
-        continue;
-      }
-      if (dd.isAfter(today, "day")) {
-        out.skipped.push(`${date}: future day`);
-        continue;
-      }
-      const list = Array.isArray(d.room_bills) ? d.room_bills : [];
-      await syncRoomBills(date, list, d.complete === true, out);
-      await syncExtras(date, d, new Set(list.map((r) => clean(r?.posOrderId, 40)).filter(Boolean)), pc, out);
+    if (dd.isBefore(from, "day")) {
+      out.skipped.push(`${date}: before the start date ${from.format(F)}`);
+      continue;
     }
-    lastExtrasSync = { at: new Date(), pc, ...out, skipped: out.skipped.length };
-    await db().collection("kitchen_docs").updateOne({ _id: "secret/possync" }, { $set: { "data.lastExtrasSync": lastExtrasSync } });
-    res.json({ success: true, ...out });
-  } catch (e) {
-    res.status(400).json({ success: false, message: e.message });
+    if (dd.isAfter(today, "day")) {
+      out.skipped.push(`${date}: future day`);
+      continue;
+    }
+    const list = Array.isArray(d.room_bills) ? d.room_bills : [];
+    await syncRoomBills(date, list, d.complete === true, out);
+    await syncExtras(date, d, new Set(list.map((r) => clean(r?.posOrderId, 40)).filter(Boolean)), pc, out);
   }
-});
-
-export default router;
+  if (days.length > MAX_DAYS) out.skipped.push(`Only the first ${MAX_DAYS} days were read`);
+  return out;
+};

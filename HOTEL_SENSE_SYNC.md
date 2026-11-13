@@ -1,26 +1,61 @@
-# Hotel PC → Rad Shiva: POS room bills, pay later and old dues
+# Hotel PC data in Rad Shiva: Import from cashier PC (pull)
 
-The hotel PC (hotel-sense POS) sends the POS side of each restaurant day to Rad Shiva.
-Rad Shiva shows it on the Restaurant day screen, the Guest House room bills, the print slip and the receivables report.
+The hotel PC never sends anything to Rad Shiva and holds no Rad Shiva key or login. Only the **Super Admin** brings
+its data in: Owner dashboard > Settings > **Import from cashier PC**. Rad Shiva's server then fetches the days from
+the hotel PC and adds only what is not here yet.
 
-## Endpoint
+The old inbound routes `POST /api/v1/pos-sync` and `POST /api/v1/hotel-sense-sync` are **removed** (404, and 401
+without login). Their apply logic is kept as functions (`applyPosReports` in `controller/posSync.js`,
+`applyPosDays` in `controller/hotelSenseSync.js`) and is used by the pull.
 
-```
-POST /api/v1/hotel-sense-sync
-Content-Type: application/json      (text/plain with the same JSON also works)
-x-sync-key: <the POS sync key>      (or "key" in the body)
-```
+## Set up (once)
 
-- **Key:** the same sync key as `POST /api/v1/pos-sync` (stored as a hash in `kitchen_docs` `secret/possync`).
-- **Rate limit:** at most 10 requests per 15 minutes from one IP. Send every 15 minutes, with all days in one request.
-- **Days per request:** at most 62.
+1. On the Rad Shiva server, in the `server` folder: `node scripts/make-pull-key.js`.
+   It writes `HOTEL_PC_PULL_KEY=<plain key>` into `server/.env` and prints the key's SHA-256.
+2. Also in `server/.env`: `HOTEL_PC_PULL_URL=https://<vps>/shop/api/radshiva/pull` (just `https://<vps>` also works).
+   Restart the server.
+3. On the hotel PC: `bin/rails runner script/radshiva_pull_setup.rb <sha256>`. Only the SHA-256 goes there.
+   The plain key never goes to the hotel PC, into git, a chat or a message.
+4. Optional: `HOTEL_SENSE_SYNC_FROM=DD-MM-YYYY` in `server/.env` = no POS day before this is ever written.
+   Without it, the first day of the first import is the start date (kept in `hotel_pc_pulls` `_id: "state"`).
 
-## Body
+## What the import does
+
+`POST /api/v1/hotel-pc/pull { from, to }` (Super Admin only, not view-only, behind the dashboard password; at most
+62 days). The server calls `GET <HOTEL_PC_PULL_URL>?from=&to=` with header `x-pull-key`, then applies, in order:
+
+1. **docs** (Rad Shiva-shaped records of the hotel PC back office), only these collections: restentries entries
+   officebooks roomcharges ghduereceipts restduereceipts restdueadjusts cashhandovers guestregisters stays bookings
+   roomblocks roommoves banquetbookings invoices purchasebills staffsalaries restcategories reststaffs restpendings
+   rooms roomgroups officetypes banquethalls banquetpackages banquetitems banquetaddons. Anything else (logins,
+   settings, secrets) is ignored.
+   - Added only when neither the `_id` nor the natural key is here yet. Natural keys: restentries `createDate`;
+     entries / officebooks `date`; staffsalaries month + year; rooms `roomNumber`; guestregisters and stays
+     date + period + room; roomblocks room; invoices series + fy + seq; officetypes side + category + expense;
+     restcategories / banquet lists by name.
+   - A record that does not pass this server's model checks is skipped (listed with the reason).
+   - Already here and equal: **same**. Already here but the hotel PC copy is different and newer: **different**,
+     listed for the Super Admin, never overwritten on its own. Rad Shiva copy newer: **skipped** (kept).
+   - Ticked "different" rows: `POST /api/v1/hotel-pc/pull { from, to, replace: ["<coll>:<hotel id>"] }`.
+     Rad Shiva's own `_id` is kept; the old copy goes to `hotel_pc_pull_backups` first.
+   - POS room bills (roomcharges with source "pos") are not taken as records; they come through step 2.
+2. **pos_days**: the POS side of each restaurant day (shape below), same rules as before.
+3. **pos_reports**: dish / table / footfall numbers for Manager (same bundle the old POS Sync program sent).
+
+Every added record is also written to `hotel_pc_pull_backups` (kind "added"). Each import is logged in
+`hotel_pc_pulls` (kind "log"); the screen remembers the last good import and suggests the next dates.
+Running the same import twice changes nothing.
+
+`GET /api/v1/hotel-pc/pull/status` gives: set up or not, last good import, suggested dates, start date.
+
+## pos_days
+
+The hotel PC reply carries `pos_days`: a list of days like this (the hotel PC builds it in
+`RadshivaPullController.pos_day`):
 
 ```json
 {
-  "pc": "HOTEL-PC",
-  "days": [
+  "pos_days": [
     {
       "date": "12-11-2026",
       "complete": true,
@@ -48,7 +83,7 @@ x-sync-key: <the POS sync key>      (or "key" in the body)
 
 All dates are `DD-MM-YYYY`. Amounts are whole rupees.
 
-| Field | What to send (Rails) |
+| Field | What the hotel PC puts in (Rails) |
 |---|---|
 | `date` | The restaurant day (when the bills were made). |
 | `complete` | `true` when `room_bills` is the full list for that day. Rad Shiva then removes its unpaid POS room bills for that day that are no longer in the list (a cancelled bill, or one changed to another payment). Send `false` or leave it out if the list may be partial. |
@@ -68,19 +103,25 @@ All dates are `DD-MM-YYYY`. Amounts are whole rupees.
 
 - Only records that came from the POS are written. Staff-typed data (restaurant entries, Receivables, GH entries, room bills typed by staff) is never changed.
 - A POS room bill that staff collected in Rad Shiva (GH, restaurant or office counter) is never changed or removed again. An amount change from the POS is reported in `skipped`.
-- Only days from the **start date** onward are taken. The start date is `HOTEL_SENSE_SYNC_FROM=DD-MM-YYYY` in the server `.env`. If that is not set, it is the first day this endpoint received data. Future days are refused.
+- Only days from the **start date** onward are taken. The start date is `HOTEL_SENSE_SYNC_FROM=DD-MM-YYYY` in the server `.env`. If that is not set, it is the first day of the first import. Future days are refused.
 - Before any change or removal, a copy goes to the `hotel_sense_sync_backups` collection.
-- Sending the same data again changes nothing.
+- Importing the same days again changes nothing.
 
-## Reply
+## Reply of the import
 
 ```json
-{ "success": true, "daysChanged": 1, "created": 2, "updated": 0, "same": 0, "kept": 0, "removed": 0,
-  "skipped": ["11-11-2026: before the start date 12-11-2026"], "from": "12-11-2026" }
+{ "success": true, "from": "01-11-2026", "to": "13-11-2026", "pc": "Hotel Ashirvad POS",
+  "collections": { "restentries": { "added": 1, "same": 0, "different": 1, "replaced": 0, "skipped": 0 } },
+  "different": [ { "tag": "restentries:<hotel id>", "key": "10-11-2026", "fields": ["grandTotal"], ... } ],
+  "skipped": [ { "coll": "guestregisters", "id": "...", "why": "not valid here: roomNo, period" } ],
+  "ignored": ["appsettings"],
+  "posDays": { "daysChanged": 13, "created": 1, "updated": 0, "same": 0, "kept": 0, "removed": 0, "skipped": [] },
+  "posReports": { "saved": true, "days": 13 } }
 ```
 
-`401` means a wrong key; `400` means bad JSON, no `days`, or more than 62 days. Treat any reply with `success: true` as delivered; for catch-up after the PC was off, resend from the last day that got `success: true`.
+`403` not the Super Admin; `400` bad dates or more than 62 days; `502` the cashier PC could not be reached or
+refused the key; `503` HOTEL_PC_PULL_URL / HOTEL_PC_PULL_KEY not set.
 
 ## Restaurant day after the POS data arrives
 
-If the cashier submitted the day before the POS data reached Rad Shiva, the restaurant screen says the POS figures changed. Press **Update** to save the new grand total.
+If the cashier submitted the day before the Super Admin imported the POS data, the restaurant screen says the POS figures changed. Press **Update** to save the new grand total.

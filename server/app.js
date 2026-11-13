@@ -59,8 +59,7 @@ import performance from "./controller/performance.js";
 import group from "./controller/group.js";
 import rasoi from "./controller/rasoi.js";
 import jobs from "./controller/jobs.js";
-import posSync from "./controller/posSync.js";
-import hotelSenseSync from "./controller/hotelSenseSync.js";
+import hotelPcPull from "./controller/hotelPcPull.js";
 import bizGraph from "./controller/bizGraph.js";
 import staffInsights from "./controller/staffInsights.js";
 import dashLock from "./controller/dashLock.js";
@@ -104,8 +103,9 @@ app.use("/api/v1/staff-insights", staffInsights); // staff ranking: din-wise haz
 app.use("/api/v1/biz", bizGraph); // naye graphs + sales goals (daily read-only, goals alag collection)
 app.use("/api/v1/performance", performance); // read-only: saal vs saal performance (sirf owner/admin)
 app.use("/api/v1/group", group); // read-only: sab hotels ka ek dashboard (summary key se)
-app.use("/api/v1/pos-sync", posSync); // hotel PC ka POS sync (sync key se, sirf kitchen_pos_*)
-app.use("/api/v1/hotel-sense-sync", hotelSenseSync); // hotel PC: POS room bills, pay later, old dues (sync key; only POS-marked records)
+// Hotel PC data: Rad Shiva PULLS it (Super Admin button "Import from cashier PC"); nothing is pushed in from outside.
+// The old inbound POST /api/v1/pos-sync and /api/v1/hotel-sense-sync are gone (their apply logic is used by the pull).
+app.use("/api/v1/hotel-pc", hotelPcPull);
 app.use("/api/v1/jobs", jobs); // staff bharti: khula apply form (sirf kitchen_candidates)
 app.use("/api/v1/rasoi", rasoi); // Rasoi Board (kitchen): apne naye kitchen_* collections; app ka sale sirf padhta hai
 
