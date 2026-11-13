@@ -612,6 +612,7 @@ body{font-size:15px}
       <section class="panel"><div class="row" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><h2 data-i="posWdT"></h2><span class="hi" id="posWdNote"></span></div><div id="posWd" class="pd-wd"></div></section>
       <section class="panel"><h2 data-i="posMonT"></h2><div class="tablebox"><table><thead><tr><th></th><th class="n" data-i="posMSale"></th><th class="n" data-i="posMDay"></th><th class="n" data-i="posMGrow"></th><th class="n" data-i="posPP"></th><th class="n" data-i="posMParcel"></th></tr></thead><tbody id="posMonRows"></tbody></table></div><p class="note" id="posMonNote"></p></section>
     </div>
+    <section class="panel"><div class="row" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><h2 data-i="posHourT"></h2><span class="hi" id="posHourNote"></span></div><div id="posHour" class="pd-bars"></div></section>
     <div class="pd-two">
       <section class="panel"><h2 data-i="posSpaceT"></h2><div id="posStype" class="pd-stype"></div><p class="note" id="posSpaceNote"></p></section>
       <section class="panel"><h2 data-i="posTablesT"></h2><div id="posTables" class="pd-bars"></div></section>
@@ -751,7 +752,7 @@ const UI={
  posDrop:["फ़ाइलें यहाँ खींचें या दबाकर चुनें","Drag files here or tap to choose"], posDrop2:["CSV / Excel · कई फ़ाइलें एक साथ","CSV / Excel · many files together"], posFiles:["डाली हुई फ़ाइलें (बैकअप)","Uploaded files (backup)"],
  posSyncT:["होटल PC से अपने आप (POS Sync)","Automatic from hotel PC (POS Sync)"], posKeyBtn:["Sync key बनाओ","Create sync key"],
  posDash:["बिक्री डैशबोर्ड","Sales dashboard"], posChartT:["रोज़ की बिक्री - हॉल, AC, पार्सल","Daily sales - hall, AC, parcel"], posIdeasT:["💡 बिक्री बढ़ाने के सुझाव (आपके डेटा से)","💡 Growth ideas (from your data)"],
- posWdT:["कौन-सा दिन कैसा","Which day is strong"], posMonT:["महीने की बढ़त","Monthly growth"], posMSale:["बिक्री","Sales"], posMDay:["रोज़ औसत","Per day"], posMGrow:["बढ़त","Growth"], posMParcel:["पार्सल","Parcel"],
+ posWdT:["कौन-सा दिन कैसा","Which day is strong"], posMonT:["महीने की बढ़त","Monthly growth"], posHourT:["घंटे के हिसाब से ग्राहक","Footfall by hour"], posMSale:["बिक्री","Sales"], posMDay:["रोज़ औसत","Per day"], posMGrow:["बढ़त","Growth"], posMParcel:["पार्सल","Parcel"],
  posSpaceT:["कहाँ से कमाई","Where income comes from"], posTablesT:["टेबल के हिसाब से","By table"], posCatT:["ग्रुप के हिसाब से कमाई","Income by menu group"], posSetupT:["⚙️ सेटअप - POS Sync, फ़ाइल डालना, बैकअप","⚙️ Setup - POS Sync, file upload, backup"],
  posDishNote:["A = कुल कमाई का 80% देने वाली डिश, B = अगली 15%, C = बाकी। ▲▼ = पिछली उतनी ही अवधि से रोज़ की बिक्री की तुलना। धीमी = हफ़्ते में 1 से कम।","A = dishes making 80% of income, B = next 15%, C = rest. ▲▼ = daily sales vs the previous period of the same length. Slow = under 1 a week."],
  posSum:["बिक्री का सार","Sales summary"], posWd:["वार के हिसाब से (रोज़ औसत)","By weekday (daily avg)"], posMon:["महीने के हिसाब से","By month"],
@@ -1698,7 +1699,7 @@ function renderPos(){
   $("posRange").innerHTML=[[7,T("7 दिन","7 days")],[30,T("30 दिन","30 days")],[90,T("90 दिन","90 days")],[0,T("सब","All")]].map(([v,l])=>`<button class="chip" type="button" data-r="${v}" aria-pressed="${v===posRange}">${l}</button>`).join("");
   $("posRange").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{posRange=Number(b.dataset.r);posHov=-1;renderPos()});
   const today=localDate(new Date()), ALL=(POSD.days||[]).map(posDay).filter(r=>r.sale||r.ord), done=ALL.filter(r=>r.d<today), tdy=ALL.find(r=>r.d===today);
-  const ids=["posKpis","posToday","posChart","posChartInfo","posLegend","posIdeas","posWd","posMonRows","posStype","posTables","posDishRows","posCats","posDishF"];
+  const ids=["posKpis","posToday","posChart","posChartInfo","posLegend","posIdeas","posWd","posMonRows","posStype","posTables","posDishRows","posCats","posDishF","posHour"];
   if(!done.length){ ids.forEach(i=>$(i).innerHTML=""); $("posKpis").innerHTML=`<div class="hi">${T("अभी कोई डेटा नहीं - नीचे 'सेटअप' खोलकर POS Sync लगाएँ या फ़ाइल डालें","No data yet - open 'Setup' below to install POS Sync or upload files")}</div>`; $("posSetup").open=true; return }
   const last=done[done.length-1].d, n=posRange||Math.round((parse(last)-parse(done[0].d))/864e5)+1, from=posRange?shift(last,-(n-1)):done[0].d, pfrom=shift(from,-n);
   const CUR=done.filter(r=>r.d>=from), PRV=posRange?done.filter(r=>r.d>=pfrom&&r.d<from):[];
@@ -1762,6 +1763,15 @@ function renderPos(){
   $("posWdNote").textContent=WDsrc===CUR?T("चुनी अवधि, रोज़ औसत","selected period, daily avg"):T("पिछले 8 हफ़्ते, रोज़ औसत","last 8 weeks, daily avg");
   const wMax=Math.max(...wd.map(w=>w.avg),1);
   $("posWd").innerHTML=[1,2,3,4,5,6,0].map(i=>{ const w=wd[i]; if(!w.n) return ""; const cls=w===best?"best":w===worst?"worst":""; return `<div class="wdrow ${cls}" title="${esc(`${nf(w.ord)} ${T("ऑर्डर","orders")} · ${T("पार्सल","parcel")} ${fmtR(w.par)}`)}"><span class="lb">${esc(dayN(i))}${w===best?" ⭐":""}</span><span class="tr"><i style="width:${((w.avg-w.par)/wMax*100).toFixed(1)}%;background:#0F766E"></i><i style="width:${(w.par/wMax*100).toFixed(1)}%;background:#D97706"></i></span><span class="n">${fmtR(w.avg)}</span></div>` }).join("");
+  // ---- ghante-wise footfall (hotel PC "hourly") ----
+  { const hrs={}, withH=CUR.filter(r=>Array.isArray(r.x&&r.x.hour)); const hN=withH.length;
+    withH.forEach(r=>r.x.hour.forEach(h=>{ const t=(hrs[h.h] ||= {f:0,o:0,a:0,g:0,tP:0,today:0}); t.f+=h.f; t.o+=h.o; t.a+=h.a; t.g+=h.g; t.tP+=h.tP }));
+    const tH=tdy&&Array.isArray(tdy.x&&tdy.x.hour)?tdy.x.hour:[]; tH.forEach(h=>{ (hrs[h.h] ||= {f:0,o:0,a:0,g:0,tP:0,today:0}).today=h.f });
+    const hl=Object.keys(hrs).map(Number).sort((a,b)=>a-b), hMax=Math.max(...hl.map(h=>hN?hrs[h].f/hN:0),1), peak=hN?hl.reduce((b,h)=>b==null||hrs[h].f>hrs[b].f?h:b,null):null;
+    const hLab=(h)=>{ const a=(x)=>`${x%12||12}${x<12?"am":"pm"}`; return `${a(h)}–${a((h+1)%24)}` };
+    $("posHourNote").textContent=hN?T(`${hN} दिन का रोज़ औसत (ग्राहक)${tH.length?" · आज अब तक अलग":""}`,`people per day, average of ${hN} days${tH.length?" · today so far on the right":""}`):"";
+    $("posHour").innerHTML=hN||tH.length?hl.map(h=>{ const t=hrs[h], avg=hN?t.f/hN:0; return `<div class="hb"${h===peak?' style="font-weight:700"':""} title="${esc(`${nf(t.f)} ${T("ग्राहक","people")} · ${nf(t.o)} ${T("ऑर्डर","orders")} · ${T("अंदर","dine-in")} ${nf(t.g)} · ${T("पार्सल","parcel")} ${nf(t.tP)} · ${fmtR(t.a)}`)}"><span class="nm">${esc(hLab(h))}${h===peak?" ★":""}</span><span class="tr"><i style="width:${(avg/hMax*100).toFixed(1)}%"></i></span><span class="n">${avg.toFixed(1)}</span><span class="c hi">${nf(t.o)} ${T("ऑर्डर","orders")} · ${T("आज","today")} ${nf(t.today)}</span></div>` }).join(""):`<div class="hi">${T("अभी घंटे का डेटा नहीं - अगली POS इम्पोर्ट के बाद दिखेगा","No hourly data yet - it appears after the next import from the cashier PC")}</div>`;
+  }
   // ---- mahina ----
   const mon={}; done.forEach(r=>{ const k=r.d.slice(0,7); (mon[k] ||= []).push(r) }); const mk=Object.keys(mon).sort(); let prevPD=null;
   const mrows=mk.map(k=>{ const s=posSum(mon[k]), dim=new Date(Number(k.slice(0,4)),Number(k.slice(5)),0).getDate(), pdv=s.sale/mon[k].length, g=prevPD?pct(pdv,prevPD):null; prevPD=pdv; return {k,s,n:mon[k].length,dim,pdv,g} });

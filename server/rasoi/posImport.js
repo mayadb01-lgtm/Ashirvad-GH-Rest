@@ -145,6 +145,16 @@ export async function importSync(reports, by) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
     (days[d] ||= {}).pp = { orders: n(v.total_orders), foot: n(v.total_footfall), sale: n(v.total_amount), weight: n(v.total_weight), targetW: n(v.total_target_weight), cal: n(v.total_energy), targetC: n(v.total_target_energy) };
   }
+  // ghante-wise footfall (hotel PC "hourly"): har din ke ghante → orders / log / rakam. Range ke har din ka purana hissa badal jata hai.
+  if (reports.hourly && typeof reports.hourly === "object") {
+    (reports.dates || []).forEach((d) => { if (/^\d{4}-\d{2}-\d{2}$/.test(d)) (days[d] ||= {}).hour = []; });
+    for (const [d, rows] of Object.entries(reports.hourly)) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !Array.isArray(rows)) continue;
+      (days[d] ||= {}).hour = rows
+        .filter((r) => n(r?.hour) >= 0 && n(r?.hour) <= 23)
+        .map((r) => ({ h: n(r.hour), o: n(r.orders), f: n(r.footfall), g: n(r.guests), dO: n(r.dine_in_orders), tO: n(r.take_out_orders), tP: n(r.take_out_people), a: n(r.amount) }));
+    }
+  }
   const ops = Object.entries(days).map(([d, parts]) => ({
     updateOne: { filter: { _id: d }, update: { $set: { ...Object.fromEntries(Object.entries(parts).map(([k, v]) => [`data.${k}`, v])), at: new Date() } }, upsert: true },
   }));
