@@ -262,33 +262,146 @@ const pullUrl = () => {
   if (!u) return "";
   return /\/pull$/.test(u) ? u : `${u}/shop/api/radshiva/pull`;
 };
-const fetchHotelPc = async (from, to) => {
+const fetchHotelPc = async (from, to, timeoutMs = 120000) => {
   const url = pullUrl();
   const key = s(process.env.HOTEL_PC_PULL_KEY);
   if (!url || !key) throw Object.assign(new Error("Not set up: HOTEL_PC_PULL_URL and HOTEL_PC_PULL_KEY are needed in the server settings"), { status: 503 });
   const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 120000);
+  const timer = setTimeout(() => ctl.abort(), timeoutMs);
   let r;
+  let text;
   try {
     r = await fetch(`${url}?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, { headers: { "x-pull-key": key, accept: "application/json" }, signal: ctl.signal });
+    text = await r.text();
   } catch (e) {
-    throw Object.assign(new Error(e.name === "AbortError" ? "The cashier PC did not answer in 2 minutes" : `Could not reach the cashier PC (${e.cause?.code || e.message})`), { status: 502 });
+    const msg = e.name === "AbortError" ? `The cashier PC did not answer in ${Math.round(timeoutMs / 1000)} seconds` : `Could not reach the cashier PC (${e.cause?.code || e.message})`;
+    throw Object.assign(new Error(msg), { status: 502 });
   } finally {
     clearTimeout(timer);
   }
-  const text = await r.text();
   let j = null;
   try {
     j = JSON.parse(text);
   } catch {
     /* not JSON */
   }
+  // the VPS link answers 502 / 503 / 504 itself when the hotel PC is off
+  if (!j && [502, 503, 504].includes(r.status)) throw Object.assign(new Error(`Cashier PC not reachable (HTTP ${r.status})`), { status: 502 });
   if (!r.ok || !j?.success) {
     const msg = j?.message || `HTTP ${r.status}`;
     const hint = r.status === 401 ? " (the key on the cashier PC does not match)" : r.status === 503 ? " (pull is not switched on at the cashier PC)" : "";
     throw Object.assign(new Error(`Cashier PC said: ${msg}${hint}`), { status: 502 });
   }
   return j;
+};
+
+// ---------- one import (manual button and the 2-minute timer) ----------
+// One at a time, also across server processes: a short lease in hotel_pc_pulls _id "lock".
+const LOCK_MS = 5 * 60 * 1000;
+const takeLock = async (owner) => {
+  const now = new Date();
+  try {
+    const r = await db()
+      .collection(PULL_STATE)
+      .findOneAndUpdate({ _id: "lock", until: { $lt: now } }, { $set: { until: new Date(now.getTime() + LOCK_MS), owner, at: now } }, { upsert: true, returnDocument: "after" });
+    return !!r;
+  } catch (e) {
+    if (e.code === 11000) return false; // someone else holds it
+    throw e;
+  }
+};
+const dropLock = (owner) => db().collection(PULL_STATE).updateOne({ _id: "lock", owner }, { $set: { until: new Date(0) } }).catch(() => {});
+
+export class Busy extends Error {}
+
+// fetch + apply. Throws Busy when another import runs.
+export const runPull = async ({ from, to, replace = new Set(), by, auto = false, timeoutMs = 120000 }) => {
+  const owner = `${process.pid}:${Date.now()}:${Math.random()}`;
+  if (!(await takeLock(owner))) throw new Busy("An import is already running. Wait a minute and try again.");
+  try {
+    const got = await fetchHotelPc(from.format(F), to.format(F), timeoutMs);
+    const out = { from: from.format(F), to: to.format(F), pc: s(got.pc).slice(0, 40), at: got.at || null, auto, collections: {}, different: [], skipped: [], ignored: [] };
+    // 1) records (before the POS days: room bills look up the guest of the room)
+    const docs = got.docs && typeof got.docs === "object" ? got.docs : {};
+    for (const coll of Object.keys(docs)) {
+      if (!COLLS[coll]) {
+        out.ignored.push(coll); // anything not on the list (logins, settings, ...) is never written
+        continue;
+      }
+      await applyColl(coll, docs[coll], replace, by, out);
+    }
+    // 2) POS side of each restaurant day (room food bills, pay later, old dues)
+    out.posDays = await applyPosDays(got.pos_days, out.pc, from.format(F));
+    // 3) Manager board numbers (dish / table / footfall)
+    out.posReports = got.pos_reports ? await applyPosReports(got.pos_reports, out.pc) : { saved: false, message: "No POS reports in this data" };
+    const totals = Object.values(out.collections).reduce((t, r) => {
+      Object.keys(r).forEach((k) => (t[k] = (t[k] || 0) + r[k]));
+      return t;
+    }, {});
+    out.totals = totals;
+    const now = new Date();
+    const pd = out.posDays || {};
+    const changed = (totals.added || 0) + (totals.replaced || 0) + (pd.created || 0) + (pd.updated || 0) + (pd.removed || 0) + (pd.daysChanged || 0) > 0;
+    // the timer runs 720 times a day: a log line only when it changed something (manual imports always)
+    if (!auto || changed) await db().collection(PULL_STATE).insertOne({ kind: "log", ok: true, auto, at: now, by, from: out.from, to: out.to, replaced: replace.size, totals, posDays: { ...pd, skipped: pd.skipped?.length || 0 }, posReports: out.posReports });
+    await db()
+      .collection(PULL_STATE)
+      .updateOne({ _id: "state" }, { $set: { lastOkAt: now, lastOkFrom: out.from, lastOkTo: out.to, lastOkAuto: auto, lastOkBy: by, waitingDifferent: out.different.length, failingSince: null, lastError: "" } }, { upsert: true });
+    return out;
+  } catch (e) {
+    if (!(e instanceof Busy)) {
+      const now = new Date();
+      const state = await db().collection(PULL_STATE).findOne({ _id: "state" });
+      await db()
+        .collection(PULL_STATE)
+        .updateOne({ _id: "state" }, { $set: { lastErrorAt: now, lastError: e.message, failingSince: state?.failingSince || now } }, { upsert: true })
+        .catch(() => {});
+      if (!auto) await db().collection(PULL_STATE).insertOne({ kind: "log", ok: false, at: now, by, from: from.format(F), to: to.format(F), message: e.message }).catch(() => {});
+    }
+    throw e;
+  } finally {
+    await dropLock(owner);
+  }
+};
+
+// ---------- automatic import every 2 minutes (switched on / off by the Super Admin) ----------
+// Asks for yesterday..today, or from the last good import when the PC was off (at most 62 days back).
+// Same safe apply as the button: add only; "different" records wait for the Super Admin.
+export const AUTO_EVERY_MS = 2 * 60 * 1000;
+const AUTO_TIMEOUT_MS = 60 * 1000;
+export const autoRange = (state, today = todayIst()) => {
+  let from = today.subtract(1, "day");
+  const last = day(state?.lastOkTo);
+  if (last.isValid() && last.isBefore(from, "day")) from = last;
+  if (today.diff(from, "day") >= MAX_DAYS) from = today.subtract(MAX_DAYS - 1, "day");
+  return { from, to: today };
+};
+let autoDown = false; // log "not reachable" once, then stay quiet until it works again
+export const autoTick = async () => {
+  if (mongoose.connection.readyState !== 1) return { skipped: "no database" };
+  const state = await db().collection(PULL_STATE).findOne({ _id: "state" });
+  if (state?.autoOn !== true) return { skipped: "off" };
+  if (!pullUrl() || !s(process.env.HOTEL_PC_PULL_KEY)) return { skipped: "not set up" };
+  const { from, to } = autoRange(state);
+  try {
+    const out = await runPull({ from, to, by: "Auto import", auto: true, timeoutMs: AUTO_TIMEOUT_MS });
+    if (autoDown) console.log(`[cashier PC import] working again: ${out.from}..${out.to} imported`);
+    autoDown = false;
+    return { ok: true, out };
+  } catch (e) {
+    if (e instanceof Busy) return { skipped: "busy" };
+    if (!autoDown) console.log(`[cashier PC import] ${e.message} - trying again every 2 minutes, quietly`);
+    autoDown = true;
+    return { ok: false, message: e.message };
+  }
+};
+let autoTimer = null;
+export const startHotelPcAutoPull = () => {
+  if (autoTimer) return;
+  autoTimer = setInterval(() => {
+    autoTick().catch((e) => console.log(`[cashier PC import] ${e.message}`));
+  }, AUTO_EVERY_MS);
+  autoTimer.unref?.();
 };
 
 // ---------- who may do it ----------
@@ -306,13 +419,19 @@ router.get("/pull/status", superAdmin, async (req, res) => {
       db().collection(PULL_STATE).find({ kind: "log", ok: true }).sort({ at: -1 }).limit(1).next(),
     ]);
     const today = todayIst();
-    let from = day(last?.to).isValid() ? day(last.to) : today;
+    const lastTo = day(state?.lastOkTo).isValid() ? state.lastOkTo : last?.to;
+    let from = day(lastTo).isValid() ? day(lastTo) : today;
     if (today.diff(from, "day") >= MAX_DAYS) from = today.subtract(MAX_DAYS - 1, "day");
     res.set("Cache-Control", "no-store").json({
       success: true,
       setUp: !!(pullUrl() && s(process.env.HOTEL_PC_PULL_KEY)),
       startDate: day(process.env.HOTEL_SENSE_SYNC_FROM).isValid() ? process.env.HOTEL_SENSE_SYNC_FROM : state?.extrasFrom || null,
       last: last ? { at: last.at, from: last.from, to: last.to, by: last.by, totals: last.totals } : null,
+      lastOk: state?.lastOkAt ? { at: state.lastOkAt, from: state.lastOkFrom, to: state.lastOkTo, auto: !!state.lastOkAuto, by: state.lastOkBy } : null,
+      failingSince: state?.failingSince || null,
+      lastError: state?.failingSince ? state.lastError || "" : "",
+      waitingDifferent: state?.waitingDifferent || 0,
+      auto: { on: state?.autoOn === true, by: state?.autoBy || "", at: state?.autoAt || null, everyMinutes: AUTO_EVERY_MS / 60000 },
       suggest: { from: from.format(F), to: today.format(F) },
       maxDays: MAX_DAYS,
     });
@@ -321,52 +440,33 @@ router.get("/pull/status", superAdmin, async (req, res) => {
   }
 });
 
-let running = false;
-router.post("/pull", superAdmin, async (req, res) => {
-  if (running) return res.status(409).json({ success: false, message: "An import is already running. Wait a minute and try again." });
-  running = true;
+// on / off switch of the 2-minute import
+router.post("/pull/auto", superAdmin, async (req, res) => {
   try {
-    const from = day(req.body?.from);
-    let to = day(req.body?.to);
-    if (!from.isValid() || !to.isValid() || to.isBefore(from, "day")) return res.status(400).json({ success: false, message: "from and to must be DD-MM-YYYY, from not after to" });
-    const today = todayIst();
-    if (to.isAfter(today, "day")) to = today;
-    if (to.diff(from, "day") >= MAX_DAYS) return res.status(400).json({ success: false, message: `At most ${MAX_DAYS} days at a time` });
-    const replace = new Set((Array.isArray(req.body?.replace) ? req.body.replace : []).map((x) => s(x)).filter((x) => /^[a-z]+:[a-f0-9]{24}$/i.test(x)).slice(0, 2000));
-    const by = who(req.user);
-
-    const got = await fetchHotelPc(from.format(F), to.format(F));
-    const out = { from: from.format(F), to: to.format(F), pc: s(got.pc).slice(0, 40), at: got.at || null, collections: {}, different: [], skipped: [], ignored: [] };
-
-    // 1) records (before the POS days: room bills look up the guest of the room)
-    const docs = got.docs && typeof got.docs === "object" ? got.docs : {};
-    for (const coll of Object.keys(docs)) {
-      if (!COLLS[coll]) {
-        out.ignored.push(coll); // anything not on the list (logins, settings, ...) is never written
-        continue;
-      }
-      await applyColl(coll, docs[coll], replace, by, out);
-    }
-    // 2) POS side of each restaurant day (room food bills, pay later, old dues)
-    out.posDays = await applyPosDays(got.pos_days, out.pc, from.format(F));
-    // 3) Manager board numbers (dish / table / footfall)
-    out.posReports = got.pos_reports ? await applyPosReports(got.pos_reports, out.pc) : { saved: false, message: "No POS reports in this data" };
-
-    const totals = Object.values(out.collections).reduce((t, r) => {
-      Object.keys(r).forEach((k) => (t[k] = (t[k] || 0) + r[k]));
-      return t;
-    }, {});
-    out.totals = totals;
-    await db().collection(PULL_STATE).insertOne({ kind: "log", ok: true, at: new Date(), by, from: out.from, to: out.to, replaced: [...replace].length, totals, posDays: { ...out.posDays, skipped: out.posDays?.skipped?.length || 0 }, posReports: out.posReports });
-    res.json({ success: true, ...out });
-  } catch (e) {
+    const on = req.body?.on === true;
     await db()
       .collection(PULL_STATE)
-      .insertOne({ kind: "log", ok: false, at: new Date(), by: who(req.user), from: s(req.body?.from), to: s(req.body?.to), message: e.message })
-      .catch(() => {});
-    res.status(e.status || 500).json({ success: false, message: e.message });
-  } finally {
-    running = false;
+      .updateOne({ _id: "state" }, { $set: { autoOn: on, autoBy: who(req.user), autoAt: new Date() } }, { upsert: true });
+    if (on) autoTick().catch(() => {}); // first run now, not in 2 minutes
+    res.json({ success: true, on });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+router.post("/pull", superAdmin, async (req, res) => {
+  const from = day(req.body?.from);
+  let to = day(req.body?.to);
+  if (!from.isValid() || !to.isValid() || to.isBefore(from, "day")) return res.status(400).json({ success: false, message: "from and to must be DD-MM-YYYY, from not after to" });
+  const today = todayIst();
+  if (to.isAfter(today, "day")) to = today;
+  if (to.diff(from, "day") >= MAX_DAYS) return res.status(400).json({ success: false, message: `At most ${MAX_DAYS} days at a time` });
+  const replace = new Set((Array.isArray(req.body?.replace) ? req.body.replace : []).map((x) => s(x)).filter((x) => /^[a-z]+:[a-f0-9]{24}$/i.test(x)).slice(0, 2000));
+  try {
+    const out = await runPull({ from, to, replace, by: who(req.user) });
+    res.json({ success: true, ...out });
+  } catch (e) {
+    res.status(e instanceof Busy ? 409 : e.status || 500).json({ success: false, message: e.message });
   }
 });
 

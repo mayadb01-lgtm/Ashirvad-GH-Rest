@@ -5,7 +5,7 @@ import axios from "axios";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import toast from "react-hot-toast";
-import { Alert, Box, Button, Checkbox, CircularProgress, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, Checkbox, CircularProgress, FormControlLabel, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
 import { API, PageTitle, Section } from "../insights/shared";
 import { useAppSelector } from "../../redux/hooks/index.js";
@@ -67,13 +67,38 @@ const HotelPcImport = () => {
       .catch((e) => toast.error(e?.response?.data?.message || "Could not load the import status"));
 
   useEffect(() => {
-    if (allowed) loadStatus();
+    if (!allowed) return undefined;
+    loadStatus();
+    // keep the status line fresh while the page is open (the server imports every 2 minutes when switched on)
+    const t = setInterval(() => {
+      if (document.visibilityState === "visible") axios.get(`${API}/hotel-pc/pull/status`).then(({ data }) => setStatus(data)).catch(() => {});
+    }, 30000);
+    return () => clearInterval(t);
   }, [allowed]);
 
   if (!allowed) return <Alert severity="warning">Only the Super Admin can import from the cashier PC.</Alert>;
 
   const days = dayjs(to, F).diff(dayjs(from, F), "day") + 1;
   const bad = !dayjs(from, F, true).isValid() || !dayjs(to, F, true).isValid() || days < 1 || days > (status?.maxDays || 62);
+
+  const setAuto = async (on) => {
+    try {
+      await axios.post(`${API}/hotel-pc/pull/auto`, { on });
+      toast.success(on ? "Automatic import is ON (every 2 minutes)" : "Automatic import is OFF");
+      setTimeout(loadStatus, on ? 3000 : 0);
+      loadStatus();
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Could not change the automatic import");
+    }
+  };
+  const hm = (v) => dayjs(v).format(dayjs(v).isSame(dayjs(), "day") ? "HH:mm" : "DD-MM HH:mm");
+  const statusLine = !status
+    ? ""
+    : status.failingSince
+      ? `Cashier PC not reachable since ${hm(status.failingSince)}${status.lastError ? ` (${status.lastError})` : ""}${status.lastOk ? `. Last good import ${hm(status.lastOk.at)}.` : "."}`
+      : status.lastOk
+        ? `Last import ${hm(status.lastOk.at)}, ok (${status.lastOk.from} to ${status.lastOk.to}${status.lastOk.auto ? ", automatic" : `, by ${status.lastOk.by}`}).`
+        : "No import yet.";
 
   const run = async (replace = []) => {
     setBusy(true);
@@ -111,7 +136,19 @@ const HotelPcImport = () => {
           <Button variant="contained" startIcon={busy ? <CircularProgress size={16} color="inherit" /> : <CloudDownloadIcon />} disabled={busy || bad || (status && !status.setUp)} onClick={() => run([])}>
             {busy ? "Importing..." : "Import from cashier PC"}
           </Button>
+          <FormControlLabel
+            control={<Switch checked={!!status?.auto?.on} disabled={!status || !status.setUp} onChange={(e) => setAuto(e.target.checked)} />}
+            label={`Automatic every ${status?.auto?.everyMinutes || 2} min`}
+            title="The server fetches yesterday and today (and any days missed while the PC was off) every 2 minutes. Same safe rules: only adds, never overwrites."
+          />
         </Stack>
+        {status && (
+          <Alert severity={status.failingSince ? "warning" : status.lastOk ? "success" : "info"} sx={{ mt: 1.5, py: 0 }}>
+            {statusLine}
+            {status.auto?.on ? ` Automatic import is on (switched on by ${status.auto.by}).` : " Automatic import is off."}
+            {status.waitingDifferent > 0 ? ` ${status.waitingDifferent} record(s) differ from the cashier PC: press Import to see them and choose Replace.` : ""}
+          </Alert>
+        )}
         <Typography variant="caption" color="text.secondary" component="div" sx={{ mt: 1 }}>
           {bad ? `Pick at most ${status?.maxDays || 62} days, From not after To.` : `${days} day(s).`} Last good import:{" "}
           {status?.last ? `${status.last.from} to ${status.last.to}, on ${when(status.last.at)} by ${status.last.by}` : "never"}.

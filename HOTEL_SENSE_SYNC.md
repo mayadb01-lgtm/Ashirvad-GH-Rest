@@ -46,6 +46,22 @@ Every added record is also written to `hotel_pc_pull_backups` (kind "added"). Ea
 `hotel_pc_pulls` (kind "log"); the screen remembers the last good import and suggests the next dates.
 Running the same import twice changes nothing.
 
+## Automatic import every 2 minutes
+
+Switch "Automatic every 2 min" next to the Import button (Super Admin only; `POST /api/v1/hotel-pc/pull/auto
+{ on: true|false }`, kept in `hotel_pc_pulls` `_id: "state"`). It is still a pull: Rad Shiva's server asks, the
+hotel PC sends nothing on its own.
+
+- Each run asks for yesterday..today, or from the last good import when the PC was off (at most 62 days back).
+- Same safe apply as the button: add only; "different" records wait for the Super Admin (the status line says how
+  many). POS days and POS reports of those days are refreshed every run (idempotent).
+- One run at a time, also against the button and a second server process (lease `_id: "lock"`, 5 minutes).
+  60-second timeout per run.
+- PC off: one console line, then quiet until it works again (one more line). The status line shows "Cashier PC not
+  reachable since HH:mm". A run that changed nothing writes no log line.
+- 7.5 requests per 15 minutes from the timer; the hotel PC allows 20, so manual clicks still fit.
+- The timer starts with the server (server.js) and does nothing while the switch is off.
+
 `GET /api/v1/hotel-pc/pull/status` gives: set up or not, last good import, suggested dates, start date.
 
 ## pos_days

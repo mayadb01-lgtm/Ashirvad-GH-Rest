@@ -2,6 +2,7 @@ import process from "process";
 import app from "./app.js";
 import connectDatabase from "./db/Database.js";
 import { startBackupScheduler } from "./utils/autoBackup.js";
+import { startHotelPcAutoPull } from "./controller/hotelPcPull.js";
 import dotenv from "dotenv";
 
 import dns from 'dns';
@@ -19,7 +20,10 @@ if (process.env.NODE_ENV !== "PRODUCTION") {
 }
 
 // DB Connection, phir roz ka automatic backup shuru
-connectDatabase().then(() => startBackupScheduler());
+connectDatabase().then(() => {
+  startBackupScheduler();
+  startHotelPcAutoPull(); // Import from cashier PC every 2 minutes, only while the Super Admin has it switched on
+});
 
 // Server
 const server = app.listen(process.env.PORT || 8080, () => {
