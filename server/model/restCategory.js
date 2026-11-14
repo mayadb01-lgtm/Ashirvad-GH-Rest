@@ -7,7 +7,9 @@ const restCategorySchema = new Schema(
     expense: [
       {
         expenseName: { type: String, required: true },
-        expenseDescription: { type: String, required: true },
+        // optional: 109 old items were saved with a blank description, and "required" made every save of
+        // their category fail (e.g. adding a new vendor, 14 Nov 2026)
+        expenseDescription: { type: String, default: "" },
         isVendor: { type: Boolean, default: false },
         // Vendor ki jaankari (sab optional; purane items mein khaali)
         mobile: { type: String, default: "" },
