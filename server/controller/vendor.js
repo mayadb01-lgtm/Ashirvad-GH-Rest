@@ -44,7 +44,7 @@ router.get("/get-vendor-entries/:startDate/:endDate", async (req, res) => {
         .sort({ entryCreateDate: 1 })
         .lean(),
       // Office Book ke udhaar (Payable) purchase bills → vendor ka credit (naya collection)
-      PurchaseBill.find({ ...dateRange, book: "office", mode: "Payable" }).lean(),
+      PurchaseBill.find({ ...dateRange, book: "office", mode: "Payable", infoOnly: { $ne: true } }).lean(),
     ]);
 
     const restAapvanaEntries = restEntries.flatMap((e) => {

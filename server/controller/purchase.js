@@ -83,7 +83,7 @@ router.get("/items", async (req, res) => {
 router.get("/last/:vendorId", async (req, res) => {
   try {
     const vid = clean(req.params.vendorId, 40);
-    const last = await PurchaseBill.findOne({ "vendor._id": vid, "items.0": { $exists: true } }).sort({ createdAt: -1 }).lean();
+    const last = await PurchaseBill.findOne({ "vendor._id": vid, "items.0": { $exists: true }, infoOnly: { $ne: true } }).sort({ createdAt: -1 }).lean();
     res.json({ success: true, data: last ? { date: last.date, items: last.items, amount: last.amount } : null });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
@@ -95,7 +95,7 @@ router.get("/day/:date", async (req, res) => {
   try {
     if (!ok(req.params.date)) return bad(res, "Invalid date");
     const book = req.query.book === "office" ? "office" : "rest";
-    const q = book === "office" ? { date: req.params.date, book: "office" } : { date: req.params.date, book: { $ne: "office" } };
+    const q = book === "office" ? { date: req.params.date, book: "office", infoOnly: { $ne: true } } : { date: req.params.date, book: { $ne: "office" }, infoOnly: { $ne: true } };
     const list = await PurchaseBill.find(q).sort({ createdAt: 1 }).lean();
     res.json({ success: true, data: list });
   } catch (e) {
@@ -108,15 +108,20 @@ router.post("/", async (req, res) => {
   try {
     const b = req.body || {};
     if (!ok(b.date)) return bad(res, "Invalid date");
-    if (!dateOk(req, b.date)) return bad(res, "Only today's bills can be added", 403);
+    const infoOnly = b.infoOnly === true;
+    if (infoOnly && !isAdminLike(req.user)) return bad(res, "Only the owner can add old bills", 403);
+    if (infoOnly && dayjs(b.date, F).isAfter(dayjs(), "day")) return bad(res, "An old bill cannot have a future date");
+    if (!infoOnly && !dateOk(req, b.date)) return bad(res, "Only today's bills can be added", 403);
     const f = fields(b);
     if (!f.items.length) return bad(res, "Add the bill items (item, qty, rate)");
     if (!(f.amount > 0)) return bad(res, "Bill amount is required");
     if (!f.vendor.name && !f.vendor.expenseName) return bad(res, "Choose the vendor / expense item");
-    if (f.mode === "Payable" && !f.vendor.isVendor) return bad(res, "For Payable, choose a listed vendor");
-    const doc = await PurchaseBill.create({ ...f, date: b.date, entryCreateDate: dayjs(b.date, F).startOf("day").toDate(), enteredBy: who(req) });
-    await rememberItems(doc);
-    await applyBillRates(doc, req.user);
+    if (!infoOnly && f.mode === "Payable" && !f.vendor.isVendor) return bad(res, "For Payable, choose a listed vendor");
+    const doc = await PurchaseBill.create({ ...f, ...(infoOnly ? { infoOnly: true, rowKey: "" } : {}), date: b.date, entryCreateDate: dayjs(b.date, F).startOf("day").toDate(), enteredBy: who(req) });
+    if (!infoOnly) {
+      await rememberItems(doc);
+      await applyBillRates(doc, req.user);
+    }
     res.json({ success: true, data: doc });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
@@ -128,15 +133,17 @@ router.put("/:id([a-f0-9]{24})", async (req, res) => {
   try {
     const doc = await PurchaseBill.findById(req.params.id);
     if (!doc) return bad(res, "Bill not found", 404);
-    if (!dateOk(req, doc.date)) return bad(res, "Only today's bills can be changed", 403);
+    if (doc.infoOnly ? !isAdminLike(req.user) : !dateOk(req, doc.date)) return bad(res, doc.infoOnly ? "Only the owner can change old bills" : "Only today's bills can be changed", 403);
     const f = fields(req.body || {});
     if (!f.items.length) return bad(res, "Add the bill items (item, qty, rate)");
     if (!(f.amount > 0)) return bad(res, "Bill amount is required");
-    if (f.mode === "Payable" && !f.vendor.isVendor) return bad(res, "For Payable, choose a listed vendor");
-    Object.assign(doc, f, { book: doc.book, updatedBy: who(req) });
+    if (!doc.infoOnly && f.mode === "Payable" && !f.vendor.isVendor) return bad(res, "For Payable, choose a listed vendor");
+    Object.assign(doc, f, { book: doc.book, updatedBy: who(req) }, doc.infoOnly ? { rowKey: "" } : {});
     await doc.save();
-    await rememberItems(doc);
-    await applyBillRates(doc, req.user);
+    if (!doc.infoOnly) {
+      await rememberItems(doc);
+      await applyBillRates(doc, req.user);
+    }
     res.json({ success: true, data: doc });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
@@ -148,7 +155,7 @@ router.delete("/:id([a-f0-9]{24})", async (req, res) => {
   try {
     const doc = await PurchaseBill.findById(req.params.id);
     if (!doc) return bad(res, "Bill not found", 404);
-    if (!dateOk(req, doc.date)) return bad(res, "Only today's bills can be removed", 403);
+    if (doc.infoOnly ? !isAdminLike(req.user) : !dateOk(req, doc.date)) return bad(res, doc.infoOnly ? "Only the owner can remove old bills" : "Only today's bills can be removed", 403);
     await PurchaseBill.deleteOne({ _id: doc._id });
     res.json({ success: true, data: { rowKey: doc.rowKey } });
   } catch (e) {
@@ -161,7 +168,7 @@ router.post("/:id([a-f0-9]{24})/photo", async (req, res) => {
   try {
     const doc = await PurchaseBill.findById(req.params.id);
     if (!doc) return bad(res, "Bill not found", 404);
-    if (!dateOk(req, doc.date)) return bad(res, "Only today's bills can be changed", 403);
+    if (doc.infoOnly ? !isAdminLike(req.user) : !dateOk(req, doc.date)) return bad(res, "Only today's bills can be changed", 403);
     const m = String(req.body?.image || "").match(/^data:image\/(jpeg|png|webp);base64,(.+)$/);
     if (!m) return bad(res, "Photo must be JPG/PNG");
     const buf = Buffer.from(m[2], "base64");
@@ -209,7 +216,11 @@ router.get("/analytics/:from/:to", async (req, res) => {
     const q = { entryCreateDate: { $gte: dayjs(from, F).startOf("day").toDate(), $lte: dayjs(to, F).endOf("day").toDate() } };
     if (req.query.book === "rest") q.book = { $ne: "office" };
     if (req.query.book === "office") q.book = "office";
-    const bills = await PurchaseBill.find(q).lean();
+    const withInfo = req.query.info === "1"; // old info-only bills: left out of every total unless asked for
+    const all = await PurchaseBill.find(q).lean();
+    const bills = withInfo ? all : all.filter((b) => !b.infoOnly);
+    const infoBills = all.filter((b) => b.infoOnly).sort((a, b) => b.entryCreateDate - a.entryCreateDate)
+      .map((b) => ({ _id: b._id, date: b.date, billNo: b.billNo, vendor: b.vendor?.name || b.vendor?.expenseName || "", book: b.book, amount: b.amount, items: (b.items || []).length, photos: b.photos || [], enteredBy: b.enteredBy }));
     const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
     const total = { amount: 0, bills: bills.length, paid: 0, payable: 0 };
     const byMonth = {};
@@ -265,6 +276,8 @@ router.get("/analytics/:from/:to", async (req, res) => {
         modes: Object.entries(byMode).map(([mode, amount]) => ({ mode, amount: r2(amount) })).sort((a, b) => b.amount - a.amount),
         books: { rest: r2(byBook.rest), office: r2(byBook.office) },
         items: itemList,
+        infoBills,
+        withInfo,
       },
     });
   } catch (e) {

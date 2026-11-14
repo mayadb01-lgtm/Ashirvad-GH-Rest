@@ -140,12 +140,16 @@ export const parseBill = (text, vendors = []) => {
 
 const EMPTY = { vendor: null, billNo: "", billDate: "", amount: 0, mode: "Cash", note: "", items: [{ ...NEW_ITEM }], extra: 0, ocrText: "" };
 
-const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], onSaved, modes = ["Cash", "Payable"], book = "rest", color = Q.rest }) => {
+// infoOnly: owner enters an OLD bill for information only — its date is the bill date, and it is never added to
+// Expenses / Payables / vendor ledger / totals / Manager rates (server enforces this too).
+const PurchaseBillDialog = ({ open, onClose, date: dateProp, vendors = [], expenses = [], onSaved, modes = ["Cash", "Payable"], book: bookProp = "rest", color = Q.rest, infoOnly = false }) => {
+  const [infoBook, setInfoBook] = useState("rest");
   const [tab, setTab] = useState("scan");
   const [f, setF] = useState(EMPTY);
   const [photos, setPhotos] = useState([]); // dataURL
   const [ocr, setOcr] = useState({ busy: false, progress: 0, msg: "" });
   const [aiInfo, setAiInfo] = useState(null); // AI read: { total on paper, warnings, readable, vendorName }
+  const book = infoOnly ? infoBook : bookProp;
   const [busy, setBusy] = useState(false);
   const [memory, setMemory] = useState([]); // pichhle bills ke items (naam, unit, rate)
   const [catalog, setCatalog] = useState([]); // Manager ki saamaan list
@@ -265,6 +269,14 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
   };
   const itemsTotal = r2(f.items.reduce((t, it) => t + num(it.amount), 0));
   const grand = r2(itemsTotal + num(f.extra));
+  // old bill: the bill date is the day it belongs to (DD-MM-YYYY, not in the future)
+  const infoDateOk = (() => {
+    const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(f.billDate || "");
+    if (!m) return false;
+    const d = new Date(+m[3], +m[2] - 1, +m[1]);
+    return d.getDate() === +m[1] && d.getMonth() === +m[2] - 1 && d <= new Date();
+  })();
+  const date = infoOnly ? f.billDate : dateProp;
 
   // Picker: pehle vendors (Payable ke liye zaroori), phir baaki kharch items
   const options = [
@@ -363,13 +375,14 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
     f.items.forEach((it, i) => { const k = it.key || norm(it.name); if (!k) return; if (k in seen) { d.add(i); d.add(seen[k]); } else seen[k] = i; });
     return d;
   })();
-  const valid = dupIdx.size === 0 && f.vendor && f.items.length > 0 && grand > 0 && (f.mode === "Cash" || f.vendor?.isVendor) && f.items.every((it) => it.name.trim() && num(it.amount) > 0);
+  const valid = dupIdx.size === 0 && f.vendor && f.items.length > 0 && grand > 0 && (infoOnly ? infoDateOk : f.mode === "Cash" || f.vendor?.isVendor) && f.items.every((it) => it.name.trim() && num(it.amount) > 0);
   const save = async () => {
     if (!f.vendor) return toast.error("Choose the vendor / expense item");
     if (dupIdx.size) return toast.error("Same item is added twice — merge it into one line");
     if (!f.items.length || !f.items.every((it) => it.name.trim() && num(it.amount) > 0)) return toast.error("Fill every item: name, qty and rate");
     if (!(grand > 0)) return toast.error("Enter the bill amount");
-    if (f.mode === "Payable" && !f.vendor.isVendor) return toast.error("For Payable, choose a listed vendor");
+    if (infoOnly && !infoDateOk) return toast.error("Enter the bill date (DD-MM-YYYY), not a future date");
+    if (!infoOnly && f.mode === "Payable" && !f.vendor.isVendor) return toast.error("For Payable, choose a listed vendor");
     setBusy(true);
     try {
       const rowKey = `pb-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -380,14 +393,15 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
         billNo: f.billNo,
         vendor: { _id: v._id || "", name: v.fullname || v.expenseName || "", expenseName: v.expenseName || v.fullname || "", categoryName: v.categoryName || "", isVendor: !!v.isVendor },
         amount: grand,
-        mode: f.mode,
+        mode: infoOnly ? "Cash" : f.mode,
         book,
+        ...(infoOnly ? { infoOnly: true } : {}),
         items: f.items.map((it) => ({ key: it.key || "", name: it.name.trim(), qty: num(it.qty), unit: it.unit, rate: num(it.rate), amount: num(it.amount) })),
         extra: f.items.length ? num(f.extra) : 0,
         note: f.note,
         source: photos.length && f.ocrText ? "scan" : "manual",
         ocrText: f.ocrText,
-        rowKey,
+        rowKey: infoOnly ? "" : rowKey,
       });
       let bill = data.data;
       for (const img of photos) {
@@ -410,15 +424,25 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
     <EditorDialog
       open={open}
       onClose={onClose}
-      subtitle={`${book === "office" ? "Office Book" : "Restaurant"} · ${date}`}
-      title="🧾 Purchase bill"
+      subtitle={infoOnly ? "For information only — never added to Expenses, Payables, vendor ledger or any total" : `${book === "office" ? "Office Book" : "Restaurant"} · ${date}`}
+      title={infoOnly ? "🗂 Old bill (info only)" : "🧾 Purchase bill"}
       actions={
         <Button fullWidth variant="contained" disabled={busy || ocr.busy || !valid} onClick={save} sx={{ bgcolor: color, py: 1.3, fontWeight: 800, "&:hover": { bgcolor: color } }}>
-          {busy ? "Saving…" : `Save bill${grand ? ` · ${inr(grand)}` : ""} → ${f.mode === "Payable" ? (book === "office" ? "Vendor ledger" : "Payables") : book === "office" ? "Office Out" : "Expenses"}`}
+          {busy ? "Saving…" : infoOnly ? `Save old bill${grand ? ` · ${inr(grand)}` : ""} (info only)` : `Save bill${grand ? ` · ${inr(grand)}` : ""} → ${f.mode === "Payable" ? (book === "office" ? "Vendor ledger" : "Payables") : book === "office" ? "Office Out" : "Expenses"}`}
         </Button>
       }
     >
       <Stack spacing={2}>
+        {infoOnly && (
+          <ToggleButtonGroup exclusive fullWidth value={infoBook} onChange={(e, v) => v && setInfoBook(v)} size="small">
+            <ToggleButton value="rest" sx={{ fontWeight: 800 }}>
+              Restaurant bill
+            </ToggleButton>
+            <ToggleButton value="office" sx={{ fontWeight: 800 }}>
+              Office bill
+            </ToggleButton>
+          </ToggleButtonGroup>
+        )}
         <ToggleButtonGroup exclusive fullWidth value={tab} onChange={(e, v) => v && setTab(v)} size="small">
           <ToggleButton value="scan" sx={{ fontWeight: 800 }}>
             📷 Scan / photo
@@ -497,7 +521,7 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
         />
         <Stack direction="row" spacing={1.5}>
           <TextField size="small" label="Bill no." value={f.billNo} onChange={(e) => set("billNo", e.target.value)} fullWidth />
-          <TextField size="small" label="Bill date (DD-MM-YYYY)" value={f.billDate} onChange={(e) => set("billDate", e.target.value)} fullWidth />
+          <TextField size="small" label="Bill date (DD-MM-YYYY)" value={f.billDate} onChange={(e) => set("billDate", e.target.value)} fullWidth required={infoOnly} error={infoOnly && !!f.billDate && !infoDateOk} helperText={infoOnly ? (f.billDate && !infoDateOk ? "Use DD-MM-YYYY, not a future date" : "The bill is filed under this date") : ""} />
         </Stack>
         {/* Bill ki details: Item · Qty · Unit · Rate · Total */}
         <Box sx={{ border: `1px solid ${Q.line}`, borderRadius: 2, p: 1.25, bgcolor: "#fff" }}>
@@ -631,6 +655,8 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
           )}
         </Box>
 
+        {!infoOnly && (
+          <>
         <ChipChoice
           label="Payment"
           options={modes}
@@ -648,6 +674,8 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
             : "Goods received on credit → added to the vendor under Payables (not in today's total)."}
           {f.mode === "Payable" && f.vendor && !f.vendor.isVendor ? " Choose a listed vendor for Payable." : ""}
         </Typography>
+          </>
+        )}
         <TextField size="small" label="Note (optional)" value={f.note} onChange={(e) => set("note", e.target.value)} />
 
         {f.ocrText && (

@@ -25,6 +25,8 @@ const purchaseBillSchema = new mongoose.Schema(
     extra: { type: Number, default: 0 }, // tax / round-off / transport (items ke alawa)
     note: { type: String, default: "" },
     source: { type: String, enum: ["scan", "manual"], default: "manual" },
+    // Old bill, for information only (owner): never added to Expenses / Payables / vendor ledger / totals / Manager rates
+    infoOnly: { type: Boolean, default: false },
     ocrText: { type: String, default: "" },
     photos: [{ type: String }],
     rowKey: { type: String, default: "" }, // restaurant draft line se jodne ke liye

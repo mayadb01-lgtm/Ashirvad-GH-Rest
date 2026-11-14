@@ -1,6 +1,6 @@
 // Purchase analytics: kharid ka hisaab — mahina-wise, vendor-wise, item-wise (rate badla ya nahi), mode-wise. Sirf padhta hai.
 import { useEffect, useMemo, useState } from "react";
-import { Box, Button, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import { Alert, Box, Button, FormControlLabel, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from "recharts";
 import dayjs from "dayjs";
@@ -8,6 +8,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
 import { API, COLORS, Kpi, PageTitle, Section, inr, kTick, lakh, MonthRangeBar } from "./shared";
+import PurchaseBillDialog from "../../pages/quick/PurchaseBillDialog";
 
 const F = "DD-MM-YYYY";
 
@@ -18,20 +19,58 @@ const PurchaseAnalyticsDashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [itemQ, setItemQ] = useState("");
+  const [withInfo, setWithInfo] = useState(false); // include old info-only bills in the numbers (off = real totals)
+  const [oldOpen, setOldOpen] = useState(false);
+  const [lists, setLists] = useState({ vendors: [], expenses: [] });
+  const [reload, setReload] = useState(0);
+  useEffect(() => {
+    if (!oldOpen || lists.vendors.length) return;
+    axios
+      .get(`${API}/restCategory/get-categories`)
+      .then(({ data: r }) => {
+        const cats = r.data || [];
+        setLists({
+          vendors: cats.flatMap((c) => (c.expense || []).filter((x) => x?.isVendor).map((x) => ({ _id: x._id, fullname: x.expenseName, expenseName: x.expenseName, isVendor: true, categoryName: c.categoryName }))),
+          expenses: cats.flatMap((c) => (c.expense || []).map((x) => ({ _id: x._id, expenseName: x.expenseName, categoryName: c.categoryName, isVendor: !!x?.isVendor }))),
+        });
+      })
+      .catch(() => toast.error("Could not load the vendor list"));
+  }, [oldOpen, lists.vendors.length]);
+  // photos need the login → fetch with axios, then open the picture
+  const openPhoto = async (name) => {
+    const w = window.open("", "_blank");
+    try {
+      const { data: blob } = await axios.get(`${API}/purchase/photo/${name}`, { responseType: "blob" });
+      if (w) w.location.href = URL.createObjectURL(blob);
+    } catch {
+      w?.close();
+      toast.error("Could not open the photo");
+    }
+  };
+  const removeOld = async (b) => {
+    if (!window.confirm(`Remove the old bill of ${b.vendor} (${b.date}, ${inr(b.amount)})?`)) return;
+    try {
+      await axios.delete(`${API}/purchase/${b._id}`);
+      toast.success("Old bill removed");
+      setReload((x) => x + 1);
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Could not remove it");
+    }
+  };
 
   useEffect(() => {
     let off = false;
     setLoading(true);
     const end = to.endOf("month").isAfter(dayjs()) ? dayjs() : to.endOf("month");
     axios
-      .get(`${API}/purchase/analytics/${from.startOf("month").format(F)}/${end.format(F)}${book === "all" ? "" : `?book=${book}`}`)
+      .get(`${API}/purchase/analytics/${from.startOf("month").format(F)}/${end.format(F)}?info=${withInfo ? 1 : 0}${book === "all" ? "" : `&book=${book}`}`)
       .then(({ data: r }) => !off && setData(r.data))
       .catch((e) => toast.error(e?.response?.data?.message || "Could not load purchase analytics"))
       .finally(() => !off && setLoading(false));
     return () => {
       off = true;
     };
-  }, [from, to, book]);
+  }, [from, to, book, withInfo, reload]);
 
   const tot = data?.total || {};
   const items = useMemo(() => (data?.items || []).filter((x) => !itemQ.trim() || x.item.toLowerCase().includes(itemQ.trim().toLowerCase())), [data, itemQ]);
@@ -75,7 +114,20 @@ const PurchaseAnalyticsDashboard = () => {
         <Button variant="contained" startIcon={<DownloadIcon />} onClick={exportExcel} disabled={!data}>
           Excel
         </Button>
+        <Button variant="outlined" onClick={() => setOldOpen(true)}>
+          + Old bill (info only)
+        </Button>
       </MonthRangeBar>
+      <FormControlLabel
+        sx={{ mb: 1 }}
+        control={<Switch checked={withInfo} onChange={(e) => setWithInfo(e.target.checked)} />}
+        label={`Include old info-only bills in these numbers${data?.infoBills?.length ? ` (${data.infoBills.length} in this period)` : ""}`}
+      />
+      {withInfo && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Old info-only bills are included below. These numbers are NOT your real purchase totals — the expenses were already entered in the day books.
+        </Alert>
+      )}
 
       <Stack direction="row" spacing={1.5} sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
         <Kpi label="Total purchase" value={lakh(tot.amount)} sub={`${tot.bills || 0} bills`} color={COLORS.out} />
@@ -192,6 +244,69 @@ const PurchaseAnalyticsDashboard = () => {
           Red min–max = the rate changed more than 15% in this period.
         </Typography>
       </Section>
+
+      <Section title={`Old bills — info only (${data?.infoBills?.length || 0})`} right={<Typography variant="caption" color="text.secondary">Never added to Expenses, Payables, vendor ledger or any total</Typography>}>
+        {!data?.infoBills?.length ? (
+          <Typography color="text.secondary" variant="body2">
+            No old bills in this period. Use “+ Old bill (info only)” to file an old bill for its item rates and history.
+          </Typography>
+        ) : (
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  {th("Bill date")}
+                  {th("Vendor")}
+                  {th("Book")}
+                  {th("Bill no.")}
+                  {th("Items", true)}
+                  {th("Amount", true)}
+                  {th("Photo")}
+                  {th("")}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {data.infoBills.map((b) => (
+                  <TableRow key={b._id}>
+                    <TableCell>{b.date}</TableCell>
+                    <TableCell>{b.vendor}</TableCell>
+                    <TableCell>{b.book === "office" ? "Office" : "Restaurant"}</TableCell>
+                    <TableCell>{b.billNo || "—"}</TableCell>
+                    <TableCell sx={td}>{b.items}</TableCell>
+                    <TableCell sx={td}>{inr(b.amount)}</TableCell>
+                    <TableCell>
+                      {b.photos.map((ph, i) => (
+                        <Button key={ph} size="small" onClick={() => openPhoto(ph)}>
+                          {i + 1}
+                        </Button>
+                      ))}
+                    </TableCell>
+                    <TableCell>
+                      <Button size="small" color="error" onClick={() => removeOld(b)}>
+                        Remove
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Section>
+
+      <PurchaseBillDialog
+        open={oldOpen}
+        infoOnly
+        onClose={() => setOldOpen(false)}
+        vendors={lists.vendors}
+        expenses={lists.expenses}
+        color="#475569"
+        onSaved={() => {
+          toast.success("Old bill saved (info only)");
+          setOldOpen(false);
+          setReload((x) => x + 1);
+        }}
+      />
     </Box>
   );
 };

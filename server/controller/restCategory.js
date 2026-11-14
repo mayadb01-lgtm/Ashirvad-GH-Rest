@@ -63,7 +63,7 @@ router.get("/vendors", async (req, res) => {
     if (isAdminLike(req.user) && list.length) {
       const since = new Date(Date.now() - 90 * 864e5);
       const agg = await PurchaseBill.aggregate([
-        { $match: { "vendor._id": { $in: list.map((v) => v._id) }, cancelled: { $ne: true } } },
+        { $match: { "vendor._id": { $in: list.map((v) => v._id) }, cancelled: { $ne: true }, infoOnly: { $ne: true } } },
         { $group: { _id: "$vendor._id", last: { $max: "$entryCreateDate" }, bills: { $sum: 1 }, amt90: { $sum: { $cond: [{ $gte: ["$entryCreateDate", since] }, "$amount", 0] } } } },
       ]).catch(() => []);
       const m = new Map(agg.map((a) => [String(a._id), a]));
