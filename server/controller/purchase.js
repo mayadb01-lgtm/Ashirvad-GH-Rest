@@ -8,6 +8,7 @@ import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import PurchaseBill from "../model/purchaseBill.js";
 import PurchaseItem from "../model/purchaseItem.js";
 import { applyBillRates, catalogItems } from "./rasoi.js";
+import { readBill } from "./billReader.js";
 import { allowedStaffDates, isAdminLike, dateOk as staffDateOk } from "../middleware/staffAccess.js";
 
 dayjs.extend(customParseFormat);
@@ -64,6 +65,9 @@ const rememberItems = async (bill) => {
     await PurchaseItem.updateOne({ key }, { $set: set, $inc: { uses: 1 } }, { upsert: true }).catch(() => {});
   }
 };
+
+// POST /read → AI reads the bill photo(s) and returns the filled form (nothing is saved)
+router.post("/read", readBill);
 
 // GET /items → yaad wale items (sabse zyada use pehle)
 router.get("/items", async (req, res) => {

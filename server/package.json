@@ -12,6 +12,7 @@
   "proxy": "http://localhost:8080",
   "type": "module",
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "adm-zip": "^0.5.16",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",

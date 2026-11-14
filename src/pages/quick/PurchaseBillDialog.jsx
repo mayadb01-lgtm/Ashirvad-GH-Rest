@@ -1,4 +1,4 @@
-// Restaurant purchase bill: 1) Scan / photo → text apne aap bhare (free OCR, phone/browser mein) → check karke save
+// Restaurant purchase bill: 1) Scan / photo → AI (server, Claude) bill padh kar form bhare; AI na ho to free OCR (phone) → check karke save
 //                           2) Manual. Mode sirf Cash ya Payable (udhaar → vendor ke Payables mein).
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
@@ -145,6 +145,7 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
   const [f, setF] = useState(EMPTY);
   const [photos, setPhotos] = useState([]); // dataURL
   const [ocr, setOcr] = useState({ busy: false, progress: 0, msg: "" });
+  const [aiInfo, setAiInfo] = useState(null); // AI read: { total on paper, warnings, readable, vendorName }
   const [busy, setBusy] = useState(false);
   const [memory, setMemory] = useState([]); // pichhle bills ke items (naam, unit, rate)
   const [catalog, setCatalog] = useState([]); // Manager ki saamaan list
@@ -233,6 +234,7 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
       setTab("scan");
       setF(EMPTY);
       setPhotos([]);
+      setAiInfo(null);
       setOcr({ busy: false, progress: 0, msg: "" });
     }
   }, [open]);
@@ -243,12 +245,24 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
       ...x,
       items: x.items.map((it, j) => {
         if (j !== i) return it;
-        const n = { ...it, [k]: v };
+        const n = { ...it, [k]: v, unsure: false }; // staff checked this line
         if (k === "qty" || k === "rate") n.amount = r2(num(n.qty) * num(n.rate));
         if (k === "amount") n.rate = num(n.qty) ? r2(num(v) / num(n.qty)) : n.rate;
         return n;
       }),
     }));
+  // Lines read by the AI that need a human look
+  const lineFlags = (it) => {
+    if (!it.fromBill) return [];
+    const out = [];
+    if (it.unsure) out.push("Hard to read on the bill — check this line");
+    const calc = r2(num(it.qty) * num(it.rate));
+    if (num(it.qty) && num(it.rate) && Math.abs(calc - num(it.amount)) > 1) out.push(`Qty × rate = ${inr(calc)}, but the line total is ${inr(num(it.amount))}`);
+    const m = it.key ? opts.find((o) => o.key === it.key) : opts.find((o) => norm(o.name) === norm(it.name));
+    const last = rateFor(m);
+    if (last && num(it.rate) && it.unit === (m?.unit || it.unit) && Math.abs(num(it.rate) - last) / last > 0.35) out.push(`Last rate was ${inr(last)}/${m?.unit || it.unit} — check the rate`);
+    return out;
+  };
   const itemsTotal = r2(f.items.reduce((t, it) => t + num(it.amount), 0));
   const grand = r2(itemsTotal + num(f.extra));
 
@@ -274,7 +288,48 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
     if (tab === "scan" && urls.length) runOcr([...photos, ...urls]);
   };
 
+  // AI reader (server, Claude): reads handwriting / Hindi / Gujarati and matches items + vendors. null = not available.
+  const runAi = async (list) => {
+    setOcr({ busy: true, progress: 0, msg: `Reading the bill with AI${list.length > 1 ? ` (${list.length} photos)` : ""}… this takes about 20-40 seconds` });
+    try {
+      const vendorList = options.filter((o) => o.isVendor && o._id).map((o) => ({ id: o._id, name: o.label || o.fullname || o.expenseName, category: o.categoryName || "" }));
+      const { data } = await axios.post(`${API}/purchase/read`, { photos: list, vendors: vendorList }, { timeout: 180000 });
+      return data.data;
+    } catch (e) {
+      if (e?.response?.data?.code === "NO_AI") return null; // not set up → free reader
+      setOcr({ busy: true, progress: 0, msg: `${apiError(e)} — trying the basic reader…` });
+      return null;
+    }
+  };
+  const fillFromAi = (a) => {
+    const vendor = a.vendorId ? options.find((o) => o._id === a.vendorId) || null : null;
+    const items = a.items.map((it) => {
+      const base = { key: it.key || "", name: it.name, qty: it.qty || 1, unit: it.unit, rate: it.rate || (it.qty ? r2(it.amount / it.qty) : 0), amount: it.amount || r2(it.qty * it.rate), unsure: it.unsure, billText: it.billText, fromBill: true };
+      return base.key ? base : autoKey(base);
+    });
+    const lines = a.items.map((it) => `${it.billText}: ${it.qty} ${it.unit} × ${it.rate} = ${it.amount}${it.unsure ? " (hard to read)" : ""}`);
+    setF((x) => ({
+      ...x,
+      vendor: x.vendor || vendor,
+      billNo: x.billNo || a.billNo,
+      billDate: x.billDate || a.billDate,
+      items: items.length ? items : x.items,
+      extra: items.length ? a.extra : x.extra,
+      note: x.note || (!vendor && a.vendorName ? `Bill: ${a.vendorName}` : x.note),
+      ocrText: [`AI read (${a.readable}) · ${a.vendorName || "vendor ?"} · bill ${a.billNo || "-"} · ${a.billDate || "no date"}`, ...lines, `Extra ${a.extra} · Bill total ${a.total}`, ...a.warnings.map((w) => `⚠ ${w}`)].join("\n"),
+    }));
+    setAiInfo({ total: a.total, warnings: a.warnings, readable: a.readable, vendorName: vendor ? "" : a.vendorName });
+    const msg =
+      a.readable === "not_a_bill" ? "This does not look like a bill — check the photo" :
+      !items.length ? "Could not read the items — please fill them in" :
+      `AI read ${items.length} item${items.length > 1 ? "s" : ""} — check every line marked ⚠ before saving`;
+    setOcr({ busy: false, progress: 100, msg });
+  };
+
   const runOcr = async (list) => {
+    setAiInfo(null);
+    const a = await runAi(list);
+    if (a) return fillFromAi(a);
     setOcr({ busy: true, progress: 0, msg: "Loading scanner…" });
     try {
       const T = await loadTesseract();
@@ -414,7 +469,7 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
           )}
           {tab === "scan" && !photos.length && (
             <Typography variant="caption" color={Q.muted} component="div" sx={{ mt: 1 }}>
-              Take a clear, straight photo of the printed bill. Total, date and bill no. are filled in automatically — always check them before saving.
+              Take a clear, straight photo of the whole bill (printed or handwritten). Items, total, date and bill no. are filled in automatically — always check them before saving.
             </Typography>
           )}
         </Box>
@@ -525,10 +580,37 @@ const PurchaseBillDialog = ({ open, onClose, date, vendors = [], expenses = [], 
                   ))}
                 </TextField>
                 <TextField size="small" label="Rate ₹" value={it.rate || ""} onChange={(e) => setItem(i, "rate", e.target.value.replace(/[^0-9.]/g, ""))} inputProps={{ inputMode: "decimal" }} sx={{ flex: 1 }} />
-                <TextField size="small" label="Total ₹" value={it.amount || ""} onChange={(e) => setItem(i, "amount", e.target.value.replace(/[^0-9.]/g, ""))} inputProps={{ inputMode: "decimal" }} sx={{ flex: 1 }} />
+                <TextField size="small" label="Total ₹" value={it.amount || ""} onChange={(e) => setItem(i, "amount", e.target.value.replace(/[^0-9.]/g, ""))} inputProps={{ inputMode: "decimal" }} sx={{ flex: 1 }} error={lineFlags(it).length > 0} />
               </Stack>
+              {it.fromBill && it.billText && it.billText !== it.name && (
+                <Typography variant="caption" color={Q.muted} component="div" sx={{ mt: 0.5 }}>
+                  On the bill: “{it.billText}”
+                </Typography>
+              )}
+              {lineFlags(it).map((t) => (
+                <Typography key={t} variant="caption" color="#b45309" fontWeight={700} component="div">
+                  ⚠ {t}
+                </Typography>
+              ))}
             </Box>
           ))}
+          {aiInfo && aiInfo.total > 0 && Math.abs(grand - aiInfo.total) > 1 && (
+            <Alert severity="warning" sx={{ mt: 1 }}>
+              Total written on the bill is {inr(aiInfo.total)}, but these lines add up to {inr(grand)}. Check the lines and the tax / round-off.
+            </Alert>
+          )}
+          {aiInfo && aiInfo.total > 0 && Math.abs(grand - aiInfo.total) <= 1 && (
+            <Typography variant="caption" color="#15803d" fontWeight={700} component="div" sx={{ mt: 1 }}>
+              ✓ Matches the total written on the bill ({inr(aiInfo.total)})
+            </Typography>
+          )}
+          {aiInfo?.warnings?.length > 0 && (
+            <Alert severity="info" sx={{ mt: 1 }}>
+              {aiInfo.warnings.map((w) => (
+                <div key={w}>{w}</div>
+              ))}
+            </Alert>
+          )}
           {f.items.length > 0 && (
             <Box sx={{ borderTop: `1px solid ${Q.line}`, mt: 1, pt: 1 }}>
               <Stack direction="row" justifyContent="space-between">

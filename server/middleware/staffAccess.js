@@ -147,6 +147,7 @@ const RULES = {
     // Purchase bills (aaj ke; id wale routes andar date check karte hain)
     R("GET", /^\/api\/v1\/purchase\/day\/([^/]+)$/, { dateParam: 1 }),
     R("GET", /^\/api\/v1\/purchase\/items$/),
+    R("POST", /^\/api\/v1\/purchase\/read$/), // AI bill reader (fills the form only)
     R("GET", /^\/api\/v1\/purchase\/last\/[A-Za-z0-9]+$/),
     R("POST", /^\/api\/v1\/purchase$/, { dateBody: "date" }),
     R("PUT", /^\/api\/v1\/purchase\/[a-f0-9]{24}$/),
@@ -182,6 +183,7 @@ const RULES = {
     // Purchase bills (Office Book)
     R("GET", /^\/api\/v1\/purchase\/day\/([^/]+)$/, { dateParam: 1 }),
     R("GET", /^\/api\/v1\/purchase\/items$/),
+    R("POST", /^\/api\/v1\/purchase\/read$/), // AI bill reader (fills the form only)
     R("GET", /^\/api\/v1\/purchase\/last\/[A-Za-z0-9]+$/),
     R("POST", /^\/api\/v1\/purchase$/, { dateBody: "date" }),
     R("PUT", /^\/api\/v1\/purchase\/[a-f0-9]{24}$/),
