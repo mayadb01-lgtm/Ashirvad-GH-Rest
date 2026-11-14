@@ -5,10 +5,13 @@ import mongoose from "mongoose";
 // Ek record = ek din + ek period (day/night/...) + ek room.
 const otherGuestSchema = new mongoose.Schema(
   {
+    gid: { type: String, default: "" }, // stable id (photos are linked to the person by this)
     fullName: { type: String, default: "" },
     mobile: { type: String, default: "" },
+    dob: { type: String, default: "" }, // YYYY-MM-DD
     documentType: { type: String, default: "" },
     documentNumber: { type: String, default: "" },
+    documentImages: { type: [String], default: [] }, // this person's ID photos (server file names)
   },
   { _id: false }
 );

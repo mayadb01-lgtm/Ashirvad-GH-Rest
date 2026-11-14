@@ -9,6 +9,7 @@ import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import GuestRegister from "../model/guestRegister.js";
 import { isAdminLike, isRoomAdmin } from "../middleware/staffAccess.js";
 import Stay from "../model/stay.js";
+import { readId } from "./idReader.js";
 
 dayjs.extend(customParseFormat);
 const router = Router();
@@ -36,6 +37,9 @@ const keyOf = (req, res) => {
   }
   return { date, period, roomNo };
 };
+
+// AI: ID photo(s) -> register fields (fills the form only, saves nothing)
+router.post("/read-id", readId);
 
 // Ek din ke saare records (Nayi Entry mein room card pe 📄 dikhane ke liye)
 router.get("/day/:date", async (req, res) => {
@@ -72,12 +76,25 @@ router.put("/one/:date/:period/:roomNo", async (req, res) => {
       set[f] = f === "children" || f === "adults" ? Math.max(0, Math.min(50, Number(b[f]) || 0)) : clean(b[f], f === "address" ? 500 : 200);
     });
     if (Array.isArray(b.otherGuests)) {
-      set.otherGuests = b.otherGuests.slice(0, 10).map((g) => ({
-        fullName: clean(g?.fullName),
-        mobile: clean(g?.mobile, 15),
-        documentType: clean(g?.documentType, 50),
-        documentNumber: clean(g?.documentNumber, 50),
-      }));
+      // photos are added by the photo route; keep the saved ones by gid (never trust the screen's list)
+      const before = await GuestRegister.findOne(k, { otherGuests: 1 }).lean();
+      const savedPhotos = Object.fromEntries((before?.otherGuests || []).filter((g) => g.gid).map((g) => [g.gid, g.documentImages || []]));
+      set.otherGuests = b.otherGuests.slice(0, 10).map((g) => {
+        const gid = clean(g?.gid, 24);
+        return {
+          gid,
+          fullName: clean(g?.fullName),
+          mobile: clean(g?.mobile, 15),
+          dob: /^\d{4}-\d{2}-\d{2}$/.test(g?.dob || "") ? g.dob : "",
+          documentType: clean(g?.documentType, 50),
+          documentNumber: clean(g?.documentNumber, 50),
+          documentImages: (gid && savedPhotos[gid]) || [],
+        };
+      });
+      // a removed guest's photos stay with the room (never lost)
+      const kept = new Set(set.otherGuests.map((g) => g.gid).filter(Boolean));
+      const orphan = Object.entries(savedPhotos).filter(([gid]) => !kept.has(gid)).flatMap(([, ph]) => ph);
+      if (orphan.length) set.documentImages = [...new Set([...((await GuestRegister.findOne(k, { documentImages: 1 }).lean())?.documentImages || []), ...orphan])];
     }
     set.updatedBy = who(req);
     const doc = await GuestRegister.findOneAndUpdate(
@@ -105,10 +122,21 @@ router.post("/one/:date/:period/:roomNo/photo", async (req, res) => {
       { $setOnInsert: { ...k, entryCreateDate: dayjs(k.date, F).toDate(), enteredBy: who(req) } },
       { new: true, upsert: true }
     );
-    if (doc.documentImages.length >= 10) return res.status(400).json({ success: false, message: "Maximum 10 photos per room" });
+    const gid = clean(req.body?.gid, 24); // photo of an accompanying guest (else the main guest / room)
+    let target = doc.documentImages;
+    if (gid) {
+      let g = doc.otherGuests.find((x) => x.gid === gid);
+      if (!g) {
+        if (doc.otherGuests.length >= 10) return res.status(400).json({ success: false, message: "Maximum 10 accompanying guests" });
+        doc.otherGuests.push({ gid, documentType: "", documentImages: [] });
+        g = doc.otherGuests[doc.otherGuests.length - 1];
+      }
+      if (g.documentImages.length >= 6) return res.status(400).json({ success: false, message: "Maximum 6 photos per guest" });
+      target = g.documentImages;
+    } else if (doc.documentImages.length >= 10) return res.status(400).json({ success: false, message: "Maximum 10 photos per room" });
     const name = `${doc._id}-${crypto.randomBytes(4).toString("hex")}.${m[1] === "jpeg" ? "jpg" : m[1]}`;
     fs.writeFileSync(path.join(PHOTO_DIR, name), buf);
-    doc.documentImages.push(name);
+    target.push(name);
     doc.updatedBy = who(req);
     await doc.save();
     res.json({ success: true, data: doc.toObject() });
@@ -133,7 +161,7 @@ router.delete("/one/:date/:period/:roomNo/photo/:name", async (req, res) => {
     const k = keyOf(req, res);
     if (!k) return;
     const name = path.basename(req.params.name);
-    const doc = await GuestRegister.findOneAndUpdate(k, { $pull: { documentImages: name } }, { new: true }).lean();
+    const doc = await GuestRegister.findOneAndUpdate(k, { $pull: { documentImages: name, "otherGuests.$[].documentImages": name } }, { new: true }).lean();
     fs.rmSync(path.join(PHOTO_DIR, name), { force: true });
     res.json({ success: true, data: doc });
   } catch (e) {

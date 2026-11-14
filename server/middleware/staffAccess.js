@@ -87,6 +87,7 @@ const RULES = {
     R("GET", /^\/api\/v1\/guest-register\/one\/([^/]+)\/[A-Za-z]+\/\d+$/, { dateParam: 1, window2: true }),
     R("PUT", /^\/api\/v1\/guest-register\/one\/([^/]+)\/[A-Za-z]+\/\d+$/, { dateParam: 1, window2: true }),
     R("POST", /^\/api\/v1\/guest-register\/one\/([^/]+)\/[A-Za-z]+\/\d+\/photo$/, { dateParam: 1, window2: true }),
+    R("POST", /^\/api\/v1\/guest-register\/read-id$/), // AI: ID photo -> form fields (saves nothing)
     R("GET", /^\/api\/v1\/guest-register\/pending\/([^/]+)$/, { dateParam: 1 }),
     // Room charges: food bill dekhna, extra charge jodna/hatana, vasooli (id wale routes andar date check karte hain)
     R("GET", /^\/api\/v1\/room-charges\/day\/([^/]+)$/, { dateParam: 1 }),
