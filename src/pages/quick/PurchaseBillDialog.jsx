@@ -301,11 +301,11 @@ const PurchaseBillDialog = ({ open, onClose, date: dateProp, vendors = [], expen
   };
 
   // AI reader (server, Claude): reads handwriting / Hindi / Gujarati and matches items + vendors. null = not available.
-  const runAi = async (list) => {
-    setOcr({ busy: true, progress: 0, msg: `Reading the bill with AI${list.length > 1 ? ` (${list.length} photos)` : ""}… this takes about 20-40 seconds` });
+  const runAi = async (list, best = false) => {
+    setOcr({ busy: true, progress: 0, msg: `${best ? "Reading again with the best AI" : "Reading the bill with AI"}${list.length > 1 ? ` (${list.length} photos)` : ""}… this takes about 10-40 seconds` });
     try {
       const vendorList = options.filter((o) => o.isVendor && o._id).map((o) => ({ id: o._id, name: o.label || o.fullname || o.expenseName, category: o.categoryName || "" }));
-      const { data } = await axios.post(`${API}/purchase/read`, { photos: list, vendors: vendorList }, { timeout: 180000 });
+      const { data } = await axios.post(`${API}/purchase/read`, { photos: list, vendors: vendorList, best }, { timeout: 180000 });
       return data.data;
     } catch (e) {
       if (e?.response?.data?.code === "NO_AI") return null; // not set up → free reader
@@ -330,17 +330,17 @@ const PurchaseBillDialog = ({ open, onClose, date: dateProp, vendors = [], expen
       note: x.note || (!vendor && a.vendorName ? `Bill: ${a.vendorName}` : x.note),
       ocrText: [`AI read (${a.readable}) · ${a.vendorName || "vendor ?"} · bill ${a.billNo || "-"} · ${a.billDate || "no date"}`, ...lines, `Extra ${a.extra} · Bill total ${a.total}`, ...a.warnings.map((w) => `⚠ ${w}`)].join("\n"),
     }));
-    setAiInfo({ total: a.total, warnings: a.warnings, readable: a.readable, vendorName: vendor ? "" : a.vendorName });
+    setAiInfo({ total: a.total, warnings: a.warnings, readable: a.readable, vendorName: vendor ? "" : a.vendorName, model: a.model, escalated: a.escalated });
     const msg =
       a.readable === "not_a_bill" ? "This does not look like a bill — check the photo" :
       !items.length ? "Could not read the items — please fill them in" :
-      `AI read ${items.length} item${items.length > 1 ? "s" : ""} — check every line marked ⚠ before saving`;
+      `AI read ${items.length} item${items.length > 1 ? "s" : ""}${a.model === "best" ? (a.escalated ? " (double-checked by the best AI)" : " (best AI)") : ""} — check every line marked ⚠ before saving`;
     setOcr({ busy: false, progress: 100, msg });
   };
 
-  const runOcr = async (list) => {
+  const runOcr = async (list, best = false) => {
     setAiInfo(null);
-    const a = await runAi(list);
+    const a = await runAi(list, best);
     if (a) return fillFromAi(a);
     setOcr({ busy: true, progress: 0, msg: "Loading scanner…" });
     try {
@@ -474,6 +474,11 @@ const PurchaseBillDialog = ({ open, onClose, date: dateProp, vendors = [], expen
               {tab === "scan" && !ocr.busy && (
                 <Button size="small" onClick={() => runOcr(photos)}>
                   Read again
+                </Button>
+              )}
+              {tab === "scan" && !ocr.busy && aiInfo && aiInfo.model !== "best" && (
+                <Button size="small" variant="outlined" color="secondary" onClick={() => runOcr(photos, true)} sx={{ fontWeight: 700 }}>
+                  Read again (best AI)
                 </Button>
               )}
             </Stack>

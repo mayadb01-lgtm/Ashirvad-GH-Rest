@@ -1,7 +1,7 @@
 // AI guest ID reader: photo(s) of an ID (Aadhaar front/back, passport, driving licence, voter ID, PAN) -> the guest
 // register fields. Staff check and save - this only fills the form. ⚠️ Writes nothing to the database.
 import GuestRegister from "../model/guestRegister.js";
-import { readStructured, takeRead, toImage } from "../utils/claude.js";
+import { readSmart, takeRead, toImage } from "../utils/claude.js";
 
 const DAILY_LIMIT = Number(process.env.ID_AI_DAILY_LIMIT) || 400; // reads per day for the whole hotel (cost guard)
 export const DOC_TYPES = ["Aadhar Card", "Passport", "Driving License", "Voter ID", "PAN Card", "Other"];
@@ -61,6 +61,18 @@ export const aadhaarOk = (num) => {
   return c === 0;
 };
 
+// Is the quick read doubtful? -> reasons (empty = trust it). Then the best model reads the same photos again.
+const idDoubts = (o) => {
+  if (!o?.isId) return [];
+  const why = [];
+  if ((o.unsure || []).length) why.push("some fields hard to read");
+  if (!String(o.firstName || "").trim()) why.push("no name read");
+  if (!String(o.documentNumber || "").trim()) why.push("no document number read");
+  const digits = String(o.documentNumber || "").replace(/\D/g, "");
+  if (o.documentType === "Aadhar Card" && !o.numberMasked && !aadhaarOk(digits)) why.push("Aadhaar check digit failed");
+  return why;
+};
+
 const clean = (v, max = 200) => String(v ?? "").replace(/[\r\n\t]+/g, " ").trim().slice(0, max);
 const docKey = (t, n) => `${String(t || "").toLowerCase()}|${String(n || "").replace(/[\s-]/g, "").toUpperCase()}`;
 
@@ -70,7 +82,11 @@ export async function readId(req, res) {
   const images = (Array.isArray(req.body?.photos) ? req.body.photos : []).slice(0, 4).map(toImage).filter(Boolean);
   if (!images.length) return res.status(400).json({ success: false, message: "Add a photo of the ID" });
   if (!takeRead("id", DAILY_LIMIT)) return res.status(429).json({ success: false, code: "LIMIT", message: "Today's AI reading limit is used up - fill it by hand" });
-  const r = await readStructured({
+  const r = await readSmart({
+    best: req.body?.best === true, // "Read again (best)"
+    needsBest: idDoubts,
+    limitName: "id",
+    limit: DAILY_LIMIT,
     system: [{ type: "text", text: SYSTEM }],
     images,
     text: images.length > 1 ? `These ${images.length} photos are the same person's document (e.g. front and back). Read it.` : "Read this identity document.",
@@ -99,6 +115,8 @@ export async function readId(req, res) {
     country: clean(o.country, 60) || "India",
     unsure: (o.unsure || []).filter((f) => FIELDS.includes(f)),
     warnings: (o.warnings || []).slice(0, 6).map((w) => clean(w, 200)).filter(Boolean),
+    model: r.model, // "quick" | "best"
+    escalated: r.escalated,
   };
   if (data.documentType === "Aadhar Card") {
     data.documentNumber = data.documentNumber.replace(/\D/g, "").slice(0, 12) || data.documentNumber;

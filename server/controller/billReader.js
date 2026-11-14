@@ -3,7 +3,7 @@
 // Needs ANTHROPIC_API_KEY in /etc/ashirvad.env; without it the screen falls back to the free phone reader.
 import PurchaseItem from "../model/purchaseItem.js";
 import { catalogItems } from "./rasoi.js";
-import { readStructured, takeRead, toImage } from "../utils/claude.js";
+import { readSmart, takeRead, toImage } from "../utils/claude.js";
 
 const DAILY_LIMIT = Number(process.env.BILL_AI_DAILY_LIMIT) || 300; // reads per day for the whole hotel (cost guard)
 const UNITS = ["kg", "g", "ltr", "ml", "pcs", "dozen", "packet", "box", "bottle", "tray", "bunch", "bag", "can", "jar"];
@@ -65,6 +65,20 @@ async function referenceText(vendors) {
 }
 
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+
+// Is the quick read doubtful? -> reasons (empty = trust it). Then the best model reads the same photos again.
+const billDoubts = (o) => {
+  const items = Array.isArray(o?.items) ? o.items : [];
+  const why = [];
+  if (o?.readable === "not_a_bill") return why; // nothing to gain
+  if (o?.readable !== "good") why.push(`bill is ${o?.readable || "unclear"}`);
+  if (!items.length) why.push("no items read");
+  if (items.some((it) => it.unsure)) why.push("some lines hard to read");
+  if (items.some((it) => Number(it.qty) && Number(it.rate) && Math.abs(Number(it.qty) * Number(it.rate) - Number(it.amount)) > 1)) why.push("qty x rate does not match a line total");
+  const sum = items.reduce((t, it) => t + (Number(it.amount) || 0), 0) + (Number(o?.extra) || 0);
+  if (Number(o?.total) > 0 && Math.abs(sum - Number(o.total)) > 1) why.push("lines do not add up to the bill total");
+  return why;
+};
 const clean = (v, max = 100) => String(v ?? "").replace(/[\r\n\t]+/g, " ").trim().slice(0, max);
 
 // POST /api/v1/purchase/read  { photos: [dataURL, ...], vendors: [{ id, name, category }] }
@@ -79,7 +93,11 @@ export async function readBill(req, res) {
     .filter((v) => v.id && v.name);
   const vendorIds = new Set(vendors.map((v) => v.id));
   const keys = new Set(catalogItems().map((c) => c.key));
-  const r = await readStructured({
+  const r = await readSmart({
+    best: req.body?.best === true, // "Read again (best)"
+    needsBest: billDoubts,
+    limitName: "bill",
+    limit: DAILY_LIMIT,
     system: [{ type: "text", text: SYSTEM }, { type: "text", text: await referenceText(vendors) }],
     images,
     text: images.length > 1 ? `These ${images.length} photos are pages of ONE bill, in order. Read the bill.` : "Read this bill.",
@@ -110,6 +128,8 @@ export async function readBill(req, res) {
       extra: r2(out.extra),
       total: r2(out.total),
       warnings: (out.warnings || []).slice(0, 8).map((w) => clean(w, 200)).filter(Boolean),
+      model: r.model, // "quick" | "best"
+      escalated: r.escalated, // the quick read was doubtful, so the best model read it again
     },
   });
 }

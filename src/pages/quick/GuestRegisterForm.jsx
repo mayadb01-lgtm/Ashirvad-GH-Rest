@@ -162,7 +162,8 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved, defau
   const [uploading, setUploading] = useState("");
   const [thumbs, setThumbs] = useState({});
   const [reading, setReading] = useState(""); // "main" | gid | "new" while the AI reads
-  const [aiNote, setAiNote] = useState(null); // { unsure: Set of fields, warnings: [] } from the last main-guest read
+  const [aiNote, setAiNote] = useState(null); // { unsure: Set of fields, warnings: [], model } from the last main-guest read
+  const [lastMain, setLastMain] = useState([]); // the main guest's last scanned photos (for "Read again (best AI)")
   const base = `${API}/guest-register/one/${date}/${period}/${roomNo}`;
 
   useEffect(() => {
@@ -207,23 +208,29 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved, defau
     }));
     setExists(true);
   };
-  const readId = async (photos) => {
-    const { data } = await axios.post(`${API}/guest-register/read-id`, { photos, date, period, roomNo }, { timeout: 180000 });
+  const readId = async (photos, best = false) => {
+    const { data } = await axios.post(`${API}/guest-register/read-id`, { photos, date, period, roomNo, best }, { timeout: 180000 });
     return data.data;
   };
   const aiError = (e) => (e?.response?.data?.code === "NO_AI" ? "AI reader is not set up — please fill the details by hand" : e?.response?.data?.message || "Could not read the ID");
   // main guest: fill the form, save the ID photos with the room
-  const scanMain = async (photos) => {
+  // again = re-read the same photos with the best AI (photos are already saved, so no new upload)
+  const scanMain = async (photos, again = false) => {
     setReading("main");
     try {
-      const a = await readId(photos);
+      const a = await readId(photos, again);
       if (!a.isId) {
         toast.error("This does not look like an ID — try a clearer photo");
         return false;
       }
       const keys = ["firstName", "middleName", "lastName", "dob", "houseNo", "address", "locality", "city", "district", "state", "zipCode", "country", "documentType", "documentNumber"];
       setG((p) => ({ ...p, ...Object.fromEntries(keys.filter((k) => a[k]).map((k) => [k, a[k]])) }));
-      setAiNote({ unsure: new Set(a.unsure), warnings: a.warnings });
+      setAiNote({ unsure: new Set(a.unsure), warnings: a.warnings, model: a.model, escalated: a.escalated });
+      setLastMain(photos);
+      if (again) {
+        toast.success("Read again by the best AI — check the fields marked ⚠, then Save");
+        return true;
+      }
       let saved = 0;
       for (const ph of photos) {
         try {
@@ -387,6 +394,18 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved, defau
                   <div key={w}>{w}</div>
                 ))}
               </Alert>
+            )}
+            {aiNote && (
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }} flexWrap="wrap" useFlexGap>
+                <Typography variant="caption" color="text.secondary">
+                  {aiNote.model === "best" ? (aiNote.escalated ? "✓ Double-checked by the best AI" : "✓ Read by the best AI") : "Read by the quick AI"}
+                </Typography>
+                {aiNote.model !== "best" && lastMain.length > 0 && (
+                  <Button size="small" variant="outlined" color="secondary" disabled={!!reading || busy} onClick={() => scanMain(lastMain, true)} sx={{ fontWeight: 700 }}>
+                    {reading === "main" ? "Reading…" : "Read again (best AI)"}
+                  </Button>
+                )}
+              </Stack>
             )}
             <Grid container spacing={1.25}>
               {T("First name", "firstName")}
