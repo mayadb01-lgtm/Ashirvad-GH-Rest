@@ -26,7 +26,7 @@ import {
   Typography,
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
-import GuestRegisterForm from "./GuestRegisterForm";
+import GuestRegisterForm, { ScanBox } from "./GuestRegisterForm";
 import RoomChargesPanel from "./RoomChargesPanel";
 import RoomInvoiceButton from "../invoice/RoomInvoiceButton";
 import BookingsPanel from "./BookingsPanel";
@@ -262,6 +262,10 @@ const RoomCard = ({ room, row, onOpen, locked, fromServer, charges = [], checkou
 
 /* ---------------- Room editor ---------------- */
 const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClear, locked, isAdmin, charges, onChargesChanged, stay, onCheckout, onUndoCheckout, onNewGuest, advance = 0, checkedIn = false, onMove, onMerge, onUnmerge, group, sameGuest, onShiftHere }) => {
+  const regRef = useRef(null); // guest registration form (ID scan at the top fills it)
+  const [idScans, setIdScans] = useState(0);
+  const [idBusy, setIdBusy] = useState(false);
+  useEffect(() => setIdScans(0), [open, room?.roomNumber, period, date]); // a new room starts with the main guest
   const [f, setF] = useState(initial);
   const [guest, setGuest] = useState(null);
   const lastLookup = useRef("");
@@ -334,6 +338,23 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
           <Alert icon={<LockIcon />} severity="info">
             This day has been submitted. Only an admin can make changes.
           </Alert>
+        )}
+        {!locked && (
+          <ScanBox
+            label={idScans ? "📷 Scan the next guest's ID — added as an accompanying guest" : "📷 Scan guest ID (Aadhaar / licence / passport) — fills everything"}
+            busy={idBusy}
+            onRead={async (ph) => {
+              if (!regRef.current) return false;
+              setIdBusy(true);
+              try {
+                const ok = await (idScans ? regRef.current.scanOther(ph) : regRef.current.scanMain(ph));
+                if (ok) setIdScans((n) => n + 1);
+                return ok;
+              } finally {
+                setIdBusy(false);
+              }
+            }}
+          />
         )}
         <TextField
           label="Mobile number"
@@ -521,7 +542,20 @@ const RoomEditor = ({ open, room, period, date, initial, onClose, onSave, onClea
         />
         <RoomInvoiceButton date={date} period={period} roomNo={room?.roomNumber} roomType={room?.roomType} isAdmin={isAdmin} guestName={f.fullname} row={f} />
         {/* Optional: Govt/Police register ki details — alag collection mein, room entry pe koi asar nahi */}
-        <GuestRegisterForm key={`${date}-${period}-${room?.roomNumber}`} date={date} period={period} roomNo={room?.roomNumber} seed={f} isAdmin={isAdmin} />
+        <GuestRegisterForm
+          ref={regRef}
+          key={`${date}-${period}-${room?.roomNumber}`}
+          date={date}
+          period={period}
+          roomNo={room?.roomNumber}
+          seed={f}
+          isAdmin={isAdmin}
+          onScanned={(r) => {
+            // the room entry uses the main guest's name and the head count from the IDs
+            if (r.kind === "main" && r.fullName) setF((p) => (String(p.fullname || "").trim() ? p : { ...p, fullname: r.fullName }));
+            if (r.kind === "other") setF((p) => (r.people > num(p.noOfPeople) ? { ...p, noOfPeople: r.people } : p));
+          }}
+        />
       </Stack>
     </EditorDialog>
   );

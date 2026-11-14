@@ -1,6 +1,6 @@
 // Govt / police register ke liye guest details (sab OPTIONAL). Room dene ke liye zaroori nahi.
 // Alag collection mein save hota hai, purani GH entry ko nahi chhoota.
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import axios from "axios";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -49,7 +49,7 @@ const docHint = (type, num) => {
 };
 
 // Scan an ID: take / choose 1-3 photos (e.g. Aadhaar front + back), then the AI reads them
-const ScanBox = ({ label, busy, onRead, compact }) => {
+export const ScanBox = ({ label, busy, onRead, compact }) => {
   const [photos, setPhotos] = useState([]);
   const add = async (e) => {
     const files = Array.from(e.target.files || []).slice(0, 3 - photos.length);
@@ -154,7 +154,9 @@ const seedFrom = (date, seed) => {
   };
 };
 
-const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved, defaultOpen = false }) => {
+// ref: { scanMain(photos), scanOther(photos) } — lets the room screen put "Scan guest ID" at the very top.
+// onScanned({ kind: "main" | "other", fullName, people }) — the room screen fills its own guest name / count.
+const GuestRegisterForm = forwardRef(({ date, period, roomNo, seed, isAdmin, onSaved, onScanned, defaultOpen = false }, ref) => {
   const [open, setOpen] = useState(defaultOpen);
   const [g, setG] = useState(null);
   const [exists, setExists] = useState(false);
@@ -166,19 +168,32 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved, defau
   const [lastMain, setLastMain] = useState([]); // the main guest's last scanned photos (for "Read again (best AI)")
   const base = `${API}/guest-register/one/${date}/${period}/${roomNo}`;
 
+  // load the room's record once (when opened, or before a scan from the top of the room screen)
+  const loaded = useRef(null);
+  const ensureLoaded = () => {
+    if (!loaded.current)
+      loaded.current = axios
+        .get(base)
+        .then(({ data }) => {
+          if (data.data) {
+            setG({ ...seedFrom(date, seed), ...data.data, otherGuests: (data.data.otherGuests || []).map((o) => ({ ...o, gid: o.gid || newGid(), documentImages: o.documentImages || [] })) });
+            setExists(true);
+          } else setG(seedFrom(date, seed));
+        })
+        .catch(() => setG(seedFrom(date, seed)));
+    return loaded.current;
+  };
   useEffect(() => {
-    if (!open || g) return;
-    axios
-      .get(base)
-      .then(({ data }) => {
-        if (data.data) {
-          setG({ ...seedFrom(date, seed), ...data.data, otherGuests: (data.data.otherGuests || []).map((o) => ({ ...o, gid: o.gid || newGid(), documentImages: o.documentImages || [] })) });
-          setExists(true);
-        } else setG(seedFrom(date, seed));
-      })
-      .catch(() => setG(seedFrom(date, seed)));
+    if (open) ensureLoaded();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+  // mobile / name / guests typed in the room entry fill the register's empty fields (no typing twice)
+  useEffect(() => {
+    if (!g || !seed) return;
+    const m = seed.mobileNumber && String(seed.mobileNumber) !== "0" ? String(seed.mobileNumber) : "";
+    setG((p) => (p ? { ...p, mobile: p.mobile || m, phone: p.phone || m } : p));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed?.mobileNumber, !!g]);
 
   // Admin ko photo dikhao
   useEffect(() => {
@@ -218,6 +233,8 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved, defau
   const scanMain = async (photos, again = false) => {
     setReading("main");
     try {
+      await ensureLoaded();
+      setOpen(true);
       const a = await readId(photos, again);
       if (!a.isId) {
         toast.error("This does not look like an ID — try a clearer photo");
@@ -227,6 +244,7 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved, defau
       setG((p) => ({ ...p, ...Object.fromEntries(keys.filter((k) => a[k]).map((k) => [k, a[k]])) }));
       setAiNote({ unsure: new Set(a.unsure), warnings: a.warnings, model: a.model, escalated: a.escalated });
       setLastMain(photos);
+      onScanned?.({ kind: "main", fullName: [a.firstName, a.middleName, a.lastName].filter(Boolean).join(" ") });
       if (again) {
         toast.success("Read again by the best AI — check the fields marked ⚠, then Save");
         return true;
@@ -254,6 +272,8 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved, defau
     const gid = i >= 0 ? g.otherGuests[i].gid : newGid();
     setReading(i >= 0 ? gid : "new");
     try {
+      await ensureLoaded();
+      setOpen(true);
       const a = await readId(photos);
       if (!a.isId) {
         toast.error("This does not look like an ID — try a clearer photo");
@@ -262,6 +282,7 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved, defau
       const filled = { fullName: [a.firstName, a.middleName, a.lastName].filter(Boolean).join(" "), dob: a.dob, documentType: a.documentType, documentNumber: a.documentNumber, aiWarnings: a.warnings, aiUnsure: a.unsure };
       setG((p) => {
         const others = i >= 0 ? p.otherGuests.map((o, j) => (j === i ? { ...o, ...Object.fromEntries(Object.entries(filled).filter(([, v]) => v !== "" && v != null)) } : o)) : [...p.otherGuests, { ...emptyGuest(), gid, ...filled }];
+        onScanned?.({ kind: "other", fullName: filled.fullName, people: 1 + others.length });
         return { ...p, otherGuests: others, adults: Math.max(Number(p.adults) || 1, 1 + others.length) };
       });
       for (const ph of photos) {
@@ -336,6 +357,8 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved, defau
       toast.error(e?.response?.data?.message || "Could not remove photo");
     }
   };
+
+  useImperativeHandle(ref, () => ({ scanMain: (ph) => scanMain(ph), scanOther: (ph) => scanOther(ph), reading: !!reading }));
 
   const flag = (k) => aiNote?.unsure?.has(k);
   const T = (label, k, props = {}) => (
@@ -548,6 +571,7 @@ const GuestRegisterForm = ({ date, period, roomNo, seed, isAdmin, onSaved, defau
       </Collapse>
     </Paper>
   );
-};
+});
+GuestRegisterForm.displayName = "GuestRegisterForm";
 
 export default GuestRegisterForm;
