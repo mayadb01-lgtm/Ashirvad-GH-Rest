@@ -225,6 +225,20 @@ const applyColl = async (coll, list, replaceIds, by, out) => {
       }
       continue;
     }
+    // vendors / expense heads: a new one made on the cashier PC is added to Rad Shiva's same category straight away
+    // (add-only: Rad Shiva's own vendors and their details are never changed or removed here)
+    if (coll === "restcategories" && Array.isArray(obj.expense) && obj.expense.length) {
+      const have = Array.isArray(mine.expense) ? mine.expense : [];
+      const names = new Set(have.map((e) => s(e?.expenseName).toLowerCase()));
+      const ids = new Set(have.map((e) => String(e?._id || "")));
+      const fresh = obj.expense.filter((e) => s(e?.expenseName) && !names.has(s(e.expenseName).toLowerCase()) && !ids.has(String(e._id || "")));
+      if (fresh.length) {
+        await backup("vendors-added", coll, mine._id, `${fresh.length} new from the cashier PC: ${fresh.map((e) => s(e.expenseName)).join(", ").slice(0, 300)}`, mine, by);
+        await Model.collection.updateOne({ _id: mine._id }, { $push: { expense: { $each: fresh } } });
+        res.added += fresh.length; // shown in the import's "added" count
+        mine = await Model.collection.findOne({ _id: mine._id });
+      }
+    }
     const fields = diffFields(obj, asModel(Model, mine));
     if (!fields.length) {
       res.same += 1;
