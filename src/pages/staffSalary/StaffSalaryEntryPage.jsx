@@ -199,7 +199,18 @@ const StaffSalaryEntryPage = () => {
             currentBalance: roundWhole(total - restaurantUpaad - officeUpaad),
             salaryPaid: Boolean(row.salaryPaid),
           };
-        })
+        }).concat(
+          // staff added after this month's sheet was saved (e.g. new staff on the cashier PC) get a fresh row too
+          buildDraftRows(
+            (restStaff || []).filter(
+              (s) =>
+                (s.staffStatus || "Active") === "Active" &&
+                !salarySheet.rows.some((r) => r.staffId?.toString() === s._id?.toString())
+            ),
+            staffTotalUpaad,
+            officeBookCategoryUpaad
+          )
+        )
       );
       return;
     }

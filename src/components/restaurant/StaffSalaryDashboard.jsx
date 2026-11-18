@@ -214,7 +214,20 @@ const StaffSalaryDashboard = () => {
     const officeMonthBucket = officeBookCategoryUpaad?.[monthKey] || {};
     const salaryAndOvertimeMonthBucket = salaryAndOvertime?.[monthKey] || {};
 
-    return (sheet.rows || []).map((row) => {
+    // staff added after this month's sheet was saved (e.g. new staff on the cashier PC) still show for that month,
+    // with attendance 0 until the sheet is saved again - only staff who existed by the end of that month
+    const monthEnd = dayjs(`${monthKey}-01`).endOf("month");
+    const inSheet = new Set((sheet.rows || []).map((r) => r.staffId?.toString()));
+    const lateStaff = (restStaff || [])
+      .filter(
+        (s) =>
+          (s.staffStatus || "Active") === "Active" &&
+          !inSheet.has(s._id?.toString()) &&
+          (!s.createdAt || !dayjs(s.createdAt).isAfter(monthEnd))
+      )
+      .map((s) => ({ _id: `new-${s._id}`, staffId: s._id, fullname: s.fullname, perDayPay: s.perDayPay || 0, attendance: 0, salaryPaid: false }));
+
+    return [...(sheet.rows || []), ...lateStaff].map((row) => {
       const restaurantUpaad = roundWhole(
         staffMonthBucket[row.staffId?.toString()] || 0
       );
